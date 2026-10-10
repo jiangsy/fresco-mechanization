@@ -2042,8 +2042,9 @@ Lemma a_uskl_tyequiv_all_hd_inv : forall Θ o R R',
         (open_uskl_wrt_uskl R' (uskl_var_f α)) }}a.
 Proof.
   intros Θ [ε | ] R R' H;
-    [ apply a_uskl_tyequiv_all_tag_inv in H | apply a_uskl_tyequiv_all_syn_inv in H ];
-    exact H.
+    [ destruct (a_uskl_tyequiv_all_tag_l_inv H) as (X0 & L & HX & HL)
+    | destruct (a_uskl_tyequiv_all_syn_l_inv H) as (X0 & L & HX & HL) ];
+    inversion HX; subst; exists L; exact HL.
 Qed.
 
 Lemma uskl_ghost_free_all_hd_inv : forall o R,

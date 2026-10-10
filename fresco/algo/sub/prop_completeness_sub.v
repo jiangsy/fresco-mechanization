@@ -184,30 +184,9 @@ Qed.
 (* --------------------------------------------------------------------- *)
 (*  …and the ≡ᵘ layer on top: the join's subject is only EQUIVALENT to the *)
 (*  κ-image, and [a_uskl_tyequiv__mono] relates two paintings across a     *)
-(*  definition chase.  A painting has none of the four shapes below, so    *)
+(*  definition chase.  A painting has none of the shapes below, so         *)
 (*  that row cannot fire and the equivalence is structural.                *)
 (* --------------------------------------------------------------------- *)
-
-Lemma a_uskl_tyequiv_all_tag_l_inv : forall Θ ε R X,
-  {{ Θ ⊢ (uskl_all_tag ε R) ≡ᵘ X }}a ->
-  exists X0, X = uskl_all_tag ε X0.
-Proof.
-  intros Θ ε R X H; inversion H; subst;
-    [ exfalso; eapply ptyp_to_uskl_syn_not_tag; eassumption | eexists; reflexivity ].
-Qed.
-
-Lemma a_uskl_tyequiv_all_syn_l_inv : forall Θ R X,
-  {{ Θ ⊢ (uskl_all_syn R) ≡ᵘ X }}a ->
-  exists X0, X = uskl_all_syn X0.
-Proof.
-  intros Θ R X H; inversion H; subst.
-  - exfalso.
-    match goal with
-    | Hm : mono_ptyp ?t, He : ptyp_to_uskl_syn ?t = uskl_all_syn _ |- _ =>
-        destruct Hm; cbn in He; discriminate He
-    end.
-  - eexists; reflexivity.
-Qed.
 
 Lemma a_uskl_tyequiv_univ_ghost_l_inv : forall Θ R X,
   {{ Θ ⊢ (uskl_univ_ghost R) ≡ᵘ X }}a ->
@@ -987,7 +966,7 @@ Proof.
        rule's — [HM], [HΨ1], [HΨ2], [Htg], [Hwfψ], [Hsub] — plus the fuel IH
        and the WLOG the trichotomy supplies. *)
     assert (Hhd : exists R0, R = uskl_all_tag εa R0).
-    { destruct (@a_uskl_tyequiv_all_tag_l_inv Θa εa Rj _ Hslack) as [X0 HX].
+    { destruct (@a_uskl_tyequiv_all_tag_l_inv Θa εa Rj _ Hslack) as (X0 & _ & HX & _).
       destruct (@msubst_uskl_syn_all_tag_inv κ R εa X0 HX) as [R0 [HR _]].
       exists R0; exact HR. }
     destruct Hhd as [R0 HR0]. subst R.
@@ -1019,7 +998,7 @@ Proof.
     (* as the tagged row above: the row lemma takes exactly the join rule's
        own premises. *)
     assert (Hhd : exists R0, R = uskl_all_syn R0).
-    { destruct (@a_uskl_tyequiv_all_syn_l_inv Θa Rj _ Hslack) as [X0 HX].
+    { destruct (@a_uskl_tyequiv_all_syn_l_inv Θa Rj _ Hslack) as (X0 & _ & HX & _).
       destruct (@msubst_uskl_syn_all_syn_inv_mono Θ0 κ Θa R X0 Hinc HX)
         as [R0 [HR _]].
       exists R0; exact HR. }

@@ -742,13 +742,16 @@ Qed.
 (*  this consumer).                                                       *)
 (* ===================================================================== *)
 
-Lemma a_uskl_tyequiv_all_syn_inv : forall Θ R R',
-  {{ Θ ⊢ (uskl_all_syn R) ≡ᵘ (uskl_all_syn R') }}a ->
-  exists L, forall α, α `notin` L ->
-    {{ Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
-        (open_uskl_wrt_uskl R' (uskl_var_f α)) }}a.
+(** ≡ᵘ at a ∀ head, from the LEFT: the other side has the same head, and
+    the bodies are pointwise ≡ᵘ. *)
+Lemma a_uskl_tyequiv_all_syn_l_inv : forall Θ R X,
+  {{ Θ ⊢ (uskl_all_syn R) ≡ᵘ X }}a ->
+  exists X0 L, X = uskl_all_syn X0 /\
+    forall α, α `notin` L ->
+      {{ Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
+          (open_uskl_wrt_uskl X0 (uskl_var_f α)) }}a.
 Proof.
-  intros Θ R R' H; inversion H; subst.
+  intros Θ R X H; inversion H; subst.
   - (* __mono : a monotype painting is never ∀-headed *)
     lazymatch goal with
     | Hm1 : mono_ptyp ?t1, He1 : ptyp_to_uskl_syn ?t1 = uskl_all_syn R |- _ =>
@@ -757,13 +760,14 @@ Proof.
   - (* __all_syn *) eauto.
 Qed.
 
-Lemma a_uskl_tyequiv_all_tag_inv : forall Θ ε R R',
-  {{ Θ ⊢ (uskl_all_tag ε R) ≡ᵘ (uskl_all_tag ε R') }}a ->
-  exists L, forall α, α `notin` L ->
-    {{ Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
-        (open_uskl_wrt_uskl R' (uskl_var_f α)) }}a.
+Lemma a_uskl_tyequiv_all_tag_l_inv : forall Θ ε R X,
+  {{ Θ ⊢ (uskl_all_tag ε R) ≡ᵘ X }}a ->
+  exists X0 L, X = uskl_all_tag ε X0 /\
+    forall α, α `notin` L ->
+      {{ Θ ⊢ (open_uskl_wrt_uskl R (uskl_var_f α)) ≡ᵘ
+          (open_uskl_wrt_uskl X0 (uskl_var_f α)) }}a.
 Proof.
-  intros Θ ε R R' H; inversion H; subst.
+  intros Θ ε R X H; inversion H; subst.
   - lazymatch goal with
     | Hm1 : mono_ptyp ?t1, He1 : ptyp_to_uskl_syn ?t1 = uskl_all_tag ε R |- _ =>
         destruct Hm1; cbn in He1; discriminate He1
