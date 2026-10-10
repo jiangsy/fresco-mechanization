@@ -551,11 +551,15 @@ before changing any of them.
   `docs/WF-SIDE-CONDITIONS.md` §1.  There is ONE refinement relation per
   sort: a fill-avoidance set is just part of Δ (the internal `_f` variants
   were removed 2026-10-09), and partial precision follows the paper rule for
-  rule too (2026-10-09).  The declarative skeleton consistency / subtyping
-  Ghost rows do too (no fill-wf premise, 2026-10-10); their decl-in-algo
-  twins (`ad_pat_consis__ghost`, `ad_pat_sub{,_fuel}__ghost`) deliberately
-  KEEP it — `a_consis_complete` would otherwise need a new hypothesis
-  (`docs/WF-SIDE-CONDITIONS.md` §2a).
+  rule too (2026-10-09).  The skeleton consistency / subtyping Ghost rows
+  do too, in BOTH layers (no fill-wf premise on `d_pat_consis__ghost`,
+  `d_pat_sub__ghost`, `ad_pat_consis__ghost`, `ad_pat_sub{,_fuel}__ghost`,
+  2026-10-10): the counterpart's well-formedness is the paper's
+  presupposition, and `a_consis_complete` (with the P6-Cs/Ss/L corollaries)
+  now TAKES it as a hypothesis (`docs/WF-SIDE-CONDITIONS.md` §2a).  Where the
+  join's subject has no plain `◇` — every type painting, every decorated
+  skeleton — the target's scope is read off the derivation instead
+  (`ad_pat_consis_target_scope`).
 - **Locally-nameless via lngen**, including for ε tag variables.
   Imports go through `Metalib.Metatheory`.
 - **Binder rules: COFINITE in the declarative layers, EXISTS-FRESH in the
@@ -581,9 +585,14 @@ before changing any of them.
     longer (it opens the `a_wf_exp` families at the row's own binder, via
     `a_wf_exp_abs_pick` / `a_wf_exp_abs_anno_pick`).  All four flagships are
     Qed and axiom-free after the move.
-  - `algo/def_rules.v` WELL-FORMEDNESS (`a_wf_ptyp`, `a_scope_pskl`,
-    `a_wf_pskl`) — cofinite, deliberately.  These are static judgments, not
-    runs; do not "fix" them to match their file-mates.
+  - `algo/def_rules.v` WELL-FORMEDNESS (`a_wf_ptyp`, `a_wf_pskl`) —
+    cofinite, deliberately.  These are static judgments, not runs; do not
+    "fix" them to match their file-mates.  (`a_scope_pskl` is NOT a
+    judgement any more: since 2026-10-10 it is the Definition "locally closed
+    and every free variable bound", for the few places — a consistency run's
+    output inside its own completeness proof, a join target whose subject
+    has no plain `◇` — where only scoping is available.  The paper has one
+    skeleton wf, `a_wf_pskl`.)
 
 ## Build and workflow
 
