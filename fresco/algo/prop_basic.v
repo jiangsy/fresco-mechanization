@@ -13,6 +13,7 @@ Require Import Metalib.Metatheory.
 Require Import src.fresco.notations.
 Require Import src.fresco.coercions.
 Require Import src.fresco.prop_coercions.
+Require Import src.fresco.prop_basic.          (* the monotype-substitution kit *)
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.decl.def_rules.
@@ -1009,31 +1010,6 @@ Proof.
     try (intros τ0 Hc; inversion Hc; subst; congruence).
 Qed.
 
-(** A monotype's skeleton is guarded / locally closed. *)
-Lemma mono_ptyp_to_pskl_guarded : forall τ,
-  mono_ptyp τ -> guarded_pskl (ptyp_to_pskl τ).
-Proof.
-  destruct 1 as [ | α | A1 A2 ]; simpl;
-    [ apply guarded_pskl__unit | apply guarded_pskl__var
-    | apply guarded_pskl__arrow; apply mono_ptyp_to_pskl_lc; auto ].
-Qed.
-
-(** Guardedness is a HEAD-SHAPE property, so substituting a variable by a
-    MONOTYPE preserves it (a variable is guarded; a monotype is guarded).
-    This is the crux of the [univ_ghost] case below. *)
-Lemma guarded_pskl_mono_subst : forall P τ β,
-  guarded_pskl P ->
-  mono_ptyp τ ->
-  guarded_pskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
-Proof.
-  intros * HG Hm; destruct HG; simpl.
-  - apply guarded_pskl__unit.
-  - destruct (eq_var α β);
-      [ apply mono_ptyp_to_pskl_guarded; auto | apply guarded_pskl__var ].
-  - apply guarded_pskl__arrow;
-      apply subst_pskl_in_pskl_lc_pskl; auto using mono_ptyp_to_pskl_lc.
-Qed.
-
 (** A well-formed monotype's skeleton is a well-formed skeleton, in any [Δ]. *)
 Lemma a_wf_pskl_mono_ptyp : forall Θ Δ τ,
   mono_ptyp τ ->
@@ -1170,7 +1146,7 @@ Proof.
       clear - Hn H1. fsetdec.
   - apply a_wf_pskl__ghost.
   - apply a_wf_pskl__univ_ghost;
-      [ apply guarded_pskl_mono_subst; auto | ].
+      [ apply guarded_pskl_subst_mono; auto | ].
     apply IHa_wf_pskl; [ exact Hm | ].
     intros α Hα. destruct (Hτ α Hα) as [Hb Hn]. split.
     + apply a_binds_tvar_aenv_minus. auto.
@@ -1795,5 +1771,5 @@ Lemma guarded_pskl_subst_var : forall P α β,
   guarded_pskl (subst_pskl_in_pskl (pskl_var_f β) α P).
 Proof.
   intros P α β H.
-  exact (@guarded_pskl_mono_subst P (ptyp_var_f β) α H (mono_ptyp__var β)).
+  exact (@guarded_pskl_subst_mono P (ptyp_var_f β) α H (mono_ptyp__var β)).
 Qed.

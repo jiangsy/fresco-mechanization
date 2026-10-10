@@ -46,11 +46,9 @@ Reserved Notation "{{ Ψ ⨟ Θ ⊢ˢ R ∼ᵣ Q }}ad"
   (at level 0, Θ at level 74, R at level 74, Q at level 74,
    format "'{{'  Ψ  ⨟  Θ  ⊢ˢ  R  ∼ᵣ  Q  '}}ad'").
 
-(** Monotype embeddings used by the definition-lookup rules. *)
-Definition ptyp_to_bskl_syn (A : ptyp) : bskl :=
-  pskl_to_bskl_syn (ptyp_to_pskl A).
-Definition ptyp_to_uskl_syn (A : ptyp) : uskl :=
-  bskl_to_uskl (ptyp_to_bskl_syn A).
+(* The monotype embeddings [ptyp_to_bskl_syn] / [ptyp_to_uskl_syn] the
+   definition-lookup rules use live in fresco/coercions.v (moved 2026-10-10:
+   the shape layer's monotype-substitution lemmas are stated over them). *)
 
 (* [a_binds_tvar] now lives in algo/def_rules.v (shared with a_wf_ptyp). *)
 

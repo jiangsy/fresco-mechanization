@@ -25,38 +25,19 @@ Set Implicit Arguments.
 Lemma is_ityp_rename_tvar : forall B α1 β1,
     is_ityp B -> is_ityp (subst_btyp_in_btyp (btyp_var_f β1) α1 B).
 Proof.
-  intros B α1 β1 H. induction H; simpl.
-  - constructor.
-  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
-  - constructor; assumption.
-  - apply is_ityp__all with (L := L `union` singleton α1 `union` singleton β1).
-    intros α Hα.
-    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-      by (solve [ fsetdec | apply lc_btyp_var_f ]).
-    apply H0; fsetdec.
+  intros B α1 β1 H. exact (@is_ityp_subst_mono B (ptyp_var_f β1) α1 H (mono_ptyp__var β1)).
 Qed.
 
 Lemma is_dtyp_rename_tvar : forall C α1 β1,
     is_dtyp C -> is_dtyp (subst_utyp_in_utyp (utyp_var_f β1) α1 C).
 Proof.
-  intros C α1 β1 H. induction H; simpl.
-  - constructor.
-  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
-  - constructor; assumption.
-  - apply is_dtyp__all_tag with (L := L `union` singleton α1 `union` singleton β1).
-    intros α Hα.
-    erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
-      by (solve [ fsetdec | apply lc_utyp_var_f ]).
-    apply H0; fsetdec.
+  intros C α1 β1 H. exact (@is_dtyp_subst_mono C (ptyp_var_f β1) α1 H (mono_ptyp__var β1)).
 Qed.
 
 Lemma guarded_utyp_rename_tvar : forall C α1 β1,
     guarded_utyp C -> guarded_utyp (subst_utyp_in_utyp (utyp_var_f β1) α1 C).
 Proof.
-  intros C α1 β1 H. induction H; simpl.
-  - constructor.
-  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
-  - constructor; apply subst_utyp_in_utyp_lc_utyp; auto; apply lc_utyp_var_f.
+  intros C α1 β1 H. exact (@guarded_utyp_subst_mono C (ptyp_var_f β1) α1 H (mono_ptyp__var β1)).
 Qed.
 
 (** Base fact for the [d_consis] substitution lemma: a tagged type [ph] is
@@ -212,24 +193,13 @@ Qed.
 Lemma is_styp_rename_tvar : forall B α1 β1,
     is_styp B -> is_styp (subst_btyp_in_btyp (btyp_var_f β1) α1 B).
 Proof.
-  intros B α1 β1 H. induction H; simpl.
-  - constructor.
-  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
-  - constructor; assumption.
-  - apply is_styp__all with (L := L `union` singleton α1 `union` singleton β1).
-    intros α Hα.
-    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-      by (solve [ fsetdec | apply lc_btyp_var_f ]).
-    apply H0; fsetdec.
+  intros B α1 β1 H. exact (@is_styp_subst_mono B (ptyp_var_f β1) α1 H (mono_ptyp__var β1)).
 Qed.
 
 Lemma guarded_btyp_rename_tvar : forall B α1 β1,
     guarded_btyp B -> guarded_btyp (subst_btyp_in_btyp (btyp_var_f β1) α1 B).
 Proof.
-  intros B α1 β1 H. induction H; simpl.
-  - constructor.
-  - match goal with |- context [ ?a == ?b ] => destruct (a == b) end; constructor.
-  - constructor; apply subst_btyp_in_btyp_lc_btyp; auto; apply lc_btyp_var_f.
+  intros B α1 β1 H. exact (@guarded_btyp_subst_mono B (ptyp_var_f β1) α1 H (mono_ptyp__var β1)).
 Qed.
 
 (** [d_sub] is closed under tvar renaming (the tag context is untouched);

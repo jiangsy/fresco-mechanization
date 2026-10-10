@@ -27,19 +27,13 @@ Set Implicit Arguments.
 Lemma guarded_pskl_subst_unit : forall P α,
     guarded_pskl P -> guarded_pskl (subst_pskl_in_pskl pskl_unit α P).
 Proof.
-  intros P α H. induction H; simpl.
-  - auto with fresco.
-  - destruct_if; auto with fresco.
-  - apply guarded_pskl__arrow; apply subst_pskl_in_pskl_lc_pskl; (assumption || apply lc_pskl_unit).
+  intros P α H. exact (@guarded_pskl_subst_mono P ptyp_unit α H mono_ptyp__unit).
 Qed.
 
 Lemma guarded_uskl_subst_unit : forall R α,
     guarded_uskl R -> guarded_uskl (subst_uskl_in_uskl uskl_unit α R).
 Proof.
-  intros R α H. induction H; simpl.
-  - auto with fresco.
-  - destruct_if; auto with fresco.
-  - apply guarded_uskl__arrow; apply subst_uskl_in_uskl_lc_uskl; (assumption || apply lc_uskl_unit).
+  intros R α H. exact (@guarded_uskl_subst_mono R ptyp_unit α H mono_ptyp__unit).
 Qed.
 
 (** The [∀◇] rows of the two [_subst_unit] lemmas below: the body [H0] is
@@ -116,15 +110,7 @@ Qed.
 Lemma is_sskl_subst_unit : forall Q α,
     is_sskl Q -> is_sskl (subst_bskl_in_bskl bskl_unit α Q).
 Proof.
-  intros Q α H. induction H; simpl.
-  - auto with fresco.
-  - destruct_if; auto with fresco.
-  - auto with fresco.
-  - apply is_sskl__all with (L := L `union` {{α}}). intros β Hβ.
-    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
-      try (apply lc_bskl_unit); try fsetdec. auto.
-  - auto with fresco.
-  - auto with fresco.
+  intros Q α H. exact (@is_sskl_subst_mono Q ptyp_unit α H mono_ptyp__unit).
 Qed.
 
 (** [mod_comp_sk] is preserved under [unit]-substitution: [unit] is [is_sskl]
@@ -132,33 +118,19 @@ Qed.
 Lemma mod_comp_sk_subst_unit : forall Q m α,
     mod_comp_sk Q m -> mod_comp_sk (subst_bskl_in_bskl bskl_unit α Q) m.
 Proof.
-  intros Q m α H. induction H; simpl.
-  - auto using is_sskl_subst_unit with fresco.
-  - auto using is_sskl_subst_unit with fresco.
-  - auto with fresco.
+  intros Q m α H. exact (@mod_comp_sk_subst_mono Q m ptyp_unit α H mono_ptyp__unit).
 Qed.
 
 Lemma is_dskl_subst_unit : forall R α,
     is_dskl R -> is_dskl (subst_uskl_in_uskl uskl_unit α R).
 Proof.
-  intros R α H. induction H; simpl.
-  - auto with fresco.
-  - destruct_if; auto with fresco.
-  - auto with fresco.
-  - apply is_dskl__all_tag with (L := L `union` {{α}}). intros β Hβ.
-    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
-      try (apply lc_uskl_unit); try fsetdec. auto.
-  - auto with fresco.
-  - auto with fresco.
+  intros R α H. exact (@is_dskl_subst_mono R ptyp_unit α H mono_ptyp__unit).
 Qed.
 
 Lemma guarded_bskl_subst_unit : forall Q α,
     guarded_bskl Q -> guarded_bskl (subst_bskl_in_bskl bskl_unit α Q).
 Proof.
-  intros Q α H. induction H; simpl.
-  - auto with fresco.
-  - destruct_if; auto with fresco.
-  - apply guarded_bskl__arrow; apply subst_bskl_in_bskl_lc_bskl; (assumption || apply lc_bskl_unit).
+  intros Q α H. exact (@guarded_bskl_subst_mono Q ptyp_unit α H mono_ptyp__unit).
 Qed.
 
 Lemma d_tags_skl_subst_unit : forall Ψ R α,

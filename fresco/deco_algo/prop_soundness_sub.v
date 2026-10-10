@@ -1176,7 +1176,8 @@ Proof.
 Qed.
 
 (** Guardedness / ghost-freeness survive a skeleton-variable rename: the
-    variable instances of prop_pat_sub.v's [*_subst_mono]. *)
+    variable instances of the [*_subst_mono] lemmas (fresco/prop_basic.v,
+    algo/prop_pat_sub.v). *)
 Lemma guarded_uskl_subst_var : forall ψ α β,
   guarded_uskl ψ -> guarded_uskl (subst_uskl_in_uskl (uskl_var_f β) α ψ).
 Proof.

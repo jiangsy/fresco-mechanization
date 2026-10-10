@@ -1279,59 +1279,9 @@ Qed.
 (*  §10  Syntax-directed typing                                          *)
 (* ===================================================================== *)
 
-(** The colour predicates close under a monotype substitution, exactly as
-    their skeleton counterparts do (prop_pat_sub.v's [is_sskl_subst_mono]):
-    a monotype painting is both [is_styp] and [is_ityp], because it has no
-    quantifier to carry a colour. *)
-Lemma mono_ptyp_to_btyp_syn_is_styp : forall τ,
-  mono_ptyp τ -> is_styp (ptyp_to_btyp_syn τ).
-Proof. intros τ H; induction H; simpl; auto with fresco. Qed.
-
-Lemma mono_ptyp_to_btyp_syn_is_ityp : forall τ,
-  mono_ptyp τ -> is_ityp (ptyp_to_btyp_syn τ).
-Proof. intros τ H; induction H; simpl; auto with fresco. Qed.
-
-Lemma is_styp_subst_mono : forall B τ α,
-  is_styp B -> mono_ptyp τ ->
-  is_styp (subst_btyp_in_btyp (ptyp_to_btyp_syn τ) α B).
-Proof.
-  intros B τ α H Hm; induction H; simpl.
-  - apply is_styp__unit.
-  - destruct_if; [ apply mono_ptyp_to_btyp_syn_is_styp; assumption
-                 | apply is_styp__var ].
-  - apply is_styp__arrow; assumption.
-  - apply is_styp__all with (L := L `union` singleton α). intros β Hβ.
-    rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var;
-      [ | clear - Hβ; fsetdec
-        | apply is_styp_lc; apply mono_ptyp_to_btyp_syn_is_styp; assumption ].
-    apply H0. clear - Hβ; fsetdec.
-Qed.
-
-Lemma is_ityp_subst_mono : forall B τ α,
-  is_ityp B -> mono_ptyp τ ->
-  is_ityp (subst_btyp_in_btyp (ptyp_to_btyp_syn τ) α B).
-Proof.
-  intros B τ α H Hm; induction H; simpl.
-  - apply is_ityp__unit.
-  - destruct_if; [ apply mono_ptyp_to_btyp_syn_is_ityp; assumption
-                 | apply is_ityp__var ].
-  - apply is_ityp__arrow; assumption.
-  - apply is_ityp__all with (L := L `union` singleton α). intros β Hβ.
-    rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var;
-      [ | clear - Hβ; fsetdec
-        | apply is_styp_lc; apply mono_ptyp_to_btyp_syn_is_styp; assumption ].
-    apply H0. clear - Hβ; fsetdec.
-Qed.
-
-Lemma mod_comp_ty_subst_mono : forall B m τ α,
-  mod_comp_ty B m -> mono_ptyp τ ->
-  mod_comp_ty (subst_btyp_in_btyp (ptyp_to_btyp_syn τ) α B) m.
-Proof.
-  intros B m τ α H Hm; induction H; simpl.
-  - apply mod_comp_ty__ti; apply is_styp_subst_mono; assumption.
-  - apply mod_comp_ty__tc; apply is_ityp_subst_mono; assumption.
-  - apply mod_comp_ty__fn; assumption.
-Qed.
+(* The colour predicates' closure under a monotype substitution
+   ([is_styp_subst_mono], [is_ityp_subst_mono], [mod_comp_ty_subst_mono])
+   lives in fresco/prop_basic.v with its skeleton counterparts. *)
 
 Lemma subst_btyp_to_ptyp_eq : forall τ α B,
   subst_ptyp_in_ptyp τ α (btyp_to_ptyp B)
