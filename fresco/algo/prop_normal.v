@@ -139,11 +139,11 @@ Qed.
 (*  Local closure of the images                                            *)
 (* --------------------------------------------------------------------- *)
 
-(** All of a metasubstitution's images are locally closed.  [prop_compose.v] gets
-    this from an [a_inc] witness; [aenv_msubst Θ] has no such witness (its target
-    is [Θ] itself, which is not a suffix), so we take the property directly. *)
-Definition msubst_lc (κ : metasubst) : Prop :=
-  forall α, lc_ptyp (msubst_lookup κ α).
+(* [msubst_lc] — all of a metasubstitution's images are locally closed —
+   lives in def_meta.v (moved 2026-10-10 so that prop_compose.v's
+   [a_inc_msubst_lc] can be stated in it).  [aenv_msubst Θ] has no [a_inc]
+   witness (its target is [Θ] itself, which is not a suffix), so the lemmas
+   below take the property directly. *)
 
 Lemma msubst_ptyp_open_rec_lc : forall κ,
   msubst_lc κ ->

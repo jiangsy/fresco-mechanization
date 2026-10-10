@@ -38,6 +38,7 @@ Require Import src.fresco.algo.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo.prop_inc.            (* a_tyequiv_pskl *)
+Require Import src.fresco.algo.prop_swap.          (* a_wf_ptyp_ftv_tvarish *)
 Require Import src.fresco.algo.prop_basic.           (* a_tyequiv_weaken_cons *)
 Require Import src.fresco.algo.prop_compose.        (* a_inc_lookup_{wf,mono}, msubst_lookup_notin *)
 Require Import src.fresco.algo.prop_normal.         (* a_inc_equiv_lookup_tvar *)

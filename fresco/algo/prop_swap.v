@@ -54,7 +54,7 @@ Set Implicit Arguments.
 
 (* ===================================================================== *)
 (*  §0  The two skeleton judgements: scoping facts and the wf → scope      *)
-(*  bridge.  ⚙ These live HERE, beside [a_wf_ptyp_ftv_binds] /             *)
+(*  bridge.  ⚙ These live HERE, beside [a_wf_ptyp_ftv_tvarish] /           *)
 (*  [a_scope_pskl_ftv_binds] / [a_wf_pskl_lc], because this is the EARLIEST *)
 (*  proof file and [a_wf_aenv__var] stores the                             *)
 (*  DISCIPLINED [{{ Θ ⨟ ∅ ⊢ₚₛ P }}a] — so every file that inverts a context's *)
@@ -1002,16 +1002,6 @@ Proof.
   rewrite swap_atom_invol. reflexivity.
 Qed.
 
-(** …and its ghost sibling, for the ◇-DISPATCH GUARD: a swap is structural,
-    so it maps [◇] to [◇] and nothing else to it. *)
-Lemma swap_pskl_neq_ghost : forall a b P,
-  P <> pskl_ghost ->
-  swap_pskl a b P <> pskl_ghost.
-Proof.
-  intros * Hne He. apply Hne.
-  rewrite <- (swap_pskl_invol a b P), He. reflexivity.
-Qed.
-
 (** …and its ForallR sibling, for the ForallR-PRIORITY GUARD: a swap is
     structural, so it maps a [∀] to a [∀] and preserves ghost-freeness in
     both directions ([pskl_ghost_free_swap] + [swap_pskl_invol]). *)
@@ -1136,13 +1126,13 @@ Proof.
     apply a_looksub__forall_l with (β := swap_atom a b β);
       [ swap_freshness
       | apply swap_pskl_ftv_in; assumption
-      | apply swap_pskl_neq_ghost; assumption
+      | apply swap_pskl_not_ghost; assumption
       | apply forall_r_off_swap; assumption
       |].
     rewrite swap_pskl_open_var in H. exact H.
   - (* univ_ghost_l *)
     apply a_looksub__univ_ghost_l;
-      [ apply swap_pskl_neq_ghost; assumption
+      [ apply swap_pskl_not_ghost; assumption
       | apply forall_r_off_swap; assumption | auto ].
   (* -------- a_lookeq -------- *)
   - (* var *) apply a_lookeq__var.
@@ -2350,8 +2340,10 @@ Proof.
               | apply IHa_inc; right; eexists; eassumption ].
 Qed.
 
-(** Free variables of a wf type / scoped skeleton are tvar-ish bound. *)
-Lemma a_wf_ptyp_ftv_binds : forall (Θ : aenv) A γ,
+(** Free variables of a wf type are tvar-ish bound.  ⚙ The ONE copy: it
+    was also stated as [a_wf_ptyp_ftv_binds] here and re-exported from
+    algo/prop_basic.v under this name until 2026-10-10. *)
+Lemma a_wf_ptyp_ftv_tvarish : forall (Θ : aenv) A γ,
   a_wf_ptyp Θ A -> γ `in` ftvar_in_ptyp A -> a_binds_tvar γ Θ.
 Proof.
   intros * H; induction H; simpl; intros Hγ; try solve [fsetdec].
@@ -2371,6 +2363,7 @@ Proof.
        [ inversion heq; subst; exfalso; fsetdec
        | unfold a_binds_tvar; auto; right; right; exists τ; exact hb ]).
 Qed.
+Arguments a_wf_ptyp_ftv_tvarish [Θ A γ] _ _.
 
 (** The precision component's term equality: swapping the run's output
     skeleton and ζ's keys leaves the ζ-image unchanged. *)
@@ -2479,7 +2472,7 @@ Proof.
           [right | left; exact hout].
         match goal with
         | h : a_wf_ptyp _ τ |- _ =>
-            pose proof (a_wf_ptyp_ftv_binds _ _ _ h hin) as hbt
+            pose proof (a_wf_ptyp_ftv_tvarish h hin) as hbt
         end.
         destruct hbt as [hbt | [hbt | [τ0 hbt]]].
         -- exfalso.
@@ -2510,7 +2503,7 @@ Proof.
           [right | left; exact hout].
         match goal with
         | h : a_wf_ptyp _ A |- _ =>
-            pose proof (a_wf_ptyp_ftv_binds _ _ _ h hin) as hbt
+            pose proof (a_wf_ptyp_ftv_tvarish h hin) as hbt
         end.
         destruct hbt as [hbt | [hbt | [τ0 hbt]]].
         -- exfalso.

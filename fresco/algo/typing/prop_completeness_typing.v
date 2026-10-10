@@ -1150,15 +1150,6 @@ Proof.
     [ contradiction | apply Hsc in Hl; clear - Hl Hd Hne; fsetdec ].
 Qed.
 
-Lemma msubst_lookup_app_agree : forall (ζ X Y : metasubst) α,
-  msubst_lookup X α = msubst_lookup Y α ->
-  msubst_lookup (ζ ++ X) α = msubst_lookup (ζ ++ Y) α.
-Proof.
-  intros ζ; induction ζ as [ | [β τ] ζ' IH ]; intros X Y α Hxy;
-    [ exact Hxy | ].
-  simpl. destruct (α == β); [ reflexivity | apply IH; exact Hxy ].
-Qed.
-
 (** ⭐⭐ GUESS-COMPLETENESS — the paper's Abs step ⑯⑰, which its authors
     flag as "a bit sketchy", made explicit.  If the κ-image of [P] refines
     to (the painting of) an INHERITED type [Bt], the ghost fills are

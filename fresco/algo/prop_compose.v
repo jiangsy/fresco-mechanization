@@ -192,11 +192,14 @@ Qed.
 (*  A metasubstitution transports lc / mono / wf / ≡ into the target       *)
 (* ===================================================================== *)
 
-Lemma a_inc_lookup_lc : forall Θ1 ζ Θ α',
+(** An [a_inc]'s images are locally closed.  ⚙ Stated in [msubst_lc] form;
+    it doubles as the per-lookup fact ([eapply] unfolds [msubst_lc]).  The
+    lookup form was a second lemma, [a_inc_msubst_lc], until 2026-10-10. *)
+Lemma a_inc_msubst_lc : forall Θ1 ζ Θ,
   ζ ∷ Θ1 ⊑ Θ ->
-  lc_ptyp (msubst_lookup ζ α').
+  msubst_lc ζ.
 Proof.
-  intros Θ1 ζ Θ α' H; revert α'; induction H; intros α'; simpl;
+  intros Θ1 ζ Θ H α'; revert α'; induction H; intros α'; simpl;
     try (apply IHa_inc).
   - constructor.
   - destruct (α' == α) as [->|Hne]; [ eapply a_wf_ptyp_lc; eauto | apply IHa_inc ].
@@ -267,7 +270,7 @@ Proof.
     apply open_ptyp_wrt_ptyp_rec_degree_ptyp_wrt_ptyp.
     apply degree_ptyp_wrt_ptyp_O.
     apply degree_ptyp_wrt_ptyp_of_lc_ptyp.
-    eapply a_inc_lookup_lc; exact Hinc.
+    eapply a_inc_msubst_lc; exact Hinc.
 Qed.
 
 Lemma msubst_ptyp_open : forall Θ1 ζ Θ A α,
@@ -289,7 +292,7 @@ Lemma msubst_ptyp_lc : forall Θ1 ζ Θ A,
 Proof.
   intros Θ1 ζ Θ A Hinc Hlc; induction Hlc; simpl.
   - constructor.
-  - eapply a_inc_lookup_lc; eauto.
+  - eapply a_inc_msubst_lc; eauto.
   - constructor; auto.
   - (* ∀ : pick a variable outside ζ's domain and push the substitution in *)
     pick fresh α for (dom ζ).
@@ -577,7 +580,7 @@ Proof.
     apply degree_pskl_wrt_pskl_O.
     apply degree_pskl_wrt_pskl_of_lc_pskl.
     apply ptyp_to_pskl_lc.
-    eapply a_inc_lookup_lc; exact Hinc.
+    eapply a_inc_msubst_lc; exact Hinc.
 Qed.
 
 Lemma msubst_pskl_open : forall Θ1 ζ Θ P α,
@@ -598,7 +601,7 @@ Lemma msubst_pskl_lc : forall Θ1 ζ Θ P,
   lc_pskl (msubst_pskl ζ P).
 Proof.
   intros Θ1 ζ Θ P Hinc Hlc; induction Hlc; simpl; try solve [ constructor; auto ].
-  - apply ptyp_to_pskl_lc. eapply a_inc_lookup_lc; eauto.
+  - apply ptyp_to_pskl_lc. eapply a_inc_msubst_lc; eauto.
   - (* ∀ : pick a variable outside ζ's domain and push the substitution in *)
     pick fresh α for (dom ζ).
     apply lc_pskl_all_syn_exists with (α1 := α).

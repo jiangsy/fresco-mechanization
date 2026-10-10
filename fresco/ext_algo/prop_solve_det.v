@@ -27,7 +27,7 @@
         the eq layer's rule choice is forced by the input shapes — the
         overlaps (SE-Var/SE-FlexR/SE-VacuousR/SE-GuardedGhost on a
         variable subject, the ghost/ghost corners) all produce identical
-        outputs ([a_solve_eq_var_subject_inv]).  Size induction on
+        outputs ([a_solve_eq_var_subject]).  Size induction on
         [size P + size Q], so BOTH binder rows rebind to a common
         globally fresh opener by plain swaps, and [rel_pskl_close]
         DROPS the opener from the identity support on the way out (no
@@ -1176,27 +1176,11 @@ Local Ltac det_nil_refl :=
   exists nil; repeat split;
   intros V HV; apply rel_pskl_refl; clear - HV; simpl in *; fsetdec.
 
-(** A variable subject answers itself, whatever the derivation did on
-    the way (SE-Var / SE-FlexR-with-a-variable / SE-VacuousR /
-    SE-GuardedGhost all agree) — the fact that makes the var-row
-    overlaps trivial. *)
-Lemma a_solve_eq_var_subject_inv : forall Θ P Q Ξ P',
-  {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a ->
-  forall α, P = pskl_var_f α ->
-  Ξ = nil /\ P' = pskl_var_f α.
-Proof.
-  intros Θ P Q Ξ P' HD.
-  induction HD; intros α0 Heq; try discriminate.
-  - (* SE-Var *) inversion Heq; subst. split; reflexivity.
-  - (* SE-FlexR — the guess at a variable is the variable *)
-    subst.
-    match goal with
-    | G : a_guess_mono _ (pskl_var_f _) _ _ |- _ => inversion G; subst
-    end.
-    split; reflexivity.
-  - (* SE-VacuousR *) subst. split; reflexivity.
-  - (* SE-GuardedGhost *) eauto.
-Qed.
+(* A variable subject answers itself, whatever the derivation did on the way
+   (SE-Var / SE-FlexR-with-a-variable / SE-VacuousR / SE-GuardedGhost all
+   agree) — the fact that makes the var-row overlaps trivial:
+   [a_solve_eq_var_subject] (algo/sub/prop_solve_sub.v).  Its copy here,
+   [a_solve_eq_var_subject_inv], was deleted 2026-10-10. *)
 
 Lemma a_solve_eq_det_n : forall n P Q, size_pskl P + size_pskl Q < n ->
   forall Θ1 Θ2 Ξ1 Ξ2 P1' P2',
@@ -1211,7 +1195,7 @@ Proof.
   - (* SE-Unit *)
     inversion HD2; subst; try det_absurd. det_nil_refl.
   - (* SE-Var/FlexL — any derivation on a variable subject answers it *)
-    destruct (a_solve_eq_var_subject_inv _ _ _ _ _ HD2 α eq_refl)
+    destruct (@a_solve_eq_var_subject _ _ _ _ _ HD2 α eq_refl)
       as [-> ->].
     det_nil_refl.
   - (* SE-FlexR vs {var, flex_r} *)
@@ -1498,7 +1482,7 @@ Proof.
     + (* the subject is a variable: D1's premise answers it *)
       match goal with
       | D1p : a_solve_eq Θ1 (pskl_var_f ?av) _ Ξ1 P1' |- _ =>
-          destruct (a_solve_eq_var_subject_inv _ _ _ _ _ D1p av eq_refl)
+          destruct (@a_solve_eq_var_subject _ _ _ _ _ D1p av eq_refl)
             as [-> ->]
       end.
       det_nil_refl.

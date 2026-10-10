@@ -516,7 +516,7 @@ Qed.
 (*  and (b) know β does not appear in the κ-IMAGE of the body — otherwise  *)
 (*  the renaming that builds the cofinite family would move it.  Both are  *)
 (*  properties of the incoming κ, and an [a_inc] supplies both: images are *)
-(*  locally closed ([a_inc_lookup_lc]) and SCOPED BY THE TARGET.           *)
+(*  locally closed ([a_inc_msubst_lc]) and SCOPED BY THE TARGET.           *)
 (* ===================================================================== *)
 
 (** A metasubstitution's images are scoped by the target context (an
@@ -800,7 +800,7 @@ Proof.
       split.
       { rewrite app_assoc. cbn [ptyp_to_pskl]. apply a_wf_pskl__arrow.
         - eapply a_wf_pskl_weaken; [ | exact Hwf1 ].
-          intros x b Hb. apply binds_weaken_inner. exact Hb.
+          intros x b Hb. apply binds_weaken. exact Hb.
         - eapply a_wf_pskl_weaken; [ | exact Hwf2 ].
           intros x b Hb. apply binds_app_3. exact Hb. }
       rewrite app_assoc. cbn [ptyp_to_pskl msubst_pskl].
@@ -1140,7 +1140,7 @@ Proof.
                 (κs ++ κc ++ κ) empty empty Pa ⌊ ψa ⌋ˢ
                 (le_n _) HwfΘ HwfPa
                 ltac:(unfold msubst_lc; intros α0;
-                      eapply a_inc_lookup_lc; exact Hincc)
+                      eapply a_inc_msubst_lc; exact Hincc)
                 ltac:(intros α0; eapply a_inc_lookup_ftv; exact Hincc)
                 Hgfψ Hlcψ
                 ltac:(intros γ Hγ _; eapply a_wf_pskl_ftv_binds;
@@ -1229,8 +1229,8 @@ Proof.
       (* bring BOTH sides to a common [κs] head, then peel and swap once *)
       rewrite (@msubst_lookup_app_swap κc κs (κ' ++ κ) β0 Hdcs).
       rewrite (@msubst_lookup_app_swap κ' κs (κc ++ κ) β0 Hd's).
-      apply msubst_lookup_app_congr. intro β1.
-      apply (@msubst_lookup_app_swap κc κ' κ β1 Hdc'). }
+      apply msubst_lookup_app_agree.
+      apply (@msubst_lookup_app_swap κc κ' κ β0 Hdc'). }
     rewrite Hperm. exact Hpr'.
   - (* ================================ SK ============================== *)
     (* [a_guess__sk] : Ξ' = ·, Q' = Q, so κ' = · and every conclusion is

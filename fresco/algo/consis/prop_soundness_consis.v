@@ -1117,13 +1117,14 @@ Proof. intros; apply bskl_to_pskl_close_rec. Qed.
     opener; it and its two supports moved up from prop_completeness_consis.v (PART B),
     which is downstream and still sees them. *)
 
+(** ⚙ Bounded by the CONTEXT alone — every free variable of a wf skeleton
+    is a tvar of [Θ] ([a_wf_pskl_ftv_binds]).  The bound used to read
+    [Δ ∪ dom Θ] (strengthened 2026-10-10). *)
 Lemma a_wf_pskl_ftv_dom : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  ftvar_in_pskl P [<=] (Δ `union` dom Θ).
+  ftvar_in_pskl P [<=] dom Θ.
 Proof.
-  intros * H γ Hγ.
-  destruct (a_wf_pskl_ftv_binds H Hγ) as [Hb | [Hb | [τ Hb]]];
-    apply binds_In in Hb; clear - Hb; fsetdec.
+  intros * H γ Hγ. exact (a_binds_tvar_in_dom (a_wf_pskl_ftv_binds H Hγ)).
 Qed.
 
 (** Opening a ∀-body at a CHOSEN fresh opener [β]: the ∀ rule records its

@@ -2363,7 +2363,7 @@ Qed.
 (*    wf skeleton is TVAR-ISH, so a TERM entry cannot                     *)
 (*    occur in it — what [Assign-SkipTmVar] needs and its rule does not   *)
 (*    state.                                                              *)
-(*  - [a_wf_pskl_weaken_tvarish] / [a_isub_wf_pskl] (algo/prop_inc.v's):  *)
+(*  - [a_wf_pskl_tvar_mono] / [a_isub_wf_pskl] (algo/prop_inc.v's):      *)
 (*    the information increase carries tvar-ishness, so a skeleton        *)
 (*    well-formed in the input is well-formed in the OUTPUT — what        *)
 (*    [C-Arrow]'s second premise needs of the first premise's context.    *)
@@ -2417,7 +2417,7 @@ Lemma a_isub_wf_pskl : forall Θ Θ' Δ P,
   a_isub Θ Θ' -> {{ Θ ⨟ Δ ⊢ₚₛ P }}a -> {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
 Proof.
   intros Θ Θ' Δ P [[κ [Hid Hinc]] _] Hwf.
-  eapply a_wf_pskl_weaken_tvarish; [ | exact Hwf ].
+  eapply a_wf_pskl_tvar_mono; [ exact Hwf | ].
   intros α Htv. eapply a_inc_binds_tvarish; eassumption.
 Qed.
 

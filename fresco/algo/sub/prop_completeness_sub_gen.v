@@ -112,7 +112,7 @@ Local Ltac destr_join :=
     at one of the two call sites the [⌊·⌋ˢ] is already reduced and the
     rewrite has nothing to fire on. *)
 Lemma uskl_wf_ftv_dom : forall Θ Δ ψ,
-  {{ Θ ⨟ Δ ⊢ₚₛ ⌊ ψ ⌋ˢ }}a -> ftvar_in_uskl ψ [<=] Δ `union` dom Θ.
+  {{ Θ ⨟ Δ ⊢ₚₛ ⌊ ψ ⌋ˢ }}a -> ftvar_in_uskl ψ [<=] dom Θ.
 Proof.
   intros Θ Δ ψ H.
   pose proof (a_wf_pskl_ftv_dom H) as Hd.
@@ -566,8 +566,8 @@ Qed.
 (*  having to move the consistency derivation between Θ and Δ.             *)
 (* ===================================================================== *)
 
-(** The Δ = ∅ pointwise form of [a_wf_pskl_ftv_dom]
-    (algo/consis/prop_soundness_consis.v). *)
+(** The pointwise form of [a_wf_pskl_ftv_dom]
+    (algo/consis/prop_soundness_consis.v), at Δ = ∅. *)
 Lemma a_wf_pskl_ftv_dom_pointwise : forall Θ P,
   {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
   forall α, α `in` ftvar_in_pskl P -> α `in` dom Θ.
@@ -1855,8 +1855,8 @@ Proof.
                   ltac:(apply a_wf_aenv_uniq; exact Hwfth')
                   ltac:(intros γ Hγ; simpl_env; solve_notin_auto)) as Hp1.
     (* push the rename inside and collapse it *)
-    rewrite pskl_to_bskl_inh_subst_var in Hp1.
-    rewrite pskl_to_bskl_inh_subst_var in Hp1.
+    rewrite subst_var_bskl_inh in Hp1.
+    rewrite subst_var_bskl_inh in Hp1.
     rewrite <- (msubst_pskl_open_lc (ptyp_to_pskl A0) Hlcζ Hαζ) in Hp1.
     assert (Hβζ : β `notin` dom ζ) by (clear - Hβ; fsetdec).
     rewrite (msubst_pskl_subst_var ζ
@@ -2145,8 +2145,8 @@ Proof.
                     cbn in HΨaftag; clear - HΨaftag Hftjb; solve_notin_auto)
               (* ⭐ P6-L's new guess-scope premise (the SolE-FlexR repair):
                  read straight off the guess's own well-formedness *)
-              ltac:(assert (Hdψ : ftvar_in_uskl ψa [<=] empty `union` dom Θ)
-                      by (apply uskl_wf_ftv_dom; exact Hwfψa);
+              ltac:(assert (Hdψ : ftvar_in_uskl ψa [<=] dom Θ)
+                      by (eapply uskl_wf_ftv_dom; exact Hwfψa);
                     clear - Hdψ; solve_notin_auto)
               Hwfψa
               ltac:(pose proof (ad_pat_sub_fuel_ftag_sub HD) as Hfs;
@@ -2393,7 +2393,7 @@ Qed.
 (*          §13) and re-attach via [swap_junk_dom_out];                   *)
 (*    (v)   rebuild the package as [(β, κ's β-image) :: kswap_msubst β β1 *)
 (*          ζ], using [a_inc_kswap] for the increase,                     *)
-(*          [msubst_compose_kswap_id] + [msubst_compose_head_id] for the  *)
+(*          [msubst_compose_kswap_id] + [msubst_compose_cons_l_id] for the*)
 (*          equivalence, and [msubst_bskl_head_notin] +                   *)
 (*          [msubst_bskl_kswap_paint] for the precision.                  *)
 (*                                                                        *)
@@ -2684,21 +2684,6 @@ Qed.
 (*  (G)  P7a ROW — Flex-Skip                                              *)
 (* ===================================================================== *)
 
-Lemma msubst_compose_head_id : forall β τ ζ κ1,
-  is_id_msubst κ1 ->
-  (forall γ, List.In γ (List.map fst κ1) -> γ <> β) ->
-  msubst_compose ((β, τ) :: ζ) κ1 = msubst_compose ζ κ1.
-Proof.
-  intros β τ ζ κ1; induction κ1 as [| [γ τγ] κ1']; intros Hid Hk;
-    [ reflexivity | ].
-  inversion Hid as [| e κl he hl]; subst.
-  unfold is_id_entry in he; simpl in he. subst τγ.
-  unfold msubst_compose; simpl.
-  assert (hne : γ <> β) by (apply Hk; left; reflexivity).
-  destruct (γ == β) as [e | _]; [ exfalso; auto | ].
-  f_equal. apply IHκ1'; [ exact hl | intros γ0 h0; apply Hk; right; exact h0 ].
-Qed.
-
 Lemma a_sub_flex_complete_skip : forall n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q,
   (* length-guarded, as in [a_sub_flex_complete_depend] *)
   (forall Ξ' α' P0' R'' Ψ' Θ'' κ' Q',
@@ -2848,8 +2833,10 @@ Proof.
       by (intros γ hγ; exact (proj1 (Hkey1 γ hγ))).
     assert (Hk2b : forall γ, List.In γ (List.map fst κf2) -> γ <> β)
       by (intros γ hγ; exact (proj1 (Hkey2 γ hγ))).
-    rewrite (@msubst_compose_head_id β τβ (kswap_msubst β β1 ζ) κf1 Hidf1 Hk1b).
-    rewrite (@msubst_compose_head_id β τβ (kswap_msubst β β1 ζ) κf2 Hidf2 Hk2b).
+    rewrite (@msubst_compose_cons_l_id β τβ (kswap_msubst β β1 ζ) κf1 Hidf1
+               (@notin_dom_of_keys_neq _ _ Hk1b)).
+    rewrite (@msubst_compose_cons_l_id β τβ (kswap_msubst β β1 ζ) κf2 Hidf2
+               (@notin_dom_of_keys_neq _ _ Hk2b)).
     rewrite (msubst_compose_kswap_id β β1 ζ κf1 Hidf1 Hkey1).
     rewrite (msubst_compose_kswap_id β β1 ζ κf2 Hidf2 Hkey2).
     apply a_inc_equiv_insert_flex_mid;
@@ -3082,7 +3069,7 @@ Proof.
                                    :: (κ1 ++ κ2)) γ) }}a).
   { intros γ. simpl. destruct (γ == β) as [-> | Hne];
       [ exact Heqβ'
-      | apply a_tyequiv__refl; eapply a_inc_lookup_lc; exact Hincih ]. }
+      | apply a_tyequiv__refl; eapply a_inc_msubst_lc; exact Hincih ]. }
 
   (* ---- 3. the IH's fill and ≡ᵘ slack ---- *)
   assert (HlcP0 : lc_pskl P0) by (eapply a_wf_pskl_lc; exact HwfP0).
@@ -3150,7 +3137,7 @@ Proof.
         | |- context [if ?t then _ else _] => destruct t as [_ | n0]
         end; [ exact Heqβ' | exfalso; apply n0; reflexivity ].
       - rewrite (Hlk α Hne).
-        apply a_tyequiv__refl; eapply a_inc_lookup_lc; exact Hincih. }
+        apply a_tyequiv__refl; eapply a_inc_msubst_lc; exact Hincih. }
     apply a_uskl_tyequiv__mono.
     - eapply a_inc_lookup_mono; exact Hinc.
     - eapply a_inc_lookup_mono; exact HincX.
@@ -3362,8 +3349,10 @@ Proof.
       by (intros γ hγ; exact (proj1 (Hkey1 γ hγ))).
     assert (Hk2b : forall γ, List.In γ (List.map fst κf2) -> γ <> β)
       by (intros γ hγ; exact (proj1 (Hkey2 γ hγ))).
-    rewrite (@msubst_compose_head_id β τβ (kswap_msubst β β1 ζ) κf1 Hidf1 Hk1b).
-    rewrite (@msubst_compose_head_id β τβ (kswap_msubst β β1 ζ) κf2 Hidf2 Hk2b).
+    rewrite (@msubst_compose_cons_l_id β τβ (kswap_msubst β β1 ζ) κf1 Hidf1
+               (@notin_dom_of_keys_neq _ _ Hk1b)).
+    rewrite (@msubst_compose_cons_l_id β τβ (kswap_msubst β β1 ζ) κf2 Hidf2
+               (@notin_dom_of_keys_neq _ _ Hk2b)).
     rewrite (msubst_compose_kswap_id β β1 ζ κf1 Hidf1 Hkey1).
     rewrite (msubst_compose_kswap_id β β1 ζ κf2 Hidf2 Hkey2).
     apply a_inc_equiv_insert_flex_def_mid;
@@ -3757,7 +3746,7 @@ Proof.
                                   (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
                         ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono)
                         ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
-    by (eapply a_wf_pskl_weaken_tvarish; [ exact Hmoveb | exact HwfP0 ]).
+    by (eapply a_wf_pskl_tvar_mono; [ exact HwfP0 | exact Hmoveb ]).
 
   assert (HwfSsrc : {{ (Ξ ++ (α0 ~ abind_flex_mono_def
                                  (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
@@ -5656,8 +5645,8 @@ Proof.
       [ apply a_wf_pskl_downarrow;
           [ exact HwfQ | exact Hwfth
           | intros x Hx; exfalso; clear - Hx; fsetdec ]
-      | exact HuqΘ | intros x Hx; exfalso; clear - Hx; fsetdec | exact Hsub'
-      | intros γ Hγ; right;
+      | exact HuqΘ | exact Hsub'
+      | intros γ Hγ;
         rewrite <- bskl_to_pskl_msubst_bskl in Hγ;
         rewrite ftvar_bskl_to_pskl in Hγ;
         clear - HO2 Hγ; fsetdec ]. }
@@ -6033,8 +6022,8 @@ Proof.
       [ apply a_wf_pskl_downarrow;
           [ exact HwfQ | exact Hwfth
           | intros x Hx; exfalso; clear - Hx; fsetdec ]
-      | exact HuqΘ | intros x Hx; exfalso; clear - Hx; fsetdec | exact Hsub'
-      | intros γ Hγ; right;
+      | exact HuqΘ | exact Hsub'
+      | intros γ Hγ;
         rewrite <- bskl_to_pskl_msubst_bskl in Hγ;
         rewrite ftvar_bskl_to_pskl in Hγ;
         clear - HO2 Hγ; fsetdec ]. }
@@ -6442,8 +6431,8 @@ Proof.
       [ apply a_wf_pskl_downarrow;
           [ exact HwfQ | exact Hwfth
           | intros x Hx; exfalso; clear - Hx; fsetdec ]
-      | exact HuqΘ | intros x Hx; exfalso; clear - Hx; fsetdec | exact Hsub'
-      | intros γ Hγ; right;
+      | exact HuqΘ | exact Hsub'
+      | intros γ Hγ;
         rewrite <- bskl_to_pskl_msubst_bskl in Hγ;
         rewrite ftvar_bskl_to_pskl in Hγ;
         clear - HO2 Hγ; fsetdec ]. }

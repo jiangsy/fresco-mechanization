@@ -68,13 +68,6 @@ Open Scope fresco_e_scope.
 (*  §1  Odds and ends                                                     *)
 (* ===================================================================== *)
 
-Lemma size_pskl_ptyp_to_pskl : forall A,
-  size_pskl (ptyp_to_pskl A) = size_ptyp A.
-Proof.
-  induction A; simpl; try reflexivity;
-    rewrite ?IHA1, ?IHA2, ?IHA; reflexivity.
-Qed.
-
 Definition ptyp_arrow_split (A : ptyp)
     : option (sig (fun p : ptyp * ptyp
                    => A = ptyp_arrow (fst p) (snd p))) :=

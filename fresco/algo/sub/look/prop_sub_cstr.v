@@ -2257,10 +2257,10 @@ Proof.
        { rewrite (list_app_assoc κs2 κs1 ((κc1 ++ κc2) ++ κ)).
          rewrite (list_app_assoc κc1 κc2 κ).
          apply msubst_pskl_lookup_congr. intro β0.
-         apply msubst_lookup_app_congr. intro β1.
-         rewrite (@msubst_lookup_app_swap κc2 κs1 (κc1 ++ κ) β1 Hdisj2s1).
-         apply msubst_lookup_app_congr. intro β2.
-         apply (@msubst_lookup_app_swap κc1 κc2 κ β2 Hdisj12). }
+         apply msubst_lookup_app_agree.
+         rewrite (@msubst_lookup_app_swap κc2 κs1 (κc1 ++ κ) β0 Hdisj2s1).
+         apply msubst_lookup_app_agree.
+         apply (@msubst_lookup_app_swap κc1 κc2 κ β0 Hdisj12). }
        rewrite Hperm.
        eapply ad_partial_precise_psi_cong;
          [ exact Hpre2 | clear - HΨa; fsetdec ].

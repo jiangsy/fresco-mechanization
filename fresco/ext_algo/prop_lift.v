@@ -2496,10 +2496,10 @@ Proof.
   assert (HcovΔ' : Δ1' ∪ (add α2 Δ2') [<=] add α2 S0)
     by (clear - HcovΔ; fsetdec).
   assert (Hwfp0' : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_univ_ghost P0) }}a)
-    by (eapply a_wf_pskl_weaken_tvarish;
-        [ intros γ Hγ; apply (a_binds_tvar_weaken_mid nil (α ~ abind_tvar));
-          exact Hγ
-        | exact Hwfp0 ]).
+    by (eapply a_wf_pskl_tvar_mono;
+        [ exact Hwfp0
+        | intros γ Hγ; apply (a_binds_tvar_weaken_mid nil (α ~ abind_tvar));
+          exact Hγ ]).
   assert (Hwfp' : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (open_pskl_wrt_pskl P (pskl_var_f α)) }}a)
     by (apply a_wf_pskl_all_syn_open_tvar;
         [ exact Hwfp | clear - Hαd HfrP; fsetdec ]).
@@ -2703,10 +2703,10 @@ Proof.
     by (apply a_wf_pskl_all_syn_open_tvar;
         [ exact Hwfp0 | clear - Hαd HfrP0; fsetdec ]).
   assert (Hwfp' : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_univ_ghost P) }}a)
-    by (eapply a_wf_pskl_weaken_tvarish;
-        [ intros γ Hγ; apply (a_binds_tvar_weaken_mid nil (α ~ abind_tvar));
-          exact Hγ
-        | exact Hwfp ]).
+    by (eapply a_wf_pskl_tvar_mono;
+        [ exact Hwfp
+        | intros γ Hγ; apply (a_binds_tvar_weaken_mid nil (α ~ abind_tvar));
+          exact Hγ ]).
   assert (HΔtv' : forall γ, γ `in` ((add α Δ1) ∪ Δ2) ->
             binds γ abind_tvar ((α ~ abind_tvar) ++ Θ0)).
   { intros γ Hγ. destruct (γ == α) as [-> | Hne].
@@ -5270,10 +5270,10 @@ Proof.
       by (apply a_wf_pskl_all_syn_open_tvar;
           [ exact Hwfp0 | clear - Hαd HfrB; fsetdec ]).
     assert (Hwfp' : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ A }}a)
-      by (eapply a_wf_pskl_weaken_tvarish;
-          [ intros γ Hγ; apply (a_binds_tvar_weaken_mid nil (α ~ abind_tvar));
-            exact Hγ
-          | exact Hwfp ]).
+      by (eapply a_wf_pskl_tvar_mono;
+          [ exact Hwfp
+          | intros γ Hγ; apply (a_binds_tvar_weaken_mid nil (α ~ abind_tvar));
+            exact Hγ ]).
     assert (Hblk' : forall a, a `in` dom (Ξ ++ (α ~ abind_tvar) ++ Θ1) ->
               a `notin` dom ((α ~ abind_tvar) ++ Θ0) ->
               a `notin` cols_l ((α, α2) :: restrict_pairs α α2 ρ0)).
@@ -6231,7 +6231,7 @@ Proof.
     assert (Hwfp01 : {{ (Ξ ++ (α0 ~ abind_flex_mono_def
                 (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
            ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
-      by (eapply a_wf_pskl_weaken_tvarish; [ exact Hbigmon | exact Hwfp0 ]).
+      by (eapply a_wf_pskl_tvar_mono; [ exact Hwfp0 | exact Hbigmon ]).
     assert (Hwfp11 : {{ (Ξ ++ (α0 ~ abind_flex_mono_def
                 (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
            ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0) ⨟ empty ⊢ₚₛ
@@ -7465,7 +7465,7 @@ Proof.
         clear - Hc Hcov. fsetdec. }
       assert (Hbne : b0 <> x2) by (intros ->; clear - Hx2 HbS0; fsetdec).
       assert (Hf1 : a_flex_tvar (Ξ2 ++ (x2 ~ bd') ++ Θc2') b0)
-        by (rewrite a_flex_tvar_insert_mid by exact Hbne; exact Hf).
+        by (rewrite a_flex_tvar_mid_other by exact Hbne; exact Hf).
       assert (Hbd1 : b0 `in` dom (Ξ2 ++ (x2 ~ bd') ++ Θc2'))
         by (apply a_flex_tvar_in_dom; exact Hf1).
       assert (Hb0in : b0 `in` dom Θb').

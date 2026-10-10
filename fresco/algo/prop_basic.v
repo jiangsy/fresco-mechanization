@@ -862,17 +862,8 @@ Proof.
     eauto using binds_strip_mid.
 Qed.
 
-(** Free variables of a well-formed type are tvar-ish in the context.
-    Same fact as [a_wf_ptyp_ftv_binds] (prop_swap.v); both names have
-    consumers outside this layer. *)
-Lemma a_wf_ptyp_ftv_tvarish : forall Θ A α,
-  a_wf_ptyp Θ A ->
-  α `in` ftvar_in_ptyp A ->
-  a_binds_tvar α Θ.
-Proof. intros; eapply a_wf_ptyp_ftv_binds; eauto. Qed.
-
 (** ** [wf] / [scope] bound the free variables by the domain.  ⚠️ These four
-    and [a_wf_ptyp_ftv_tvarish] just above are ONE family and this is their
+    and [a_wf_ptyp_ftv_tvarish] (prop_swap.v) are ONE family and this is their
     only home — do not re-prove an instance in a downstream file. *)
 
 Lemma a_wf_ptyp_ftv_dom : forall Θ A,
@@ -1511,16 +1502,11 @@ Proof.
           | right; exists τ; exact Hin ].
 Qed.
 
-(** Metalib's [binds_weaken] at [aenv]; the name sub/look consumes. *)
-Lemma binds_weaken_inner : forall (x : atom) (b : abind) Ξl Ξm Θ0,
-  binds x b (Ξl ++ Θ0) -> binds x b (Ξl ++ Ξm ++ Θ0).
-Proof. intros; apply binds_weaken; assumption. Qed.
-
 Lemma a_flex_tvar_weaken_mid : forall Ξl Ξm Θ0 α,
   a_flex_tvar (Ξl ++ Θ0) α -> a_flex_tvar (Ξl ++ Ξm ++ Θ0) α.
 Proof.
   intros Ξl Ξm Θ0 α [Hb | [τ Hb]];
-    [ left | right; exists τ ]; apply binds_weaken_inner; exact Hb.
+    [ left | right; exists τ ]; apply binds_weaken; exact Hb.
 Qed.
 
 (** …and hence PEELING one head entry the atom is not the subject of.
@@ -1766,14 +1752,9 @@ Proof.
 Qed.
 
 
-(** ⚙ The two term-entry moves the abs rows make on the flexibility
-    picture: a term entry never carries a flex binding, so INSERTING or
-    STRIPPING one changes nothing (with the atom apart).  The first is
-    [a_flex_tvar_mid_other] with its arguments reordered. *)
-Lemma a_flex_tvar_insert_mid : forall (Ξ Θ : aenv) x (bd : abind) a,
-  a <> x ->
-  (a_flex_tvar (Ξ ++ (x ~ bd) ++ Θ) a <-> a_flex_tvar (Ξ ++ Θ) a).
-Proof. intros; apply a_flex_tvar_mid_other; auto. Qed.
+(** ⚙ The term-entry moves the abs rows make on the flexibility picture:
+    INSERTING an entry is [a_flex_tvar_mid_other] above (the former
+    [a_flex_tvar_insert_mid] was that lemma with its arguments reordered). *)
 
 Definition abind_nonflex (bd : abind) : Prop :=
   bd <> abind_flex_mono /\ forall τ, bd <> abind_flex_mono_def τ.
@@ -1806,18 +1787,6 @@ Proof.
   intros b Θ α [Hb | [τ Hb]];
     destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heq Habs] | Hb'];
     solve [ discriminate Habs | left; exact Hb' | right; exists τ; exact Hb' ].
-Qed.
-
-(** [a_wf_pskl] reads Θ ONLY through [a_binds_tvar], so it weakens along any
-    TVAR-ISH monotone map (an alias of [a_wf_pskl_tvar_mono]).
-    [a_wf_pskl_weaken]'s [binds]-monotone form is too strong here: Flex-Solve
-    turns [α̂0]'s DECLARATION into a DEFINITION. *)
-Lemma a_wf_pskl_weaken_tvarish : forall Θ Θ' Δ P,
-  (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
-  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
-Proof.
-  intros Θ Θ' Δ P Hmon Hwf. eapply a_wf_pskl_tvar_mono; eassumption.
 Qed.
 
 (** Variable renaming is the variable instance of monotype substitution. *)

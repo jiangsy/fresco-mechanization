@@ -1251,3 +1251,10 @@ Proof.
   induction A; destruct B; simpl; intros Heq; try discriminate;
     try reflexivity; injection Heq; intros; f_equal; auto.
 Qed.
+
+(** [ptyp_to_pskl] preserves size (it never adds a node).  ⚙ The ONE copy:
+    it was proved twice, in consis/prop_completeness_consis.v and in
+    ext_algo/def_typing_impl.v, until 2026-10-10. *)
+Lemma size_pskl_ptyp_to_pskl : forall A,
+  size_pskl (ptyp_to_pskl A) = size_ptyp A.
+Proof. induction A; simpl; auto. Qed.

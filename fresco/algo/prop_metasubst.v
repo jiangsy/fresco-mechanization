@@ -55,8 +55,20 @@ Proof.
   destruct (a_inc_dom_flex H Hα) as [Hb | [τ Hb]]; apply binds_In in Hb; exact Hb.
 Qed.
 
+(** The KEY-LIST form of [∉ dom]: what the P7a Flex rows have in hand. *)
+Lemma notin_dom_of_keys_neq : forall (κ : metasubst) β,
+  (forall γ, List.In γ (List.map fst κ) -> γ <> β) -> β `notin` dom κ.
+Proof.
+  induction κ as [ | [γ t] κ' IH ]; intros β Hk; simpl; [ fsetdec | ].
+  assert (γ <> β) by (apply Hk; left; reflexivity).
+  assert (β `notin` dom κ') by (apply IH; intros γ0 h; apply Hk; right; exact h).
+  fsetdec.
+Qed.
+
 (** Prepending an entry outside the RIGHT (identity) multiplicand's domain
-    does not change the composition. *)
+    does not change the composition.  ⚙ With [notin_dom_of_keys_neq] this
+    also serves sub_gen's Flex rows, which had their own key-list copy
+    ([msubst_compose_head_id]) until 2026-10-10. *)
 Lemma msubst_compose_cons_l_id : forall α τ ζ κ1,
   is_id_msubst κ1 ->
   α `notin` dom κ1 ->
@@ -210,12 +222,6 @@ Proof.
   - apply a_pskl_tyequiv__all with (L := L); intros α Hα; eauto.
   - apply a_pskl_tyequiv__univ_ghost; eauto.
 Qed.
-
-(** An [a_inc]'s images are locally closed: [a_inc_lookup_lc] in the
-    [msubst_lc] form. *)
-Lemma a_inc_msubst_lc : forall Θ0 κ Θ,
-  κ ∷ Θ0 ⊑ Θ -> msubst_lc κ.
-Proof. intros * Hinc α; exact (a_inc_lookup_lc α Hinc). Qed.
 
 (** Identity metasubstitutions have locally-closed (variable) images. *)
 Lemma is_id_msubst_values_lc : forall κ,
@@ -1595,6 +1601,18 @@ Proof.
   - clear - Hα; fsetdec.
   - destruct (α == a) as [-> | Hne];
       [ reflexivity | apply IH; clear - Hα Hne; fsetdec ].
+Qed.
+
+(** Peel a COMMON PREFIX off both sides of a lookup equation: the prefix
+    either answers the lookup on both sides or is transparent on both, so
+    agreement of the tails AT THE ONE ATOM suffices. *)
+Lemma msubst_lookup_app_agree : forall (ζ X Y : metasubst) α,
+  msubst_lookup X α = msubst_lookup Y α ->
+  msubst_lookup (ζ ++ X) α = msubst_lookup (ζ ++ Y) α.
+Proof.
+  intros ζ; induction ζ as [ | [β τ] ζ' IH ]; intros X Y α Hxy;
+    [ exact Hxy | ].
+  simpl. destruct (α == β); [ reflexivity | apply IH; exact Hxy ].
 Qed.
 
 (** THE ≡ᵗ STRENGTHENING.  Strip a middle binding [c~b] and an [a_decls]-free

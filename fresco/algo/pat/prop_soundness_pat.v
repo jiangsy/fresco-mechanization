@@ -2319,7 +2319,7 @@ Proof.
     simpl_env in Hxf.
     assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
     assert (Hf1 : a_flex_tvar (Ξ ++ (x ~ abind_var_skl Pa) ++ Θc) a)
-      by (rewrite a_flex_tvar_insert_mid by exact Hax; exact Hf).
+      by (rewrite a_flex_tvar_mid_other by exact Hax; exact Hf).
     assert (Ha2 : a `in` dom ((x ~ abind_var_skl Pa) ++ Θb))
       by (simpl_env; clear - Ha1; fsetdec).
     pose proof (IHp a Ha2 Hf1) as Hf2.
@@ -2332,7 +2332,7 @@ Proof.
     simpl_env in Hxf.
     assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
     assert (Hf1 : a_flex_tvar (Ξ ++ (x ~ abind_var_typ A) ++ Θd) a)
-      by (rewrite a_flex_tvar_insert_mid by exact Hax; exact Hf).
+      by (rewrite a_flex_tvar_mid_other by exact Hax; exact Hf).
     assert (Ha2 : a `in` dom ((x ~ abind_var_typ A) ++ Θc))
       by (simpl_env; clear - Ha1; fsetdec).
     pose proof (IHp a Ha2 Hf1) as Hf2.
@@ -2343,7 +2343,7 @@ Proof.
     simpl_env in Hxf.
     assert (Hax : a <> x) by (intros ->; clear - Ha Hxf; fsetdec).
     assert (Hf1 : a_flex_tvar (Ξ ++ (x ~ abind_var_skl pskl_ghost) ++ Θb) a)
-      by (rewrite a_flex_tvar_insert_mid by exact Hax; exact Hf).
+      by (rewrite a_flex_tvar_mid_other by exact Hax; exact Hf).
     assert (Ha2 : a `in` dom ((x ~ abind_var_skl pskl_ghost) ++ Θa))
       by (simpl_env; clear - Ha; fsetdec).
     pose proof (IHp a Ha2 Hf1) as Hf2.
@@ -2353,7 +2353,7 @@ Proof.
     simpl_env in Hxf.
     assert (Hax : a <> x) by (intros ->; clear - Ha Hxf; fsetdec).
     assert (Hf1 : a_flex_tvar (Ξ ++ (x ~ abind_var_typ A) ++ Θb) a)
-      by (rewrite a_flex_tvar_insert_mid by exact Hax; exact Hf).
+      by (rewrite a_flex_tvar_mid_other by exact Hax; exact Hf).
     assert (Ha2 : a `in` dom ((x ~ abind_var_typ A) ++ Θa))
       by (simpl_env; clear - Ha; fsetdec).
     pose proof (IHp a Ha2 Hf1) as Hf2.
