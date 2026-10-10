@@ -1,6 +1,6 @@
-(** Completeness of the extraction runner.  Collection determinism moves
-    the given fold onto the runner's collection.  Solver completeness then
-    supplies the second stage; guessing is total. *)
+(** Completeness of the extraction pipeline.  The constraint fold uses
+    threaded solver determinism and list induction; collection determinism
+    then moves the extraction derivation onto the runner's collection. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -84,6 +84,107 @@ Proof.
   exact (rigids_dom S).
 Qed.
 
+(* Expose supply atoms as rigid bindings when invoking the existing
+   solver completeness lemmas.  This preserves all flexibility tests. *)
+Lemma e_solve_eq_impl_complete_threaded : forall S0 Θ P Q HP HQ H S1 Ξ Y,
+  e_solve_eq S0 Θ P Q S1 Ξ Y ->
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
+  e_solve_eq_impl S0 Θ P Q HP HQ H <> None.
+Proof.
+  intros * Hd Hcov.
+  assert (Hrig : forall x bd, binds x bd (rigids S0) -> bd = abind_tvar)
+    by (intros; eapply rigids_binds_tvar; eassumption).
+  assert (Hflex : forall x, a_flex_tvar (rigids S0 ++ Θ) x <-> a_flex_tvar Θ x)
+    by (intros; apply a_flex_tvar_rigid_prefix_iff; exact Hrig).
+  assert (Hcovr : ftvar_in_aenv (rigids S0 ++ Θ)
+      ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0)
+    by (rewrite ftvar_in_aenv_app, rigids_ftvar; clear - Hcov; fsetdec).
+  pose proof ((proj2 e_solve_sub_eq_ctx_equiv) _ _ _ _ _ _ _ Hd
+      (rigids S0 ++ Θ) ltac:(intros x; symmetry; apply Hflex)) as Hr.
+  eapply e_solve_eq_impl_complete; [ exact (e_solve_eq_sound Hr Hcovr)
+    | intros x _; apply Hflex
+    | rewrite ftvar_in_aenv_app, rigids_ftvar; clear - Hcov; fsetdec
+    | exact Hcov ].
+Qed.
+
+Lemma e_solve_sub_impl_complete_threaded : forall S0 Θ m P Q HP HQ H S1 Ξ Y,
+  e_solve_sub S0 Θ m P Q S1 Ξ Y ->
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
+  e_solve_sub_impl S0 Θ m P Q HP HQ H <> None.
+Proof.
+  intros * Hd Hcov.
+  assert (Hrig : forall x bd, binds x bd (rigids S0) -> bd = abind_tvar)
+    by (intros; eapply rigids_binds_tvar; eassumption).
+  assert (Hflex : forall x, a_flex_tvar (rigids S0 ++ Θ) x <-> a_flex_tvar Θ x)
+    by (intros; apply a_flex_tvar_rigid_prefix_iff; exact Hrig).
+  assert (Hcovr : ftvar_in_aenv (rigids S0 ++ Θ)
+      ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0)
+    by (rewrite ftvar_in_aenv_app, rigids_ftvar; clear - Hcov; fsetdec).
+  pose proof ((proj1 e_solve_sub_eq_ctx_equiv) _ _ _ _ _ _ _ _ Hd
+      (rigids S0 ++ Θ) ltac:(intros x; symmetry; apply Hflex)) as Hr.
+  eapply e_solve_sub_impl_complete; [ exact (e_solve_sub_sound Hr Hcovr)
+    | intros x _; apply Hflex
+    | rewrite ftvar_in_aenv_app, rigids_ftvar; clear - Hcov; fsetdec
+    | exact Hcov ].
+Qed.
+
+(* Align the given tail with the runner by the head solver's swaps. *)
+Lemma e_solve_cstr_impl_complete : forall S0 Θ C P HP HC H S1 Ξ Y,
+  e_solve_cstr S0 Θ C P S1 Ξ Y ->
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_a_cstrs C [<=] S0 ->
+  e_solve_cstr_impl S0 Θ C P HP HC H <> None.
+Proof.
+  intros S0 Θ C. revert S0 Θ.
+  induction C as [|c C IH]; intros S0 Θ P HP HC H S1 Ξ Y Hd Hcov.
+  - simp e_solve_cstr_impl. discriminate.
+  - destruct c as [m Q | Q].
+    + destruct (e_solve_cstr_inv_sub Hd) as [-> Hsub].
+      simp e_solve_cstr_impl.
+      match goal with
+      | |- context [e_solve_sub_impl ?S ?T ?M ?p ?q ?hp ?hq ?h] =>
+          pose proof (e_solve_sub_impl_complete_threaded hp hq h Hsub
+            ltac:(clear - Hcov; simpl in *; fsetdec)) as Hne;
+          destruct (e_solve_sub_impl S T M p q hp hq h) as [[r Hr]|];
+          [cbv beta iota; discriminate | exact (False_ind _ (Hne eq_refl))]
+      end.
+    + destruct (e_solve_cstr_inv_eq Hd) as (Sm & Ξ1 & Ξ2 & Y0 & _ & Heq & Htail).
+      assert (Hcov1 : ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0)
+        by (clear - Hcov; simpl in *; fsetdec).
+      simp e_solve_cstr_impl.
+      match goal with
+      | |- context [e_solve_eq_impl ?S ?T ?p ?q ?hp ?hq ?h] =>
+          pose proof (e_solve_eq_impl_complete_threaded hp hq h Heq Hcov1) as Hne;
+          destruct (e_solve_eq_impl S T p q hp hq h) as [[r Hr]|];
+          [cbv beta iota; clear Hne | exact (False_ind _ (Hne eq_refl))]
+      end.
+      unfold solve_eq_spec in Hr.
+      destruct (e_solve_eq_rel Heq Hr Hcov1) as (ps & Hav & HS & HX & HY).
+      assert (HΘ : swaps_aenv ps Θ = Θ).
+      { apply swaps_aenv_fresh_id. intros a b Hin.
+        destruct (Hav a b Hin) as [Ha Hb]. split; clear - Ha Hb Hcov; fsetdec. }
+      assert (HCfix : swaps_cstrs ps C = C).
+      { apply swaps_cstrs_fresh_id. intros a b Hin.
+        destruct (Hav a b Hin) as [Ha Hb]. split; clear - Ha Hb Hcov;
+          simpl in *; fsetdec. }
+      destruct (e_solve_cstr_swaps ps Htail
+        (S0' := sv_supply r) ltac:(symmetry; exact HS)) as (Sf & _ & Htail').
+      rewrite swaps_aenv_app_dist, HX, HΘ, HCfix, HY in Htail'.
+      pose proof (e_solve_eq_supply_grows Hr) as Hgr.
+      pose proof (e_solve_eq_block_in_supply Hr) as Hdom.
+      pose proof (e_solve_eq_block_ftvar Hr) as Hft.
+      pose proof (e_solve_eq_out_ftvar Hr ltac:(clear - Hcov1; fsetdec)) as Hout.
+      assert (Hcov2 : ftvar_in_aenv (sv_block r ++ Θ)
+          ∪ ftvar_in_pskl (sv_out r) ∪ ftvar_in_a_cstrs C [<=] sv_supply r).
+      { rewrite ftvar_in_aenv_app. clear - Hgr Hdom Hft Hout Hcov.
+        simpl in *; fsetdec. }
+      match goal with
+      | |- context [e_solve_cstr_impl ?S ?T ?c ?p ?hp ?hc ?h] =>
+          pose proof (IH S T p hp hc h _ _ _ Htail' Hcov2) as Hne;
+          destruct (e_solve_cstr_impl S T c p hp hc h) as [[r2 Hr2]|];
+          [cbv beta iota; discriminate | exact (False_ind _ (Hne eq_refl))]
+      end.
+Qed.
+
 Lemma e_extract_impl_complete : forall S0 Θ0 NM α m P P'
     (HP : lc_pskl P) (HP' : lc_pskl P')
     (H : e_extract_order S0 Θ0 NM α m P P') S1 Ξ Q,
@@ -122,33 +223,11 @@ Proof.
             ∪ ftvar_in_pskl pskl_ghost ∪ ftvar_in_a_cstrs (lk_cstrs r)
             [<=] lk_supply r).
   { rewrite ftvar_in_aenv_app. simpl. clear - Hgr Hdom Hft Hcs Hcov. fsetdec. }
-  (* Leaked collection openers belong to the supply, so make them visible
-     to the solver transport without changing any flexibility tests. *)
-  set (Θf := rigids (lk_supply r) ++ lk_block r ++ Θ0).
-  assert (Hrig : forall x bd, binds x bd (rigids (lk_supply r)) -> bd = abind_tvar)
-    by (intros; eapply rigids_binds_tvar; eassumption).
-  assert (Hcovr : ftvar_in_aenv Θf ∪ ftvar_in_a_cstrs (lk_cstrs r)
-            ∪ ftvar_in_pskl pskl_ghost [<=] lk_supply r).
-  { unfold Θf. rewrite ftvar_in_aenv_app, rigids_ftvar.
-    clear - Hcovf. fsetdec. }
-  assert (Hfolda : {{ Θf ⊩ (lk_cstrs r) ⨾ pskl_ghost
-                     ⤳ (swaps_aenv ps Ξs) ⨾ (swaps_pskl ps Qs) }}a).
-  { eapply e_solve_cstr_sound; [ | exact Hcovr ].
-    apply e_solve_cstr_weaken_rigid; [ exact Hfold' | exact Hrig ]. }
-  pose proof (e_solve_cstr_block Hfold') as (_ & _ & Hu & _).
-  assert (Hagr : flex_agree
-      (ftvar_in_pskl pskl_ghost ∪ ftvar_in_a_cstrs (lk_cstrs r))
-      Θf (lk_block r ++ Θ0)).
-  { intros x _. unfold Θf. apply a_flex_tvar_rigid_prefix_iff. exact Hrig. }
-  assert (Hscp : ftvar_in_pskl pskl_ghost ∪ ftvar_in_a_cstrs (lk_cstrs r)
-            [<=] ftvar_in_aenv Θf).
-  { unfold Θf. rewrite ftvar_in_aenv_app, rigids_ftvar.
-    clear - Hcovf. fsetdec. }
   match goal with
   | |- context [ e_solve_cstr_impl ?S ?T ?c ?p ?hp ?hc ?h ] =>
       let Hne := fresh "Hne" in
       assert (Hne : e_solve_cstr_impl S T c p hp hc h <> None)
-        by (exact (e_solve_cstr_impl_complete hp hc h Hfolda Hu Hagr Hscp Hcovf));
+        by (exact (e_solve_cstr_impl_complete hp hc h Hfold' Hcovf));
       destruct (e_solve_cstr_impl S T c p hp hc h) as [[r2 Hr2] | ];
       [ cbv beta iota | exact (False_ind _ (Hne eq_refl)) ]
   end.

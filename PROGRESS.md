@@ -181,6 +181,36 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Direct threaded constraint-fold completeness
+
+Replaced the fold's `a_*` determinism route with ordinary induction on
+its constraint list and the existing `e_solve_eq_rel`.  The head solver's
+swaps align the given tail with the runner's supply, context, and yield
+in one step.  Primitive solver completeness is reused through two
+threaded wrappers; rigid supply enrichment is confined to those wrappers.
+The extraction caller now passes its threaded fold directly.
+
+- Removed the custom fold-order induction, its three transport helpers,
+  and its two call tactics from `prop_run_complete.v`.
+- Removed the obsolete `a_guess_mono_det` / `a_solve_eq_det` proof family
+  and its otherwise unused palindromic-chain machinery from
+  `prop_solve_det.v`.
+- Removed the globally unused `a_guess_mono_rel` / `a_solve_eq_rel` /
+  `a_solve_sub_rel` transport family, four exclusive context helpers,
+  and one exclusive local tactic from `prop_solve_rel.v`.
+- The internal `e_solve_cstr_impl_complete` now takes an `e_solve_cstr`
+  derivation at the runner's input supply and context, instead of an
+  `a_solve_cstr` derivation at a separate context plus agreement,
+  uniqueness, and context-scoping premises.  Its sole caller already has
+  this threaded derivation.  The unused old `a_*` run wrapper is removed.
+  Paper-facing statements and algorithm definitions are unchanged.
+
+Net reductions in nonblank, noncomment Coq lines, counting replacements:
+**864** from the unused transport layer and **905** from the direct fold
+route and its obsolete support, **1,769 total**.
+Validation: full `make coq`; all 34 headline assumption reports remain
+`Closed under the global context`.
+
 ## 2026-10-11 — Replace paired look/fold induction with collection determinism
 
 - The existing `e_looksub_rel` already relates two collections at the same

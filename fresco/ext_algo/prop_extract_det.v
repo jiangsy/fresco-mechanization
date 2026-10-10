@@ -1167,14 +1167,9 @@ Qed.
 (* ===================================================================== *)
 (*  §5  ROOT INVERSIONS AND DETERMINISM FOR THE SOLVE LAYER, eq half      *)
 (*                                                                        *)
-(*  ⚙ The [a_]-level twin (prop_solve_det.v §4, [a_solve_eq_det]) is Qed   *)
-(*  and HYPOTHESIS-FREE, and its case skeleton transfers row for row.     *)
-(*  Two differences, both simplifications: the binder rows pair the two    *)
-(*  openers with ONE transposition instead of rebinding both to a         *)
-(*  globally fresh third atom (the supply already says each opener is     *)
-(*  fresh for [S0]); and the overlap crosses that the [a_] version closes  *)
-(*  with [det_nil_refl] close with the EMPTY CHAIN here, which is         *)
-(*  strictly more informative — it pins the supply too.                   *)
+(*  Binder rows align their two fresh openers with one transposition.    *)
+(*  Overlapping rules with identical outputs use the empty swap list,    *)
+(*  which also records that their final supplies agree.                   *)
 (* ===================================================================== *)
 
 (** ⭐ A VARIABLE SUBJECT ANSWERS ITSELF, spends nothing and generates
