@@ -506,10 +506,11 @@ Other UNCERTAIN items: G-50 and G-51 (implementation) and G-54 (SolS-ForallR sor
 - **Kind**: Mechanization to-do · **Status**: DONE (2026-10-10 rule pass, `c76b344`)
 - **What**: `a_consistag__flex_l/_r` (fresco/deco_algo/def_decorated.v) gained `P0 <> pskl_ghost` / `P <> pskl_ghost`, as the plain rules have (G-24). Decoration gets it from the plain rule; decorated soundness lost its ◇ cases.
 
-### G-56 Rule-faithfulness pass (2026-10-10): what changed, what remains
-- **Kind**: Mechanization to-do · **Status**: PARTLY DONE
-- **Done** (merged `70e02a0`, full build green): `d_sub__arg` / `d_pat_sub__arg` / `d_sub_tagsin__arg` → `__arrow`; the redundant `is_ityp` premise dropped from `d_sub__forall_r` and the `d_sd_typing` / `ad_sd_typing` ∀-step rows (now lemmas `d_sub_tc_is_ityp`, `d_sd_typing_tc_abs{,_anno}_is_ityp`); P-Anno's annotation wf dropped from `d_pat__anno` and `ad_pat__anno` (the sd-Anno prose completion stays on `ad_sd_typing__anno` only, PG:923); the Ghost fill-wf premise dropped from `d_pat_consis__ghost` and `d_pat_sub__ghost` (the `d → ad` bridges take the counterpart's wf instead).
-- **Remaining**: the `ad` Ghost rows (`ad_pat_consis__ghost`, `ad_pat_sub__ghost`, `ad_pat_sub_fuel__ghost`) still carry the fill-wf premise, because dropping it needs `a_consis_complete` (README) to take the counterpart `Qb`'s wf as a hypothesis (the paper's presupposition). Being done together with step 3 (retiring `a_scope_pskl`), so that `d` and `ad` agree.
+### G-56 Rule-faithfulness pass (2026-10-10)
+- **Kind**: Mechanization to-do · **Status**: DONE
+- **Done** (merged, full build green): `d_sub__arg` / `d_pat_sub__arg` / `d_sub_tagsin__arg` → `__arrow`; the redundant `is_ityp` premise dropped from `d_sub__forall_r` and the `d_sd_typing` / `ad_sd_typing` ∀-step rows (now lemmas `d_sub_tc_is_ityp`, `d_sd_typing_tc_abs{,_anno}_is_ityp`); P-Anno's annotation wf dropped from `d_pat__anno` and `ad_pat__anno` (the sd-Anno prose completion stays on `ad_sd_typing__anno` only, PG:923); the Ghost fill-wf premise dropped from ALL five Ghost rows (decl and `ad`).
+- **Consequence for statements**: `a_consis_complete` and P6-Cs / P6-Ss / P6-L now take the counterpart's wf `{{ Θ ⨟ empty ⊢ₚₛ ⌊Q⌋ }}a` — the paper's presupposition (WF-SIDE-CONDITIONS §2a). `a_sub_complete`, `a_pat_complete`, `a_typing_complete` and the closed corollaries are unchanged.
+- **Also**: `a_scope_pskl` is no longer an inductive judgement; it is the Definition `lc_pskl P /\ (forall α, α ∈ ftv P -> a_binds_tvar α Θ)` (proved equivalent first), kept only where a proof genuinely has scoping and not the disciplined `a_wf_pskl` (the C-Arrow output inside consistency completeness).
 
 ### G-57 Register the P6-Cs subject-wf refutation in PAPER-GAPS.md
 - **Kind**: Mechanization to-do · **Status**: LIVE

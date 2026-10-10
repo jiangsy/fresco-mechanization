@@ -181,6 +181,31 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-10 — Ghost rows faithful everywhere; `a_scope_pskl` a Definition; near-twin rows factored
+
+Branches `scope-pass` and `twins-pass` (merged).  Full build green, 34/34 closed.
+
+- **Ghost rows**: the `ad` Ghost rows (`ad_pat_consis__ghost`, `ad_pat_sub__ghost`,
+  `ad_pat_sub_fuel__ghost`) lose the fill-wf premise too, so all five Ghost rows are the
+  paper's.  The paper's presupposition "wf of the counterpart" is a hypothesis instead, on
+  `a_consis_complete` and P6-Cs / P6-Ss / P6-L (`{{ Θ ⨟ empty ⊢ₚₛ ⌊Q⌋ }}a`); the other
+  headline completeness theorems are unchanged.  New: `uskl_no_ghost` (def_shapes.v) and
+  `ad_pat_consis_target_scope` / `ad_pat_consis_target_wf_ghost_free` /
+  `ad_pat_sub_target_scope_ty`; soundness reads scope off the runs (`a_sub_flex_output_wf`,
+  `a_consis_output_wf_nil`).  Deleted: `ad_pat_consis_target_wf`, `ad_pat_sub_target_wf`.
+- **`a_scope_pskl`** is the Definition `lc_pskl P /\ (forall α, α ∈ ftv P -> a_binds_tvar α Θ)`
+  (proved equivalent to the old inductive before switching); its kit is in prop_swap.v §0.
+  Renamed `a_scope_pskl_of_ptyp_vis` → `a_wf_pskl_of_ptyp_vis`.  Mentions 181 → 104.
+- **Near-twin rows** (−1460 lines): one generic lemma each for AT-AbsCheck/AbsAnnoCheck in
+  soundness (`a_typing_sound_check_step_of_rule`), completeness
+  (`a_typing_complete_check_step_of_rule`, plus `ad_refine_msubst_compose_id`,
+  `a_typing_complete_strip_tm_suffix`, `a_split_identity_of_refine_arrow`) and the lift
+  (`lift_typing_check_step_of_rule`); decorated ForallL tagged/untagged
+  (`a_subtag_decoration_forall_l_hd`, `uskl_all_hd` moved here) and the four "R0 = var"
+  cases (`a_subtag_decoration_strip_var`); three consistency-rung lift pairs
+  (`lift_assign_skip_tm_of_rule`, `lift_assign_skip_head_of_rule`,
+  `lift_unify_skip_head_of_rule`; prop_lift.v 47.7 s → 33.8 s).
+
 ## 2026-10-10 — Rule-faithfulness pass
 
 Branch `rules-pass` (merged `70e02a0`).  `README.v` unchanged; full build green, 34/34 closed.

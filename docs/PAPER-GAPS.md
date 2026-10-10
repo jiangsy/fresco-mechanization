@@ -927,23 +927,25 @@ flexibles and must be closed off by a metasubstitution `ζ ∷ Θ₁ ⊑ ·` bef
 the answer is a declarative type at all.  `thm:complete-type-inference`
 cannot, for (A).
 
-## RULE FAITHFULNESS (2026-10-10) — the skeleton Ghost rows: the declarative ones now match the paper; the decl-in-algo ones keep a fill-wf premise the paper does not state
+## RULE FAITHFULNESS (2026-10-10) — the skeleton Ghost rows now match the paper; completeness of consistency is stated under the counterpart's wf
 
 The paper's skeleton-consistency `Ghost` (declarative.tex:2002) and
 skeleton-subtyping `Ghost` (:1912) have no premise.  The mech's had
-`Γ ⨟ ∅ ⊢ₚₛ P` on the fill.  `d_pat_consis__ghost` / `d_pat_sub__ghost` have
-now lost it (the paper's rules verbatim); the fill's wf is part of the
-presupposition "wf of the counterpart" (declarative.tex:2074), and the `d → ad`
-bridge carries it as a hypothesis.
+`⊢ₚₛ P` on the fill.  All five rows have now lost it — `d_pat_consis__ghost`,
+`d_pat_sub__ghost`, `ad_pat_consis__ghost`, `ad_pat_sub__ghost`,
+`ad_pat_sub_fuel__ghost` — so the rules are the paper's verbatim.
 
-`ad_pat_consis__ghost` / `ad_pat_sub__ghost` / `ad_pat_sub_fuel__ghost` KEEP
-it.  Not for convenience: `thm:complete-consistency` as mechanized
-(`a_consis_complete`, `README.v`) takes no wf hypothesis on its declarative
-counterpart `Qb`, and its proof reads `Qb`'s scope off the derivation.  At a
-position where subject and input are both ghosts, nothing in the theorem's
-hypotheses constrains the fill — so moving the premise to the statements
-means adding the paper's own presupposition to the theorem.  For the
-authors this is only the observation that the completeness theorem, too,
+The fill's wf is part of the paper's presupposition "wf of the counterpart"
+(declarative.tex:1593-1596 / :2074), and it is now a statement hypothesis
+instead: `a_consis_complete` (thm:complete-consistency, `README.v`) and the
+look-layer lemmas P6-Cs / P6-Ss / P6-L (`a_lookeq_solve_complete`,
+`a_looksub_solve_complete`, `a_extract_complete`) take
+`{{ Θ ⨟ empty ⊢ₚₛ ⌊Q⌋ }}a`.  It is needed exactly where a proof reads a
+join target whose subject can contain a plain `◇`: the Ghost rule fills a
+ghost with an ARBITRARY counterpart, so nothing else constrains it.  The
+subtyping, skeleton- and type-inference completeness theorems are unchanged
+(subtyping already carried counterpart wf; the inference call sites join a
+type painting, which has no plain `◇`).  For the authors: thm:complete-consistency
 should be read under the presupposition on its declarative counterpart.
 Details: docs/WF-SIDE-CONDITIONS.md §2a.
 
