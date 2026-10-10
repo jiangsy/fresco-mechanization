@@ -1,31 +1,28 @@
-(** P7 — COMPLETENESS OF SUBTYPING.  THE MOTIVE, LOCKED.
+(** P7 — COMPLETENESS OF SUBTYPING: the two motives of the P7 bundle and
+    their row lemmas (P7a's walk rows, P7b's join rows).  The assembly is
+    prop_completeness_sub.v.
 
-    This file carries the two motives of the P7 bundle and nothing else yet.
-    DESIGN-completeness-subtyping.md §1 says to LOCK the motive before writing
-    the induction (it is the μ-bundle lesson), and §9 fixes the shape:
-
-    | | mech name | paper | measure |
+    | | motive | paper | measure |
     |---|---|---|---|
-    | P7a | [a_sub_flex_complete] | lemma:complete-flex-subtyping (:2836) | the contexts [Θ0 ∣ Ξ] |
-    | P7b | [a_sub_complete_gen]  | generalised thm:complete-subtyping (:3050) | lex(fuel, ∣Ψ∣) |
-    | P7c | [a_sub_complete]  | thm (algorithmic.tex:1446) | instantiate R := P, Ψ := ∅ |
+    | P7a | [sub_flex_complete_concl] | lemma:complete-flex-subtyping (:2836) | the contexts [Θ0 ∣ Ξ] |
+    | P7b | [sub_complete_concl]      | generalised thm:complete-subtyping (:3050) | fuel, then context length |
+    | P7c | [a_sub_complete] (prop_completeness_sub.v) | thm (algorithmic.tex:1446) | instantiate R := P, Ψ := ∅ |
 
     P7a's proof is "by induction on the contexts of the subtyping judgement,
     MUTUALLY with the generalised version of thm:complete-subtyping below", and
     P7b's [P = α̂ ∧ M = FN M'] case calls P7a at [Ξ = ·].  So they are ONE
     bundle; [a_consis_complete]'s 3-way mutual block is the shape precedent.
 
-    THREE DECISIONS, and two of them CORRECT DESIGN §1 as written.
+    THREE DECISIONS.
 
-    (1) THE FUEL JUDGMENT IS [ad_pat_sub_fuel].  §1's skeleton named a plain fuel
-        mirror [ad_pat_sub_n]; the development settled on the TAG-HYGIENIC one
-        instead (def_subtyping.v), because precision-substitution
+    (1) THE FUEL JUDGMENT IS [ad_pat_sub_fuel], the TAG-HYGIENIC fuel mirror
+        (def_subtyping.v), because precision-substitution
         — which the ForallL case applies to its premise to get the derivation it
         hands the IH — is FALSE over [_n] (the paper's "fresh Ψ'" means GLOBALLY
         fresh, and a plain mirror of [ad_pat_sub] renders it only as freshness
         from the tag context, which does not survive the Arrow split).  P5's
         [ad_pat_sub_precise_upre_fuel] and ALL FIVE P6 lemmas are stated over
-        [_gv], so P7 must be too.
+        it, so P7 must be too.
 
     (2) THE CONCLUSION KEEPS [a_consis_complete]'s FACTORED SHAPE — the
         [forall κ1, is_id_msubst κ1 → … → exists ζ] wrapper — rather than the
@@ -570,9 +567,8 @@ Qed.
 (*  having to move the consistency derivation between Θ and Δ.             *)
 (* ===================================================================== *)
 
-(** The Δ = ∅ pointwise instance of [a_wf_pskl_ftv_dom]
-    (algo/consis/prop_soundness_consis.v).  ⚠️ It needs its OWN name: this file
-    also uses the general one, above at the [a_solve_sub_wf] block. *)
+(** The Δ = ∅ pointwise form of [a_wf_pskl_ftv_dom]
+    (algo/consis/prop_soundness_consis.v). *)
 Lemma a_wf_pskl_ftv_dom_pointwise : forall Θ P,
   {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
   forall α, α `in` ftvar_in_pskl P -> α `in` dom Θ.
@@ -580,56 +576,6 @@ Proof.
   intros Θ P Hwf α Hα.
   pose proof (a_wf_pskl_ftv_dom Hwf) as Hs. clear - Hs Hα. fsetdec.
 Qed.
-
-Corollary a_wf_pskl_weaken_tvar : forall Θ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  forall α, {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ₚₛ P }}a.
-Proof.
-  intros Θ Δ P H α.
-  apply (a_wf_pskl_tvar_mono H). intros β Hβ.
-  apply a_binds_tvar_cons_tvar. right; exact Hβ.
-Qed.
-
-(* ===================================================================== *)
-(*  THE THREADED INDUCTION — the kit is complete except ONE ROW           *)
-(*                                                                        *)
-(*  Route (settled by building the transports, not by guessing): induct on *)
-(*  the CONSISTENCY derivation, carry the SUBJECT-refinement premise, and  *)
-(*  at each ∀ row                                                         *)
-(*                                                                        *)
-(*    · invert the refinement's [__all]        → premise at [Θ ⨟ add α Δ]  *)
-(*    · grow the fill-hygiene set by α         → at [add α F]              *)
-(*    · weaken the context by α                → at [(α:tvar),Θ]           *)
-(*    · run the IH                              → precision at [(α:tvar),Θ] *)
-(*    · strip α (α ∈ add α F ∩ add α Δ)         → back at Θ                *)
-(*    · shrink the hygiene set                  → back at F                *)
-(*                                                                        *)
-(*  The ghost rows take their fill's well-formedness from the REFINEMENT   *)
-(*  premise (Θ-scoped, so F can grow) rather than from consistency —      *)
-(*  consistency's ∀ rule puts the binder INTO Θ, after which a fill may    *)
-(*  legitimately mention it, and that is precisely what                    *)
-(*  [cex/cex_p7_sskl_precise.v] exploits.  ∀-freeness of the fill comes    *)
-(*  from [ad_pat_consis_ghost_subject_no_forall].                          *)
-(*                                                                        *)
-(*  ONE ROW IS STILL OPEN, and it is small and exactly stated.  At         *)
-(*  consistency's [__univ_ghost] / [__dot_univ_ghost] the goal is                   *)
-(*  [∀◇.⌊R0⌋ ⊑ ∀◇.⌊Q'⌋], which [ad_refine_syn__univ_ghost_keep] reduces to    *)
-(*  the IH at [(R0, Q')] — with the guard supplied by the target's wf.     *)
-(*  The refinement premise, however, need not decompose the same way:      *)
-(*  inverting it at [(∀◇.⌊R0⌋, ∀◇.⌊Q'⌋)] gives [__univ_ghost_keep] (which IS  *)
-(*  the premise the IH wants) OR [__univ_ghost_remove] (which gives           *)
-(*  [⌊R0⌋ ⊳ ∀◇.⌊Q'⌋] instead).  In the second case neither judgment can    *)
-(*  re-wrap: consistency has no rule adding a [∀◇] to the COUNTERPART      *)
-(*  without a matching one on the subject.  So the threading needs either  *)
-(*  a normalisation of the refinement premise at ∀◇ (prefer [__univ_ghost_    *)
-(*  keep] where the target has one) or an IH tolerating the extra [∀◇].    *)
-(*                                                                        *)
-(*  ⚙ HISTORICAL: written under the earlier rules, where refinement's ∀    *)
-(*  put its binder in Δ only and [__ghost] carried a wf check of the fill,  *)
-(*  and when the refinement carried a fill-hygiene set [F].  None of this  *)
-(*  holds now (the ∀ binder goes into Θ AND Δ; the ghost fill only avoids  *)
-(*  Δ; [F] is gone).                                                      *)
-(* ===================================================================== *)
 
 (* ===================================================================== *)
 (*  THE PAPER'S OWN ROUTE FOR Sub-Infer / Sub-UnivGhostR, AND THE ONE      *)
@@ -1580,33 +1526,6 @@ Proof.
     clear - IHHinc; fsetdec.
 Qed.
 
-(** Peeling an [a_inc] along a declaration-only SOURCE prefix: the prefix's
-    entries are consumed one κ-row each, so κ splits as a list. *)
-Lemma a_inc_suffix_prefix_inv : forall Ξ Θ0 κ Θ',
-  a_suffix Ξ ->
-  κ ∷ (Ξ ++ Θ0) ⊑ Θ' ->
-  exists κa κb, κ = κa ++ κb /\ dom κa [=] dom Ξ /\ κb ∷ Θ0 ⊑ Θ'.
-Proof.
-  intros Ξ; induction Ξ as [ | [x b] Ξ IH ]; intros Θ0 κ Θ' Hsuf Hinc.
-  - exists nil, κ. simpl.
-    split; [ reflexivity | split; [ clear; fsetdec | exact Hinc ] ].
-  - inversion Hsuf as [ | x0 b0 Ξ0 Hsuf' Hb ]; subst.
-    inversion Hb; subst; simpl in Hinc; inversion Hinc; subst.
-    + (* flex_mono *)
-      match goal with Hrest : _ ∷ Ξ ++ Θ0 ⊑ _ |- _ =>
-        destruct (IH _ _ _ Hsuf' Hrest) as [κa [κb [-> [Hdom Hincb]]]] end.
-      match goal with |- context [ (x, ?τ) :: κa ++ κb ] => idtac end.
-      eexists ((x, _) :: κa), κb.
-      split; [ reflexivity | split; [ | exact Hincb ] ].
-      simpl. clear - Hdom; fsetdec.
-    + (* flex_mono_def *)
-      match goal with Hrest : _ ∷ Ξ ++ Θ0 ⊑ _ |- _ =>
-        destruct (IH _ _ _ Hsuf' Hrest) as [κa [κb [-> [Hdom Hincb]]]] end.
-      eexists ((x, _) :: κa), κb.
-      split; [ reflexivity | split; [ | exact Hincb ] ].
-      simpl. clear - Hdom; fsetdec.
-Qed.
-
 (** Composing an identity with an extended substitution ignores the
     extension when its domain is elsewhere. *)
 Lemma msubst_compose_id_app_agree : forall κf κa ζ,
@@ -1792,7 +1711,8 @@ Proof.
   { eapply a_wf_pskl_all_syn_open_tvar;
       [ exact HwfP0 | clear - Fr; solve_notin_auto ]. }
   assert (HwfPα : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ ⌊ R ⌋ˢ }}a)
-    by (apply a_wf_pskl_weaken_tvar; exact HwfP).
+    by (apply (a_wf_pskl_tvar_mono HwfP); intros β' Hβ';
+        apply a_binds_tvar_cons_tvar; right; exact Hβ').
   assert (HmodSKα : a_sub_mode_ty = a_sub_mode_sk ->
             a_sk_mode_compat mode_tc
               (open_pskl_wrt_pskl (ptyp_to_pskl A0) (pskl_var_f α)))
@@ -1869,7 +1789,7 @@ Proof.
   { apply (a_inc__tvar (Ξ:=Ξj) α Hincf). exact Hsufj. }
   destruct (Hopt κf Hidf Hincf') as [ζ' [Hζ' [Hie' Hprec']]].
   (* peel the junk rows off ζ' *)
-  destruct (@a_inc_suffix_prefix_inv _ _ _ _ Hsufj Hζ')
+  destruct (@a_inc_peel_suffix _ _ _ _ Hsufj Hζ')
     as [κa [ζ [-> [Hdomκa Hζmid]]]].
   destruct (a_inc_tvar_inv Hζmid) as [Ξs [Θ2 [HeqT2 [HsufΞs Hζfin]]]].
   destruct Ξs as [ | [y by_] Ξs' ]; simpl in HeqT2;
@@ -2086,8 +2006,8 @@ Qed.
 (*  P7b, THE ForallL CASE (paper :3374-3453) — TAGGED-subject variant.    *)
 (*                                                                        *)
 (*  The row lemma takes the join row's fields as hypotheses (the bundle   *)
-(*  dispatches on the join's last rule, as with ForallR), plus TASK 0's   *)
-(*  [sub_shield] gate and the paper's WLOG (H3: when [P0] is a ∀ the      *)
+(*  dispatches on the join's last rule, as with ForallR), plus the        *)
+(*  paper's WLOG (H3: when [P0] is a ∀ the                                *)
 (*  bundle dispatches ForallR first).  Assembly per the paper:            *)
 (*  slack-erase the join at the exact κ-image subject                     *)
 (*  ([ad_pat_sub_fuel_tyequiv_subject] on the inverted body ≡ᵘ family);      *)
@@ -2111,13 +2031,6 @@ Lemma a_sub_complete_forall_l_tagged :
   a_tags_sort NM Ψa ψa ->
   {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψa ⌋ˢ }}a ->
   ad_pat_sub_fuel n NM M (Ψ `union` Ψa) Θ (open_uskl_wrt_uskl Rj ψa) Q ->
-  (* ⭕⭕ TASK 0's GATE IS GONE (2026-08-05).  It used to demand
-     [sub_shield Θ0 Ψa ∅ α P0 (open Rb α) ψa] at every marker, and no general
-     supply route existed for a [P0] carrying a ∀ below its head — that
-     residual is what kept [main_forall] a hypothesis.  Under the authors'
-     repaired [SolE-FlexR], [sub_shield] lost its guess-descending conjunct
-     and, at Δρ = ∅, is unconditionally TRUE ([sub_shield_empty]).  P6-L
-     discharges it internally and no longer takes it. *)
   (guarded_pskl P0 \/ P0 = pskl_ghost) ->
   sub_complete_concl (S n) NM M Θ0 P0 P (uskl_all_tag ε Rb)
     (uskl_all_tag ε Rj) Ψ Θ κ Q.
@@ -2422,13 +2335,6 @@ Lemma a_sub_complete_forall_l_untagged :
   a_tags_sort NM Ψa ψa ->
   {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψa ⌋ˢ }}a ->
   ad_pat_sub_fuel n NM M (Ψ `union` Ψa) Θ (open_uskl_wrt_uskl Rj ψa) Q ->
-  (* ⭕⭕ TASK 0's GATE IS GONE (2026-08-05).  It used to demand
-     [sub_shield Θ0 Ψa ∅ α P0 (open Rb α) ψa] at every marker, and no general
-     supply route existed for a [P0] carrying a ∀ below its head — that
-     residual is what kept [main_forall] a hypothesis.  Under the authors'
-     repaired [SolE-FlexR], [sub_shield] lost its guess-descending conjunct
-     and, at Δρ = ∅, is unconditionally TRUE ([sub_shield_empty]).  P6-L
-     discharges it internally and no longer takes it. *)
   (guarded_pskl P0 \/ P0 = pskl_ghost) ->
   sub_complete_concl (S n) NM M Θ0 P0 P (uskl_all_syn Rb)
     (uskl_all_syn Rj) Ψ Θ κ Q.
@@ -3254,27 +3160,6 @@ Qed.
 (*  (H)  Two enablers the CROSS-HALF rows need                            *)
 (* ===================================================================== *)
 
-(** Pushing a MONOTYPE substitution through a metasubstitution: the two
-    commute by absorbing the substituted variable into the metasubstitution
-    (its image being the metasubstituted monotype).  Pure — no side
-    condition, because [msubst_pskl] is defined by lookup. *)
-Lemma msubst_pskl_subst_mono : forall ζ β τ P,
-  msubst_pskl ζ (subst_pskl_in_pskl (ptyp_to_pskl τ) β P)
-  = msubst_pskl ((β, msubst_ptyp ζ τ) :: ζ) P.
-Proof.
-  intros ζ β τ P; induction P; simpl; try solve [ f_equal; auto ].
-  (* var_f *)
-  destruct (α == β) as [-> | Hne].
-  - rewrite msubst_pskl_embed_ptyp.
-    match goal with
-    | |- _ = ptyp_to_pskl (if ?t then _ else _) => destruct t as [_ | n0]
-    end; [ reflexivity | exfalso; apply n0; reflexivity ].
-  - simpl.
-    match goal with
-    | |- _ = ptyp_to_pskl (if ?t then _ else _) => destruct t as [e | _]
-    end; [ exfalso; apply Hne; exact e | reflexivity ].
-Qed.
-
 (** …and the ≡ˢ congruence for two metasubstitutions that agree POINTWISE up
     to type equivalence.  The dual of [a_pskl_tyequiv_msubst] (which moves one
     ζ across an equivalence); here the SKELETON is fixed and the two
@@ -3485,7 +3370,7 @@ Proof.
   assert (Heqs : {{ Θ ⊢ (msubst_pskl κ P0)
                    ≡ˢ (msubst_pskl (κ1 ++ κ2)
                          (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0)) }}a).
-  { rewrite HeqP0κ, msubst_pskl_subst_mono.
+  { rewrite HeqP0κ, msubst_pskl_subst.
     eapply msubst_pskl_tyequiv_pointwise;
       [ exact Hincβ | exact HincX | exact HlcP0 | exact Hagree ]. }
   assert (Hrs' : {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl (κ1 ++ κ2)
@@ -3500,7 +3385,7 @@ Proof.
   assert (Hslack' : {{ Θ ⊢ R' ≡ᵘ (msubst_uskl_syn (κ1 ++ κ2)
             (pskl_to_uskl
                (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)))) }}a).
-  { rewrite msubst_uskl_syn_pskl_to_uskl, msubst_pskl_subst_mono.
+  { rewrite msubst_uskl_syn_pskl_to_uskl, msubst_pskl_subst.
     cbn [msubst_pskl]. rewrite pskl_to_uskl_ptyp.
     eapply a_uskl_tyequiv_trans; [ exact Hslack | ].
     assert (HwfXctx : {{ ⊢ ((β ~ abind_flex_mono_def τ) ++ (Ξ ++ Θ0)) }}a).
@@ -4427,10 +4312,6 @@ Qed.
 (* --------------------------------------------------------------------- *)
 
 (** A rigid entry contributes no definition, so ⇓ ignores it. *)
-Lemma aenv_msubst_tvar_cons : forall (α : atom) Θ,
-  aenv_msubst ((α ~ abind_tvar) ++ Θ) = aenv_msubst Θ.
-Proof. reflexivity. Qed.
-
 (** Opening only ADDS free variables, even under a metasubstitution. *)
 Lemma msubst_bskl_open_rec_ftv_lower : forall κ B B' k,
   ftvar_in_bskl (msubst_bskl κ B)
@@ -4842,7 +4723,7 @@ Proof.
       by (eapply a_wf_ptyp_weaken;
           [ intros x b Hb; apply binds_cons_3; exact Hb | exact HwfA ]).
     pose proof (H0 α ltac:(clear - Hα; solve_notin_auto) Hwf' A0 HeqR HmA HwfA') as IH.
-    rewrite aenv_msubst_tvar_cons in IH.
+    rewrite aenv_msubst_tvar in IH.
     assert (Heq : msubst_bskl (aenv_msubst Θ)
                     (open_bskl_wrt_bskl B (bskl_var_f α))
                   = open_bskl_wrt_bskl (msubst_bskl (aenv_msubst Θ) B)
@@ -4956,9 +4837,9 @@ Proof.
     assert (Hwf' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
     pose proof (H0 α ltac:(clear - Fr; solve_notin_auto) Hwf' A0 (add α D) HeqR HmA
-                  ltac:(rewrite aenv_msubst_tvar_cons;
+                  ltac:(rewrite aenv_msubst_tvar;
                         clear - HAD; solve_notin_auto)) as IH.
-    rewrite aenv_msubst_tvar_cons in IH.
+    rewrite aenv_msubst_tvar in IH.
     pose proof (msubst_bskl_open_ftv_lower (aenv_msubst Θ) B (bskl_var_f α))
       as Hlow.
     assert (Hfr : α `notin` ftvar_in_bskl (msubst_bskl (aenv_msubst Θ) B)).
@@ -5586,10 +5467,10 @@ Proof.
       by (apply msubst_bskl_open_lc;
           [ apply aenv_msubst_lc; exact Hwf | clear - Hα; fsetdec ]).
     rewrite <- HeqQ, <- HeqP.
-    rewrite <- (aenv_msubst_tvar_cons α Θ).
+    rewrite <- (aenv_msubst_tvar α Θ).
     apply H1; [ clear - Hα; fsetdec
               | apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ] | ].
-    rewrite aenv_msubst_tvar_cons.
+    rewrite aenv_msubst_tvar.
     assert (HαΘ : α `notin` dom Θ) by (clear - Hα; fsetdec).
     exact (@downarrow_images_avoid_cons Θ Δ α Hwf HαΘ HΔ).
   - (* ghost : ⇓ of the FILL, which the images keep off Δ *)
@@ -5613,7 +5494,7 @@ Proof.
     assert (Hwf' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]).
     pose proof (H1 α ltac:(clear - Hα; solve_notin_auto) Hwf' HΔ) as IH.
-    rewrite aenv_msubst_tvar_cons in IH.
+    rewrite aenv_msubst_tvar in IH.
     assert (HeqP : msubst_bskl (aenv_msubst Θ)
                      (open_bskl_wrt_bskl Q' (bskl_var_f α))
                    = open_bskl_wrt_bskl (msubst_bskl (aenv_msubst Θ) Q')
@@ -5695,7 +5576,7 @@ Proof.
     assert (Hwf' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
     pose proof (H1 α ltac:(clear - Fr; solve_notin_auto) Hwf') as IH.
-    rewrite aenv_msubst_tvar_cons in IH.
+    rewrite aenv_msubst_tvar in IH.
     rewrite HeqQ, HeqP in IH.
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_lower
                   (msubst_bskl (aenv_msubst Θ) Q) (bskl_var_f α)) as Hlow.
@@ -5723,7 +5604,7 @@ Proof.
       by (apply msubst_bskl_open_lc;
           [ apply aenv_msubst_lc; exact Hwf | clear - Fr; solve_notin_auto ]).
     pose proof (H1 α ltac:(clear - Fr; solve_notin_auto) Hwf') as IH.
-    rewrite aenv_msubst_tvar_cons in IH.
+    rewrite aenv_msubst_tvar in IH.
     rewrite HeqP in IH. simpl in IH.
     pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper
                   (msubst_bskl (aenv_msubst Θ) Q') (bskl_var_f α)) as Hup.
@@ -5807,7 +5688,7 @@ Proof.
           [ apply aenv_msubst_lc; exact Hwf | clear - Hα; fsetdec ]).
     repeat rewrite <- pskl_to_bskl_inh_open.
     rewrite <- Heq.
-    rewrite <- (aenv_msubst_tvar_cons α Θ').
+    rewrite <- (aenv_msubst_tvar α Θ').
     apply H0; [ clear - Hα; fsetdec
               | apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ] | ].
     intros β Hβ. apply a_binds_tvar_cons_tvar.
@@ -7038,8 +6919,8 @@ Qed.
 (*  MAIN judgment), so their IH is the P7b motive [sub_complete_concl],    *)
 (*  not this one.                                                         *)
 (*                                                                        *)
-(*  The DISPATCHER lives in prop_sub_complete_dispatch.v (DESIGN §12.1's   *)
-(*  three layers, all [Qed]).  ⚙ Its flexible half owes ONE obligation     *)
+(*  The DISPATCHER lives in prop_completeness_sub.v (DESIGN §12.1's        *)
+(*  three layers).  ⚙ Its flexible half owes ONE obligation                *)
 (*  none of the rows above carries, because no rule has it as a premise:   *)
 (*  the STUCK-CHECK.  With a RIGID head β and [β ∈ ftvar_in_pskl P0] there *)
 (*  is no [a_sub_flex] rule at all ([__depend] wants β flexible,           *)

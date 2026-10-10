@@ -55,46 +55,6 @@ Require Import src.fresco.algo.sub.look.prop_eq_cstr.
 Require Import src.fresco.algo.sub.look.prop_sub_var.
 
 (* ===================================================================== *)
-(*  Δ-SHRINKING for partial precision                                     *)
-(* ===================================================================== *)
-
-(** The mirror of [ad_partial_precise_delta_weaken_fresh]
-    (sub/look/prop_flex_apart.v): Δ can be shrunk freely.  Sub-ForallL needs
-    both directions — it hands the IH the precision premise at [add β Δ]
-    (β joins Δρ, and [Δρ ⊆ Δ]) and must return the IH's conclusion at
-    plain Δ.  The only row that reads Δ is [ad_ppre__ghost], whose
-    disjointness side condition is ANTITONE in Δ, so shrinking needs no
-    freshness (unlike weakening). *)
-Lemma ad_partial_precise_delta_shrink : forall Θ Δf Ψ P ψ,
-  {{ Θ ⨟ Δf ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
-  forall Δ, Δ [<=] Δf ->
-  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
-Proof.
-  intros Θ Δf Ψ P ψ H; induction H; intros Δ0 Hsub.
-  - apply ad_ppre__unit; assumption.
-  - apply ad_ppre__var; assumption.
-  - eapply ad_ppre__arrow;
-      [ exact (IHad_partial_precise1 Δ0 Hsub)
-      | exact (IHad_partial_precise2 Δ0 Hsub)
-      | assumption ].
-  - eapply ad_ppre__forall with (L := L); [ | eassumption ].
-    intros α0 Hα0.
-    apply (H0 α0 Hα0 (add α0 Δ0)). clear - Hsub; fsetdec.
-  - (* ghost : the side condition is antitone in Δ *)
-    apply ad_ppre__ghost; [ assumption | ].
-    match goal with Hint : _ ∩ _ [=] empty |- _ =>
-      clear - Hint Hsub; fsetdec end.
-  - apply ad_ppre__univ_ghost_remove. exact (IHad_partial_precise Δ0 Hsub).
-  - eapply ad_ppre__univ_ghost_fill with (L := L).
-    intros α0 Hα0. exact (H0 α0 Hα0 Δ0 Hsub).
-  - apply ad_ppre__univ_ghost_keep. exact (IHad_partial_precise Δ0 Hsub).
-  - eapply ad_ppre__flex_l; [ eassumption | ].
-    exact (IHad_partial_precise Δ0 Hsub).
-  - eapply ad_ppre__flex_r; [ eassumption | ].
-    exact (IHad_partial_precise Δ0 Hsub).
-Qed.
-
-(* ===================================================================== *)
 (*  wf preservation for [a_solve_sub]                                     *)
 (* ===================================================================== *)
 

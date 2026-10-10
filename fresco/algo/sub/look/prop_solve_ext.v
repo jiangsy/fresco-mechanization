@@ -1017,9 +1017,9 @@ Proof.
           by (eapply msubst_pskl_tvar_id;
                 [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
         rewrite Hmid in Href'. simpl in Href'.
-        eapply ad_refine_syn_rigid_var_nonvar_absurd;
-          [ exact HwfΘ | eapply a_inc_binds_tvar; eauto | exact Href'
-          | intros β0 Hcc; discriminate Hcc ].
+        eapply (ad_refine_syn_rigid_var_nonvar_absurd Href');
+          [ intros x b Hb; exact Hb | apply a_wf_aenv_uniq; exact HwfΘ
+          | eapply a_inc_binds_tvar; eauto | intros β0 Hcc; discriminate Hcc ].
       * (* flexible: SE-FlexR, precision via Bridge A *)
         assert (HΨi : Ψi [=] empty)
           by (eapply ad_ppre_mono_tags_empty;

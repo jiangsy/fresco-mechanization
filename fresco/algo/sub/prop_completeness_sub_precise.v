@@ -480,7 +480,8 @@ Qed.
 (*  motive and whose [__trans] then composes.  Only four rows generate:   *)
 (*  [__flex_def] is [__flex_l] one way and                                *)
 (*  [ad_refine_pskl_unfold_def_subject] the other, and the three          *)
-(*  congruences delegate to the helpers below.                            *)
+(*  congruences delegate to the [ad_refine_pskl_*_source_transport]       *)
+(*  helpers (consis/prop_completeness_consis.v).                          *)
 (*                                                                        *)
 (*  ⚙ WHY THE CONTEXT IS GENERALIZED to any [Θ] the equivalence's own [Θ0] *)
 (*  embeds into: [ad_refine_pskl__univ_ghost_fill] and [ad_refine_pskl__all]  *)
@@ -488,85 +489,6 @@ Qed.
 (*  need their transporters at a context EXTENSION.  The arrow congruence  *)
 (*  never moves [Θ].                                                       *)
 (* ===================================================================== *)
-
-(** Each helper is an induction on the REFINEMENT rather than on the
-    equivalence: the row that consumes the source is unique, and the only
-    other reachable row is [__flex_r], which does not touch the source at
-    all and is simply peeled and rebuilt. *)
-Lemma refine_source_arrow : forall Θ Δ S Pt,
-  {{ Θ ⨟ Δ ⊢ᵣₚ S ⊳ Pt }}ad ->
-  forall Rq1 Rq2 Rp1 Rp2, S = pskl_arrow Rq1 Rq2 ->
-  (forall Pt', {{ Θ ⨟ Δ ⊢ᵣₚ Rq1 ⊳ Pt' }}ad -> {{ Θ ⨟ Δ ⊢ᵣₚ Rp1 ⊳ Pt' }}ad) ->
-  (forall Pt', {{ Θ ⨟ Δ ⊢ᵣₚ Rq2 ⊳ Pt' }}ad -> {{ Θ ⨟ Δ ⊢ᵣₚ Rp2 ⊳ Pt' }}ad) ->
-  {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_arrow Rp1 Rp2) ⊳ Pt }}ad.
-Proof.
-  intros Θ Δ S Pt H; induction H; intros Rq1 Rq2 Rp1 Rp2 HeqS T1 T2;
-    try discriminate HeqS.
-  - (* __arrow *) inversion HeqS; subst.
-    apply ad_refine_pskl__arrow; [ apply T1 | apply T2 ]; assumption.
-  - (* __flex_r : the target's definition; the source is untouched *)
-    eapply ad_refine_pskl__flex_r;
-      [ eassumption
-      | eapply IHad_refine_pskl; [ exact HeqS | exact T1 | exact T2 ] ].
-Qed.
-
-Lemma refine_source_all : forall Θ Δ S Pt,
-  {{ Θ ⨟ Δ ⊢ᵣₚ S ⊳ Pt }}ad ->
-  forall Lq Rq Rp, S = pskl_all_syn Rq ->
-  (forall α, α `notin` Lq -> forall Δ' Pt',
-     {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ' ⊢ᵣₚ (open_pskl_wrt_pskl Rq (pskl_var_f α)) ⊳ Pt' }}ad ->
-     {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ' ⊢ᵣₚ (open_pskl_wrt_pskl Rp (pskl_var_f α)) ⊳ Pt' }}ad) ->
-  {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_all_syn Rp) ⊳ Pt }}ad.
-Proof.
-  intros Θ Δ S Pt H; induction H; intros Lq Rq Rp HeqS T;
-    try discriminate HeqS.
-  - (* __all *) inversion HeqS; subst.
-    apply ad_refine_pskl__all with (L := L `union` Lq). intros α Hα.
-    apply T; [ clear - Hα; fsetdec | ].
-    apply H; clear - Hα; fsetdec.
-  - (* __flex_r *)
-    eapply ad_refine_pskl__flex_r;
-      [ eassumption | eapply IHad_refine_pskl; [ exact HeqS | exact T ] ].
-Qed.
-
-(** ⚙ The univ_ghost helper is the one that needs [Θ]-extensions and hence the
-    context's well-formedness: [__univ_ghost_fill] opens the TARGET's ∀ under a
-    fresh rigid, and the rebuilt row's avoid-set has to keep that rigid out of
-    [dom Θ] for the extended context to stay well-formed. *)
-Lemma refine_source_univ_ghost : forall Θ Δ S Pt,
-  {{ Θ ⨟ Δ ⊢ᵣₚ S ⊳ Pt }}ad ->
-  forall Rq Rp, S = pskl_univ_ghost Rq ->
-  {{ ⊢ Θ }}a ->
-  (forall Θ' Δ' Pt',
-     (forall x b, binds x b Θ -> binds x b Θ') -> {{ ⊢ Θ' }}a ->
-     {{ Θ' ⨟ Δ' ⊢ᵣₚ Rq ⊳ Pt' }}ad -> {{ Θ' ⨟ Δ' ⊢ᵣₚ Rp ⊳ Pt' }}ad) ->
-  {{ Θ ⨟ Δ ⊢ᵣₚ (pskl_univ_ghost Rp) ⊳ Pt }}ad.
-Proof.
-  intros Θ Δ S Pt H; induction H; intros Rq Rp HeqS Hwf T;
-    try discriminate HeqS.
-  - (* __univ_ghost_remove *) inversion HeqS; subst.
-    apply ad_refine_pskl__univ_ghost_remove.
-    apply T with (Θ' := Θ); [ auto | exact Hwf | assumption ].
-  - (* __univ_ghost_fill : the premise runs at an EXTENDED Θ, source unchanged *)
-    inversion HeqS; subst.
-    apply ad_refine_pskl__univ_ghost_fill with (L := L `union` dom Θ).
-    intros α Hα.
-    eapply H0;
-      [ clear - Hα; fsetdec | reflexivity
-      | apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]
-      | ].
-    intros Θ' Δ' Pt' Hle Hwf' Href.
-    apply T;
-      [ intros x b Hb; apply Hle; apply binds_app_3; exact Hb
-      | exact Hwf' | exact Href ].
-  - (* __univ_ghost_keep *) inversion HeqS; subst.
-    apply ad_refine_pskl__univ_ghost_keep.
-    apply T with (Θ' := Θ); [ auto | exact Hwf | assumption ].
-  - (* __flex_r *)
-    eapply ad_refine_pskl__flex_r;
-      [ eassumption
-      | eapply IHad_refine_pskl; [ exact HeqS | exact Hwf | exact T ] ].
-Qed.
 
 Lemma ad_refine_pskl_tyequiv_source : forall Θ0 P P',
   {{ Θ0 ⊢ P ≡ˢ P' }}a ->
@@ -591,39 +513,39 @@ Proof.
       eapply ad_refine_pskl_unfold_def_subject;
         [ exact Href | exact Hwf | apply Hle; exact H ].
   - (* arrow *) split.
-    + intros Href. eapply refine_source_arrow;
+    + intros Href. eapply ad_refine_pskl_arrow_source_transport;
         [ exact Href | reflexivity
         | intros Pt'; apply (proj1 (IHa_pskl_tyequiv1 Θ' Δ Pt' Hle Hwf))
         | intros Pt'; apply (proj1 (IHa_pskl_tyequiv2 Θ' Δ Pt' Hle Hwf)) ].
-    + intros Href. eapply refine_source_arrow;
+    + intros Href. eapply ad_refine_pskl_arrow_source_transport;
         [ exact Href | reflexivity
         | intros Pt'; apply (proj2 (IHa_pskl_tyequiv1 Θ' Δ Pt' Hle Hwf))
         | intros Pt'; apply (proj2 (IHa_pskl_tyequiv2 Θ' Δ Pt' Hle Hwf)) ].
   - (* all *) split.
     + intros Href.
-      eapply refine_source_all with (Lq := L `union` dom Θ');
+      eapply ad_refine_pskl_forall_source_transport with (L0 := L `union` dom Θ');
         [ exact Href | reflexivity | ].
       intros α Hα Δ' Pt'. apply (proj1 (H0 α ltac:(solve_notin_auto)
         ((α ~ abind_tvar) ++ Θ') Δ' Pt'
         (fun x b Hb => binds_app_3 _ _ _ _ _ (Hle x b Hb))
         ltac:(apply a_wf_aenv__tvar; [ solve_notin_auto | exact Hwf ]))).
     + intros Href.
-      eapply refine_source_all with (Lq := L `union` dom Θ');
+      eapply ad_refine_pskl_forall_source_transport with (L0 := L `union` dom Θ');
         [ exact Href | reflexivity | ].
       intros α Hα Δ' Pt'. apply (proj2 (H0 α ltac:(solve_notin_auto)
         ((α ~ abind_tvar) ++ Θ') Δ' Pt'
         (fun x b Hb => binds_app_3 _ _ _ _ _ (Hle x b Hb))
         ltac:(apply a_wf_aenv__tvar; [ solve_notin_auto | exact Hwf ]))).
   - (* univ_ghost *) split.
-    + intros Href. eapply refine_source_univ_ghost;
-        [ exact Href | reflexivity | exact Hwf | ].
-      intros Θ'' Δ' Pt' Hle' Hwf''.
-      apply (proj1 (IHa_pskl_tyequiv Θ'' Δ' Pt'
+    + intros Href. eapply ad_refine_pskl_univ_ghost_source_transport;
+        [ exact Href | exact Hwf | reflexivity | ].
+      intros Θ'' Pt' Hwf'' Hle'.
+      apply (proj1 (IHa_pskl_tyequiv Θ'' Δ Pt'
                       (fun x b Hb => Hle' x b (Hle x b Hb)) Hwf'')).
-    + intros Href. eapply refine_source_univ_ghost;
-        [ exact Href | reflexivity | exact Hwf | ].
-      intros Θ'' Δ' Pt' Hle' Hwf''.
-      apply (proj2 (IHa_pskl_tyequiv Θ'' Δ' Pt'
+    + intros Href. eapply ad_refine_pskl_univ_ghost_source_transport;
+        [ exact Href | exact Hwf | reflexivity | ].
+      intros Θ'' Pt' Hwf'' Hle'.
+      apply (proj2 (IHa_pskl_tyequiv Θ'' Δ Pt'
                       (fun x b Hb => Hle' x b (Hle x b Hb)) Hwf'')).
 Qed.
 

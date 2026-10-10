@@ -1,9 +1,9 @@
 (** P7c — THE DISPATCHER for subtyping completeness
     ([thm:complete-subtyping], algorithmic.tex:1446).
 
-    P7b's seven row lemmas and P7a's five walk rows are all [Qed] in
-    prop_completeness_sub.v; what is missing is the bundle that ASSEMBLES
-    them.  This file is that assembly.
+    P7b's seven row lemmas and P7a's five walk rows are proved in
+    prop_completeness_sub_gen.v; this file is the bundle that ASSEMBLES
+    them.
 
     ⭐ THE DISPATCH IS ON THE JOIN, and it determines the subject.  Each row
     lemma reads its premises off one [ad_pat_sub_fuel] constructor; the
@@ -24,19 +24,21 @@
     escape into P7a needs a VARIABLE subject, and no join row shrinks an arrow
     to a variable.  So the layering is
 
-      §3  [sub_complete_arrow_subject]  — the main half at an ARROW subject, from the
-          fuel IH ALONE (no P7a, no context induction);
-      §4  the flex half, by induction on |Θ0| inside an induction on the FULL
-          context, using §3 for Flex-Solve and the main half at a SMALLER
-          context for Flex-Assign;
-      §5  the main half at the same context, using §4 for the R-variable
+      (a) [sub_complete_arrow_holds] — the main half at an ARROW subject,
+          from the fuel IH ALONE (no P7a, no context induction);
+      (b) the flex half, by induction on |Θ0| inside an induction on the
+          FULL context, using (a) for Flex-Solve and the main half at a
+          SMALLER context for Flex-Assign;
+      (c) the main half at the same context, using (b) for the R-variable
           escape and the fuel IH for the shrinking rows.
+
+    §10 and §12 below carry the assembly.
 
     ⚠️ P7a's walk owes ONE obligation no row carries, because no RULE has it as
     a premise: the STUCK-CHECK.  A RIGID head [β] with [β ∈ ftv P0] matches no
     [a_sub_flex] rule (it cannot enter Ξ — Ξ is [a_decls] — and it cannot be
     dropped, P0 depends on it), so the dispatcher must REFUTE that
-    configuration from the solution.  §4.1 is that refutation; it is the twin
+    configuration from the solution.  §5 is that refutation; it is the twin
     of consistency's ([assign_complete_step]'s rigid-head case,
     prop_completeness_consis.v (PART B):5000-5090). *)
 
@@ -253,10 +255,8 @@ Qed.
 (* ===================================================================== *)
 (*  §2  THE DISPATCH, SCOPED — the case map and the TERMINATION            *)
 (*                                                                        *)
-(*  ⚠️ This section is NOT yet proof; it is the scoping the kit above was   *)
-(*  built for, recorded here so the next session starts from it rather     *)
-(*  than re-deriving it.  docs/DESIGN-completeness-subtyping.md §12.1      *)
-(*  carries the same content in prose.                                     *)
+(*  The design the assembly (§10, §12) implements;                         *)
+(*  docs/DESIGN-completeness-subtyping.md §12.1 has the same in prose.     *)
 (*                                                                        *)
 (*  THE CASE MAP.  Inverting [ad_pat_sub_fuel] gives twelve rows.  What the  *)
 (*  join does NOT fix is the motive's UNRESOLVED subject [R]; §1 is the    *)
@@ -271,7 +271,7 @@ Qed.
 (*        ([a_sub__flex_mono]).  ⭐ THIS IS THE ONLY ENTRY INTO P7a.        *)
 (*    __forall_l_tagged / _untagged   [R] is the same ∀ (a painting is     *)
 (*        never a ∀, so the variable escape cannot fire) ⟹ the two ForallL *)
-(*        rows, each of which owes TASK 0's [sub_shield].                  *)
+(*        rows, on exactly the join rule's premises.                       *)
 (*    __univ_ghost_l / __univ_ghost_lg   [R] is the same ghost ⟹ NO row    *)
 (*        lemma exists; strip [pskl_univ_ghost] with [a_sub__univ_ghost_l]    *)
 (*        and recurse.  Both preserve the FUEL, so the fuel IH cannot      *)
@@ -280,12 +280,11 @@ Qed.
 (*        the join's side and leaves [R] alone, so the ≡ᵘ slack is         *)
 (*        re-established by [flex_def_paint_tyequiv] + transitivity.       *)
 (*                                                                        *)
-(*  ⚠️⚠️ THE TERMINATION IS **NOT** lex(fuel, |Θ0|) — §12's first cut is    *)
-(*  wrong, and this is the finding that reshapes the assembly.  The two    *)
+(*  ⚠️⚠️ THE TERMINATION IS **NOT** lex(fuel, |Θ0|).  The two               *)
 (*  halves call each other at the SAME fuel: [a_sub__flex_mono] enters P7a *)
 (*  at the same context, and P7a's [Flex-Solve] re-enters P7b at the same  *)
 (*  fuel with a context TWO ENTRIES LARGER (it deposits [α̂0 ≔ α̂→β̂] plus    *)
-(*  the two fresh flexibles — prop_completeness_sub.v:4586).  So on that   *)
+(*  the two fresh flexibles).  So on that                                  *)
 (*  cycle neither component decreases.  [Flex-Assign] is fine (it consumes *)
 (*  the definition, so the context shrinks by one).                        *)
 (*                                                                        *)
@@ -296,7 +295,7 @@ Qed.
 (*  subject, [__flex_mono] leaves [R] alone).  So the layering that works  *)
 (*  is                                                                     *)
 (*                                                                        *)
-(*    (a) [sub_complete_arrow_subject] — the main half at an ARROW subject, from   *)
+(*    (a) [sub_complete_arrow_holds] — the main half at an ARROW subject, from     *)
 (*        the fuel IH ALONE: no P7a, no context induction.                 *)
 (*    (b) the flex half at |Ξ ++ Θ0| = k, by an inner induction on |Θ0|    *)
 (*        (Flex-Depend keeps the total and shrinks Θ0), using (a) for      *)
@@ -306,34 +305,8 @@ Qed.
 (*        join handles the three fuel-preserving ones.                     *)
 (*    (d) strong induction on k, then on the fuel.                         *)
 (*                                                                        *)
-(*  TWO OBLIGATIONS ARE STILL OPEN, and neither is mechanical:             *)
-(*                                                                        *)
-(*  ⭕ (1) TASK 0's residual, at the two ForallL rows.  The premise is now  *)
-(*     POSITIONALLY indexed and machine-checked SATISFIABLE at the node     *)
-(*     that used to refute it ([p7_sub_shield_repaired_holds]), but        *)
-(*     prop_sub_shield_supply.v still discharges it only for a flex-free / *)
-(*     atomic / mono-counterpart / inh-free-counterpart / ∀-free [P0].     *)
-(*     A [P0] carrying a ∀ below its head has no general route, so the     *)
-(*     dispatcher must take it as a hypothesis (DESIGN §12 item 3).        *)
-(*                                                                        *)
-(*  ⭕ (2) P7a's STUCK-CHECK.  A RIGID head [β] with [β ∈ ftv P0] matches   *)
-(*     no [a_sub_flex] rule — it cannot enter Ξ ([a_decls] holds only      *)
-(*     flexible declarations) and it cannot be dropped ([Flex-SkipRigid]   *)
-(*     needs [β ∉ ftv P0]) — so the dispatcher must REFUTE it from the      *)
-(*     solution.  Consistency's twin is [assign_complete_step]'s rigid     *)
-(*     head case (prop_completeness_consis.v (PART B):5000-5090): [rigid_survives_      *)
-(*     solution] puts β in [ftv (κP)], and [ad_pat_consis_rigid_ftv_rev_   *)
-(*     scoped] confines the subject's rigid ftv to [κα̂]'s scope.           *)
-(*     ⚠️ THE SUBTYPING CHAIN IS NOT THE SAME.  There the pattern IS the    *)
-(*     join's subject; here [P0] sits on the FILL side ([Θ ⊢ᵣ inh{κP0} ⊳    *)
-(*     Q]) and the join's subject is [κα̂].  So the chain must run          *)
-(*     β ∈ ftv P0 ⟹ β ∈ ftv (κP0) ⟹ β ∈ ftv Q ⟹ β ∈ ftv (κα̂) — and its     *)
-(*     last step is the direction "the SUBJECT confines the TARGET", which *)
-(*     is FALSE for the join in general ([ad_pat_sub_fuel__ghost] gives a ◇   *)
-(*     subject an arbitrary target).  It has to be re-derived for the      *)
-(*     MONOTYPE subject the walk actually has, where every row carries a   *)
-(*     refinement premise off the subject's HOLE-FREE erasure.  That is    *)
-(*     the piece to build first.                                          *)
+(*  The P7a STUCK-CHECK (a rigid head [β] with [β ∈ ftv P0] matches no    *)
+(*  [a_sub_flex] rule) is refuted in §5.                                   *)
 (* ===================================================================== *)
 
 (* ===================================================================== *)
@@ -896,19 +869,6 @@ Definition sub_flex_complete (n : nat) (Θ0 : aenv) : Prop :=
   forall NM M α P0 R' Ψ Θ κ Q,
     sub_flex_complete_concl n NM M Θ0 nil α P0 R' Ψ Θ κ Q.
 
-(* ⭕⭕ [uskl_forall_headed] and [main_forall] DELETED (2026-08-05).
-
-   [main_forall] was the assembly's ONE hypothesis for most of this campaign:
-   the two ForallL rows, isolated because they demanded TASK 0's [sub_shield]
-   on top of the join's own premises.  §10 records why that gate is gone.
-   With it gone the row lemmas take exactly the join rule's premises, §9's two
-   ForallL branches apply them directly, and nothing referred to either
-   definition any more.
-
-   ⚠️ The retracted counterexamples state their conclusions against
-   [main_forall]'s shape; their headers carry the statement inline.  Coq text
-   at commit `4351531`. *)
-
 (** ⭐ [sub_complete_assemble] ASSEMBLES [sub_complete_concl] from the join's
     twelve rows, by induction on the join derivation.  It is a proof engine;
     its neighbours [sub_complete] / [sub_complete_arrow] / [sub_complete_ctx_lt]
@@ -1023,10 +983,7 @@ Proof.
        after §8b has taken the WLOG's escaping shape off its hands *)
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
            Hgf.
-    (* ⭐⭐⭐ (2026-08-05) THE ROW LEMMA APPLIES DIRECTLY.  It used to owe
-       TASK 0's [sub_shield] on top of the join's own premises, which is why
-       this branch had to defer to the [main_forall] hypothesis.  That gate is
-       gone ([sub_shield_empty]), so the row's premises are EXACTLY the join
+    (* THE ROW LEMMA APPLIES DIRECTLY: its premises are EXACTLY the join
        rule's — [HM], [HΨ1], [HΨ2], [Htg], [Hwfψ], [Hsub] — plus the fuel IH
        and the WLOG the trichotomy supplies. *)
     assert (Hhd : exists R0, R = uskl_all_tag εa R0).
@@ -1059,8 +1016,8 @@ Proof.
   - (* __forall_l_untagged : as above *)
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
            Hgf.
-    (* ⭐⭐⭐ as the tagged row above: TASK 0's gate is gone, so the row lemma
-       takes exactly the join rule's own premises. *)
+    (* as the tagged row above: the row lemma takes exactly the join rule's
+       own premises. *)
     assert (Hhd : exists R0, R = uskl_all_syn R0).
     { destruct (@a_uskl_tyequiv_all_syn_l_inv Θa Rj _ Hslack) as [X0 HX].
       destruct (@msubst_uskl_syn_all_syn_inv_mono Θ0 κ Θa R X0 Hinc HX)
@@ -1179,7 +1136,6 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(* ===================================================================== *)
 (*  §10  WHAT THE ASSEMBLY OWES — ⭐⭐⭐ NOTHING                             *)
 (*                                                                        *)
 (*  The three layers of DESIGN §12.1 are in the tree and all [Qed]:        *)
@@ -1191,10 +1147,8 @@ Qed.
 (*    (c) [sub_complete_assemble]  — the main half's twelve-row join       *)
 (*        dispatch.                                                        *)
 (*                                                                        *)
-(*  The two ForallL rows are proved outright: [sub_shield] is Δρ-CONSTANT  *)
-(*  and, at the Δρ = ∅ they instantiate it at, unconditionally TRUE        *)
-(*  ([sub_shield_empty], sub/look/prop_sub_cstr.v), so §9's two ForallL    *)
-(*  branches apply their row lemmas on exactly the join rule's premises.   *)
+(*  The two ForallL rows are proved outright: §9's two ForallL branches    *)
+(*  apply their row lemmas on exactly the join rule's premises.            *)
 (*  The WLOG [guarded P0 ∨ P0 = □] is discharged in §8b                    *)
 (*  ([p0_wlog_trichotomy] + [sub_complete_all_inh_counterpart], the        *)
 (*  mechanical content of subtyping-proofs.tex:3385), and the TY-only      *)
@@ -1220,9 +1174,7 @@ Qed.
 (*  [sub_flex_complete n Θ0], which is [sub_flex_complete_holds] at [Ξ = nil].                   *)
 (* ===================================================================== *)
 
-(** ⭐⭐⭐ UNCONDITIONAL — no residual hypothesis.  The two ForallL rows go
-    through because [sub_shield] is unconditionally true at the Δρ = ∅ they
-    instantiate it at ([sub_shield_empty]). *)
+(** ⭐⭐⭐ UNCONDITIONAL — no residual hypothesis. *)
 Theorem a_sub_complete_bundle_holds : a_sub_complete_bundle.
 Proof.
   intros n.
@@ -1261,10 +1213,7 @@ Qed.
     subject the motive carries; the paper's own form is the REFLEXIVE
     instance [R' := κ⌈P⌉ᵘ], so this statement is the weaker-premise one.
 
-    ⭐⭐⭐ UNCONDITIONAL (2026-08-05).  It used to inherit
-    [forall n, main_forall n], whose one unsupplied premise was TASK 0's
-    [sub_shield]; the authors' repaired [SolE-FlexR] retired that gate
-    ([sub_shield_empty]).  The premises below are the paper's own plus the
+    ⭐⭐⭐ UNCONDITIONAL.  The premises below are the paper's own plus the
     EXTERNAL wf side conditions registered in docs/WF-SIDE-CONDITIONS.md. *)
 Theorem a_sub_complete :
   forall n NM M Θ0 P0 P R' Θ κ Q,

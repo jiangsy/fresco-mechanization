@@ -509,17 +509,6 @@ Qed.
 (*  §7  FOUR SMALL TOOLS THE WITNESS INDUCTION ASSEMBLES WITH             *)
 (* ===================================================================== *)
 
-(** Precision is antitone in Δ ([ad_refine_syn_delta_mono] at the inh
-    paintings): shrinking Δ only relaxes the ghost rule's disjointness side
-    condition. *)
-Lemma ad_precise_delta_mono : forall Θ Δ0 Δ P X,
-  {{ Θ ⨟ Δ0 ⊢ₚᵣ P ⊑ X }}ad -> Δ [<=] Δ0 ->
-  {{ Θ ⨟ Δ ⊢ₚᵣ P ⊑ X }}ad.
-Proof.
-  intros Θ Δ0 Δ P X H Hsub. unfold ad_precise in *.
-  eapply ad_refine_syn_delta_mono; [ exact H | exact Hsub ].
-Qed.
-
 (* ===================================================================== *)
 (*  §8  THE TWO PROPERTIES OF THE INCOMING κ THE INDUCTION NEEDS           *)
 (*                                                                        *)
@@ -621,7 +610,8 @@ Proof.
             (pskl_to_bskl_inh (open_pskl_wrt_pskl X0 (pskl_var_f α0)))).
   assert (Hsub : add α0 Δ [<=] add α0 (remove β (add β Δ)))
     by (clear - HβΔ; fsetdec).
-  eapply ad_precise_delta_mono; [ | exact Hsub ].
+  (* precision is antitone in Δ *)
+  eapply ad_refine_syn_delta_mono; [ | exact Hsub ].
   rewrite (subst_pskl_in_pskl_intro β S0 (pskl_var_f α0)) by exact HβS.
   rewrite (subst_pskl_in_pskl_intro β X0 (pskl_var_f α0)) by exact HβX.
   apply ad_precise_rename_delta;

@@ -742,22 +742,6 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §1e-i  The two missing bridges                                        *)
-(* ===================================================================== *)
-
-(** ⭐ Renaming a TYPE variable cannot change TAGS. *)
-Lemma ftag_in_uskl_subst_var : forall R β1 α1,
-  ftag_in_uskl (subst_uskl_in_uskl (uskl_var_f β1) α1 R) [=] ftag_in_uskl R.
-Proof.
-  (* ⚙ [β1]/[α1], not [β']/[α]: the [uskl_var_f] case's own binder is [α]. *)
-  induction R; intros β1 α1; simpl;
-    try solve [ reflexivity
-              | destruct_if; simpl; reflexivity
-              | rewrite IHR; reflexivity
-              | rewrite IHR1, IHR2; reflexivity ].
-Qed.
-
-(* ===================================================================== *)
 (*  §1e-ii  The leaf datum under a context rename                         *)
 (* ===================================================================== *)
 
@@ -874,7 +858,7 @@ Proof.
     + assumption.
     + eassumption.
     + (* ⭐ renaming a TYPE variable cannot change TAGS *)
-      simpl. rewrite ftag_in_uskl_subst_var. assumption.
+      simpl. rewrite ftag_in_uskl_subst_tagfree by reflexivity. assumption.
     + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       apply a_tags_sort_subst_mono;
         first [ assumption | apply mono_ptyp__var ].
@@ -894,7 +878,7 @@ Proof.
     + assumption.
     + eassumption.
     + (* ⭐ renaming a TYPE variable cannot change TAGS *)
-      simpl. rewrite ftag_in_uskl_subst_var. assumption.
+      simpl. rewrite ftag_in_uskl_subst_tagfree by reflexivity. assumption.
     + change (uskl_var_f β') with (ptyp_to_uskl_syn (ptyp_var_f β')).
       apply a_tags_sort_subst_mono;
         first [ assumption | apply mono_ptyp__var ].
@@ -1299,17 +1283,6 @@ Proof.
       exact IHad_refine_pskl.
 Qed.
 
-(** ⭐ Substituting [1] cannot change TAGS either. *)
-Lemma ftag_in_uskl_subst_unit : forall R β,
-  ftag_in_uskl (subst_uskl_in_uskl uskl_unit β R) [=] ftag_in_uskl R.
-Proof.
-  induction R; intros β; simpl;
-    try solve [ reflexivity
-              | destruct_if; simpl; reflexivity
-              | rewrite IHR; reflexivity
-              | rewrite IHR1, IHR2; reflexivity ].
-Qed.
-
 (** The JOIN transports: both halves do, and the two erasures commute with
     the substitution of [1]. *)
 Lemma ad_consis_join_subst_flex : forall Ψ Θ R Q,
@@ -1389,7 +1362,7 @@ Proof.
     6: exact IHad_pat_sub_fuel.
     + assumption.
     + eassumption.
-    + simpl. rewrite ftag_in_uskl_subst_unit. assumption.
+    + simpl. rewrite ftag_in_uskl_subst_tagfree by reflexivity. assumption.
     + apply a_tags_sort_subst_unit; eassumption.
     + rewrite uskl_to_pskl_subst_unit;
         eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono);
@@ -1404,7 +1377,7 @@ Proof.
     6: exact IHad_pat_sub_fuel.
     + assumption.
     + eassumption.
-    + simpl. rewrite ftag_in_uskl_subst_unit. assumption.
+    + simpl. rewrite ftag_in_uskl_subst_tagfree by reflexivity. assumption.
     + apply a_tags_sort_subst_unit; eassumption.
     + rewrite uskl_to_pskl_subst_unit;
         eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono);
@@ -1605,21 +1578,6 @@ Proof.
   unfold ptyp_to_bskl_syn. rewrite bskl_to_pskl_pskl_to_bskl_syn. reflexivity.
 Qed.
 
-(** ⭐ A MONOTYPE's painting is tag-free, so substituting it cannot add tags. *)
-Lemma ftag_in_uskl_subst_mono : forall R τ β,
-  ftag_in_uskl (subst_uskl_in_uskl (ptyp_to_uskl_syn τ) β R)
-  [=] ftag_in_uskl R.
-Proof.
-  induction R; intros τ β; simpl;
-    try solve [ reflexivity
-              | rewrite IHR; reflexivity
-              | rewrite IHR1, IHR2; reflexivity ].
-  destruct_if; [ | reflexivity ].
-  induction τ; simpl; try reflexivity.
-  - rewrite IHτ1, IHτ2. clear; fsetdec.
-  - rewrite IHτ. reflexivity.
-Qed.
-
 (** The JOIN transports: both halves do, and the two erasures commute with
     the substitution of a monotype. *)
 Lemma ad_consis_join_subst_flex_def : forall Ψ Θ R Q,
@@ -1716,7 +1674,7 @@ Proof.
     6: exact IHad_pat_sub_fuel.
     + assumption.
     + eassumption.
-    + simpl. rewrite ftag_in_uskl_subst_mono. assumption.
+    + simpl. rewrite ftag_in_uskl_subst_tagfree by apply ftag_ptyp_to_uskl_syn. assumption.
     + apply a_tags_sort_subst_mono; eassumption.
     + rewrite uskl_to_pskl_subst_mono;
         eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ0);
@@ -1735,7 +1693,7 @@ Proof.
     6: exact IHad_pat_sub_fuel.
     + assumption.
     + eassumption.
-    + simpl. rewrite ftag_in_uskl_subst_mono. assumption.
+    + simpl. rewrite ftag_in_uskl_subst_tagfree by apply ftag_ptyp_to_uskl_syn. assumption.
     + apply a_tags_sort_subst_mono; eassumption.
     + rewrite uskl_to_pskl_subst_mono;
         eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ0);

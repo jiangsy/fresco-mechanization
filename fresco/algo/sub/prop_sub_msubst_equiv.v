@@ -363,9 +363,6 @@ Qed.
 (*  to keep the rebuild local (moving it forces the full algo chain).     *)
 (* ===================================================================== *)
 
-Lemma msubst_ptyp_nil : forall A, msubst_ptyp nil A = A.
-Proof. induction A; cbn; f_equal; auto. Qed.
-
 Lemma msubst_pskl_nil : forall P, msubst_pskl nil P = P.
 Proof. induction P; cbn; f_equal; auto. Qed.
 
@@ -407,7 +404,7 @@ Proof.
   (* [A0]: the [__var_typ] case's rule binder is [A] *)
   intros Θ Hwf; induction Hwf; intros A0 HlcA.
   - (* nil : the empty metasubstitution is the identity *)
-    cbn. rewrite msubst_ptyp_nil.
+    cbn. rewrite msubst_ptyp_id by constructor.
     apply a_tyequiv__refl; exact HlcA.
   - (* flex α : the entry maps α to itself *)
     apply msubst_ptyp_tyequiv_pointwise;

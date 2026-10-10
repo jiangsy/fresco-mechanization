@@ -443,22 +443,6 @@ Proof.
   rewrite ftvar_in_pskl_uskl_to_pskl; exact Hin.
 Qed.
 
-(* A rigid variable cannot refine into an arrow (only [flex_l] could fire,
-   and its [α] is a defined flexible, clashing with rigidity). *)
-Lemma ad_refine_syn_rigid_var_arrow_absurd : forall Θ Δ α Q1 Q2,
-  {{ ⊢ Θ }}a ->
-  binds α abind_tvar Θ ->
-  {{ Θ ⨟ Δ ⊢ᵣ (bskl_var_f α) ⊳ (bskl_arrow Q1 Q2) }}ad ->
-  False.
-Proof.
-  intros Θ Δ α Q1 Q2 Hwf Hb H; inversion H; subst;
-    match goal with
-    | Hbd : binds _ (abind_flex_mono_def _) _ |- _ =>
-        pose proof (binds_unique _ _ _ _ _ Hb Hbd (a_wf_aenv_uniq Hwf)) as Hc;
-        discriminate Hc
-    end.
-Qed.
-
 (* A mono-paint consistency subject is well-formed as a monotype: every
    variable leaf is [a_binds_tvar] (from [__var] / [__flex_l]). *)
 Lemma ad_pat_consis_mono_paint_subj_wf : forall Ψs Θ ψ Q,
@@ -1031,102 +1015,6 @@ Qed.
     COMMUTATION §8c.16 §D budgeted, and it is paid exactly once, here,
     instead of at every consumer: peel the subject's binder, EXCHANGE the
     two rigid openers, recurse, and re-close. *)
-
-Lemma a_solve_eq_var_subject : forall Θ P Q Ξ P',
-  {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a ->
-  forall α, P = pskl_var_f α -> Ξ = nil /\ P' = pskl_var_f α.
-Proof.
-  intros Θ P Q Ξ P' HD.
-  induction HD; intros α0 Heq; try discriminate.
-  - (* SE-Var *) inversion Heq; subst. split; reflexivity.
-  - (* SE-FlexR — the guess at a variable IS the variable *)
-    subst.
-    match goal with
-    | G : a_guess_mono _ (pskl_var_f _) _ _ |- _ => inversion G; subst
-    end.
-    split; reflexivity.
-  - (* SE-VacuousR *) subst. split; reflexivity.
-  - (* SE-GuardedGhost *) eauto.
-Qed.
-
-Lemma a_solve_sub_var_subject : forall Θ m α Q Ξ P',
-  {{ Θ ⊢ₛ (pskl_var_f α) ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
-  Ξ = nil /\ P' = pskl_var_f α.
-Proof.
-  intros * HD; inversion HD; subst.
-  - (* SS-Var *) split; reflexivity.
-  - (* SS-Vacuous *) split; reflexivity.
-  - (* SS-Check — the EQ layer answers a variable subject with itself *)
-    match goal with
-    | He : a_solve_eq _ _ _ _ _ |- _ =>
-        apply (a_solve_eq_var_subject He); reflexivity
-    end.
-  - (* SS-ForallR — ⛔ BARRED at a variable subject by the guard *)
-    exfalso.
-    match goal with
-    | Hoff : solve_l_off (pskl_var_f _) |- _ => exact (proj1 Hoff _ eq_refl)
-    end.
-Qed.
-
-Lemma a_solve_sub_inv_forall_l : forall Θ m P0 Q Ξ P',
-  {{ Θ ⊢ₛ (pskl_all_syn P0) ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
-  exists β P'',
-    β `notin` ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl Q
-    /\ P' = pskl_all_syn (close_pskl_wrt_pskl β P'')
-    /\ {{ ((β ~ abind_tvar) ++ Θ) ⊢ₛ (open_pskl_wrt_pskl P0 (pskl_var_f β))
-          ≼[ m ] Q ⤳ Ξ ⨾ P'' }}a.
-Proof.
-  intros * H; inversion H; subst.
-  - (* SS-ForallL *)
-    match goal with
-    | Hfr : ?b `notin` _, Hp : a_solve_sub _ _ _ _ _ ?y |- _ =>
-        exists b, y
-    end.
-    repeat split; assumption.
-  - (* SS-Vacuous — ⛔ BARRED at a ∀ subject *)
-    exfalso.
-    match goal with
-    | Hoff : peel_l_off (pskl_all_syn _) |- _ => exact (proj1 Hoff _ eq_refl)
-    end.
-  - (* SS-Check — a ∀ subject is never guarded *)
-    match goal with
-    | Hg : guarded_pskl (pskl_all_syn _) |- _ => inversion Hg
-    end.
-  - (* SS-ForallR — ⛔ BARRED at a ∀ subject *)
-    exfalso.
-    match goal with
-    | Hoff : solve_l_off (pskl_all_syn _) |- _ =>
-        exact (proj1 (proj2 Hoff) _ eq_refl)
-    end.
-Qed.
-
-Lemma a_solve_sub_inv_univ_ghost_l : forall Θ m P0 Q Ξ P',
-  {{ Θ ⊢ₛ (pskl_univ_ghost P0) ≼[ m ] Q ⤳ Ξ ⨾ P' }}a ->
-  exists P'', P' = pskl_univ_ghost P''
-    /\ {{ Θ ⊢ₛ P0 ≼[ m ] Q ⤳ Ξ ⨾ P'' }}a.
-Proof.
-  intros * H; inversion H; subst.
-  - (* SS-UnivGhostL *)
-    match goal with
-    | Hp : a_solve_sub _ _ P0 _ _ ?y |- _ => exists y
-    end.
-    split; [ reflexivity | assumption ].
-  - (* SS-Vacuous — ⛔ BARRED at a ⫯ subject *)
-    exfalso.
-    match goal with
-    | Hoff : peel_l_off (pskl_univ_ghost _) |- _ => exact (proj2 Hoff _ eq_refl)
-    end.
-  - (* SS-Check — a ⫯ subject is never guarded *)
-    match goal with
-    | Hg : guarded_pskl (pskl_univ_ghost _) |- _ => inversion Hg
-    end.
-  - (* SS-ForallR — ⛔ BARRED at a ⫯ subject *)
-    exfalso.
-    match goal with
-    | Hoff : solve_l_off (pskl_univ_ghost _) |- _ =>
-        exact (proj2 (proj2 Hoff) _ eq_refl)
-    end.
-Qed.
 
 Lemma a_solve_sub_forall_r_gen_n : forall n Θ P B Ξ P' β,
   size_pskl P <= n ->
@@ -2990,8 +2878,9 @@ Proof.
             by (eapply msubst_pskl_tvar_id;
                 [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
           rewrite Hmid in Hrefine; cbn [pskl_to_bskl_inh] in Hrefine.
-          eapply ad_refine_syn_rigid_var_arrow_absurd;
-            [ exact HwfΘ | eapply a_inc_binds_tvar; eauto | exact Hrefine ]. }
+          eapply (ad_refine_syn_rigid_var_nonvar_absurd Hrefine);
+            [ intros x b Hb; exact Hb | apply a_wf_aenv_uniq; exact HwfΘ
+            | eapply a_inc_binds_tvar; eauto | intros βx Hcc; discriminate Hcc ]. }
         (* ⭐ flexible β0 : THE FLEX-P0 CASE, now FACTORED (2026-08-18) —
            the block never looked at the subject's shape, and the
            FlexR-PRIORITY GUARD gave it a second consumer in the ⫯ grid. *)

@@ -1083,21 +1083,6 @@ Proof.
   - apply ursubst__dot_univ_ghost; eauto.
 Qed.
 
-(** Drop a mid entry a binding does not match. *)
-Lemma binds_mid_drop : forall (Θ1 Θ0 : aenv) α β (b bmid : abind),
-  binds β b (Θ1 ++ (α ~ bmid) ++ Θ0) ->
-  (β = α -> b <> bmid) ->
-  binds β b (Θ1 ++ Θ0).
-Proof.
-  intros Θ1 Θ0 α β b bmid Hb Hne.
-  unfold binds in *.
-  apply in_app_iff in Hb; destruct Hb as [Hb | Hb].
-  - apply in_app_iff; left; exact Hb.
-  - simpl in Hb; destruct Hb as [Heq | Hb].
-    + inversion Heq; subst. exfalso. exact (Hne eq_refl eq_refl).
-    + apply in_app_iff; right; exact Hb.
-Qed.
-
 (** Partial precision never reads a rigid tvar entry of its context (only
     the flexible definitions, through flex_l / flex_r), so such an entry
     can be dropped: the binder cases' IH concludes at [(β~tvar)++Θ] and
@@ -1128,12 +1113,12 @@ Proof.
   - apply ad_ppre__univ_ghost_keep.
     apply (IHad_partial_precise α1 Θ1 Θ0 eq_refl).
   - eapply ad_ppre__flex_l;
-      [ eapply binds_mid_drop;
-        [ exact H | intros _ Habs; discriminate Habs ]
+      [ eapply binds_strip_mid;
+        [ exact H | intro Habs; inversion Habs ]
       | apply (IHad_partial_precise α1 Θ1 Θ0 eq_refl) ].
   - eapply ad_ppre__flex_r;
-      [ eapply binds_mid_drop;
-        [ exact H | intros _ Habs; discriminate Habs ]
+      [ eapply binds_strip_mid;
+        [ exact H | intro Habs; inversion Habs ]
       | apply (IHad_partial_precise α1 Θ1 Θ0 eq_refl) ].
 Qed.
 
@@ -1531,21 +1516,25 @@ Proof.
     pose proof (binds_unique _ _ _ _ _ Hb Hbf Huniq) as Hc; discriminate Hc.
 Qed.
 
-(** A rigid variable cannot refine into [unit] (only [flex_l] could fire,
-    but its [α] would be a defined flexible, clashing with rigidity).  Used
-    to discharge the P0 = rigid-variable subcase of the Unit case. *)
-Lemma ad_refine_syn_rigid_var_unit_absurd : forall Θ Δ α,
-  {{ ⊢ Θ }}a ->
-  binds α abind_tvar Θ ->
-  {{ Θ ⨟ Δ ⊢ᵣ (bskl_var_f α) ⊳ bskl_unit }}ad ->
+(** A rigid variable never refines into a non-variable target — stated over
+    a SUB-context [Θr] of a uniq [Θfull] (the def-lookup transports along
+    binds-inclusion into the full context, where uniqueness kills it); take
+    [Θr := Θfull] for the plain form. *)
+Lemma ad_refine_syn_rigid_var_nonvar_absurd : forall Θr Δr β Q,
+  {{ Θr ⨟ Δr ⊢ᵣ (bskl_var_f β) ⊳ Q }}ad ->
+  forall Θfull, (forall x b, binds x b Θr -> binds x b Θfull) ->
+  uniq Θfull ->
+  binds β abind_tvar Θfull ->
+  (forall β0, Q <> bskl_var_f β0) ->
   False.
 Proof.
-  intros Θ Δ α Hwf Hb H; inversion H; subst;
-    match goal with
-    | Hbd : binds _ (abind_flex_mono_def _) _ |- _ =>
-        pose proof (binds_unique _ _ _ _ _ Hb Hbd (a_wf_aenv_uniq Hwf)) as Hc;
-        discriminate Hc
-    end.
+  intros Θr Δr β Q H; inversion H; subst; intros Θfull Hmon Hu Hb Hnv.
+  - eapply Hnv; reflexivity.
+  - match goal with Hbd : binds _ (abind_flex_mono_def _) _ |- _ =>
+      pose proof (Hmon _ _ Hbd) as Hbd';
+      pose proof (binds_unique _ _ _ _ _ Hb Hbd' Hu) as Hc;
+      discriminate Hc end.
+  - eapply Hnv; reflexivity.
 Qed.
 
 (* ---- the Unit consistency case, as a standalone size-induction lemma ---- *)
@@ -1592,8 +1581,9 @@ Proof.
         assert (Hmid : msubst_pskl κ (pskl_var_f α) = pskl_var_f α)
           by (eapply msubst_pskl_tvar_id; eauto).
         rewrite Hmid in Hrefine; simpl in Hrefine.
-        eapply ad_refine_syn_rigid_var_unit_absurd;
-          [ exact HwfΘ | eapply a_inc_binds_tvar; eauto | exact Hrefine ].
+        eapply (ad_refine_syn_rigid_var_nonvar_absurd Hrefine);
+          [ intros x b Hb; exact Hb | apply a_wf_aenv_uniq; exact HwfΘ
+          | eapply a_inc_binds_tvar; eauto | intros β0 Hcc; discriminate Hcc ].
       (* ⭐ BOTH FLEXIBLE CASES CHANGED (2026-08-04).  The repaired SE-FlexR
          returns [guess^TY(P_i)], not the flexible — and here the subject is
          [unit], whose guess is [(·; unit)].  So the witness is [unit], the
@@ -1890,16 +1880,6 @@ Proof.
       [ auto | auto | clear; fsetdec ].
 Qed.
 
-Lemma ad_refine_mono_paint_refl : forall τ Θ Δr,
-  mono_ptyp τ ->
-  {{ Θ ⨟ Δr ⊢ᵣ (ptyp_to_bskl_syn τ) ⊳ (ptyp_to_bskl_syn τ) }}ad.
-Proof.
-  intros τ Θ Δr Hm; induction Hm; simpl.
-  - apply ad_refine_syn__unit.
-  - apply ad_refine_syn__var.
-  - apply ad_refine_syn_arrow_intro; auto.
-Qed.
-
 (* ---- precision into a mono paint carries no tags ---- *)
 
 Lemma ad_ppre_mono_tags_empty : forall Θ Δ P ψ Ψ,
@@ -1987,7 +1967,7 @@ Proof.
   - (* var: subject IS the target var *)
     inversion Heq; subst.
     eapply ad_refine_syn__flex_l; [ exact Hbd | ].
-    apply ad_refine_mono_paint_refl.
+    apply ad_refine_syn_mono_refl.
     eapply a_wf_aenv_binds_def_mono; eauto.
   - (* ghost: rebuild at the definition's paint *)
     destruct P; simpl in Heq; try discriminate Heq.
@@ -2381,25 +2361,6 @@ Proof.
       | reflexivity | exact HmX
       | eapply a_wf_aenv_binds_def_wf; eauto
       | exact Hdf | exact Hhp' ].
-Qed.
-
-(* ---- a rigid variable never refines into a non-variable target ---- *)
-
-Lemma ad_refine_syn_rigid_var_nonvar_absurd : forall Θ Δr α Q,
-  {{ ⊢ Θ }}a ->
-  binds α abind_tvar Θ ->
-  {{ Θ ⨟ Δr ⊢ᵣ (bskl_var_f α) ⊳ Q }}ad ->
-  (forall β, Q <> bskl_var_f β) ->
-  False.
-Proof.
-  intros Θ Δr α Q HwfΘ Hb H Hnv; inversion H; subst.
-  - eapply Hnv; reflexivity.
-  - match goal with
-    | Hbd : binds _ (abind_flex_mono_def _) _ |- _ =>
-        pose proof (binds_unique _ _ _ _ _ Hb Hbd (a_wf_aenv_uniq HwfΘ)) as Hc;
-        discriminate Hc
-    end.
-  - eapply Hnv; reflexivity.
 Qed.
 
 (* ===================================================================== *)

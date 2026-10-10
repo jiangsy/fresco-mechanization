@@ -1010,7 +1010,7 @@ Proof.
                 by (eapply msubst_pskl_tvar_id;
                     [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
               rewrite Hmid in Hrefine1. simpl in Hrefine1.
-              eapply (ad_refine_syn_rigid_var_nonvar_absurd_sub Hrefine1);
+              eapply (ad_refine_syn_rigid_var_nonvar_absurd Hrefine1);
                 [ intros x b Hb; eapply aenv_split_sub_r;
                     [ exact HspΘ | exact Hb ]
                 | apply a_wf_aenv_uniq; exact HwfΘ
@@ -1272,7 +1272,7 @@ Proof.
                 by (eapply msubst_pskl_tvar_id;
                     [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
               rewrite Hmid in Hrefine1. simpl in Hrefine1.
-              eapply (ad_refine_syn_rigid_var_nonvar_absurd_sub Hrefine1);
+              eapply (ad_refine_syn_rigid_var_nonvar_absurd Hrefine1);
                 [ intros x b Hb; eapply aenv_split_sub_r;
                     [ exact HspΘ | exact Hb ]
                 | apply a_wf_aenv_uniq; exact HwfΘ
@@ -1559,7 +1559,7 @@ Proof.
             by (eapply msubst_pskl_tvar_id;
                 [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
           rewrite Hmid in Hrefine. simpl in Hrefine.
-          eapply (ad_refine_syn_rigid_var_nonvar_absurd_sub Hrefine)
+          eapply (ad_refine_syn_rigid_var_nonvar_absurd Hrefine)
             with (Θfull := Θ);
             [ intros x b Hb; eapply aenv_split_sub_r;
                 [ exact HspΘ | exact Hb ]
@@ -2189,7 +2189,7 @@ Proof.
                 by (eapply msubst_pskl_tvar_id;
                     [ exact HwfΘ0 | exact Hκ | exact Hrig ]);
               rewrite Hmid in Hin; simpl in Hin;
-              eapply (ad_refine_syn_rigid_var_nonvar_absurd_sub Hin);
+              eapply (ad_refine_syn_rigid_var_nonvar_absurd Hin);
                 [ intros x b Hb; eapply aenv_split_sub_r;
                     [ exact HspΘ | exact Hb ]
                 | apply a_wf_aenv_uniq; exact HwfΘ
@@ -2304,7 +2304,7 @@ Proof.
             by (eapply msubst_pskl_tvar_id;
                 [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
           rewrite Hmid in Hrefine. simpl in Hrefine.
-          eapply (ad_refine_syn_rigid_var_nonvar_absurd_sub Hrefine)
+          eapply (ad_refine_syn_rigid_var_nonvar_absurd Hrefine)
             with (Θfull := Θ);
             [ intros x b Hb; eapply aenv_split_sub_r;
                 [ exact HspΘ | exact Hb ]
