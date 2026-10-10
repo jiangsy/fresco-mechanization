@@ -2117,7 +2117,7 @@ Proof.
     pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf Hb)
       as Hskl.
   - (* AP-Unit *)
-    destruct (a_sub_sound_v H Hwf HwfP0
+    destruct (a_sub_sound H Hwf HwfP0
                 ltac:(apply a_wf_pskl__unit)
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))
@@ -2131,7 +2131,7 @@ Proof.
   - (* AP-Var, type entry *)
     assert (HwfA : a_wf_ptyp Θ0 A)
       by (eapply a_wf_aenv_binds_var_typ_wf; eassumption).
-    destruct (a_sub_sound_v H0 Hwf HwfP0
+    destruct (a_sub_sound H0 Hwf HwfP0
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA)
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))
@@ -2148,7 +2148,7 @@ Proof.
       | exact HwfQt
       | rewrite pskl_to_uskl_via_bskl_syn; exact Hjoin ].
   - (* AP-Var, skeleton entry *)
-    destruct (a_sub_sound_v H0 Hwf HwfP0 (Hskl _ _ H)
+    destruct (a_sub_sound H0 Hwf HwfP0 (Hskl _ _ H)
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))
       as [Hle [Hwf1 [Qt [HeQt [Hjoin Href]]]]].
@@ -2164,7 +2164,7 @@ Proof.
       | rewrite pskl_to_uskl_via_bskl_syn; exact Hjoin ].
   - (* AP-Anno *)
     destruct (a_wf_exp_anno_inv Hexp) as [HwfA Hexp0].
-    destruct (a_sub_sound_v H Hwf HwfP0
+    destruct (a_sub_sound H Hwf HwfP0
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA)
                 ltac:(intros _; exact Hmod)
                 ltac:(intros Hd; discriminate))

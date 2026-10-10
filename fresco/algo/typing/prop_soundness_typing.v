@@ -1389,7 +1389,7 @@ Proof.
     pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf Hb)
       as Hskl.
   - (* AT-Unit *)
-    destruct (a_sub_sound_v H Hwf HwfP0
+    destruct (a_sub_sound H Hwf HwfP0
                 ltac:(apply a_wf_pskl__unit)
                 ltac:(intros Hd; discriminate)
                 ltac:(intros _; exact Hmod))
@@ -1405,7 +1405,7 @@ Proof.
   - (* AT-Var *)
     assert (HwfA : a_wf_ptyp Θ0 A)
       by (eapply a_wf_aenv_binds_var_typ_wf; eassumption).
-    destruct (a_sub_sound_v H0 Hwf HwfP0
+    destruct (a_sub_sound H0 Hwf HwfP0
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA)
                 ltac:(intros Hd; discriminate)
                 ltac:(intros _; exact Hmod))
@@ -1431,7 +1431,7 @@ Proof.
       eapply ad_sd_typing_mod_comp_ty; eassumption. }
     subst Bt.
     assert (HwfA1 : a_wf_ptyp Θ1 A) by (eapply a_wf_ptyp_isub; eassumption).
-    destruct (a_sub_sound_v H0 Hwf1
+    destruct (a_sub_sound H0 Hwf1
                 ltac:(eapply a_wf_pskl_isub; [ exact HwfP0 | exact Hle1 ])
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA1)
                 ltac:(intros Hd; discriminate)

@@ -35,8 +35,8 @@ Require Import src.fresco.algo.prop_inc.
 Require Import src.fresco.algo.prop_metasubst.
 Require Import src.fresco.algo.prop_precise.
 Require Import src.fresco.algo.consis.prop_soundness_consis.
-(* cluster 4: [a_consis_decorate] moved to prop_consis_rename.v §10 *)
 Require Import src.fresco.algo.consis.prop_consis_rename.
+Require Import src.fresco.algo.consis.prop_consis_precise.   (* d_tags_skl_ftag *)
 Require Import src.fresco.algo.prop_refine.
 Require Import src.fresco.algo.prop_stability.
 Require Import src.fresco.algo.prop_pat_sub.
@@ -55,26 +55,10 @@ Set Implicit Arguments.
 (*  computed by the solvetag run on the constraints collected at α's      *)
 (*  occurrences.  Induction on the decorated subtyping premise            *)
 (*  (generalizing the look run): the paper's WLOG reorderings become      *)
-(*  a_looksub_open_target (ForallR) and per-case inversions; the looked   *)
-(*  variable is renamed on the fly (a_looksub_rename_var) to keep it      *)
-(*  clear of guessed flexible names (Barendregt prose-completion).        *)
+(*  a_looksub_open_target_at (ForallR) and per-case inversions; the      *)
+(*  looked variable is renamed on the fly (a_looksub_rename_var) to keep  *)
+(*  it clear of guessed flexible names (Barendregt prose-completion).     *)
 (* ===================================================================== *)
-
-Lemma subst_uskl_in_uskl_decompose : forall ψ α α' R,
-  α `notin` ftvar_in_uskl ψ ->
-  α' `notin` ftvar_in_uskl R ->
-  α' <> α ->
-  subst_uskl_in_uskl ψ α' (subst_uskl_in_uskl (uskl_var_f α') α R)
-  = subst_uskl_in_uskl ψ α R.
-Proof.
-  intros ψ α α' R Hαψ Hα'S Hne.
-  rewrite subst_uskl_in_uskl_subst_uskl_in_uskl;
-    [ | assumption | auto ].
-  simpl.
-  destruct_if as [_ | Hc];
-      [ | exfalso; congruence ].
-  rewrite (subst_uskl_in_uskl_fresh_eq R); [ reflexivity | assumption ].
-Qed.
 
 Lemma pskl_to_uskl_not_tag : forall P ε ψ,
   pskl_to_uskl P <> uskl_all_tag ε ψ.
@@ -683,7 +667,7 @@ Proof.
                 (subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αv R0)
                 ψg').
         { rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcstrip ].
-          rewrite subst_uskl_in_uskl_decompose;
+          rewrite subst_uskl_in_uskl_rename_compose;
             [ | exact HαvStrip | clear - Hαt; fsetdec | clear - Hαt; fsetdec ].
           rewrite (subst_uskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
           reflexivity. }
@@ -693,7 +677,7 @@ Proof.
                  (subst_uskl_in_uskl (uskl_var_f αt) αv R0) ψg')
             = open_uskl_wrt_uskl (subst_uskl_in_uskl ψa αv R0) ψg').
         { rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcψ ].
-          rewrite subst_uskl_in_uskl_decompose;
+          rewrite subst_uskl_in_uskl_rename_compose;
             [ | exact Hαψ | clear - Hαt; fsetdec | clear - Hαt; fsetdec ].
           rewrite (subst_uskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
           reflexivity. }
@@ -981,7 +965,7 @@ Proof.
                 (subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αv R0)
                 ψg').
         { rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcstrip ].
-          rewrite subst_uskl_in_uskl_decompose;
+          rewrite subst_uskl_in_uskl_rename_compose;
             [ | exact HαvStrip | clear - Hαt; fsetdec | clear - Hαt; fsetdec ].
           rewrite (subst_uskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
           reflexivity. }
@@ -991,7 +975,7 @@ Proof.
                  (subst_uskl_in_uskl (uskl_var_f αt) αv R0) ψg')
             = open_uskl_wrt_uskl (subst_uskl_in_uskl ψa αv R0) ψg').
         { rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcψ ].
-          rewrite subst_uskl_in_uskl_decompose;
+          rewrite subst_uskl_in_uskl_rename_compose;
             [ | exact Hαψ | clear - Hαt; fsetdec | clear - Hαt; fsetdec ].
           rewrite (subst_uskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
           reflexivity. }
@@ -1397,60 +1381,27 @@ Qed.
 Lemma d_tags_skl_det : forall Ψ1 Ψ' ψ,
   d_tags_skl Ψ1 ψ -> d_tags_skl Ψ' ψ -> Ψ1 [=] Ψ'.
 Proof.
-  intros Ψ1 Ψ' ψ H; revert Ψ'; induction H; intros Ψ' HB; inversion HB; subst.
-  - (* unit *) fsetdec.
-  - (* var *) fsetdec.
-  - (* arrow : pin the second derivation's components via [Ψ'] union eqn *)
-    match goal with
-    | Hd1 : d_tags_skl ?Ψa R1, Hd2 : d_tags_skl ?Ψb R2,
-      _ : Ψ' [=] union ?Ψa ?Ψb |- _ =>
-        pose proof (IHd_tags_skl1 _ Hd1) as He1;
-        pose proof (IHd_tags_skl2 _ Hd2) as He2
-    end.
-    fsetdec.
-  - (* all_tag : match the IH by shape; pin the second body via [Ψ']=add ε _ *)
-    match goal with
-    | HIH : forall α, α `notin` ?La -> forall Ψx, d_tags_skl Ψx _ -> _ [=] Ψx,
-      Hbody : forall α, α `notin` ?Lb -> d_tags_skl ?Ψb _,
-      _ : Ψ' [=] add ε ?Ψb |- _ =>
-        destruct (atom_fresh (La `union` Lb)) as [α Hα];
-        pose proof (HIH α ltac:(clear - Hα; solve_notin_auto)
-                      Ψb (Hbody α ltac:(clear - Hα; solve_notin_auto))) as He
-    end.
-    fsetdec.
-  - (* dot_ghost *) fsetdec.
-  - (* dot_univ_ghost *) apply IHd_tags_skl; assumption.
+  intros Ψ1 Ψ' ψ H1 H2.
+  rewrite (d_tags_skl_ftag H1), (d_tags_skl_ftag H2). reflexivity.
 Qed.
 
-(** Guardedness / ghost-freeness survive a skeleton-variable rename. *)
+(** Guardedness / ghost-freeness survive a skeleton-variable rename: the
+    variable instances of prop_pat_sub.v's [*_subst_mono]. *)
 Lemma guarded_uskl_subst_var : forall ψ α β,
   guarded_uskl ψ -> guarded_uskl (subst_uskl_in_uskl (uskl_var_f β) α ψ).
 Proof.
-  intros ψ α β H; inversion H; subst; simpl.
-  - auto with fresco.
-  - destruct_if; auto with fresco.
-  - apply guarded_uskl__arrow;
-      apply subst_uskl_in_uskl_lc_uskl; auto; apply lc_uskl_var_f.
+  intros ψ α β H.
+  change (uskl_var_f β) with (ptyp_to_uskl_syn (ptyp_var_f β)).
+  apply guarded_uskl_subst_mono; auto with fresco.
 Qed.
 
 Lemma uskl_ghost_free_subst_var : forall ψ α β,
   uskl_ghost_free ψ ->
   uskl_ghost_free (subst_uskl_in_uskl (uskl_var_f β) α ψ).
 Proof.
-  intros ψ α β H; induction H; simpl.
-  - auto with fresco.
-  - destruct_if; auto with fresco.
-  - auto with fresco.
-  - apply uskl_ghost_free__all_tag with (L := L `union` singleton α);
-      intros α2 Hα2;
-      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
-        [ apply H0; clear - Hα2; fsetdec
-        | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
-  - apply uskl_ghost_free__all_syn with (L := L `union` singleton α);
-      intros α2 Hα2;
-      rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
-        [ apply H0; clear - Hα2; fsetdec
-        | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
+  intros ψ α β H.
+  change (uskl_var_f β) with (ptyp_to_uskl_syn (ptyp_var_f β)).
+  apply uskl_ghost_free_subst_mono; auto with fresco.
 Qed.
 
 (** [solvetag] is invariant under a simultaneous skeleton-variable rename of
@@ -1533,18 +1484,6 @@ Proof.
       first [ apply uskl_ghost_free_subst_var; assumption | assumption ].
 Qed.
 
-(** Renaming the TARGET alone.  The solvetag judgments never inspect a target
-    VARIABLE — only the target's SHAPE (unit / arrow / ∀ / ∀◇ / guarded), and
-    the one rule with a variable target (SEq-FlexR) accepts any variable — so
-    a rename touching the target only is admissible.
-
-    Needed since the freshness campaign (DESIGN.md §4.3): SolS-ForallR hands
-    its consumer ITS OWN binder, and that binder LEAKS into the output, hence
-    may occur free in the output's decoration ψ.  The two-sided
-    [a_solvetag_sub_eq_rename_var] would move it inside ψ as well, so it
-    cannot manufacture SSub-ForallR's cofinite family from the one instance
-    the rule provides; this one can. *)
-
 (** A tag reading witnesses that its subject is a decorated skeleton. *)
 Lemma d_tags_skl_is_dskl : forall Ψ ψ, d_tags_skl Ψ ψ -> is_dskl ψ.
 Proof.
@@ -1559,68 +1498,9 @@ Lemma a_solvetag_sub_eq_sound :
   (forall ψ P Ψ, {{ ψ ∼ P ⤳ Ψ }}da ->
      forall Ψtot, d_tags_skl Ψtot ψ -> Ψ [<=] Ψtot).
 Proof.
-  apply a_solvetag_sub_eq_mutind.
-  - (* SSub-Var *) intros α M P Ψ He Ψtot Hdt; clear - He; fsetdec.
-  - (* SSub-ForallL : subject all_tag ε ψ *)
-    intros L ε ψ M P Ψ Hprem IH Ψtot Hdt; inversion Hdt; subst.
-    match goal with
-    | Hb : forall α, α `notin` ?L1 -> d_tags_skl ?Ψ0 _,
-      Heq : Ψtot [=] add ?e ?Ψ0 |- _ =>
-        destruct (atom_fresh (L `union` L1)) as [β Hβ];
-        pose proof (IH β ltac:(clear - Hβ; solve_notin_auto) Ψ0
-                      (Hb β ltac:(clear - Hβ; solve_notin_auto))) as Hs;
-        clear - Hs Heq; fsetdec
-    end.
-  - (* SSub-UnivGhostLG : subject dot_univ_ghost ψ *)
-    intros ψ M P Ψ Hprem IH Ψtot Hdt; inversion Hdt; subst.
-    match goal with Hd : d_tags_skl ?T ψ |- _ => exact (IH T Hd) end.
-  - (* SSub-Vacuous *) intros ψ M Ψ He Ψtot Hdt; clear - He; fsetdec.
-  - (* SSub-Check *) intros ψ B Ψ Hgf Hgψ HgB Hprem IH Ψtot Hdt; exact (IH Ψtot Hdt).
-  - (* SSub-ForallR *) intros L ψ B Ψ Hgf Hprem IH Ψtot Hdt;
-      destruct (atom_fresh L) as [β Hβ]; exact (IH β ltac:(clear - Hβ; solve_notin_auto) Ψtot Hdt).
-  - (* SSub-Arrow : subject arrow ψ1 ψ2 *)
-    intros ψ1 ψ2 M Q1 Q2 Ψ Ψ1 Ψ2 Hp1 IH1 Hp2 IH2 He Ψtot Hdt; inversion Hdt; subst.
-    match goal with
-    | Ha : d_tags_skl ?T1 ψ1, Hbb : d_tags_skl ?T2 ψ2 |- _ =>
-        pose proof (IH1 T1 Ha); pose proof (IH2 T2 Hbb)
-    end.
-    match goal with Heq : Ψtot [=] _ |- _ => clear - He Heq H H0; fsetdec end.
-  - (* SEq-Unit *) intros Ψ He Ψtot Hdt; clear - He; fsetdec.
-  - (* SEq-Var *) intros α P Ψ He Ψtot Hdt; clear - He; fsetdec.
-  - (* SEq-Vacuous *) intros ψ Ψ He Ψtot Hdt; clear - He; fsetdec.
-  - (* SEq-Arrow *) intros ψ1 ψ2 Q1 Q2 Ψ Ψ1 Ψ2 Hp1 IH1 Hp2 IH2 He Ψtot Hdt;
-      inversion Hdt; subst.
-    match goal with
-    | Ha : d_tags_skl ?T1 ψ1, Hbb : d_tags_skl ?T2 ψ2 |- _ =>
-        pose proof (IH1 T1 Ha); pose proof (IH2 T2 Hbb)
-    end.
-    match goal with Heq : Ψtot [=] _ |- _ => clear - He Heq H H0; fsetdec end.
-  - (* SEq-ForallInh : subject all_tag ε ψ, Ψ = add ε Ψ0 *)
-    intros L ε ψ P Ψ Ψ0 Hprem IH He Ψtot Hdt; inversion Hdt; subst.
-    match goal with
-    | Hb : forall α, α `notin` ?L1 -> d_tags_skl ?Ψt0 _,
-      Heq : Ψtot [=] add ?e ?Ψt0 |- _ =>
-        destruct (atom_fresh (L `union` L1)) as [β Hβ];
-        pose proof (IH β ltac:(clear - Hβ; solve_notin_auto) Ψt0
-                      (Hb β ltac:(clear - Hβ; solve_notin_auto))) as Hs;
-        clear - Hs Heq He; fsetdec
-    end.
-  - (* SEq-UnivGhostG : subject dot_univ_ghost ψ *)
-    intros ψ P Ψ Hprem IH Ψtot Hdt; inversion Hdt; subst.
-    match goal with Hd : d_tags_skl ?T ψ |- _ => exact (IH T Hd) end.
-  - (* SEq-ForallSyn : subject all_tag ε ψ *)
-    intros L ε ψ P Ψ Hprem IH Ψtot Hdt; inversion Hdt; subst.
-    match goal with
-    | Hb : forall α, α `notin` ?L1 -> d_tags_skl ?Ψt0 _,
-      Heq : Ψtot [=] add ?e ?Ψt0 |- _ =>
-        destruct (atom_fresh (L `union` L1)) as [β Hβ];
-        pose proof (IH β ltac:(clear - Hβ; solve_notin_auto) Ψt0
-                      (Hb β ltac:(clear - Hβ; solve_notin_auto))) as Hs;
-        clear - Hs Heq; fsetdec
-    end.
-  - (* SEq-UnivGhostR : subject ψ, target ∀◇P *)
-    intros ψ P Ψ Hg Hprem IH Ψtot Hdt; exact (IH Ψtot Hdt).
-  - (* SEq-FlexR *) intros ψ α Ψ Hgf He Ψtot Hdt; clear - He; fsetdec.
+  split; intros * Hs Ψtot Hdt; rewrite (d_tags_skl_ftag Hdt);
+    [ exact (proj1 a_solvetag_sub_eq_tags_bound _ _ _ _ Hs)
+    | exact (proj2 a_solvetag_sub_eq_tags_bound _ _ _ Hs) ].
 Qed.
 
 (** The list-level solvetag collects only ψ's tags (per-constraint ⊆ + union). *)
@@ -1661,7 +1541,6 @@ Qed.
 
 Inductive dec_ext : pskl -> uskl -> atoms -> Prop :=
 | dec_ext__ghost : forall ψ Ψ,               (* P = ◇ : every tag of ψ remains *)
-    is_dskl ψ ->
     d_tags_skl Ψ ψ ->
     dec_ext pskl_ghost ψ Ψ
 | dec_ext__unit : forall Ψ,
@@ -1716,11 +1595,10 @@ Proof.
     | IH : forall α, α `notin` L -> dec_ext _ _ empty |- _ =>
         exact (IH α ltac:(clear - Hα; solve_notin_auto))
     end.
-  - apply dec_ext__ghost; [ apply is_dskl__dot_ghost | apply d_tags_skl__dot_ghost; fsetdec ].
+  - apply dec_ext__ghost; apply d_tags_skl__dot_ghost; fsetdec.
   - auto with fresco.
 Qed.
 
-(** A guarded skeleton is locally closed. *)
 (** Head-shape predicate: the skeleton's head is unit/var/arrow (the shapes
     [guarded_pskl] admits, without its lc payload; bound vars included so the
     predicate is stable under opening). *)
@@ -1815,7 +1693,7 @@ Qed.
 (** WELL-FORMEDNESS ⟹ [pskl_top_guarded]: [a_wf_pskl__univ_ghost] admits a ∀◇
     ONLY over a [guarded_pskl] body, so every ∀◇ in a wf skeleton heads a
     guarded body.  This is the paper's implicit source-skeleton discipline —
-    it supplies exactly what the coverage needs (no [ghost_free]/[no_top]
+    it supplies exactly what the coverage needs (no [ghost_free]
     hypothesis: a ∀◇ in [P0] is fine, it just wraps a guarded type). *)
 Lemma a_wf_pskl_top_guarded : forall Θ Δ P,
   a_wf_pskl Θ Δ P -> pskl_top_guarded P.
@@ -1887,7 +1765,7 @@ Proof.
     cbn in Hsz; intros Htg Histk Hgf Hera.
   - (* ghost ↦ fresh α̂ : A = var α *)
     destruct ψa; simpl in Hera; try discriminate Hera.
-    apply dec_ext__ghost; [ exact Histk | apply d_tags_skl__var; fsetdec ].
+    apply dec_ext__ghost; apply d_tags_skl__var; fsetdec.
   - (* univ_ghost P ↦ guess P : drop the ∀◇ ; the guess output is guarded *)
     simpl in Htg; destruct Htg as [Hhd Htg0].
     apply dec_ext__skip_univ_ghost;
@@ -1975,38 +1853,14 @@ Proof.
       eauto.
 Qed.
 
-(** Skeleton-variable rename lemmas (for the ∀ case's cofinite reconstruction). *)
-Lemma is_dskl_rename_var : forall ψ α β,
-  is_dskl ψ -> is_dskl (subst_uskl_in_uskl (uskl_var_f β) α ψ).
-Proof.
-  intros ψ α β H; induction H; simpl.
-  - auto with fresco.
-  - destruct_if; auto with fresco.
-  - auto with fresco.
-  - apply is_dskl__all_tag with (L := L `union` singleton α); intros α2 Hα2.
-    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
-      [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
-    match goal with IH : forall α, α `notin` L -> _ |- _ =>
-      apply (IH α2 ltac:(clear - Hα2; solve_notin_auto)) end.
-  - auto with fresco.
-  - auto with fresco.
-Qed.
-
+(** Skeleton-variable rename lemma (for the ∀ case's cofinite reconstruction):
+    the variable instance of prop_pat_sub.v's [d_tags_skl_subst_mono]. *)
 Lemma d_tags_skl_rename_var : forall Ψ ψ α β,
   d_tags_skl Ψ ψ -> d_tags_skl Ψ (subst_uskl_in_uskl (uskl_var_f β) α ψ).
 Proof.
-  intros Ψ ψ α β H; induction H; simpl.
-  - auto with fresco.
-  - destruct_if; auto with fresco.
-  - eauto with fresco.
-  - eapply d_tags_skl__all_tag with (L := L `union` singleton α) (Ψ0 := Ψ0);
-      [ intros α2 Hα2 | assumption | assumption ].
-    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
-      [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
-    match goal with IH : forall α, α `notin` L -> _ |- _ =>
-      apply (IH α2 ltac:(clear - Hα2; solve_notin_auto)) end.
-  - auto with fresco.
-  - auto with fresco.
+  intros Ψ ψ α β H.
+  change (uskl_var_f β) with (ptyp_to_uskl_syn (ptyp_var_f β)).
+  apply d_tags_skl_subst_mono; auto with fresco.
 Qed.
 
 Lemma dec_ext_rename_var : forall P ψ Ψ,
@@ -2015,7 +1869,7 @@ Lemma dec_ext_rename_var : forall P ψ Ψ,
                       (subst_uskl_in_uskl (uskl_var_f β) α ψ) Ψ.
 Proof.
   intros P ψ Ψ H; induction H; intros αr βr; simpl.
-  - auto using is_dskl_rename_var, d_tags_skl_rename_var with fresco.
+  - auto using d_tags_skl_rename_var with fresco.
   - auto with fresco.
   - destruct_if; auto with fresco.
   - eapply dec_ext__arrow; [ apply IHdec_ext1 | apply IHdec_ext2 | assumption ].
@@ -2043,7 +1897,7 @@ Qed.
 (** A [dec_ext] subject is a decorated skeleton. *)
 Lemma dec_ext_is_dskl : forall P ψ Ψ, dec_ext P ψ Ψ -> is_dskl ψ.
 Proof.
-  intros P ψ Ψ H; induction H; eauto with fresco.
+  intros P ψ Ψ H; induction H; eauto using d_tags_skl_is_dskl with fresco.
 Qed.
 
 (** ⚠️⚠️ THE GUARDED-**TARGET** VERSION IS NOW FALSE (2026-08-04, the
@@ -2057,8 +1911,8 @@ Qed.
     ACCUMULATED PATTERN instead, so at [∀γ.γ→γ ∼ β̂] — target guarded, since
     [β̂] is a variable — the output is [∀γ.γ→γ] and its head is NOT guarded.
 
-    ⭐ The GUARDED-SUBJECT version survives, and it is the one the
-    consumers should have used: [a_guess_mono_guarded] (prop_solve_sub.v)
+    ⭐ The GUARDED-SUBJECT version (below, for guarded-HEADED subjects)
+    survives, and it is the one the consumers should have used: [a_guess_mono_guarded] (prop_solve_sub.v)
     says guess^TY is structural on the three guarded shapes, so a guarded
     subject still guesses to a guarded result.  The one call site that
     wanted the target version (SEq-UnivGhostR's twin, the SE-GhostGuarded
@@ -2067,15 +1921,15 @@ Qed.
     [pskl_top_guarded (∀◇P)] supplies — i.e. the paper's own implicit
     source-skeleton discipline ([a_wf_pskl_top_guarded]: a ∀◇ is well-formed
     only over a guarded body).  docs/PAPER-GAPS.md. *)
-Lemma solve_eq_guarded_l_head : forall Θ P P0 Ξ P',
-  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a -> guarded_pskl P -> pskl_guarded_head P'.
+Lemma solve_eq_guarded_head_l : forall Θ P P0 Ξ P',
+  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a -> pskl_guarded_head P -> pskl_guarded_head P'.
 Proof.
-  intros Θ P P0 Ξ P' H; induction H; intros Hg; simpl;
-    try exact I; try (inversion Hg; fail).
-  - (* flex_r : guess^TY is structural on the guarded shapes *)
-    apply guarded_pskl_head. eapply a_guess_mono_guarded; eassumption.
-  - (* ghost_r : P'=P *) inversion Hg; subst; simpl; auto.
-  - (* univ_ghost_r_guarded *) apply IHa_solve_eq; assumption.
+  intros Θ P P0 Ξ P' H; induction H; intros Hg; simpl in Hg;
+    try contradiction; simpl; try exact I;
+    (* flex_r : guess^TY is structural on the guarded shapes *)
+    try solve [ eapply a_guess_mono_head; eassumption ].
+  - (* ghost_r : P'=P *) exact Hg.
+  - (* univ_ghost_r_guarded : P guarded, P∼P0⤳P' *) apply IHa_solve_eq; exact Hg.
 Qed.
 
 (** A decoration of a guarded-headed skeleton has a GUARDED erasure —
@@ -2417,7 +2271,7 @@ Proof.
   - (* ghost_l : P=◇, P'=Q ; the coverage sub-lemma *)
     destruct (dec_ext_cover_eq Hdec Hdt) as [Ψi [Hsi Hsub]].
     exists Ψi, Ψtot; split; [ exact Hsi | split;
-      [ apply dec_ext__ghost; [ eapply d_tags_skl_is_dskl; exact Hdt | exact Hdt ]
+      [ apply dec_ext__ghost; exact Hdt
       | exact Hsub ] ].
   - (* ghost_r : Q=◇, P'=P ; SEq-Vacuous *)
     exists empty, Ψ'; split;
@@ -2700,7 +2554,8 @@ Proof.
     exists Ψi, Ψp; split;
       [ apply a_solvetag_eq__univ_ghost_r;
           [ eapply dec_ext_head_guarded_erase;
-              [ exact Hdec | eapply solve_eq_guarded_l_head; eassumption ]
+              [ exact Hdec | eapply solve_eq_guarded_head_l;
+                [ eassumption | apply guarded_pskl_head; eassumption ] ]
           | exact Hsi ]
       | split; [ exact Hdp | exact Hsub ] ].
 Qed.
@@ -2961,16 +2816,14 @@ Proof.
         exists (Ψi1 `union` Ψi2), Ψtot; split;
           [ eapply a_solvetag_sub__arrow; [ exact Hst1 | exact Hst2 | reflexivity ]
           | split;
-            [ apply dec_ext__ghost; [ eapply d_tags_skl_is_dskl; exact Hdt | exact Hdt ]
+            [ apply dec_ext__ghost; exact Hdt
             | match goal with Heqt : Ψtot [=] _ |- Ψtot [<=] ?β2 `union` _ =>
                 match goal with Heqp : β2 [=] _ |- _ =>
                   clear - Heqt Heqp He1 He2 Hu1 Hu2; fsetdec end end ] ].
       * (* ψ = var (flex_forget under skip) *)
         exists empty, empty; split;
           [ apply a_solvetag_sub__var; fsetdec
-          | split; [ apply dec_ext__ghost;
-                       [ eapply d_tags_skl_is_dskl; exact Hdt
-                       | inversion Hdt; subst; apply d_tags_skl__var; fsetdec ]
+          | split; [ apply dec_ext__ghost; inversion Hdt; subst; apply d_tags_skl__var; fsetdec
                    | inversion Hdt; subst; fsetdec ] ].
     + (* dot_univ_ghost : ψ = ∀◈ψ0, dec_ext (arrow P1' P2') ψ0 *)
       injection HeqW as HeqP; subst P0.
@@ -2993,16 +2846,14 @@ Proof.
           [ apply a_solvetag_sub__univ_ghost_lg;
             eapply a_solvetag_sub__arrow; [ exact Hst1 | exact Hst2 | reflexivity ]
           | split;
-            [ apply dec_ext__ghost; [ eapply d_tags_skl_is_dskl; exact Hdt | exact Hdt ]
+            [ apply dec_ext__ghost; exact Hdt
             | match goal with Heqt : Ψtot [=] _ |- Ψtot [<=] ?β2 `union` _ =>
                 match goal with Heqp : β2 [=] _ |- _ =>
                   clear - Heqt Heqp He1 He2 Hu1 Hu2; fsetdec end end ] ].
       * (* ψ0 = var *)
         exists empty, empty; split;
           [ apply a_solvetag_sub__univ_ghost_lg; apply a_solvetag_sub__var; fsetdec
-          | split; [ apply dec_ext__ghost;
-                       [ eapply d_tags_skl_is_dskl; exact Hdt
-                       | apply d_tags_skl__dot_univ_ghost; apply d_tags_skl__var; fsetdec ]
+          | split; [ apply dec_ext__ghost; apply d_tags_skl__dot_univ_ghost; apply d_tags_skl__var; fsetdec
                    | fsetdec ] ].
     + (* absorb_all : SSub-ForallL down the created ∀-prefix *)
       injection HeqW as HeqP; subst P0.
@@ -3031,16 +2882,13 @@ Proof.
                      (pskl_var_f β) α0 ltac:(simpl; clear - HX0; solve_notin_auto)).
         exact ((proj1 a_solvetag_sub_eq_rename_var) _ _ _ _ Hs0 α0 β).
       * split;
-          [ apply dec_ext__ghost;
-              [ eapply d_tags_skl_is_dskl; exact Hdt | exact Hdt ]
+          [ apply dec_ext__ghost; exact Hdt
           | match goal with Heqt : Ψtot [=] add _ _ |- _ =>
               clear - Heqt HeqAbs He0 Hu0; fsetdec end ].
     + (* flex_forget : ψ = var *)
       exists empty, empty; split;
         [ apply a_solvetag_sub__var; fsetdec
-        | split; [ apply dec_ext__ghost;
-                     [ eapply d_tags_skl_is_dskl; exact Hdt
-                     | inversion Hdt; subst; apply d_tags_skl__var; fsetdec ]
+        | split; [ apply dec_ext__ghost; inversion Hdt; subst; apply d_tags_skl__var; fsetdec
                  | inversion Hdt; subst; fsetdec ] ].
   - (* ghost_l : ◇ ≼[tc] B ⤳ ∀◇B, guarded B = H ; inner induction, the target
        B is matched by the coverage lemma (SSub-Check) *)
@@ -3057,8 +2905,7 @@ Proof.
               | eapply dec_ext_guarded_uskl;
                   [ exact Hde | exact H | eapply d_tags_skl_is_dskl; exact Hdt ]
               | exact H | exact Hsi ]
-          | split; [ apply dec_ext__ghost;
-                       [ eapply d_tags_skl_is_dskl; exact Hdt | exact Hdt ]
+          | split; [ apply dec_ext__ghost; exact Hdt
                    | exact Hsub ] ]
       end.
     + (* dot_univ_ghost : ψ = ∀◈ψ0, dec_ext B ψ0 _ *)
@@ -3072,8 +2919,7 @@ Proof.
               | eapply dec_ext_guarded_uskl;
                   [ exact Hde | exact H | eapply d_tags_skl_is_dskl; exact Hd0 ]
               | exact H | exact Hsi ]
-          | split; [ apply dec_ext__ghost;
-                       [ eapply d_tags_skl_is_dskl; exact Hdt | exact Hdt ]
+          | split; [ apply dec_ext__ghost; exact Hdt
                    | exact Hsub ] ]
       end.
     + (* absorb_all : SSub-ForallL down the created ∀-prefix *)
@@ -3102,16 +2948,13 @@ Proof.
                      ltac:(clear - HX0; solve_notin_auto)).
         exact ((proj1 a_solvetag_sub_eq_rename_var) _ _ _ _ Hs0 α0 β).
       * split;
-          [ apply dec_ext__ghost;
-              [ eapply d_tags_skl_is_dskl; exact Hdt | exact Hdt ]
+          [ apply dec_ext__ghost; exact Hdt
           | match goal with Heqt : Ψtot [=] add _ _ |- _ =>
               clear - Heqt HeqAbs He0 Hu0; fsetdec end ].
     + (* flex_forget : ψ = var *)
       exists empty, empty; split;
         [ apply a_solvetag_sub__var; fsetdec
-        | split; [ apply dec_ext__ghost;
-                     [ eapply d_tags_skl_is_dskl; exact Hdt
-                     | inversion Hdt; subst; apply d_tags_skl__var; fsetdec ]
+        | split; [ apply dec_ext__ghost; inversion Hdt; subst; apply d_tags_skl__var; fsetdec
                  | inversion Hdt; subst; fsetdec ] ].
 Qed.
 
@@ -3137,43 +2980,12 @@ Qed.
     needs NONE of this.                                                     *)
 (* --------------------------------------------------------------------- *)
 
-(** [pskl_no_top P]: no universal ghost ∀◇ anywhere (ghosts ◇ allowed). *)
-Fixpoint pskl_no_top (P : pskl) : Prop :=
-  match P with
-  | pskl_univ_ghost _ => False
-  | pskl_arrow P1 P2 => pskl_no_top P1 /\ pskl_no_top P2
-  | pskl_all_syn P0 => pskl_no_top P0
-  | _ => True
-  end.
-
-Lemma pskl_no_top_top_guarded : forall P, pskl_no_top P -> pskl_top_guarded P.
-Proof. induction P; simpl; intuition. Qed.
-
-(** [guess^TY]'s result, read back into [pskl], has NO universal ghost at all
-    — [ptyp] has no ghost constructor.  This is what keeps the ∀◇-tracking
-    invariants true at the repaired SE-FlexR row, whose output is that
-    result rather than the bare flexible. *)
-Lemma ptyp_to_pskl_no_top : forall A, pskl_no_top (ptyp_to_pskl A).
-Proof. induction A; simpl; intuition. Qed.
-
 (* ===================================================================== *)
-(*  [top_guarded]-INPUT propagation chain (replaces the [no_top] chain):   *)
+(*  [top_guarded]-INPUT propagation chain:                                *)
 (*  a wf [P0] may carry ∀◇ (over GUARDED bodies, a_wf_pskl__univ_ghost), so   *)
 (*  the coverage anchor's [pskl_top_guarded Q] must flow from              *)
-(*  [pskl_top_guarded P0] (⟸ wf), NOT from [ghost_free]/[no_top].          *)
+(*  [pskl_top_guarded P0] (⟸ wf), NOT from [ghost_free].                   *)
 (* ===================================================================== *)
-
-(** A guarded-headed subject stays guarded-headed through eq-solving. *)
-Lemma solve_eq_guarded_head_l : forall Θ P P0 Ξ P',
-  {{ Θ ⊢ₑ P ∼ P0 ⤳ Ξ ⨾ P' }}a -> pskl_guarded_head P -> pskl_guarded_head P'.
-Proof.
-  intros Θ P P0 Ξ P' H; induction H; intros Hg; simpl in Hg;
-    try contradiction; simpl; try exact I;
-    (* flex_r : guess^TY is structural on the guarded shapes *)
-    try solve [ eapply a_guess_mono_head; eassumption ].
-  - (* ghost_r : P'=P *) exact Hg.
-  - (* univ_ghost_r_guarded : P guarded, P∼P0⤳P' *) apply IHa_solve_eq; exact Hg.
-Qed.
 
 (** A guarded-headed subject stays guarded-headed through sub-solving. *)
 Lemma solve_sub_guarded_head_l : forall Θ m P P0 Ξ P',
@@ -3196,7 +3008,7 @@ Proof.
   - (* unit *) exact I.
   - (* var *) exact I.
   - (* flex_r : guess^TY emits no ∀◇, a fortiori all of them are guarded *)
-    apply pskl_no_top_top_guarded; apply ptyp_to_pskl_no_top.
+    apply pskl_ghost_free_top_guarded, ptyp_to_pskl_ghost_free.
   - (* ghost_l : P'=Q *) exact Hgf.
   - (* ghost_r : P'=P *) exact Hnt.
   - (* arrow *) destruct Hnt as [Hnt1 Hnt2]; destruct Hgf as [Hgf1 Hgf2];
@@ -3912,48 +3724,9 @@ Proof.
                     apply Hmod; exact HSK)
               Hgf)
     as (Hisub & Hwf1 & Qt & HeQt & Hjoin & Hrs).
-  (* ⚙ the bundle now concludes the LEAF-VALID join (hand-off §6.2); this
-     theorem's own statement keeps the PLAIN one, recovered here.  When
-     [ad_pat] / [ad_sd_typing] switch to [_gv], this is where the [_gv]
-     is handed on instead. *)
+  (* the bundle concludes the fuel-indexed join; recover the plain one. *)
   destruct Hjoin as [njoin Hjoin]; apply ad_pat_sub_of_fuel in Hjoin.
   exact (conj Hisub (conj Hwf1
            (ex_intro _ Qt (conj HeQt (conj Hjoin
-              Hrs))))).
-Qed.
-
-(** ⭐ THE LEAF-VALID COMPANION (hand-off §6.2).  Identical to
-    [a_sub_sound] except that it hands the bundle's join on as
-    [ad_pat_sub_v] instead of forgetting it — which is what [ad_pat] /
-    [ad_sd_typing]'s base rows now demand, and hence what [a_pat_sound] /
-    [a_typing_sound] consume.  The PLAIN version stays for the ~10 consumers
-    that only need a declarative subtyping derivation. *)
-Theorem a_sub_sound_v : forall NM M P0 Θ0 P P' Θ1,
-  a_sub NM M P0 Θ0 P P' Θ1 ->
-  {{ ⊢ Θ0 }}a ->
-  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
-  {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
-  (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->
-  (NM = a_sub_mode_ty -> a_ty_mode_compat M P0) ->
-  Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\
-  exists Qt,
-    bskl_to_pskl Qt = P' /\
-    {{ empty ⨟ Θ1 ⊢ˢ[ NM | M ] (pskl_to_uskl P) ⩽ Qt }}ad /\
-    {{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ Qt }}ad.
-Proof.
-  intros NM M P0 Θ0 P P' Θ1 Hrun Hwf HwfP0 HwfP Hmod Hgf.
-  pose proof (a_sub_decorate Hrun Hwf HwfP0 HwfP Hmod) as Htag.
-  destruct ((proj1 a_subtag_sound_bundle) _ _ _ _ _ _ _ _ Htag
-              Hwf
-              ltac:(apply pskl_to_uskl_lc; eapply a_wf_pskl_lc; eauto)
-              HwfP0
-              ltac:(rewrite uskl_to_pskl_pskl_to_uskl; exact HwfP)
-              ltac:(intros HSK; apply a_sk_mode_compat_mod_comp_sk;
-                    apply Hmod; exact HSK)
-              Hgf)
-    as (Hisub & Hwf1 & Qt & HeQt & Hjoin & Hrs).
-  destruct Hjoin as [ njoin Hjoin ].
-  exact (conj Hisub (conj Hwf1
-           (ex_intro _ Qt (conj HeQt (conj (ad_pat_sub_of_fuel Hjoin)
               Hrs))))).
 Qed.

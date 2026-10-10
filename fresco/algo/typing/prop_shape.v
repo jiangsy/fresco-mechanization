@@ -99,8 +99,6 @@ Proof.
     end.
 Qed.
 
-Definition a_sub_ty_fn_arrow_shape := proj1 a_sub_sub_flex_fn_arrow_shape.
-
 (** …hence every fn-mode [a_typing] output is a SYNTACTIC arrow chain. *)
 Lemma a_typing_fn_arrow_shape : forall M Θ0 P0 e C Θ1,
   {{ Θ0 ⊢[ M ; P0 ] e ⦂ C ⊣ Θ1 }}a ->
@@ -109,22 +107,15 @@ Proof.
   intros M Θ0 P0 e C Θ1 H; induction H;
     try (apply fn_arrow_shape__tc);
     try (apply fn_arrow_shape_of_pskl;
-         eapply a_sub_ty_fn_arrow_shape; [ eassumption | reflexivity ]).
-  - (* abs *)
+         eapply (proj1 a_sub_sub_flex_fn_arrow_shape);
+         [ eassumption | reflexivity ]).
+  1,2: (* abs / abs_anno *)
     destruct m as [ | | M' ];
       [ apply fn_arrow_shape__ti
       | exfalso; apply H; reflexivity
-      | ].
-    apply fn_arrow_shape__fn.
-    cbn [decr_mode] in *.
-    exact IHa_typing.
-  - (* abs_anno *)
-    destruct m as [ | | M' ];
-      [ apply fn_arrow_shape__ti
-      | exfalso; apply H; reflexivity
-      | ].
-    apply fn_arrow_shape__fn.
-    cbn [decr_mode] in *.
+      | ];
+    apply fn_arrow_shape__fn;
+    cbn [decr_mode] in *;
     exact IHa_typing.
   - (* app : the function's shape at (fn m) peels to the output's at m *)
     inversion IHa_typing1; subst; assumption.
