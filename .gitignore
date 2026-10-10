@@ -11,3 +11,5 @@ fresco/ext_algo/extraction/extracted/
 .DS_Store
 .CoqMakefile.d
 .FILE_LIST
+
+*.pyc
