@@ -94,31 +94,20 @@ Proof.
     + apply is_ityp__arrow; apply is_ityp_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption.
   - (* ∀: SubForallR (intro α) then SubForallL (instantiate by α) *)
     apply d_sub__forall_r with (L := L `union` dom Γ).
-    + apply is_ityp__all with (L := L). intros α Hα.
-      replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
-      rewrite <- ptyp_to_btyp_inh_open.
-      apply is_ityp_ptyp_to_btyp_inh. eapply d_wf_ptyp_lc. apply Hwf0. exact Hα.
-    + intros α Hα.
-      replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
-      rewrite <- ptyp_to_btyp_inh_open.
-      apply d_sub__forall_l_untagged with (Ψ' := (@empty : atoms)) (ph := utyp_var_f α).
-      * intro Hco; discriminate.
-      * fsetdec.
-      * clear; fsetdec.
-      * apply d_tags__var; reflexivity.
-      * apply d_wf_utyp__var; simpl; auto.
-      * apply is_dtyp__var.
-      * replace (utyp_var_f α) with (ptyp_to_utyp_syn (ptyp_var_f α)) by reflexivity.
-        rewrite <- ptyp_to_utyp_syn_open.
-        apply d_sub_equiv with (Ψ := (@empty : atoms)); [ fsetdec | ].
-        apply IH0. clear - Hα. fsetdec.
-Qed.
-
-(* At [mode_tc] the RHS of [⩽] is always inherited (is_ityp). *)
-Lemma d_sub_tc_is_ityp : forall Ψ Γ C B,
-    {{ Ψ ⨟ Γ ⊢[ mode_tc ] C ⩽ B }}d -> is_ityp B.
-Proof.
-  intros Ψ Γ C B H. dependent induction H; eauto.
+    intros α Hα.
+    replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
+    rewrite <- ptyp_to_btyp_inh_open.
+    apply d_sub__forall_l_untagged with (Ψ' := (@empty : atoms)) (ph := utyp_var_f α).
+    * intro Hco; discriminate.
+    * fsetdec.
+    * clear; fsetdec.
+    * apply d_tags__var; reflexivity.
+    * apply d_wf_utyp__var; simpl; auto.
+    * apply is_dtyp__var.
+    * replace (utyp_var_f α) with (ptyp_to_utyp_syn (ptyp_var_f α)) by reflexivity.
+      rewrite <- ptyp_to_utyp_syn_open.
+      apply d_sub_equiv with (Ψ := (@empty : atoms)); [ fsetdec | ].
+      apply IH0. clear - Hα. fsetdec.
 Qed.
 
 (** ** Completeness of [⩽] against the paper's shallow subtyping.
@@ -126,8 +115,7 @@ Qed.
       {{ Γ ⊢ A ≤ B }}d  →  {{ ∅ ⨟ Γ ⊢[mode_tc] syn{A} ⩽ inh{B} }}d.
 
     Each reference rule maps to the matching [⩽] rule: [refl] ↦
-    [d_sub_refl_paint]; [forall_r] ↦ [SubForallR] ([is_ityp] from the IH via
-    [d_sub_tc_is_ityp]); [forall_l] ↦ [SubForallL] (the monotype paint is a
+    [d_sub_refl_paint]; [forall_r] ↦ [SubForallR]; [forall_l] ↦ [SubForallL] (the monotype paint is a
     tag-free [is_dtyp]). *)
 Theorem d_shallow_sub_complete : forall Γ A A',
     {{ Γ ⊢ A ≤ A' }}d ->
@@ -138,14 +126,10 @@ Proof.
     apply d_sub_refl_paint. assumption.
   - (* forall_r *)
     apply d_sub__forall_r with (L := L `union` dom Γ).
-    + apply is_ityp__all with (L := L). intros α Hα.
-      replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
-      rewrite <- ptyp_to_btyp_inh_open.
-      eapply d_sub_tc_is_ityp. apply H0. fsetdec.
-    + intros α Hα.
-      replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
-      rewrite <- ptyp_to_btyp_inh_open.
-      apply H0. fsetdec.
+    intros α Hα.
+    replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
+    rewrite <- ptyp_to_btyp_inh_open.
+    apply H0. fsetdec.
   - (* forall_l: instantiate by the monotype paint *)
     apply d_sub__forall_l_untagged
       with (Ψ' := (@empty : atoms)) (ph := ptyp_to_utyp_syn I).

@@ -103,18 +103,21 @@ Inductive a_consistag :
     {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
     Ψ [=] empty ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) | Ψ ] (uskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1 }}da
-(* ⚙ FlexL / FlexR omit the plain rules' [P0 <> ◇] / [P <> ◇] guards
-   ([a_consis__flex_l] / [__flex_r]).  Harmless: decoration only has to
-   REPLAY every plain run, which fewer premises makes easier, and the
-   decorated soundness bundle is proved for every decorated derivation,
-   guarded or not. *)
+(* FlexL / FlexR carry the plain rules' [P0 <> ◇] / [P <> ◇] guards
+   ([a_consis__flex_l] / [__flex_r]; the SE-FlexR prose-completion, see
+   docs/PAPER-GAPS.md): the paper inherits these rules UNCHANGED from the
+   plain system (decorated-algosub.tex:237), so they say exactly what the
+   plain rules say.  Decoration takes the guard from the plain rule it
+   replays. *)
 | a_consistag__flex_l : forall Δ1 Δ2 Ψ Θ0 Θ1 α P0,            (* FlexL *)
     a_non_flex Θ0 P0 ->
+    P0 <> pskl_ghost ->
     {{ Θ0 ⊲[ nil ] α ≔ P0 ⊣ Θ1 }}a ->
     Ψ [=] empty ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ] (uskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1 }}da
 | a_consistag__flex_r : forall Δ1 Δ2 Ψ Θ0 Θ1 α P,            (* FlexR *)
     a_non_flex Θ0 P ->
+    P <> pskl_ghost ->
     {{ Θ0 ⊲[ nil ] α ≔ P ⊣ Θ1 }}a ->
     Ψ [=] empty ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f α) | Ψ ] (pskl_to_uskl P) ∼ (pskl_var_f α) ⊣ Θ1 }}da

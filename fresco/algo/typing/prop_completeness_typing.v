@@ -530,7 +530,7 @@ Proof.
     apply a_wf_ptyp__all with (L := L `union` dom Θ).
     intros α Hα.
     rewrite <- btyp_to_ptyp_open_var.
-    apply H1; [ clear - Hα; fsetdec | ].
+    apply H0; [ clear - Hα; fsetdec | ].
     apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ].
   - (* abs_check_base *)
     simpl.
@@ -546,7 +546,7 @@ Proof.
     apply a_wf_ptyp__all with (L := L `union` dom Θ).
     intros α Hα.
     rewrite <- btyp_to_ptyp_open_var.
-    apply H1; [ clear - Hα; fsetdec | ].
+    apply H0; [ clear - Hα; fsetdec | ].
     apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ].
   - (* abs_anno_check_base *)
     simpl.
@@ -3897,7 +3897,8 @@ Qed.
     RIGID.  ⚙ NOT [lc_exp e]: unlike theorem 3, this one has an [ad_sd_typing]
     premise, and that judgement exhibits its own subject as well formed.  The
     [a_pat] analogue does NOT hold — [ad_pat__anno] has no premise about its
-    subterm at all — so [a_pat_complete] keeps its [lc]. *)
+    subterm or its annotation (the paper's P-Anno has none) — so
+    [a_pat_complete] keeps its [lc]. *)
 Theorem a_typing_complete : forall e M Θ0 P0 κ Θ B,
   {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->

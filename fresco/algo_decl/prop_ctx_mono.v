@@ -336,8 +336,7 @@ Proof.
       [ eauto | eassumption | eapply a_wf_pskl_mono; eauto
       | eapply ad_pat_sub_mono; eauto ].
   - apply ad_pat__anno;
-      [ eapply a_wf_ptyp_mono; eauto | eapply a_wf_pskl_mono; eauto
-      | eapply ad_pat_sub_mono; eauto ].
+      [ eapply a_wf_pskl_mono; eauto | eapply ad_pat_sub_mono; eauto ].
   - apply ad_pat__freeze; auto.
   - apply ad_pat__abs with (L := L);
       [ assumption | eapply a_wf_pskl_mono; eauto | assumption | ].
@@ -366,13 +365,13 @@ Proof.
       [ eapply a_wf_ptyp_mono; eauto | auto
       | eapply ad_pat_sub_mono; eauto ].
   - eapply ad_sd_typing__freeze; [ auto | eapply a_tyequiv_ctx_mono; eauto ].
-  - apply ad_sd_typing__abs_check_step with (L := L); [ assumption | ].
-    intros α Hα. apply H1; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].
+  - apply ad_sd_typing__abs_check_step with (L := L).
+    intros α Hα. apply H0; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].
   - apply ad_sd_typing__abs_check_base with (L := L);
       [ eapply a_wf_ptyp_mono; eauto | assumption | ].
     intros x Hx. apply H2; [ exact Hx | apply aenv_binds_le_cons; exact Hle ].
-  - apply ad_sd_typing__abs_anno_check_step with (L := L); [ assumption | ].
-    intros α Hα. apply H1; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].
+  - apply ad_sd_typing__abs_anno_check_step with (L := L).
+    intros α Hα. apply H0; [ exact Hα | apply aenv_binds_le_cons; exact Hle ].
   - apply ad_sd_typing__abs_anno_check_base with (L := L);
       [ eapply a_wf_ptyp_mono; eauto | eapply a_tyequiv_ctx_mono; eauto
       | assumption | ].

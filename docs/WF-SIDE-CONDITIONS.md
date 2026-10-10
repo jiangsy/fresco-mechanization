@@ -205,6 +205,42 @@ conversion, so those rows go through `ad_consis_join_inh` /
 have no ghosts, so the condition is free there — which is why the TY half of the
 `d` ⇄ `ad` bridge is closed and the SK half is not.
 
+## 2a. Skeleton consistency / subtyping Ghost — wf of the FILL. **[2026-10-10: decl via (B); ad still (A), by necessity]**
+
+> declarative.tex:2002 (`Ghost`, consistency) and :1912 (`Ghost`, skeleton
+> subtyping) — both rules have **no premise**.  The fill's well-formedness is
+> part of §2's presupposition (wf of the counterpart).
+
+The mech's Ghost rows used to check the fill (`Γ ⨟ ∅ ⊢ₚₛ P`) — the same pattern
+§1 removed from refinement on 2026-10-08.
+
+- **Declarative (`d_pat_consis__ghost`, `d_pat_sub__ghost`) — removed.** The
+  rules are the paper's.  Nothing in the declarative metatheory read the
+  premise.  The one place that needs it is the `d → ad` bridge
+  (`algo_decl/prop_conserv.v`): `d_pat_consis_to_ad`, `d_consis_join_to_ad`
+  and `d_pat_sub_to_ad` now take the counterpart's well-formedness
+  (`{{ ⌊Γ⌋ ⨟ Δ ⊢ₚₛ ⌊Q⌋ }}a`, at ANY Δ, because a ∀ on the counterpart moves
+  its variable into Δ too; the ghost case shrinks Δ to ∅ with
+  `a_wf_pskl_delta_mono`).  `d_pat_to_ad` stays hypothesis-free: the base rows
+  carry the counterpart's wf already (§4).
+- **Decl-in-algo (`ad_pat_consis__ghost`, `ad_pat_sub__ghost`,
+  `ad_pat_sub_fuel__ghost`) — KEPT, deliberately.** Route (B) is not available
+  without changing a `README.v` statement: `a_consis_complete` carries no wf
+  hypothesis on its declarative counterpart `Qb`, and its proof reads the
+  join target's scope / local closure off the derivation
+  (`ad_pat_consis_target_wf`, consumed at the C-Arrow precision transport and
+  the C-UnivGhostR guardedness step).  At a position where both the subject
+  and the input skeleton are ghosts, no hypothesis of that theorem constrains
+  `Qb`'s fill — so the fact is genuinely not available from the statement.
+  Removing the premise means adding the paper's presupposition (wf of the
+  counterpart) to `a_consis_complete`.  The two subtyping Ghost rows keep it
+  in step with consistency (`ad_pat_sub_target_wf` is the twin reader, used by
+  subtyping completeness and both type-inference theorems); removing it there
+  alone was not attempted.
+
+So the two layers now differ on exactly this premise, and the bridge's
+hypothesis is where the difference is paid.
+
 ---
 
 ## 3. Guardedness comes from wf, not from a premise

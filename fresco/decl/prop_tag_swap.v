@@ -172,12 +172,11 @@ Inductive d_sub_tagsin :
     is_ityp B ->
     d_sub_tagsin U mode_tc Ψ Γ C B
 | d_sub_tagsin__forall_r : forall U α Ψ Γ C B,
-    is_ityp (btyp_all_inh B) ->
     α `notin` (dom Γ `union` ftvar_in_utyp C `union` ftvar_in_btyp B) ->
     d_sub_tagsin U mode_tc Ψ ((α ~ dbind_tvar) ++ Γ) C
       (open_btyp_wrt_btyp B (btyp_var_f α)) ->
     d_sub_tagsin U mode_tc Ψ Γ C (btyp_all_inh B)
-| d_sub_tagsin__arg : forall U Ψ Ψ1 Ψ2 Γ m C1 C2 B1 B2,
+| d_sub_tagsin__arrow : forall U Ψ Ψ1 Ψ2 Γ m C1 C2 B1 B2,
     {{ Ψ1 ⨟ Γ ⊢ C1 ∼ B1 }}d ->
     d_sub_tagsin U m Ψ2 Γ C2 B2 ->
     Ψ [=] Ψ1 `union` Ψ2 ->
@@ -211,8 +210,8 @@ Proof.
   - apply d_sub_tagsin__infer; assumption.
   - apply d_sub_tagsin__check; assumption.
   - apply d_sub_tagsin__forall_r with (α := α);
-      [ assumption | assumption | apply IHd_sub_tagsin; exact Hle ].
-  - apply d_sub_tagsin__arg with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+      [ assumption | apply IHd_sub_tagsin; exact Hle ].
+  - apply d_sub_tagsin__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ assumption | apply IHd_sub_tagsin; exact Hle | assumption ].
   - apply d_sub_tagsin__forall_l_tagged with (Ψ' := Ψ') (ph := ph);
       [ assumption | assumption | assumption | clear - H2 Hle; fsetdec
@@ -233,11 +232,11 @@ Proof.
   - exists empty. apply d_sub_tagsin__check; assumption.
   - pick fresh α0 for
       (L `union` dom Γ `union` ftvar_in_utyp C `union` ftvar_in_btyp B).
-    destruct (H1 α0 ltac:(solve_notin_auto)) as [ U HU ].
+    destruct (H0 α0 ltac:(solve_notin_auto)) as [ U HU ].
     exists U. apply d_sub_tagsin__forall_r with (α := α0);
-      [ assumption | clear - Fr; solve_notin_auto | exact HU ].
+      [ clear - Fr; solve_notin_auto | exact HU ].
   - destruct IHd_sub as [ U HU ]. exists U.
-    apply d_sub_tagsin__arg with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
+    apply d_sub_tagsin__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
   - destruct IHd_sub as [ U HU ]. exists (U `union` Ψ').
     apply d_sub_tagsin__forall_l_tagged with (Ψ' := Ψ') (ph := ph);
       [ assumption | assumption | assumption | clear; fsetdec
@@ -269,10 +268,9 @@ Proof.
       | eapply d_consis_swap_tag; [ eassumption | exact Heq ]
       | assumption ].
   - apply d_sub_tagsin__forall_r with (α := α);
-      [ assumption
-      | rewrite ftvar_swap_tag_in_utyp; assumption
+      [ rewrite ftvar_swap_tag_in_utyp; assumption
       | apply IHd_sub_tagsin; assumption ].
-  - apply d_sub_tagsin__arg with (Ψ1 := swap_atoms ε1 ε2 Ψ1)
+  - apply d_sub_tagsin__arrow with (Ψ1 := swap_atoms ε1 ε2 Ψ1)
                                  (Ψ2 := swap_atoms ε1 ε2 Ψ2);
       [ eapply d_consis_swap_tag; [ eassumption | reflexivity ]
       | apply IHd_sub_tagsin; [ exact HU | reflexivity ]

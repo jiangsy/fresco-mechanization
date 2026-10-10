@@ -238,7 +238,7 @@ Definition spine_btyp (Rb : btyp) (sp : list (utyp * btyp)) : btyp :=
 
 (** ENGINE (no [∀]-prefix): a curried-arrow subtyping is stable under
     permutation of its argument spine.  The crux is the [perm_swap] case:
-    two adjacent [d_sub__arg] steps contribute argument consistencies with
+    two adjacent [d_sub__arrow] steps contribute argument consistencies with
     tag sets [Δp], [Δq] and a result with [Δr]; swapping them only reorders
     the set union [Δp ∪ (Δq ∪ Δr)] ⟶ [Δq ∪ (Δp ∪ Δr)], equal as SETS —
     which is exactly why the [Δ]-as-[atoms] refactor makes order
@@ -255,15 +255,15 @@ Proof.
   - (* skip x : sp = x::l, sp' = x::l' *)
     simpl in Hsub |- *.
     inversion Hsub as [ | | | Ψ0 Ψ1 Ψ2 Γ0 m0 C1 C2 B1 B2 Hcons Hrest HΔ | | ]; subst.
-    apply d_sub__arg with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+    apply d_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ exact Hcons | apply IHHperm; exact Hrest | exact HΔ ].
   - (* swap x y : sp = y::x::l, sp' = x::y::l *)
     simpl in Hsub |- *.
     inversion Hsub as [ | | | Ψ0 Ψy Ψyr Γ0 m0 Cy C2 By B2 Hcy Hyr HΔyr | | ]; subst.
     inversion Hyr as [ | | | Ψ0' Ψx Ψl Γ0' m0' Cx C2' Bx B2' Hcx Hl HΔl | | ]; subst.
-    apply d_sub__arg with (Ψ1 := Ψx) (Ψ2 := (Ψy `union` Ψl));
+    apply d_sub__arrow with (Ψ1 := Ψx) (Ψ2 := (Ψy `union` Ψl));
       [ exact Hcx
-      | apply d_sub__arg with (Ψ1 := Ψy) (Ψ2 := Ψl);
+      | apply d_sub__arrow with (Ψ1 := Ψy) (Ψ2 := Ψl);
           [ exact Hcy | exact Hl | reflexivity ]
       | fsetdec ].
   - (* trans *)

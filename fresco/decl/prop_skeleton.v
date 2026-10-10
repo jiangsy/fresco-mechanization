@@ -245,7 +245,7 @@ Proof.
     rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var; try (apply lc_bskl_unit); try fsetdec.
     eapply (H0 α2 ltac:(auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2); simpl_env; reflexivity.
   - simpl. eapply d_pat_consis__arrow; [ eapply IHd_pat_consis1 | eapply IHd_pat_consis2 | (eassumption || fsetdec) ]; eauto.
-  - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_consis__ghost; [ (assumption || fsetdec) | ]; eapply d_wf_pskl_subst_unit; eauto.
+  - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_consis__ghost; (assumption || fsetdec).
   - apply d_pat_consis__ghostg; (assumption || fsetdec).
   - simpl. apply d_pat_consis__dot_univ_ghost. eapply IHd_pat_consis; eauto.
   - simpl. apply d_pat_consis__univ_ghost. eapply IHd_pat_consis; eauto.
@@ -290,10 +290,9 @@ Proof.
       | eapply d_consis_join_subst_unit; eauto ].
   - simpl. rewrite pskl_to_bskl_inh_subst_unit. apply d_pat_sub__ghost;
       [ (assumption || fsetdec)
-      | eapply d_wf_pskl_subst_unit; eauto
       | rewrite <- pskl_to_bskl_inh_subst_unit; apply mod_comp_sk_subst_unit; assumption ].
   - apply d_pat_sub__ghostg; (assumption || fsetdec).
-  - simpl. eapply d_pat_sub__arg;
+  - simpl. eapply d_pat_sub__arrow;
       [ eapply d_consis_join_subst_unit; eauto
       | eapply IHd_pat_sub; eauto | (eassumption || fsetdec) ].
   - simpl. eapply d_pat_sub__forall_l_tagged with
@@ -381,7 +380,7 @@ Proof.
         [ exact Hby | exact H0 | exact H1 | exact H2 ].
     + apply d_pat__var with (d := d) (P := P);
         [ exact H | exact H0 | exact H1 | exact H2 ].
-  - (* anno *) apply d_pat__anno; [ exact H | exact H0 | exact H1 ].
+  - (* anno *) apply d_pat__anno; [ exact H | exact H0 ].
   - (* freeze *) apply d_pat__freeze. eapply IHd_pat; eauto.
   - (* abs *) apply d_pat__abs with
       (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (P := P);

@@ -257,15 +257,13 @@ Proof.
     + apply is_ityp_rename_tvar. assumption.
   - (* forall_r *)
     apply d_sub__forall_r with
-      (L := L `union` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) `union` singleton α0 `union` singleton β);
-      [ change (is_ityp (subst_btyp_in_btyp (btyp_var_f β) α0 (btyp_all_inh B)));
-        apply is_ityp_rename_tvar; assumption | ].
+      (L := L `union` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) `union` singleton α0 `union` singleton β).
     intros α2 Hα2.
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
     rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ (β ~ dbind_tvar) ++ Γ2).
-    eapply (H1 α2); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
+    eapply (H0 α2); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
   - (* arg *)
-    eapply d_sub__arg.
+    eapply d_sub__arrow.
     + eapply d_consis_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
     + eapply IHd_sub; [ reflexivity | exact Hfr ].
     + assumption.

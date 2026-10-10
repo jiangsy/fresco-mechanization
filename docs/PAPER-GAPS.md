@@ -275,7 +275,11 @@ unguarded consistency derivations.
 
 **What the mechanization does**: `a_consis__flex_l` carries
 `P0 <> pskl_ghost` and `a_consis__flex_r` carries `P <> pskl_ghost`
-(`fresco/algo/def_rules.v`), with the `ext_algo` twins identical.
+(`fresco/algo/def_rules.v`), with the `ext_algo` twins identical — and,
+since 2026-10-10, the DECORATED twins `a_consistag__flex_l` / `__flex_r`
+too (`deco_algo/def_decorated.v`): the paper inherits the flexible rules
+unchanged into the decorated system (decorated-algosub.tex:237), so they
+say what the plain ones say; decoration reads the guard off the plain run.
 Completeness is UNAFFECTED — `a_consis_complete` is re-proved with the
 guards, by trying `C-GhostR` BEFORE the two flexible layers (the
 implementation's own order) and adding the mirror `C-Ghost` node at a
@@ -875,13 +879,16 @@ have to be made explicit on the way, and each is a small finding of its own:
    to unfold, so `Θ ⊢ A ≡ B` implies `A = B` — which is exactly why the
    §declarative figure may silently reuse an annotation.
 2. **The colour-discipline premises the two systems state differently must be
-   RECOVERED, not assumed.**  `d_sub`'s Infer states `is_styp B`, its Check
-   states guardedness of both sides plus `is_ityp B`, its ForallR states
-   `is_ityp (∀ⁱ B)`; the fused `typsub^N_M` figure states none of them,
-   because at `N = TY` they follow from the sort.  The mech proves that: the
-   target is a `btyp`'s skeleton there, and a skeleton predicate on it
-   transports back (`is_styp_of_btyp_to_bskl`, `is_ityp_of_btyp_to_bskl`,
-   `ad_pat_sub_ty_tc_target_ityp`).
+   RECOVERED, not assumed.**  `d_sub`'s Infer states `is_styp B` and its Check
+   states guardedness of both sides plus `is_ityp B`; the fused `typsub^N_M`
+   figure states none of them, because at `N = TY` they follow from the sort.
+   The mech proves that: the target is a `btyp`'s skeleton there, and a
+   skeleton predicate on it transports back (`is_styp_of_btyp_to_bskl`,
+   `is_ityp_of_btyp_to_bskl`).  (⚙ 2026-10-10: `d_sub`'s ForallR — and the
+   `d_sd_typing` / `ad_sd_typing` ∀-step rows — no longer state
+   `is_ityp (∀ⁱ B)`; the paper's rules do not, and it follows from the body,
+   a TC-mode judgement (`d_sub_tc_is_ityp`).  So
+   `ad_pat_sub_ty_tc_target_ityp`, which recovered it here, is gone.)
 3. **The ∀-scope context Δ and the tvar context Γ swap roles between the
    sorts.**  Skeleton well-formedness and refinement put a bound rigid into Δ;
    type well-formedness puts it into Γ.  Translating a ForallL instantiation
@@ -920,6 +927,26 @@ flexibles and must be closed off by a metasubstitution `ζ ∷ Θ₁ ⊑ ·` bef
 the answer is a declarative type at all.  `thm:complete-type-inference`
 cannot, for (A).
 
+## RULE FAITHFULNESS (2026-10-10) — the skeleton Ghost rows: the declarative ones now match the paper; the decl-in-algo ones keep a fill-wf premise the paper does not state
+
+The paper's skeleton-consistency `Ghost` (declarative.tex:2002) and
+skeleton-subtyping `Ghost` (:1912) have no premise.  The mech's had
+`Γ ⨟ ∅ ⊢ₚₛ P` on the fill.  `d_pat_consis__ghost` / `d_pat_sub__ghost` have
+now lost it (the paper's rules verbatim); the fill's wf is part of the
+presupposition "wf of the counterpart" (declarative.tex:2074), and the `d → ad`
+bridge carries it as a hypothesis.
+
+`ad_pat_consis__ghost` / `ad_pat_sub__ghost` / `ad_pat_sub_fuel__ghost` KEEP
+it.  Not for convenience: `thm:complete-consistency` as mechanized
+(`a_consis_complete`, `README.v`) takes no wf hypothesis on its declarative
+counterpart `Qb`, and its proof reads `Qb`'s scope off the derivation.  At a
+position where subject and input are both ghosts, nothing in the theorem's
+hypotheses constrains the fill — so moving the premise to the statements
+means adding the paper's own presupposition to the theorem.  For the
+authors this is only the observation that the completeness theorem, too,
+should be read under the presupposition on its declarative counterpart.
+Details: docs/WF-SIDE-CONDITIONS.md §2a.
+
 ## PROSE-COMPLETION (2026-08-10) — `sd-Anno` must require its annotation well formed, like its four siblings
 
 `fig:declarative-in-algo-context`'s **sd-Anno** is the one rule that puts a
@@ -955,6 +982,15 @@ Lemma ad_sd_typing_wf_exp : forall M Θ e B, Θ ⊢ᵃᵈ[ M ] e ⦂ B -> a_wf_e
 
 i.e. a derivation EXHIBITS its own subject as a well-formed term, which is
 what the paper's ambient "all inputs are well formed" is supposed to mean.
+
+⚙ **Only sd-Anno carries it** (2026-10-10).  The skeleton-inference twins
+`d_pat__anno` / `ad_pat__anno` used to carry the same premise; they are now
+the paper's P-Anno verbatim.  The argument above does not reach them:
+skeleton inference never exhibits its subject (P-Anno has no premise about
+`e` at all, so there is no `ad_pat_wf_exp` to buy), and the one proof that
+read the annotation's wf — `a_pat_complete`'s Anno case, for `lc A` — gets it
+from the theorem's own `lc_exp e`.  The declarative `d_sd_typing__anno` /
+`d_typing__anno` never carried it.
 The visible payoff: `a_typing_complete_infer` (algo/typing/prop_closed.v)
 — completeness of INFERENCE at a closed program — now has the declarative
 derivation as its **only** premise.

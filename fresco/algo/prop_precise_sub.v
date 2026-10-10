@@ -188,8 +188,7 @@ Proof.
       | intros Hd; discriminate ].
   - (* anno *)
     apply ad_pat__anno;
-      [ eapply a_wf_ptyp_mono; eauto | eapply a_wf_pskl_mono; eauto
-      | eapply ad_pat_sub_mono; eauto ].
+      [ eapply a_wf_pskl_mono; eauto | eapply ad_pat_sub_mono; eauto ].
   - (* freeze *)
     apply ad_pat__freeze; auto.
   - (* abs — extend both contexts with the SAME entry (precision refl) *)

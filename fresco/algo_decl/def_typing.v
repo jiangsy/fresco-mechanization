@@ -112,7 +112,7 @@ Inductive ad_pat : mode -> aenv -> exp -> bskl -> Prop :=
       (bskl_to_uskl (pskl_to_bskl_syn P)) Q ->
     {{ Θ ⊢ˢ[ m ] (exp_var_f x) ⦂ Q }}ad
 | ad_pat__anno : forall Θ m e (A : ptyp) Q,                      (* P-Anno *)
-    a_wf_ptyp Θ A ->
+    (* no wf premise on [A], as in the paper and [d_pat__anno] *)
     {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
     ad_pat_sub a_sub_mode_sk m empty Θ
       (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A))) Q ->
@@ -196,7 +196,8 @@ Inductive ad_sd_typing : mode -> aenv -> exp -> btyp -> Prop :=
     {{ Θ ⊢ B ≡ᵗ A }}a ->
     {{ Θ ⊢ˢᵈ[ mode_tc ] (exp_freeze e) ⦂ (ptyp_to_btyp_inh A) }}ad
 | ad_sd_typing__abs_check_step : forall L Θ e B,        (* sd-AbsCheck (∀) *)
-    is_ityp (btyp_all_inh B) ->
+    (* no [is_ityp] premise, as in the paper and [d_sd_typing]: the body is
+       TC-mode, so its type is always inherited *)
     (forall α, α `notin` L ->
        {{ ((α ~ abind_tvar) ++ Θ) ⊢ˢᵈ[ mode_tc ] (exp_abs e)
          ⦂ (open_btyp_wrt_btyp B (btyp_var_f α)) }}ad) ->
@@ -209,7 +210,7 @@ Inductive ad_sd_typing : mode -> aenv -> exp -> btyp -> Prop :=
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B }}ad) ->
     {{ Θ ⊢ˢᵈ[ mode_tc ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B) }}ad
 | ad_sd_typing__abs_anno_check_step : forall L Θ A e B,
-    is_ityp (btyp_all_inh B) ->                     (* sd-AbsAnnoCheck (∀) *)
+                                                    (* sd-AbsAnnoCheck (∀) *)
     (forall α, α `notin` L ->
        {{ ((α ~ abind_tvar) ++ Θ) ⊢ˢᵈ[ mode_tc ] (exp_abs_anno A e)
          ⦂ (open_btyp_wrt_btyp B (btyp_var_f α)) }}ad) ->

@@ -1180,13 +1180,11 @@ Proof.
     rewrite pskl_to_uskl_subst. exact Hx.
   - (* anno *)
     eapply ad_pat__anno;
-      [ eapply a_wf_ptyp_subst_mid;
-          [ eassumption | reflexivity | exact Hs ]
-      | rewrite bskl_to_pskl_subst_mono;
+      [ rewrite bskl_to_pskl_subst_mono;
         eapply a_wf_pskl_subst_mid;
-          [ exact H0 | reflexivity | exact Hs | clear; fsetdec | clear; fsetdec ]
+          [ exact H | reflexivity | exact Hs | clear; fsetdec | clear; fsetdec ]
       | ].
-    pose proof (@ad_pat_sub_subst_mid _ _ _ _ _ _ H1 τs α0 b0 Θa Θ0
+    pose proof (@ad_pat_sub_subst_mid _ _ _ _ _ _ H0 τs α0 b0 Θa Θ0
                   eq_refl Hs Hu) as Hx.
     rewrite !pskl_to_uskl_via_bskl_syn in Hx |- *.
     rewrite ptyp_to_pskl_subst, pskl_to_uskl_subst. exact Hx.
@@ -1398,16 +1396,12 @@ Proof.
         [ eassumption | reflexivity | exact Hs | exact Hu ].
   - (* abs_check_step *)
     apply ad_sd_typing__abs_check_step
-      with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0);
-      [ change (btyp_all_inh (subst_btyp_in_btyp (ptyp_to_btyp_syn τs) α0 B))
-          with (subst_btyp_in_btyp (ptyp_to_btyp_syn τs) α0 (btyp_all_inh B));
-        apply is_ityp_subst_mono; assumption
-      | ].
+      with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
     rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var;
       [ | clear - Hβ; fsetdec
         | apply is_styp_lc; apply mono_ptyp_to_btyp_syn_is_styp; assumption ].
-    apply (H1 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b0
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b0
              ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* abs_check_base *)
@@ -1424,16 +1418,12 @@ Proof.
       [ reflexivity | exact Hs | push_uniq Hu Hx ].
   - (* abs_anno_check_step *)
     apply ad_sd_typing__abs_anno_check_step
-      with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0);
-      [ change (btyp_all_inh (subst_btyp_in_btyp (ptyp_to_btyp_syn τs) α0 B))
-          with (subst_btyp_in_btyp (ptyp_to_btyp_syn τs) α0 (btyp_all_inh B));
-        apply is_ityp_subst_mono; assumption
-      | ].
+      with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
     rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var;
       [ | clear - Hβ; fsetdec
         | apply is_styp_lc; apply mono_ptyp_to_btyp_syn_is_styp; assumption ].
-    apply (H1 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b0
+    apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b0
              ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* abs_anno_check_base *)

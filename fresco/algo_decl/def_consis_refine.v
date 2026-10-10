@@ -106,6 +106,15 @@ Inductive ad_pat_consis : atoms -> aenv -> uskl -> bskl -> Prop :=
     {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
     {{ Ψ ⨟ Θ ⊢ˢ (uskl_dot_univ_ghost R) ∼ (bskl_univ_ghost Q) }}ad
 | ad_pat_consis__ghost : forall Ψ Θ P,
+    (* ⚠️ [paper-gap] KEPT: the fill-wf premise the paper's Ghost lacks (and
+       [d_pat_consis__ghost] no longer has).  It stands in for the paper's
+       presupposition "wf of the counterpart" (declarative.tex:2074), and
+       moving it to the statements would CHANGE [a_consis_complete]
+       (README.v): that theorem carries no wf hypothesis on its declarative
+       counterpart [Qb], and its proof reads the target's scope off the
+       derivation ([ad_pat_consis_target_wf], at C-Arrow and C-UnivGhostR) —
+       with both ghosts on the subject and the input, nothing else constrains
+       [Qb]'s fill.  docs/WF-SIDE-CONDITIONS.md §2a. *)
     Ψ [=] empty ->
     {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
     {{ Ψ ⨟ Θ ⊢ˢ uskl_ghost ∼ (pskl_to_bskl_inh P) }}ad

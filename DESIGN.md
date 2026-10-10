@@ -1042,7 +1042,7 @@ the paper theorem without qualification**:
   established at the toplevel and shown to be preserved (likely via a
   separate regularity lemma if needed).
 - **Wf premises on intro rules.** `d_typing__abs` / `_abs_anno` /
-  `d_pat__anno` / `d_pat__abs` carry explicit `d_wf_typ Γ A` /
+  `d_pat__abs` carry explicit `d_wf_typ Γ A` /
   `d_wf_pskl Γ nil P`. The paper does not state these — they're
   regularity strengthenings the mechanization needs to close
   `d_typing_pat_preserves_wf`. Worth a paper footnote. (After the
@@ -1112,7 +1112,7 @@ into the colour discipline. A few patterns to watch for:
 | consistency RHS appears non-wf | `is_syn_skel P` on the calling `d_pat_sub` rule | Lemma 3.7 (`d_pat_preserves_skel_wf`) |
 | `d_typing__sub` takes arbitrary B | `is_base_term e` (paper restricts to base terms) | general-subsumption (D1) |
 | ∀-introduction in TI mode | `is_value e` (value restriction) | `d_typing__forall` |
-| arrow-position pattern coerces freely | `mode_fn m` (function-position mode) | `d_pat_sub__arg` |
+| arrow-position pattern coerces freely | `mode_fn m` (function-position mode) | `d_pat_sub__arrow` |
 | skeleton input to a refinement rule | `is_inh_skel` / `is_syn_skel` matching colour expectation | `d_refine_*` family |
 | `d_consis` LHS shape "looks too permissive" | `d_wf_typ Γ T` to rule out `typ_all_tag` LHS | `d_consis_sub_trans` (D10 / paper B.3) |
 

@@ -324,9 +324,7 @@ Proof.
     intros α Hα. exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
   - apply d_pat_consis__ghostg; assumption.
   - apply d_pat_consis__dot_univ_ghost. exact (IHad_pat_consis Γ0 eq_refl).
-  - apply d_pat_consis__ghost;
-      [ assumption
-      | exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty P H0 Γ0 eq_refl) ].
+  - apply d_pat_consis__ghost; assumption.
   - apply d_pat_consis__univ_ghost. exact (IHad_pat_consis Γ0 eq_refl).
   - apply d_pat_consis__univ_ghost_inh with (L := L).
     intros α Hα. exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
@@ -335,25 +333,60 @@ Proof.
   - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
 Qed.
 
+(** ⚠️ Needs the counterpart's well-formedness — the paper's presupposition
+    on skeleton consistency (declarative.tex:2074).  [d_pat_consis__ghost], like
+    the paper's Ghost, accepts any fill, while [ad_pat_consis__ghost] keeps its
+    fill-wf premise (docs/WF-SIDE-CONDITIONS.md §2a), so the fill's wf comes
+    from the counterpart's.  Stated at any Δ: a ∀ on the counterpart moves its
+    variable into Δ as well as into the context. *)
 Lemma d_pat_consis_to_ad : forall Ψ Γ R Q,
-  d_pat_consis Ψ Γ R Q -> ad_pat_consis Ψ (denv_to_aenv Γ) R Q.
+  d_pat_consis Ψ Γ R Q ->
+  forall Δ, {{ (denv_to_aenv Γ) ⨟ Δ ⊢ₚₛ (bskl_to_pskl Q) }}a ->
+  ad_pat_consis Ψ (denv_to_aenv Γ) R Q.
 Proof.
-  intros Ψ Γ R Q H; induction H.
+  intros Ψ Γ R Q H; induction H; intros Δ Hwf; simpl in Hwf.
   - apply ad_pat_consis__unit; assumption.
   - apply ad_pat_consis__var;
       [ assumption | apply a_binds_tvar_of_denv; assumption ].
-  - apply ad_pat_consis__forall_inh_tagged with (L := L) (Ψ0 := Ψ0); assumption.
-  - apply ad_pat_consis__forall_inh_untagged with (L := L); assumption.
-  - apply ad_pat_consis__forall_syn_tagged with (L := L); assumption.
-  - apply ad_pat_consis__forall_syn with (L := L); assumption.
-  - apply ad_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
-  - apply ad_pat_consis__ghost;
-      [ assumption | exact (d_wf_pskl_to_a Γ empty P H0) ].
+  - inversion Hwf as [ | | | L0 Θw Δw Pw Hb | | ]; subst.
+    apply ad_pat_consis__forall_inh_tagged with (L := L `union` L0) (Ψ0 := Ψ0);
+      [ | assumption ].
+    intros α Hα. apply (H0 α ltac:(clear - Hα; fsetdec) (add α Δ)).
+    rewrite bskl_to_pskl_open. apply Hb. clear - Hα; fsetdec.
+  - inversion Hwf as [ | | | L0 Θw Δw Pw Hb | | ]; subst.
+    apply ad_pat_consis__forall_inh_untagged with (L := L `union` L0).
+    intros α Hα. apply (H0 α ltac:(clear - Hα; fsetdec) (add α Δ)).
+    rewrite bskl_to_pskl_open. apply Hb. clear - Hα; fsetdec.
+  - inversion Hwf as [ | | | L0 Θw Δw Pw Hb | | ]; subst.
+    apply ad_pat_consis__forall_syn_tagged with (L := L `union` L0).
+    intros α Hα. apply (H0 α ltac:(clear - Hα; fsetdec) (add α Δ)).
+    rewrite bskl_to_pskl_open. apply Hb. clear - Hα; fsetdec.
+  - inversion Hwf as [ | | | L0 Θw Δw Pw Hb | | ]; subst.
+    apply ad_pat_consis__forall_syn with (L := L `union` L0).
+    intros α Hα. apply (H0 α ltac:(clear - Hα; fsetdec) (add α Δ)).
+    rewrite bskl_to_pskl_open. apply Hb. clear - Hα; fsetdec.
+  - inversion Hwf; subst.
+    apply ad_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+      [ eapply IHd_pat_consis1; eassumption
+      | eapply IHd_pat_consis2; eassumption | assumption ].
+  - apply ad_pat_consis__ghost; [ assumption | ].
+    (* the fill's wf: the counterpart's, at the empty Δ *)
+    rewrite bskl_to_pskl_pskl_to_bskl_inh in Hwf.
+    eapply a_wf_pskl_delta_mono; [ exact Hwf | intros α _ Hα; clear - Hα; fsetdec ].
   - apply ad_pat_consis__ghostg; assumption.
-  - apply ad_pat_consis__dot_univ_ghost; assumption.
-  - apply ad_pat_consis__univ_ghost; assumption.
-  - apply ad_pat_consis__univ_ghost_inh with (L := L); assumption.
-  - apply ad_pat_consis__univ_ghost_drop; assumption.
+  - inversion Hwf as [ | | | | | Θw Δw Pw Hg Hb ]; subst.
+    apply ad_pat_consis__dot_univ_ghost. apply (IHd_pat_consis empty).
+    eapply a_wf_pskl_tvar_mono; [ exact Hb | ].
+    intros β Hβ. apply a_binds_tvar_aenv_minus in Hβ. apply Hβ.
+  - inversion Hwf as [ | | | | | Θw Δw Pw Hg Hb ]; subst.
+    apply ad_pat_consis__univ_ghost. apply (IHd_pat_consis empty).
+    eapply a_wf_pskl_tvar_mono; [ exact Hb | ].
+    intros β Hβ. apply a_binds_tvar_aenv_minus in Hβ. apply Hβ.
+  - inversion Hwf as [ | | | L0 Θw Δw Pw Hb | | ]; subst.
+    apply ad_pat_consis__univ_ghost_inh with (L := L `union` L0).
+    intros α Hα. apply (H0 α ltac:(clear - Hα; fsetdec) (add α Δ)).
+    rewrite bskl_to_pskl_open. apply Hb. clear - Hα; fsetdec.
+  - apply ad_pat_consis__univ_ghost_drop. eapply IHd_pat_consis; eassumption.
 Qed.
 
 (* ===================================================================== *)
@@ -563,10 +596,12 @@ Proof.
 Qed.
 
 Lemma d_consis_join_to_ad : forall Ψ Γ R Q,
-  d_consis_join Ψ Γ R Q -> ad_consis_join Ψ (denv_to_aenv Γ) R Q.
+  d_consis_join Ψ Γ R Q ->
+  forall Δ, {{ (denv_to_aenv Γ) ⨟ Δ ⊢ₚₛ (bskl_to_pskl Q) }}a ->
+  ad_consis_join Ψ (denv_to_aenv Γ) R Q.
 Proof.
-  intros Ψ Γ R Q [Hc Hr]. split.
-  - apply d_pat_consis_to_ad; assumption.
+  intros Ψ Γ R Q [Hc Hr] Δ Hwf. split.
+  - eapply d_pat_consis_to_ad; eassumption.
   - apply d_refine_pskl_to_ad_closed; assumption.
 Qed.
 
@@ -738,7 +773,7 @@ Proof.
   - (* UnivGhostR *) apply d_pat_sub__univ_ghost_r;
       [ assumption | assumption | assumption | assumption
       | eapply ad_consis_join_to_d; [ exact H3 | reflexivity ] ].
-  - (* Arrow *) apply d_pat_sub__arg with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+  - (* Arrow *) apply d_pat_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ eapply ad_consis_join_to_d; [ exact H | reflexivity ]
       | exact (IHad_pat_sub eq_refl Γ0 eq_refl) | assumption ].
   - (* ForallL, tagged *) inversion H2; subst.
@@ -757,10 +792,7 @@ Proof.
       | exact (d_wf_uskl_of_a_wf_pskl (denv_to_aenv Γ0) empty (uskl_to_pskl ψ)
                  H3 ψ eq_refl Γ0 eq_refl)
       | assumption | exact (IHad_pat_sub eq_refl Γ0 eq_refl) ].
-  - (* Ghost *) apply d_pat_sub__ghost;
-      [ assumption
-      | exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty P H0 Γ0 eq_refl)
-      | assumption ].
+  - (* Ghost *) apply d_pat_sub__ghost; assumption.
   - (* GhostG *) apply d_pat_sub__ghostg; assumption.
   - (* UnivGhostL *) apply d_pat_sub__univ_ghost_l;
       [ assumption | exact (IHad_pat_sub eq_refl Γ0 eq_refl) ].
@@ -772,37 +804,45 @@ Qed.
 (** ⭐ THE DIRECTION THE COMPLETENESS BRIDGE NEEDS, at the SK sort: a
     declarative skeleton join IS a LEAF-VALID one.  There is nothing to
     recover — the leaf datum is the paper's presupposition, carried on the
-    rule, so it crosses by [d_refine_pskl_to_ad_closed]. *)
+    rule, so it crosses by [d_refine_pskl_to_ad_closed].  The OTHER
+    presupposition — wf of the counterpart — is a hypothesis: [ad]'s Ghost
+    rows keep their fill-wf premise, [d]'s (like the paper's) do not. *)
 
 Lemma d_pat_sub_to_ad : forall M Ψ Γ R Q,
-  d_pat_sub M Ψ Γ R Q -> ad_pat_sub a_sub_mode_sk M Ψ (denv_to_aenv Γ) R Q.
+  d_pat_sub M Ψ Γ R Q ->
+  forall Δ, {{ (denv_to_aenv Γ) ⨟ Δ ⊢ₚₛ (bskl_to_pskl Q) }}a ->
+  ad_pat_sub a_sub_mode_sk M Ψ (denv_to_aenv Γ) R Q.
 Proof.
-  intros M Ψ Γ R Q H; induction H.
+  intros M Ψ Γ R Q H; induction H; intros Δ Hwf.
   - apply ad_pat_sub__infer;
-      [ assumption | apply d_consis_join_to_ad; assumption | assumption ].
-  - apply ad_pat_sub__univ_ghost_r;
+      [ assumption | eapply d_consis_join_to_ad; eassumption | assumption ].
+  - simpl in Hwf. inversion Hwf as [ | | | | | Θw Δw Pw Hg Hb ]; subst.
+    apply ad_pat_sub__univ_ghost_r;
       [ assumption | assumption | assumption | assumption
-      | apply d_consis_join_to_ad; assumption ].
-  - apply ad_pat_sub__ghost;
-      [ assumption
-      | exact (d_wf_pskl_to_a Γ empty P H0)
-      | assumption ].
+      | eapply d_consis_join_to_ad; [ eassumption | ] ].
+    eapply a_wf_pskl_tvar_mono; [ exact Hb | ].
+    intros β Hβ. apply a_binds_tvar_aenv_minus in Hβ. apply Hβ.
+  - apply ad_pat_sub__ghost; [ assumption | | assumption ].
+    (* the fill's wf: the counterpart's, at the empty Δ *)
+    rewrite bskl_to_pskl_pskl_to_bskl_inh in Hwf.
+    eapply a_wf_pskl_delta_mono; [ exact Hwf | intros α _ Hα; clear - Hα; fsetdec ].
   - apply ad_pat_sub__ghostg; assumption.
-  - apply ad_pat_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-      [ apply d_consis_join_to_ad; assumption
-      | assumption | assumption ].
+  - simpl in Hwf. inversion Hwf; subst.
+    apply ad_pat_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+      [ eapply d_consis_join_to_ad; eassumption
+      | eapply IHd_pat_sub; eassumption | assumption ].
   - apply ad_pat_sub__forall_l_tagged with (Ψ' := Ψ') (ψ := psi);
       [ assumption | assumption | assumption
       | apply a_tags_sort__sk; assumption
       | exact (a_wf_pskl_of_d_wf_uskl Γ empty psi H3)
-      | assumption ].
+      | eapply IHd_pat_sub; eassumption ].
   - apply ad_pat_sub__forall_l_untagged with (Ψ' := Ψ') (ψ := psi);
       [ assumption | assumption | assumption
       | apply a_tags_sort__sk; assumption
       | exact (a_wf_pskl_of_d_wf_uskl Γ empty psi H3)
-      | assumption ].
-  - apply ad_pat_sub__univ_ghost_l; assumption.
-  - apply ad_pat_sub__univ_ghost_lg; assumption.
+      | eapply IHd_pat_sub; eassumption ].
+  - apply ad_pat_sub__univ_ghost_l; [ assumption | eapply IHd_pat_sub; eassumption ].
+  - apply ad_pat_sub__univ_ghost_lg; [ assumption | eapply IHd_pat_sub; eassumption ].
 Qed.
 
 (* ===================================================================== *)
@@ -848,25 +888,6 @@ Proof.
   - inversion Hlc; subst. apply guarded_btyp__arrow; assumption.
 Qed.
 
-(** At [N = TY, M = TC] the target is always inherited — the declarative
-    [ForallR]'s [is_ityp] premise, recovered by induction rather than
-    assumed. *)
-Lemma ad_pat_sub_ty_tc_target_ityp : forall NM M Ψ Θ R Q,
-  ad_pat_sub NM M Ψ Θ R Q -> NM = a_sub_mode_ty -> M = mode_tc ->
-  forall B, Q = btyp_to_bskl B -> is_ityp B.
-Proof.
-  intros NM M Ψ Θ R Q H; induction H; intros HNM HM B0 HQ;
-    try discriminate HNM; try discriminate HM; subst.
-  - (* Check *) exact (proj1 (inh_paint_btyp B B0 H0 (eq_sym HQ))).
-  - (* ForallR *) destruct B0; simpl in HQ; try discriminate HQ.
-    inversion HQ; subst.
-    apply is_ityp__all with (L := L). intros α Hα.
-    exact (H0 α Hα eq_refl eq_refl (open_btyp_wrt_btyp B0 (btyp_var_f α))
-             ltac:(rewrite btyp_to_bskl_open; reflexivity)).
-  - (* ForallL, tagged *) exact (IHad_pat_sub eq_refl eq_refl B0 eq_refl).
-  - (* ForallL, untagged *) exact (IHad_pat_sub eq_refl eq_refl B0 eq_refl).
-Qed.
-
 Lemma ad_pat_sub_ty_to_d : forall NM M Ψ Θ R Q,
   ad_pat_sub NM M Ψ Θ R Q -> NM = a_sub_mode_ty ->
   forall Γ, Θ = denv_to_aenv Γ ->
@@ -894,19 +915,15 @@ Proof.
   - (* ForallR *) destruct B0; simpl in HQ; try discriminate HQ.
     inversion HQ; subst.
     apply d_sub__forall_r with (L := L).
-    + apply is_ityp__all with (L := L). intros α Hα.
-      eapply ad_pat_sub_ty_tc_target_ityp;
-        [ exact (H α Hα) | reflexivity | reflexivity
-        | rewrite btyp_to_bskl_open; reflexivity ].
-    + intros α Hα.
-      exact (H0 α Hα eq_refl ((α ~ dbind_tvar) ++ Γ0) eq_refl C0
-               (open_btyp_wrt_btyp B0 (btyp_var_f α)) eq_refl
-               ltac:(rewrite btyp_to_bskl_open; reflexivity)).
+    intros α Hα.
+    exact (H0 α Hα eq_refl ((α ~ dbind_tvar) ++ Γ0) eq_refl C0
+             (open_btyp_wrt_btyp B0 (btyp_var_f α)) eq_refl
+             ltac:(rewrite btyp_to_bskl_open; reflexivity)).
   - (* Arrow *)
     destruct C0; simpl in HR; try discriminate HR.
     destruct B0; simpl in HQ; try discriminate HQ.
     inversion HR; inversion HQ; subst.
-    apply d_sub__arg with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
+    apply d_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ exact (ad_pat_consis_ty_to_d Ψ1 (denv_to_aenv Γ0) (utyp_to_uskl C0_1)
                  (btyp_to_bskl B0_1) (ad_consis_join_consis H)
                  Γ0 eq_refl C0_1 B0_1 eq_refl eq_refl)
@@ -974,8 +991,7 @@ Proof.
       | exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty (bskl_to_pskl Q) H1 Γ0 eq_refl)
       | eapply ad_pat_sub_sk_to_d; [ eassumption | reflexivity | reflexivity ] ].
   - (* P-Anno *) apply d_pat__anno;
-      [ exact (a_wf_ptyp_to_d (denv_to_aenv Γ0) A H Γ0 eq_refl)
-      | exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty (bskl_to_pskl Q) H0 Γ0 eq_refl)
+      [ exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty (bskl_to_pskl Q) H Γ0 eq_refl)
       | eapply ad_pat_sub_sk_to_d; [ eassumption | reflexivity | reflexivity ] ].
   - (* P-Freeze *) apply d_pat__freeze. exact (IHad_pat Γ0 eq_refl).
   - (* P-Abs *) apply d_pat__abs with (L := L);
@@ -1035,16 +1051,14 @@ Proof.
     rewrite (a_tyequiv_denv_eq (denv_to_aenv Γ0) B A H0 Γ0 eq_refl) in *.
     apply d_sd_typing__freeze. exact (IHad_sd_typing Γ0 eq_refl).
   - (* sd-AbsCheck (∀) *) apply d_sd_typing__abs_check_step with (L := L);
-      [ assumption
-      | intros α Hα; exact (H1 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl) ].
+      intros α Hα; exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
   - (* sd-AbsCheck (→) *) apply d_sd_typing__abs_check_base with (L := L);
       [ exact (a_wf_ptyp_to_d (denv_to_aenv Γ0) A H Γ0 eq_refl)
       | assumption
       | intros x Hx; exact (H2 x Hx ((x ~ dbind_typ A) ++ Γ0) eq_refl) ].
   - (* sd-AbsAnnoCheck (∀) *)
     apply d_sd_typing__abs_anno_check_step with (L := L);
-      [ assumption
-      | intros α Hα; exact (H1 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl) ].
+      intros α Hα; exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
   - (* sd-AbsAnnoCheck (→) *)
     rewrite <- (a_tyequiv_denv_eq (denv_to_aenv Γ0) A A' H0 Γ0 eq_refl).
     apply d_sd_typing__abs_anno_check_base with (L := L);
@@ -1444,7 +1458,7 @@ Proof.
     apply ad_pat_sub__forall_r with (L := L `union` dom Γ). intros α Hα.
     change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
     rewrite <- btyp_to_bskl_open.
-    apply H1; [ clear - Hα; fsetdec
+    apply H0; [ clear - Hα; fsetdec
               | apply (d_wf_utyp_weakening_head ((α ~ dbind_tvar) ++ nil)); assumption ].
   - (* arg *)
     inversion Hwf; subst.
@@ -1511,23 +1525,24 @@ Qed.
 (* ===================================================================== *)
 
 (** ⭐ No hypothesis: with both of the paper's presuppositions on the rules, [d_pat]'s rows and [ad_pat]'s match
-    one for one, and each premise crosses by the §0-§7 translations. *)
+    one for one, and each premise crosses by the §0-§7 translations.  The
+    embedded subtyping's counterpart-wf (which [d_pat_sub_to_ad] needs for
+    the Ghost fills) is the base row's own premise. *)
 Lemma d_pat_to_ad : forall M Γ e Q,
   d_pat M Γ e Q -> ad_pat M (denv_to_aenv Γ) e Q.
 Proof.
   intros M Γ e Q H; induction H.
   - (* P-Unit *) apply ad_pat__unit;
       [ exact (d_wf_pskl_to_a Γ empty (bskl_to_pskl Q) H)
-      | apply d_pat_sub_to_ad; assumption ].
+      | eapply d_pat_sub_to_ad; [ exact H0 | exact (d_wf_pskl_to_a Γ empty (bskl_to_pskl Q) H) ] ].
   - (* P-Var *) apply ad_pat__var with (P := P) (b := abind_of_dbind d);
       [ apply binds_denv_to_aenv; assumption
       | rewrite abind_to_pskl_of_dbind; assumption
       | exact (d_wf_pskl_to_a Γ empty (bskl_to_pskl Q) H1)
-      | apply d_pat_sub_to_ad; assumption ].
+      | eapply d_pat_sub_to_ad; [ exact H2 | exact (d_wf_pskl_to_a Γ empty (bskl_to_pskl Q) H1) ] ].
   - (* P-Anno *) apply ad_pat__anno;
-      [ exact (d_wf_ptyp_to_a Γ A H)
-      | exact (d_wf_pskl_to_a Γ empty (bskl_to_pskl Q) H0)
-      | apply d_pat_sub_to_ad; assumption ].
+      [ exact (d_wf_pskl_to_a Γ empty (bskl_to_pskl Q) H)
+      | eapply d_pat_sub_to_ad; [ exact H0 | exact (d_wf_pskl_to_a Γ empty (bskl_to_pskl Q) H) ] ].
   - (* P-Freeze *) apply ad_pat__freeze; assumption.
   - (* P-Abs *) apply ad_pat__abs with (L := L);
       [ assumption
@@ -1592,10 +1607,9 @@ Proof.
                             (Hbody x ltac:(clear - Hx; solve_notin_auto)));
                    apply aenv_tbinds_le_weaken_cons)).
   - (* sd-AbsCheck (∀) *)
-    apply ad_sd_typing__abs_check_step with (L := L `union` dom Γ);
-      [ assumption | ].
+    apply ad_sd_typing__abs_check_step with (L := L `union` dom Γ).
     intros α Hα.
-    exact (H1 α ltac:(clear - Hα; solve_notin_auto)
+    exact (H0 α ltac:(clear - Hα; solve_notin_auto)
              ltac:(apply d_wf_denv__tvar;
                      [ exact Hwf | clear - Hα; solve_notin_auto ])
              ltac:(apply (a_wf_exp_mono Hwfe);
@@ -1634,10 +1648,9 @@ Proof.
                             (Hbody x ltac:(clear - Hx; solve_notin_auto)));
                    apply aenv_tbinds_le_weaken_cons)).
   - (* sd-AbsAnnoCheck (∀) *)
-    apply ad_sd_typing__abs_anno_check_step with (L := L `union` dom Γ);
-      [ assumption | ].
+    apply ad_sd_typing__abs_anno_check_step with (L := L `union` dom Γ).
     intros α Hα.
-    exact (H1 α ltac:(clear - Hα; solve_notin_auto)
+    exact (H0 α ltac:(clear - Hα; solve_notin_auto)
              ltac:(apply d_wf_denv__tvar;
                      [ exact Hwf | clear - Hα; solve_notin_auto ])
              ltac:(apply (a_wf_exp_mono Hwfe);

@@ -336,8 +336,8 @@ Proof.
     eapply ad_sd_typing__freeze;
       [ apply IHad_sd_typing; assumption | eapply a_tyequiv_isub_le; eauto ].
   - (* abs_check_step *)
-    apply ad_sd_typing__abs_check_step with (L := L); [ assumption | ].
-    intros α Hα. apply H1;
+    apply ad_sd_typing__abs_check_step with (L := L).
+    intros α Hα. apply H0;
       [ exact Hα | apply a_isub_cons_tvar; exact Hle
       | apply aenv_tm_le_cons; exact Htm ].
   - (* abs_check_base *)
@@ -348,8 +348,8 @@ Proof.
       | apply a_isub_cons_var_typ; [ exact Hle | eapply a_wf_ptyp_lc; eauto ]
       | apply aenv_tm_le_cons; exact Htm ].
   - (* abs_anno_check_step *)
-    apply ad_sd_typing__abs_anno_check_step with (L := L); [ assumption | ].
-    intros α Hα. apply H1;
+    apply ad_sd_typing__abs_anno_check_step with (L := L).
+    intros α Hα. apply H0;
       [ exact Hα | apply a_isub_cons_tvar; exact Hle
       | apply aenv_tm_le_cons; exact Htm ].
   - (* abs_anno_check_base *)
@@ -444,10 +444,9 @@ Proof.
           [ eassumption | exact Hren ] ].
   - (* abs_check_step : a RIGID binder joins the prefix *)
     apply ad_sd_typing__abs_check_step
-      with (L := L `union` singleton x0 `union` singleton y);
-      [ assumption | ].
+      with (L := L `union` singleton x0 `union` singleton y).
     intros α Hα.
-    apply (H1 α ltac:(clear - Hα; solve_notin_auto)
+    apply (H0 α ltac:(clear - Hα; solve_notin_auto)
              ((α ~ abind_tvar) ++ Θa) x0 b0 Θb y);
       [ reflexivity | exact Htm | simpl; clear - Hx0 Hα; fsetdec ].
   - (* abs_check_base *)
@@ -464,10 +463,9 @@ Proof.
       [ reflexivity | exact Htm | simpl; clear - Hx0 Hz; fsetdec ].
   - (* abs_anno_check_step *)
     apply ad_sd_typing__abs_anno_check_step
-      with (L := L `union` singleton x0 `union` singleton y);
-      [ assumption | ].
+      with (L := L `union` singleton x0 `union` singleton y).
     intros α Hα.
-    apply (H1 α ltac:(clear - Hα; solve_notin_auto)
+    apply (H0 α ltac:(clear - Hα; solve_notin_auto)
              ((α ~ abind_tvar) ++ Θa) x0 b0 Θb y);
       [ reflexivity | exact Htm | simpl; clear - Hx0 Hα; fsetdec ].
   - (* abs_anno_check_base *)
@@ -720,7 +718,7 @@ Proof. intros * H Hwf. apply (proj2 (a_tyequiv_lc H Hwf)). Qed.
 (** ⭐ The [ad_pat_mod_comp_sk] mirror: a type-inference colouring is
     mode-compatible.  The two Abs rows carry it outright, the three base
     rows read it off their subtyping premise (§8b), the two check-Abs
-    pairs rebuild it from [is_ityp], [Freeze] and [AbsAnnoCheck] take
+    pairs rebuild it from [is_ityp] (the ∀-steps from their IH), [Freeze] and [AbsAnnoCheck] take
     their local closure off the appendix's [≡ᵗ] premise (§8c), and [App]
     inverts its function premise's. *)
 Lemma ad_sd_typing_mod_comp_ty : forall M Θ e B,
@@ -736,11 +734,17 @@ Proof.
   - (* freeze *)
     apply mod_comp_ty__tc. apply is_ityp_ptyp_to_btyp_inh.
     eapply a_tyequiv_lc_r; eassumption.
-  - (* abs_check_step *) apply mod_comp_ty__tc; assumption.
+  - (* abs_check_step : the body is TC-mode, so each opening is inherited *)
+    apply mod_comp_ty__tc. apply is_ityp__all with (L := L `union` dom Θ).
+    intros α Hα. apply mod_comp_ty_tc_inv. apply H0;
+      [ clear - Hα; fsetdec | apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ] ].
   - (* abs_check_base *)
     apply mod_comp_ty__tc. apply is_ityp__arrow;
       [ apply is_ityp_ptyp_to_btyp_inh; eapply a_wf_ptyp_lc; eassumption | assumption ].
-  - (* abs_anno_check_step *) apply mod_comp_ty__tc; assumption.
+  - (* abs_anno_check_step : the body is TC-mode, so each opening is inherited *)
+    apply mod_comp_ty__tc. apply is_ityp__all with (L := L `union` dom Θ).
+    intros α Hα. apply mod_comp_ty_tc_inv. apply H0;
+      [ clear - Hα; fsetdec | apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ] ].
   - (* abs_anno_check_base *)
     apply mod_comp_ty__tc. apply is_ityp__arrow;
       [ apply is_ityp_ptyp_to_btyp_inh; eapply a_tyequiv_lc_r; eassumption
@@ -1268,7 +1272,7 @@ Proof.
   - (* abs_check_step : the peeled RIGID is dodged by a fresh choice *)
     destruct (atom_fresh (L `union` ftvar_in_exp (exp_abs e))) as [α Hα].
     eapply a_wf_exp_strip_prefix;
-      [ apply (H1 α ltac:(clear - Hα; fsetdec)) | reflexivity | ].
+      [ apply (H0 α ltac:(clear - Hα; fsetdec)) | reflexivity | ].
     intros γ Hγ. simpl in Hγ.
     assert (γ = α) by (clear - Hγ; fsetdec). subst γ.
     clear - Hα; fsetdec.
@@ -1280,7 +1284,7 @@ Proof.
     destruct (atom_fresh (L `union` ftvar_in_exp (exp_abs_anno A e)))
       as [α Hα].
     eapply a_wf_exp_strip_prefix;
-      [ apply (H1 α ltac:(clear - Hα; fsetdec)) | reflexivity | ].
+      [ apply (H0 α ltac:(clear - Hα; fsetdec)) | reflexivity | ].
     intros γ Hγ. simpl in Hγ.
     assert (γ = α) by (clear - Hγ; fsetdec). subst γ.
     clear - Hα; fsetdec.
@@ -1788,9 +1792,6 @@ Proof.
     + simpl. apply ad_sd_typing__abs_check_step
         with (L := dom Θ1 `union` ftvar_in_ptyp A
                      `union` ftvar_in_exp (exp_abs e) `union` singleton α).
-      * change (btyp_all_inh (ptyp_to_btyp_inh A))
-          with (ptyp_to_btyp_inh (ptyp_all A)).
-        apply is_ityp_ptyp_to_btyp_inh. eapply a_wf_ptyp_lc; exact HwfAll.
       * intros β Hβ.
         rewrite <- ptyp_to_btyp_inh_open_var.
         pose proof (@ad_sd_typing_rename_tvar _ _ _ _ Hdα1 nil α Θ1 β
@@ -2049,9 +2050,6 @@ Proof.
         with (L := dom Θ1 `union` ftvar_in_ptyp A
                      `union` ftvar_in_exp (exp_abs_anno Aan e)
                      `union` singleton α).
-      * change (btyp_all_inh (ptyp_to_btyp_inh A))
-          with (ptyp_to_btyp_inh (ptyp_all A)).
-        apply is_ityp_ptyp_to_btyp_inh. eapply a_wf_ptyp_lc; exact HwfAll.
       * intros β Hβ.
         rewrite <- ptyp_to_btyp_inh_open_var.
         pose proof (@ad_sd_typing_rename_tvar _ _ _ _ Hdα1 nil α Θ1 β

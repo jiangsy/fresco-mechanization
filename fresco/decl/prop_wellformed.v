@@ -245,9 +245,8 @@ Proof.
   - apply d_sub__infer; [ assumption | assumption | fsetdec ].
   - apply d_sub__check; [ assumption | assumption | | assumption ].
     eapply d_consis_equiv; [ exact Heq | eassumption ].
-  - apply d_sub__forall_r with (L := L);
-      [ assumption | intros α Hα; eauto ].
-  - eapply d_sub__arg; [ eassumption | eassumption | fsetdec ].
+  - apply d_sub__forall_r with (L := L); intros α Hα; eauto.
+  - eapply d_sub__arrow; [ eassumption | eassumption | fsetdec ].
   - (* forall_l_tagged: outer context pass-through, premise via IH *)
     eapply d_sub__forall_l_tagged with (Ψ' := Ψ');
       [ assumption | fsetdec | assumption | eassumption | assumption
@@ -552,7 +551,7 @@ Proof.
   - (* check *) eapply d_consis_wf; eassumption.
   - (* forall_r: C ⩽ btyp_all_inh B *)
     inst_cofinites_for d_wf_btyp__all_inh. intros α Hα.
-    apply H1; auto. apply d_wf_utyp_weakening with (Γ1 := nil). simpl. assumption.
+    apply H0; auto. apply d_wf_utyp_weakening with (Γ1 := nil). simpl. assumption.
   - (* arg: utyp_arrow C1 C2 ⩽ btyp_arrow B1 B2 *)
     inversion Hwf; subst. apply d_wf_btyp__arrow.
     + eapply d_consis_wf; eassumption.
@@ -616,7 +615,8 @@ Proof.
   intros m Ψ Γ C B H. induction H.
   - apply mod_comp_ty__ti; assumption.
   - apply mod_comp_ty__tc; assumption.
-  - apply mod_comp_ty__tc; assumption.
+  - apply mod_comp_ty__tc. apply d_sub_tc_is_ityp with (Ψ := Ψ) (Γ := Γ) (C := C).
+    apply d_sub__forall_r with (L := L). assumption.
   - apply mod_comp_ty__fn; assumption.
   - assumption.
   - assumption.

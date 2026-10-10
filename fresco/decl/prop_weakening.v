@@ -47,8 +47,8 @@ Proof.
   intros m Ψ Γ C B H; induction H; intros Γ' Hle.
   - apply d_sub__infer; eauto using d_consis_tvar_mono.
   - apply d_sub__check; eauto using d_consis_tvar_mono.
-  - apply d_sub__forall_r with (L := L); [ assumption | mono_cof ].
-  - eapply d_sub__arg; eauto using d_consis_tvar_mono.
+  - apply d_sub__forall_r with (L := L); mono_cof.
+  - eapply d_sub__arrow; eauto using d_consis_tvar_mono.
   - eapply d_sub__forall_l_tagged; eauto using d_wf_utyp_tvar_mono.
   - eapply d_sub__forall_l_untagged; eauto using d_wf_utyp_tvar_mono.
 Qed.
@@ -65,7 +65,7 @@ Proof.
   - apply d_pat_consis__forall_syn_tagged with (L := L); mono_cof.
   - apply d_pat_consis__forall_syn with (L := L); mono_cof.
   - eapply d_pat_consis__arrow; eauto.
-  - apply d_pat_consis__ghost; [ assumption | eapply d_wf_pskl_tvar_mono; eassumption ].
+  - apply d_pat_consis__ghost; assumption.
   - apply d_pat_consis__ghostg; assumption.
   - apply d_pat_consis__dot_univ_ghost; auto.
   - apply d_pat_consis__univ_ghost; auto.
@@ -90,9 +90,9 @@ Proof.
   intros m Ψ Γ R Q H; induction H; intros Γ' Hle.
   - apply d_pat_sub__infer; eauto using d_consis_join_tvar_mono.
   - apply d_pat_sub__univ_ghost_r; eauto using d_consis_join_tvar_mono.
-  - apply d_pat_sub__ghost; eauto using d_wf_pskl_tvar_mono.
+  - apply d_pat_sub__ghost; assumption.
   - apply d_pat_sub__ghostg; assumption.
-  - eapply d_pat_sub__arg; eauto using d_consis_join_tvar_mono.
+  - eapply d_pat_sub__arrow; eauto using d_consis_join_tvar_mono.
   - eapply d_pat_sub__forall_l_tagged; eauto using d_wf_uskl_tvar_mono.
   - eapply d_pat_sub__forall_l_untagged; eauto using d_wf_uskl_tvar_mono.
   - apply d_pat_sub__univ_ghost_l; auto.
@@ -109,7 +109,7 @@ Proof.
   - apply d_pat__var with (d := d) (P := P);
       eauto using d_wf_pskl_tvar_mono, d_pat_sub_tvar_mono.
   - apply d_pat__anno;
-      eauto using d_wf_ptyp_tvar_mono, d_wf_pskl_tvar_mono, d_pat_sub_tvar_mono.
+      eauto using d_wf_pskl_tvar_mono, d_pat_sub_tvar_mono.
   - apply d_pat__freeze; auto.
   - apply d_pat__abs with (L := L) (P := P);
       [ assumption | eauto using d_wf_pskl_tvar_mono | assumption | mono_cof ].
@@ -131,13 +131,13 @@ Proof.
   - apply d_sd_typing__var with (A := A); eauto using d_sub_tvar_mono.
   - apply d_sd_typing__abs with (L := L) (A := A);
       [ assumption | eauto using d_wf_ptyp_tvar_mono | assumption | mono_cof ].
-  - apply d_sd_typing__abs_check_step with (L := L); [ assumption | mono_cof ].
+  - apply d_sd_typing__abs_check_step with (L := L); mono_cof.
   - apply d_sd_typing__abs_check_base with (L := L);
       [ eauto using d_wf_ptyp_tvar_mono | assumption | mono_cof ].
   - eapply d_sd_typing__anno; eauto using d_sub_tvar_mono.
   - apply d_sd_typing__abs_anno with (L := L) (A := A) (B1 := B1);
       [ assumption | eauto using d_wf_ptyp_tvar_mono | assumption | assumption | mono_cof ].
-  - apply d_sd_typing__abs_anno_check_step with (L := L); [ assumption | mono_cof ].
+  - apply d_sd_typing__abs_anno_check_step with (L := L); mono_cof.
   - apply d_sd_typing__abs_anno_check_base with (L := L);
       [ eauto using d_wf_ptyp_tvar_mono | assumption | mono_cof ].
   - apply d_sd_typing__freeze; auto.

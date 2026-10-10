@@ -404,13 +404,13 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
     is_ityp B ->
     {{ Ψ ⨟ Γ ⊢[ mode_tc ] C ⩽ B }}d
 | d_sub__forall_r : forall L Ψ Γ C B,
-    is_ityp (btyp_all_inh B) ->
+    (* Paper [ForallR].  No [is_ityp] premise: the body is a TC-mode
+       subtyping, whose target is always inherited ([d_sub_tc_is_ityp]). *)
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ] C ⩽
          (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
     {{ Ψ ⨟ Γ ⊢[ mode_tc ] C ⩽ (btyp_all_inh B) }}d
-(* Todo: rename d_sub__arg to d_sub__arrow *)
-| d_sub__arg : forall Ψ Ψ1 Ψ2 Γ m C1 C2 B1 B2,
+| d_sub__arrow : forall Ψ Ψ1 Ψ2 Γ m C1 C2 B1 B2,
     {{ Ψ1 ⨟ Γ ⊢ C1 ∼ B1 }}d ->
     {{ Ψ2 ⨟ Γ ⊢[ m ] C2 ⩽ B2 }}d ->
     Ψ [=] Ψ1 `union` Ψ2 ->
@@ -606,8 +606,11 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
     Ψ [=] Ψ1 `union` Ψ2 ->
     {{ Ψ ⨟ Γ ⊢ˢ (uskl_arrow R1 R2) ∼ (bskl_arrow Q1 Q2) }}d
 | d_pat_consis__ghost : forall Ψ Γ P,
+    (* Paper [Ghost]: no premise on the fill.  Its well-formedness is the
+       judgement's presupposition (wf of the counterpart, declarative.tex:2074),
+       carried by the statements that need it — the same move refinement's
+       Ghost rule made on 2026-10-08 (WF-SIDE-CONDITIONS.md §1–§2). *)
     Ψ [=] empty ->
-    {{ Γ ⨟ empty ⊢ₚₛ P }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ uskl_ghost ∼ (pskl_to_bskl_inh P) }}d
 | d_pat_consis__ghostg : forall Ψ Γ,
     Ψ [=] empty ->
@@ -688,13 +691,11 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     {{ empty ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
     is_sskl Q ->
     {{ Ψ ⨟ Γ ⊢ˢ[ mode_ti ] R ⩽ Q }}d
-| d_pat_sub__univ_ghost_r : forall Γ R Q,
+| d_pat_sub__univ_ghost_r : forall Ψ Γ R Q,
     (* Paper [UnivGhostR] (replaces the out-of-sync [check]; WT review):
        the checking rule produces a [TopHole] on the RHS, requires BOTH
        [R] and the synthesised body [Q] guarded, and [Q] synthesised
        ([is_sskl]) — answering WT's "shouldn't Q be synthesised?". *)
-    (* Todo: lift Ψ quantification above *)
-    forall Ψ,
     Ψ [=] empty ->
     guarded_uskl R ->
     guarded_bskl Q ->
@@ -703,15 +704,14 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
        the conclusion's, not the consistency premise's *)
     {{ empty ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ[ mode_tc ] R ⩽ (bskl_univ_ghost Q) }}d
-| d_pat_sub__ghost : forall m Γ P,
+| d_pat_sub__ghost : forall m Ψ Γ P,
     (* Paper [Ghost]: a [Hole] is below any inherited skeleton [inh{P}].
        [mod_comp_sk … m] is the judgment-wide [skmod{SK}] wf-condition
        (declarative.tex:2049, defined at :1596): it excludes an ill-moded fill (a poly [inh{P}] at
        ti/tc is not [is_sskl]), so the sub output stays mode-compatible — the
        skeleton analog of [d_sub] having no ghost rule. *)
-    (* Todo: lift Ψ quantification above *)
-    forall Ψ, Ψ [=] empty ->
-    {{ Γ ⨟ empty ⊢ₚₛ P }}d ->
+    (* No premise on the fill, as in the paper (see [d_pat_consis__ghost]). *)
+    Ψ [=] empty ->
     mod_comp_sk (pskl_to_bskl_inh P) m ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] uskl_ghost ⩽ (pskl_to_bskl_inh P) }}d
 | d_pat_sub__ghostg : forall m Ψ Γ,
@@ -721,7 +721,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Ψ [=] empty ->
     mod_comp_sk bskl_ghost m ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] uskl_dot_ghost ⩽ bskl_ghost }}d
-| d_pat_sub__arg : forall Ψ Ψ1 Ψ2 Γ m R1 R2 Q1 Q2,
+| d_pat_sub__arrow : forall Ψ Ψ1 Ψ2 Γ m R1 R2 Q1 Q2,
     (* Paper [Arrow]: set-union tag context.  The DOMAIN premise is a
        consistency judgement, hence a join. *)
     {{ Ψ1 ⨟ Γ ⊢ˢ R1 ∼ᵣ Q1 }}d ->
@@ -805,7 +805,11 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
     {{ empty ⨟ Γ ⊢ˢ[ m ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⩽ Q }}d ->
     {{ Γ ⊢ˢ[ m ] (exp_var_f x) ⦂ Q }}d
 | d_pat__anno : forall Γ m e (A : ptyp) Q,
-    {{ Γ ⊢ₚ A }}d ->
+    (* Paper P-Anno: no wf premise on the annotation, as in [d_typing__anno] /
+       [d_sd_typing__anno].  (The sd-Anno prose-completion lives only on
+       [ad_sd_typing__anno], where it buys [ad_sd_typing_wf_exp]; skeleton
+       inference does not exhibit its subject anyway — P-Anno has no premise
+       about [e].) *)
     {{ Γ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}d ->
     {{ empty ⨟ Γ ⊢ˢ[ m ] (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A))) ⩽ Q }}d ->
     {{ Γ ⊢ˢ[ m ] (exp_anno e A) ⦂ Q }}d
@@ -955,7 +959,8 @@ Inductive d_sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
    in [d_sd_typing] — no mutual block), and [__abs_check_base] is the [ᾱ = ·]
    arrow whose body checks.  Together they type [λx.M] at [∀ᾱ.(inh A → B)]. *)
 | d_sd_typing__abs_check_step : forall L Γ e B,
-    is_ityp (btyp_all_inh B) ->
+    (* no [is_ityp] premise: the body is TC-mode, whose type is always
+       inherited ([d_sd_typing_tc_abs_is_ityp] / [_abs_anno_is_ityp]) *)
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢ˢᵈ[ mode_tc ] (exp_abs e)
          ⦂ (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
@@ -983,7 +988,8 @@ Inductive d_sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
     {{ Γ ⊢ˢᵈ[ m ] (exp_abs_anno A e) ⦂ (btyp_arrow B1 B2) }}d
 (* Paper [sdtylab{AbsAnnoCheck}]: same fold for the annotated checked lambda. *)
 | d_sd_typing__abs_anno_check_step : forall L Γ A e B,
-    is_ityp (btyp_all_inh B) ->
+    (* no [is_ityp] premise: the body is TC-mode, whose type is always
+       inherited ([d_sd_typing_tc_abs_is_ityp] / [_abs_anno_is_ityp]) *)
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢ˢᵈ[ mode_tc ] (exp_abs_anno A e)
          ⦂ (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->

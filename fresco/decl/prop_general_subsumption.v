@@ -259,7 +259,7 @@ Proof.
   - eapply d_consis_lc_btyp; eassumption.
   - eapply d_consis_lc_btyp; eassumption.
   - pick fresh α. apply lc_btyp_all_inh_exists with (α1 := α).
-    apply H1; [ solve_notin_auto | exact Hlc ].
+    apply H0; [ solve_notin_auto | exact Hlc ].
   - inversion Hlc; subst. apply lc_btyp_arrow;
       [ eapply d_consis_lc_btyp; eassumption | auto ].
   - (* forall_l: the premise's subject is the body opened by [ph] *)
@@ -757,14 +757,13 @@ Proof.
     exists Ψ'. split; [ exact Hbnd | ].
     apply d_sub__forall_r with
       (L := dom Γ `union` ftvar_in_utyp C' `union` ftvar_in_btyp B
-            `union` singleton α);
-      [ assumption | ].
+            `union` singleton α).
     intros α2 Hα2.
-    rewrite (subst_btyp_in_btyp_intro α) by (clear - H0; fsetdec).
+    rewrite (subst_btyp_in_btyp_intro α) by (clear - H; fsetdec).
     rewrite <- (subst_utyp_in_utyp_fresh_eq C' (utyp_var_f α2) α)
-      by (clear - H0 Hftv; fsetdec).
+      by (clear - H Hftv; fsetdec).
     apply (@d_sub_rename_tvar _ _ _ _ _ HΨ' nil Γ α α2);
-      [ reflexivity | simpl; clear - H0 Hα2; fsetdec ].
+      [ reflexivity | simpl; clear - H Hα2; fsetdec ].
   - (* arg (fn m): domain by source-swap, result by IH; bound by chain + IH. *)
     simpl in Hcons. dependent destruction Hcons.
     dependent destruction Href.
@@ -776,7 +775,7 @@ Proof.
       match goal with Hr : utyp_tag_refines_in _ _ C1 |- _ =>
         pose proof (utyp_tag_refines_compose_mono Hr B1) as Hc2 end.
       fsetdec.
-    + eapply d_sub__arg;
+    + eapply d_sub__arrow;
         [ match goal with Hr : utyp_tag_refines_in _ _ C1 |- _ =>
             apply (refines_consis_swap H Hr) end
         | exact Hres | reflexivity ].
@@ -1005,14 +1004,14 @@ Proof.
     inversion Hfn.
   - (* d_sub__forall_r (tc): excluded. *)
     inversion Hfn.
-  - (* d_sub__arg (fn m'): peel one arrow, recurse on the result spine. *)
+  - (* d_sub__arrow (fn m'): peel one arrow, recurse on the result spine. *)
     inversion Hfn; subst.
     dependent destruction Hspine.
     edestruct IHHsub as [Ψ2' [Hb2 Hres]];
       [ eassumption | eassumption | eassumption | ].
     exists (Ψ1 `union` Ψ2'). split.
     + fsetdec.
-    + simpl. eapply d_sub__arg; [ eassumption | exact Hres | reflexivity ].
+    + simpl. eapply d_sub__arrow; [ eassumption | exact Hres | reflexivity ].
   - (* d_sub__forall_l_tagged: subset invariant + set difference. *)
     edestruct IHHsub as [Ψr [Hb Hr]];
       [ eassumption | eassumption | eassumption | ].
@@ -1096,7 +1095,6 @@ Proof.
       match goal with
       | Hc : forall α0, α0 `notin` ?L1 -> {{ _ ⨟ _ ⊢ _ ∼ _ }}d |- _ =>
           apply d_sub__forall_r with (L := L `union` L1 `union` dom Γ);
-          [ apply is_ityp__all with (L := L); assumption | ];
           intros α Hα;
           apply d_sub__forall_l_untagged with (Ψ' := (@empty : atoms)) (ph := utyp_var_f α);
           [ intro Hco; discriminate
@@ -1196,9 +1194,8 @@ Proof.
   - (* forall_r (M = tc): the folded ∀-peel [__abs_check_step], recurse. *)
     subst.
     apply d_sd_typing__abs_check_step with (L := L `union` L0 `union` dom Γ).
-    + assumption.
     + intros α Hα.
-      eapply (H1 α ltac:(solve_notin_auto)); [ reflexivity | reflexivity | | ].
+      eapply (H0 α ltac:(solve_notin_auto)); [ reflexivity | reflexivity | | ].
       * apply d_wf_ptyp_tvar_mono with (Γ := Γ);
           [ assumption | apply denv_tbinds_le_of_binds_le, denv_binds_le_weaken_l ].
       * intros Γ'' xv M' B'' Hcw Hfr Hsb.
@@ -1285,9 +1282,8 @@ Proof.
   - (* forall_r (M = tc): the folded ∀-peel [__abs_anno_check_step]. *)
     subst.
     apply d_sd_typing__abs_anno_check_step with (L := L `union` L0 `union` dom Γ).
-    + assumption.
     + intros α Hα.
-      eapply (H1 α ltac:(solve_notin_auto)); [ reflexivity | reflexivity | | ].
+      eapply (H0 α ltac:(solve_notin_auto)); [ reflexivity | reflexivity | | ].
       * apply d_wf_ptyp_tvar_mono with (Γ := Γ);
           [ assumption | apply denv_tbinds_le_of_binds_le, denv_binds_le_weaken_l ].
       * intros Γ'' xv M' B'' Hcw Hfr Hsb.
