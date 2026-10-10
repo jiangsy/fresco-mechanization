@@ -149,9 +149,11 @@ Definition consis_call_defs_mono (Θ : aenv) (c : consis_call) : Prop :=
   | _                        => aenv_defs_mono Θ
   end.
 
-(** def_order.v §5's mutual trio as ONE inductive over the tag — premise
-    for premise the same.  The mutual trio stays canonical (totality lives
-    on it); the injections below convert. *)
+(** def_order.v §5's mutual trio as ONE inductive over the tag.  Calls
+    bundled there under conjunctions are separate premises here, exposing
+    every recursive hypothesis to Coq's generated induction principle.
+    The mutual trio stays canonical (totality lives on it); the injections
+    below convert. *)
 Inductive e_consis_call_order : supply -> aenv -> consis_call -> Prop :=
 | e_consis_call_order__assign : forall S0 Θ Ξ α P,
     (* Assign-SolveM — the head is the target itself, undefined *)
@@ -169,8 +171,10 @@ Inductive e_consis_call_order : supply -> aenv -> consis_call -> Prop :=
     (forall β Θ0,
        Θ = (β ~ abind_flex_mono) ++ Θ0 ->
        e_consis_call_order S0 Θ0
-         (consis_call_assign (Ξ ++ (β ~ abind_flex_mono)) α P)
-       /\ e_consis_call_order S0 Θ0 (consis_call_assign Ξ α P)) ->
+         (consis_call_assign (Ξ ++ (β ~ abind_flex_mono)) α P)) ->
+    (forall β Θ0,
+       Θ = (β ~ abind_flex_mono) ++ Θ0 ->
+       e_consis_call_order S0 Θ0 (consis_call_assign Ξ α P)) ->
     (* Assign-SkipRigid *)
     (forall β Θ0,
        Θ = (β ~ abind_tvar) ++ Θ0 ->
@@ -212,10 +216,11 @@ Inductive e_consis_call_order : supply -> aenv -> consis_call -> Prop :=
     (* Arrow — the sibling runs at the FIRST premise's output context *)
     (forall P0a P0b P1 P2,
        P0 = pskl_arrow P0a P0b -> P = pskl_arrow P1 P2 ->
-       e_consis_call_order S0 Θ (consis_call_consis Δ1 Δ2 P0a P1)
-       /\ (forall S1 Θ1 Q1,
-             {{ S0 ↝ S1 ⊨ Θ ⊢[ Δ1 | Δ2 | P0a ] P1 ∼ Q1 ⊣ Θ1 }}e ->
-             e_consis_call_order S1 Θ1 (consis_call_consis Δ1 Δ2 P0b P2))) ->
+       e_consis_call_order S0 Θ (consis_call_consis Δ1 Δ2 P0a P1)) ->
+    (forall P0a P0b P1 P2 S1 Θ1 Q1,
+       P0 = pskl_arrow P0a P0b -> P = pskl_arrow P1 P2 ->
+       {{ S0 ↝ S1 ⊨ Θ ⊢[ Δ1 | Δ2 | P0a ] P1 ∼ Q1 ⊣ Θ1 }}e ->
+       e_consis_call_order S1 Θ1 (consis_call_consis Δ1 Δ2 P0b P2)) ->
     (* ForallInh *)
     (forall P0' P1,
        P0 = pskl_all_syn P0' -> P = pskl_all_syn P1 ->
@@ -282,11 +287,9 @@ Fixpoint e_assign_order_to_call S0 Θ Ξ α P
         (fun β τ Θ0 E =>
            e_consis_order_to_call _ _ _ _ _ _ (Has β τ Θ0 E))
         (fun β Θ0 E =>
-           match Hds β Θ0 E with
-           | conj h1 h2 =>
-               conj (e_assign_order_to_call _ _ _ _ _ h1)
-                    (e_assign_order_to_call _ _ _ _ _ h2)
-           end)
+           match Hds β Θ0 E with conj h1 _ => e_assign_order_to_call _ _ _ _ _ h1 end)
+        (fun β Θ0 E =>
+           match Hds β Θ0 E with conj _ h2 => e_assign_order_to_call _ _ _ _ _ h2 end)
         (fun β Θ0 E =>
            e_assign_order_to_call _ _ _ _ _ (Hrg β Θ0 E))
         (fun x A Θ0 E =>
@@ -320,11 +323,11 @@ with e_consis_order_to_call Δ1 Δ2 S0 Θ P0 P
       e_consis_call_order__consis _ _ _ _ _ _
         (fun P0a P0b P1 P2 E1 E2 =>
            match Harr P0a P0b P1 P2 E1 E2 with
-           | conj h1 h2 =>
-               conj (e_consis_order_to_call _ _ _ _ _ _ h1)
-                    (fun S1 Θ1 Q1 Hrun =>
-                       e_consis_order_to_call _ _ _ _ _ _
-                         (h2 S1 Θ1 Q1 Hrun))
+           | conj h1 _ => e_consis_order_to_call _ _ _ _ _ _ h1
+           end)
+        (fun P0a P0b P1 P2 S1 Θ1 Q1 E1 E2 Hrun =>
+           match Harr P0a P0b P1 P2 E1 E2 with
+           | conj _ h2 => e_consis_order_to_call _ _ _ _ _ _ (h2 S1 Θ1 Q1 Hrun)
            end)
         (fun P0' P1 E1 E2 =>
            e_consis_order_to_call _ _ _ _ _ _ (Hfi P0' P1 E1 E2))

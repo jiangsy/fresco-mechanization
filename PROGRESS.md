@@ -181,6 +181,24 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Generated induction for assign/unify/consistency completeness
+
+Exposed the combined consistency order's Depend/Skip calls and its arrow
+head/tail as separate constructor premises.  Its canonical mutual orders
+remain unchanged; their injections now select each component directly
+instead of reconstructing conjunctions.  Removed the 242-code-line
+hand-written strong induction principle.
+
+`e_consis_call_impl_complete` now uses ordinary induction.  Its three
+cases share the same introduction and simplification steps, and use the
+Depend, Skip, head, and tail hypotheses directly.  The proof body is
+**987 → 978** nonblank, noncomment lines.  Net **250 fewer Coq code
+lines**, including one additional line in the order/injection module.  All retained
+theorem statements and the runner's computational branches are unchanged.
+
+Validation: full `make coq`; all 34 headline assumption reports remain
+`Closed under the global context`.
+
 ## 2026-10-11 — Use generated induction for collection and solver completeness
 
 The collection and primitive solver orders bundled sibling recursive
