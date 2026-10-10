@@ -4,8 +4,8 @@
     instantiation's tags Ψ', and it means GLOBAL freshness — in particular
     freshness from the tags already in the SUBJECT, which is what
     [lemma:precision-substitution] needs (docs/DESIGN-completeness-subtyping.md
-    §5.2).  Every subtyping judgment in the tree renders it that way as of
-    2026-08-11, and making that affordable rests on being able to MOVE a
+    §5.2).  Every subtyping judgment in the tree renders it that way, and
+    making that affordable rests on being able to MOVE a
     derivation's instantiation tags: this file is the syntactic half of that
     primitive, decl/prop_tag_swap.v the judgmental half.
 
@@ -23,29 +23,16 @@
     ⭐ §1 IS SORT-AGNOSTIC AND SHARED.  A transposition of two ATOMS knows
     nothing about ε tags, so [swap_atom] / [swap_atoms] and their spec live
     here ONCE and algo/prop_swap.v — the TYPE-variable equivariance kit —
-    imports them.  ⚠️ They used to be defined in both files, under the same
-    six names ([swap_atom], [swap_atoms], [swap_atom_invol],
-    [swap_atoms_empty], [swap_atoms_in], [swap_atoms_notin]), and
-    algo/prop_pat_sub.v imports BOTH — so [apply swap_atoms_notin] there
-    resolved by import order, and the two [swap_atoms_notin]s were DIFFERENT
-    facts.  Merged 2026-08-11.
+    imports them — do not redefine them there.
 
     ⚙ ε tags are plain atoms occupying a slot in [utyp_all_tag] /
     [uskl_all_tag], not a locally-nameless sort, so lngen generates nothing
     for them: the swap, its action on atom SETS (tag contexts are [atoms]) and
     every transport lemma below are hand-written.
 
-    ⚙ RESTART NOTE (2026-08-11) — §2's [uskl] HALF WAS DELETED
-    ([swap_tag_in_uskl] and its nine transport lemmas: [_open_rec] / [_open] /
-    [_open_var], [ftvar_], [lc_], [ftag_], [_fresh_eq], [is_dskl_swap_tag],
-    [guarded_uskl_swap_tag]).  Its only consumer was
-    [d_pat_sub_swap_tag] (decl/prop_tag_swap.v), which was itself
-    consumer-less symmetry: the CST repair the whole file exists for runs at
-    the TYPE sort.  To re-derive, copy the [utyp] half below and replace
-    [utyp]/[C] by [uskl]/[R], adding the four ghost constructors — each proof
-    is the same three lines.  ⚠️ Check first whether the skeleton sort really
-    needs the SWAP, or only [ftag_in_uskl_subst_tagfree] (§0), which is what
-    the rule change actually consumed. *)
+    ⚙ §2 has no [uskl] half: nothing consumes a skeleton-sort tag swap
+    (the CST repair runs at the TYPE sort).  If one is needed, copy the
+    [utyp] half and add the four ghost constructors. *)
 
 Require Import Metalib.Metatheory.
 
@@ -85,6 +72,38 @@ Proof.
               | rewrite IHR by exact Hf; reflexivity
               | rewrite IHR1, IHR2 by exact Hf; reflexivity ].
 Qed.
+
+(** Opening by a VARIABLE adds no tag; opening by anything adds at most its
+    tags.  (The [uskl] twins are in algo/consis/prop_consis_precise.v.) *)
+Lemma ftag_in_utyp_open_rec_var : forall α' C k,
+  ftag_in_utyp (open_utyp_wrt_utyp_rec k (utyp_var_f α') C) [=] ftag_in_utyp C.
+Proof.
+  intros α' C; induction C; intros k; simpl; try reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; reflexivity.
+  - rewrite IHC1, IHC2; reflexivity.
+  - rewrite IHC; reflexivity.
+  - rewrite IHC; reflexivity.
+Qed.
+
+Lemma ftag_in_utyp_open_var : forall C α,
+  ftag_in_utyp (open_utyp_wrt_utyp C (utyp_var_f α)) [=] ftag_in_utyp C.
+Proof. intros; unfold open_utyp_wrt_utyp; apply ftag_in_utyp_open_rec_var. Qed.
+
+Lemma ftag_in_utyp_open_rec_upper : forall C C' k,
+  ftag_in_utyp (open_utyp_wrt_utyp_rec k C' C) [<=]
+  ftag_in_utyp C `union` ftag_in_utyp C'.
+Proof.
+  intros C C'; induction C; intros k; simpl; try fsetdec.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; fsetdec.
+  - specialize (IHC1 k); specialize (IHC2 k); fsetdec.
+  - specialize (IHC (S k)); fsetdec.
+  - specialize (IHC (S k)); fsetdec.
+Qed.
+
+Lemma ftag_in_utyp_open_upper : forall C C',
+  ftag_in_utyp (open_utyp_wrt_utyp C C') [<=]
+  ftag_in_utyp C `union` ftag_in_utyp C'.
+Proof. intros; unfold open_utyp_wrt_utyp; apply ftag_in_utyp_open_rec_upper. Qed.
 
 (* ===================================================================== *)
 (*  §1  THE TRANSPOSITION, on atoms and on atom SETS                      *)

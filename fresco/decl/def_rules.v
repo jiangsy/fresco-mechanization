@@ -109,16 +109,8 @@ Inductive d_wf_btyp : list (atom * dbind) -> btyp -> Prop :=
     {{ Γ ⊢ᵦ (btyp_all_inh B) }}d
 where "{{ Γ ⊢ᵦ B }}d" := (d_wf_btyp Γ B) : fresco_d_scope.
 
-(* WT: I updated the notation in the paper to separate well-formedness
-of unresolved/tagged types and their linear uses of tags. But I still
-write Γ ⊢ T # Δ as checking both, which is consistent with the
-definition here.
-%
-OK, now I saw d_tags defined below. Then we can just remove Δ here.
-
-Done (WT review): the tag context is dropped — [d_wf_utyp] is now pure
-well-scopedness ([Γ ⊢ C]); the linear tag content of a tagged type is
-checked separately by [d_tags] below. *)
+(* [d_wf_utyp] is pure well-scopedness ([Γ ⊢ C]); the linear tag content of
+   a tagged type is checked separately by [d_tags] below. *)
 Reserved Notation "{{ Γ ⊢ᵤ C }}d"
   (at level 0, C at level 74,
    format "'{{'  Γ  ⊢ᵤ  C  '}}d'").
@@ -285,17 +277,14 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  Tag relation  [tags{Δ}{φ}]  (paper notation [φ # Δ], declarative.tex) *)
-(*  Pure tag-counting: [Δ] is exactly the set of ε-tags appearing in the  *)
+(*  Tag relation  [tags{Ψ}{φ}]  (declarative.tex)                         *)
+(*  Pure tag-counting: [Ψ] is exactly the set of ε-tags appearing in the  *)
 (*  tagged type / skeleton, each used linearly (hence the disjointness /   *)
-(*  [∉] side conditions mirroring the paper's [⊎]).  This is the relation *)
-(*  latest paper factors out of the old combined [Δ | Γ ⊢ φ]: the [d_sub] *)
-(*  ForallL premise is now [Γ ⊢ tags{Δ}{φ}] = well-scopedness (kept in     *)
-(*  [d_wf_utyp]) ∧ this relation.  Decoupled from [Γ]: tags ignore the     *)
-(*  type context. *)
+(*  [∉] side conditions mirroring the paper's [⊎]).  The [d_sub] ForallL  *)
+(*  premise [Γ ⊢ tags{Ψ'}{φ}] is well-scopedness ([d_wf_utyp]) ∧ this    *)
+(*  relation.  Decoupled from [Γ]: tags ignore the type context.          *)
 (* ===================================================================== *)
 
-(* Check fully passed *)
 Inductive d_tags : atoms -> utyp -> Prop :=
 | d_tags__unit : forall Ψ,
     Ψ [=] empty ->
@@ -354,7 +343,6 @@ Inductive d_tags_skl : atoms -> uskl -> Prop :=
 (*  Type consistency and subtyping                                        *)
 (* ===================================================================== *)
 
-(* Check fully passed *)
 Inductive d_consis : atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
 | d_consis__unit : forall Ψ Γ,
     Ψ [=] empty ->
@@ -365,7 +353,7 @@ Inductive d_consis : atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
     {{ Ψ ⨟ Γ ⊢ (utyp_var_f α) ∼ (btyp_var_f α) }}d
 | d_consis__forall_inh_tagged : forall L Ψ Ψ0 Γ ε C B,
     (* Paper [ForallInh] with β1=ε: output is [Ψ,ε] = Ψ ∪ {ε}, the
-       idempotent set union (declarative.tex:950) — no freshness side
+       idempotent set union (declarative.tex:1040) — no freshness side
        condition ([add] on a set is idempotent). *)
     (forall α, α `notin` L ->
        {{ Ψ0 ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢
@@ -393,7 +381,7 @@ Inductive d_consis : atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
     {{ Ψ ⨟ Γ ⊢ (utyp_all_syn C) ∼ (btyp_all_syn B) }}d
 | d_consis__arrow : forall Ψ Ψ1 Ψ2 Γ C1 C2 B1 B2,
     (* Paper [Arrow]: the tag context is the SET UNION [Ψ₁,Ψ₂]
-       (declarative.tex:967, with Ψ a set), not a disjoint union — so we
+       (declarative.tex:1056, with Ψ a set), not a disjoint union — so we
        neither require nor record disjointness.  This faithfulness is what
        makes consistency transitivity (B.2) provable: composing two
        derivations may legitimately reuse a tag, which a set absorbs. *)
@@ -403,7 +391,6 @@ Inductive d_consis : atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
     {{ Ψ ⨟ Γ ⊢ (utyp_arrow C1 C2) ∼ (btyp_arrow B1 B2) }}d
 where "{{ Ψ ⨟ Γ ⊢ C ∼ B }}d" := (d_consis Ψ Γ C B) : fresco_d_scope.
 
-(* Check fully passed *)
 Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
 | d_sub__infer : forall Ψ Γ C B,
     {{ empty ⨟ Γ ⊢ C ∼ B }}d ->
@@ -527,7 +514,6 @@ where "{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d" := (d_refine_syn Γ Δ Q Q') : fresco_d
    bare [{{ Γ ⊢ A ≤ B }}d]; the [ad] layer's copy reads the same inside the
    braces ([{{ Θ ⨟ Δ ⊢ᵣ Q ⊳ P }}ad]), the delimiter carrying the system. *)
 
-(* Check passed *)
 (** ⭐ THE UNCOLOURED DECLARATIVE REFINEMENT [{{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}d]
     (declarative.tex:1516 — *"As with well-formedness, we define the refinement
     of uncoloured skeletons by ignoring colours in the above rules"), which is
@@ -674,7 +660,7 @@ where "{{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d" := (d_pat_consis Ψ Γ R Q) : fresco_d_sc
 (*  and until it was added the two systems disagreed                      *)
 (*  (cex/cex_d_pat_bridges_false.v).  docs/ghost-capture.tex.             *)
 (*                                                                        *)
-(*  ⚙ Δ is [nil] BY CONSTRUCTION — the presupposition is always stated at *)
+(*  ⚙ Δ is [empty] BY CONSTRUCTION — the presupposition is always stated at *)
 (*  the empty ∀-scope, so the combined relation does not expose it.       *)
 (* ===================================================================== *)
 
@@ -720,7 +706,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
 | d_pat_sub__ghost : forall m Γ P,
     (* Paper [Ghost]: a [Hole] is below any inherited skeleton [inh{P}].
        [mod_comp_sk … m] is the judgment-wide [skmod{SK}] wf-condition
-       (declarative.tex:1935): it excludes an ill-moded fill (a poly [inh{P}] at
+       (declarative.tex:2049, defined at :1596): it excludes an ill-moded fill (a poly [inh{P}] at
        ti/tc is not [is_sskl]), so the sub output stays mode-compatible — the
        skeleton analog of [d_sub] having no ghost rule. *)
     (* Todo: lift Ψ quantification above *)
@@ -791,10 +777,8 @@ Reserved Notation "{{ Γ ⊢ˢᵈ[ M ] e ⦂ A }}d"
    format "'{{'  Γ  ⊢ˢᵈ[  M  ]  e  ⦂  A  '}}d'").
 
 (** Skeleton inference [d_pat] ([⦂]) is SELF-CONTAINED — no [d_typing] premises
-    (the paper's P-App infers the function, declarative.tex:1560) — so it is
+    (the paper's P-App infers the function, declarative.tex:1707) — so it is
     defined standalone, BEFORE [d_typing], rather than mutually. *)
-(* Check fully passed *)
-(* Todo : check if d_pat has skmod_sk satisfied, and i think we didn't even have skmod_sk defined *)
 Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
 (* Paper P-Unit/P-Var/P-Anno (declarative.tex:1634-1653): the skeleton
    subtyping judgement is EMBEDDED in the three base rules at every mode —
@@ -806,8 +790,8 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
        between bidirectional skeletons and modes"* (WF-SIDE-CONDITIONS.md §4).
        [ad_pat] has carried it on these three rows since 2026-08-07; it is on
        the declarative twin from 2026-08-11 so the two agree rule for rule.
-       ⚠️ It is NOT derivable from the refinement premise above: refinement's
-       target wf would need the Γ↔Δ exchange, which the [⫯] row breaks (its
+       ⚠️ It is NOT derivable from the refinement inside the embedded
+       subtyping's join: refinement's target wf would need the Γ↔Δ exchange, which the [⫯] row breaks (its
        premise clears Δ), and the paper says so itself — *"it's fine to keep Δ
        since we already required well-formedness separately"*
        (declarative.tex:1502). *)
@@ -864,9 +848,9 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ (pskl_to_bskl_syn P) }}d) ->
     {{ Γ ⊢ˢ[ mode_tc ] (exp_abs_anno A e) ⦂ (bskl_univ_ghost (bskl_arrow (btyp_to_bskl (ptyp_to_btyp_syn A)) (pskl_to_bskl_syn P))) }}d
 | d_pat__app : forall Γ m e1 e2 P (Q1 Q2 : bskl),
-    (* Paper P-App (declarative.tex:1560): the function [e1] is SKELETON-
+    (* Paper P-App (declarative.tex:1707): the function [e1] is SKELETON-
        INFERRED ([⦂]) in [FN] mode, not typed — d_pat is self-contained
-       skeleton inference.  [P'] is the fill output (the arg skeleton). *)
+       skeleton inference.  [Q1] is the fill output (the arg skeleton). *)
     {{ Γ ⊢ˢ[ mode_tc ] e2 ⦂ (pskl_to_bskl_syn P) }}d ->
     {{ Γ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P) ⊳ Q1 }}d ->
     {{ Γ ⊢ˢ[ mode_fn m ] e1 ⦂ (bskl_arrow Q1 Q2) }}d ->
@@ -875,7 +859,6 @@ where "{{ Γ ⊢ˢ[ M ] e ⦂ P }}d" := (d_pat M Γ e P) : fresco_d_scope.
 
 (** Typing [d_typing] ([⦂]) uses [d_pat] in [App] (it infers the argument's
     skeleton), so it is defined after [d_pat]. *)
-(* Check fully passed *)
 Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
 | d_typing__unit : forall Γ,
     {{ Γ ⊢[ mode_ti ] exp_unit ⦂ btyp_unit }}d

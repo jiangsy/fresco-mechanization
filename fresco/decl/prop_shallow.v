@@ -51,25 +51,6 @@ Proof.
   - eapply d_tags__arrow; eauto; fsetdec.
 Qed.
 
-(* Painting preserves well-scopedness. *)
-Lemma ptyp_wf_utyp_wf : forall Γ A,
-    {{ Γ ⊢ₚ A }}d -> {{ Γ ⊢ᵤ (ptyp_to_utyp_syn A) }}d.
-Proof.
-  intros Γ A Hwf. induction Hwf; simpl; eauto using d_wf_utyp.
-  - eapply d_wf_utyp__all_syn with (L := L). intros α Hα.
-    replace (utyp_var_f α) with (ptyp_to_utyp_syn (ptyp_var_f α)) by reflexivity.
-    rewrite <- ptyp_to_utyp_syn_open. eauto.
-Qed.
-
-Lemma inh_paint_is_ityp : forall Γ A,
-    {{ Γ ⊢ₚ A }}d -> is_ityp (ptyp_to_btyp_inh A).
-Proof.
-  intros Γ A Hwf. induction Hwf; simpl; eauto using is_ityp.
-  - eapply is_ityp__all with (L := L). intros α Hα.
-    replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
-    rewrite <- ptyp_to_btyp_inh_open. eauto.
-Qed.
-
 (** ** Reflexivity of [⩽] across the syn/inh painting (the [refl] case). *)
 
 (* Consistency is reflexive across the paint: [syn{A} ∼ inh{A}] for any [A]. *)
@@ -110,13 +91,13 @@ Proof.
     + eapply d_consis__arrow;
         [ apply d_consis_refl_paint; eassumption
         | apply d_consis_refl_paint; eassumption | fsetdec ].
-    + apply is_ityp__arrow; eapply inh_paint_is_ityp; eassumption.
+    + apply is_ityp__arrow; apply is_ityp_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption.
   - (* ∀: SubForallR (intro α) then SubForallL (instantiate by α) *)
     apply d_sub__forall_r with (L := L `union` dom Γ).
     + apply is_ityp__all with (L := L). intros α Hα.
       replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
       rewrite <- ptyp_to_btyp_inh_open.
-      eapply inh_paint_is_ityp. apply Hwf0. exact Hα.
+      apply is_ityp_ptyp_to_btyp_inh. eapply d_wf_ptyp_lc. apply Hwf0. exact Hα.
     + intros α Hα.
       replace (btyp_var_f α) with (ptyp_to_btyp_inh (ptyp_var_f α)) by reflexivity.
       rewrite <- ptyp_to_btyp_inh_open.
@@ -129,7 +110,7 @@ Proof.
       * apply is_dtyp__var.
       * replace (utyp_var_f α) with (ptyp_to_utyp_syn (ptyp_var_f α)) by reflexivity.
         rewrite <- ptyp_to_utyp_syn_open.
-        apply d_sub_equiv with (Δ := (@empty : atoms)); [ fsetdec | ].
+        apply d_sub_equiv with (Ψ := (@empty : atoms)); [ fsetdec | ].
         apply IH0. clear - Hα. fsetdec.
 Qed.
 
@@ -172,10 +153,10 @@ Proof.
     + fsetdec.
     + clear; fsetdec.
     + apply mono_paint_d_tags. assumption.
-    + apply ptyp_wf_utyp_wf. assumption.
+    + apply d_wf_utyp_painting_syn. assumption.
     + apply mono_paint_is_dtyp. assumption.
     + rewrite <- ptyp_to_utyp_syn_open.
-      apply d_sub_equiv with (Δ := (@empty : atoms)); [ fsetdec | ].
+      apply d_sub_equiv with (Ψ := (@empty : atoms)); [ fsetdec | ].
       assumption.
 Qed.
 

@@ -100,6 +100,30 @@ Proof.
     reflexivity.
 Qed.
 
+(** A synthesised [btyp] is the syn-painting of its own forgetful image, so
+    [d_consis_compose]'s [ptyp_to_btyp_syn A] middle can be fed an arbitrary
+    [is_styp] btyp via [A := btyp_to_ptyp B]. *)
+Lemma ptyp_to_utyp_syn_btyp_to_ptyp : forall B,
+    ptyp_to_utyp_syn (btyp_to_ptyp B) = btyp_to_utyp_syn B.
+Proof.
+  induction B; simpl; try reflexivity;
+    try (rewrite IHB1, IHB2; reflexivity); rewrite IHB; reflexivity.
+Qed.
+
+(** Paint round-trip: erasing a syn-painted [btyp] to a [utyp] equals the
+    direct utyp painting (structural). *)
+Lemma btyp_to_utyp_syn_ptyp_to_btyp_syn : forall A,
+    btyp_to_utyp_syn (ptyp_to_btyp_syn A) = ptyp_to_utyp_syn A.
+Proof.
+  induction A; simpl; try reflexivity.
+  - rewrite IHA1, IHA2. reflexivity.
+  - rewrite IHA. reflexivity.
+Qed.
+
+Lemma utyp_to_btyp_ptyp_to_utyp_syn : forall A,
+    utyp_to_btyp (ptyp_to_utyp_syn A) = ptyp_to_btyp_syn A.
+Proof. induction A; simpl; congruence. Qed.
+
 (** * 2. Commutation with opening.
 
     Every conversion is a structural map that leaves bound indices alone, so
@@ -292,10 +316,7 @@ Proof.
   apply (ptyp_to_pskl_open_rec A (ptyp_var_f α) 0).
 Qed.
 
-(** The CLOSE twin of the two above.  ⚙ Moved here 2026-08-22: it existed
-    in TWO copies (ext_algo/prop_solve_det.v §3 and
-    algo/typing/prop_completeness_typing.v), and prop_solve_det's own
-    header already said it belongs in this file. *)
+(** The CLOSE twin of the two above. *)
 Lemma ptyp_to_pskl_close_rec : forall A α k,
     ptyp_to_pskl (close_ptyp_wrt_ptyp_rec k α A) =
     close_pskl_wrt_pskl_rec k α (ptyp_to_pskl A).
@@ -450,12 +471,8 @@ Lemma pskl_to_uskl_open_var : forall P α,
   = open_uskl_wrt_uskl (pskl_to_uskl P) (uskl_var_f α).
 Proof. intros; apply pskl_to_uskl_open. Qed.
 
-(* ⚙ These three are the erasure's own open / lc transports.  They lived in
-   algo/prop_refine.v, algo/consis/prop_soundness_consis.v and
-   deco_algo/prop_decorate_sub.v — three files, one topic, none of them this
-   one — which is why the lemmas below could not be stated here. *)
 (** Erasure commutes with opening (converse direction of
-    [pskl_to_uskl_open_rec] in prop_decorate.v). *)
+    [pskl_to_uskl_open_rec] above). *)
 Lemma uskl_to_pskl_open_rec : forall R0 R' k,
   uskl_to_pskl (open_uskl_wrt_uskl_rec k R' R0)
   = open_pskl_wrt_pskl_rec k (uskl_to_pskl R') (uskl_to_pskl R0).
@@ -495,6 +512,130 @@ Proof.
   intros. unfold open_btyp_wrt_btyp, open_bskl_wrt_bskl.
   apply btyp_to_bskl_open_rec.
 Qed.
+
+(** [utyp_to_btyp] commutes with opening. *)
+Lemma utyp_to_btyp_open_rec : forall C1 C2 k,
+    utyp_to_btyp (open_utyp_wrt_utyp_rec k C2 C1) =
+    open_btyp_wrt_btyp_rec k (utyp_to_btyp C2) (utyp_to_btyp C1).
+Proof.
+  induction C1; intros C2 k; simpl; try reflexivity.
+  - destruct (lt_eq_lt_dec n k) as [[|]|]; reflexivity.
+  - rewrite IHC1_1, IHC1_2; reflexivity.
+  - rewrite IHC1; reflexivity.
+  - rewrite IHC1; reflexivity.
+Qed.
+
+Lemma utyp_to_btyp_open : forall C1 C2,
+    utyp_to_btyp (open_utyp_wrt_utyp C1 C2) =
+    open_btyp_wrt_btyp (utyp_to_btyp C1) (utyp_to_btyp C2).
+Proof.
+  intros. unfold open_utyp_wrt_utyp, open_btyp_wrt_btyp.
+  apply utyp_to_btyp_open_rec.
+Qed.
+
+(** Erase ([btyp_to_utyp_syn ∘ utyp_to_btyp]) commutes with [open] on a
+    variable. *)
+Lemma btyp_to_utyp_syn_utyp_to_btyp_open_var : forall C α,
+    btyp_to_utyp_syn (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f α)))
+    = open_utyp_wrt_utyp (btyp_to_utyp_syn (utyp_to_btyp C)) (utyp_var_f α).
+Proof.
+  intros C α. rewrite utyp_to_btyp_open. simpl.
+  rewrite btyp_to_utyp_syn_open. reflexivity.
+Qed.
+
+(** Commutation with the [α := 1] substitution — what the [_subst_unit]
+    strengthening lemmas of decl/ rewrite with: every conversion sends [unit]
+    to the [unit] of its target sort. *)
+Lemma pskl_to_bskl_inh_subst_unit : forall P α',
+    subst_bskl_in_bskl bskl_unit α' (pskl_to_bskl_inh P)
+    = pskl_to_bskl_inh (subst_pskl_in_pskl pskl_unit α' P).
+Proof.
+  induction P; intros α'; simpl; try reflexivity;
+    try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
+  - destruct_if; reflexivity.
+Qed.
+
+Lemma pskl_to_bskl_syn_subst_unit : forall P α',
+    subst_bskl_in_bskl bskl_unit α' (pskl_to_bskl_syn P)
+    = pskl_to_bskl_syn (subst_pskl_in_pskl pskl_unit α' P).
+Proof.
+  induction P; intros α'; simpl; try reflexivity;
+    try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
+  - destruct_if; reflexivity.
+Qed.
+
+Lemma bskl_to_uskl_subst_unit : forall Q α',
+    subst_uskl_in_uskl uskl_unit α' (bskl_to_uskl Q)
+    = bskl_to_uskl (subst_bskl_in_bskl bskl_unit α' Q).
+Proof.
+  induction Q; intros α'; simpl; try reflexivity;
+    try (rewrite IHQ1, IHQ2; reflexivity); try (rewrite IHQ; reflexivity).
+  - destruct_if; reflexivity.
+Qed.
+
+Lemma ptyp_to_pskl_subst_unit : forall A α',
+    subst_pskl_in_pskl pskl_unit α' (ptyp_to_pskl A)
+    = ptyp_to_pskl (subst_ptyp_in_ptyp ptyp_unit α' A).
+Proof.
+  induction A; intros α'; simpl; try reflexivity;
+    try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
+  - destruct_if; reflexivity.
+Qed.
+
+Lemma ptyp_to_btyp_syn_subst_unit : forall A α',
+    subst_btyp_in_btyp btyp_unit α' (ptyp_to_btyp_syn A)
+    = ptyp_to_btyp_syn (subst_ptyp_in_ptyp ptyp_unit α' A).
+Proof.
+  induction A; intros α'; simpl; try reflexivity;
+    try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
+  - destruct_if; reflexivity.
+Qed.
+
+Lemma ptyp_to_btyp_inh_subst_unit : forall A α',
+    subst_btyp_in_btyp btyp_unit α' (ptyp_to_btyp_inh A)
+    = ptyp_to_btyp_inh (subst_ptyp_in_ptyp ptyp_unit α' A).
+Proof.
+  induction A; intros α'; simpl; try reflexivity;
+    try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
+  - destruct_if; reflexivity.
+Qed.
+
+Lemma ptyp_to_utyp_syn_subst_unit : forall A α',
+    subst_utyp_in_utyp utyp_unit α' (ptyp_to_utyp_syn A)
+    = ptyp_to_utyp_syn (subst_ptyp_in_ptyp ptyp_unit α' A).
+Proof.
+  induction A; intros α'; simpl; try reflexivity;
+    try (rewrite IHA1, IHA2; reflexivity); try (rewrite IHA; reflexivity).
+  - destruct_if; reflexivity.
+Qed.
+
+Lemma btyp_to_bskl_subst_unit : forall B α',
+    subst_bskl_in_bskl bskl_unit α' (btyp_to_bskl B)
+    = btyp_to_bskl (subst_btyp_in_btyp btyp_unit α' B).
+Proof.
+  induction B; intros α'; simpl; try reflexivity;
+    try (rewrite IHB1, IHB2; reflexivity); try (rewrite IHB; reflexivity).
+  - destruct_if; reflexivity.
+Qed.
+
+Lemma btyp_to_ptyp_subst_unit : forall B α',
+    subst_ptyp_in_ptyp ptyp_unit α' (btyp_to_ptyp B)
+    = btyp_to_ptyp (subst_btyp_in_btyp btyp_unit α' B).
+Proof.
+  induction B; intros α'; simpl; try reflexivity;
+    try (rewrite IHB1, IHB2; reflexivity); try (rewrite IHB; reflexivity).
+  - destruct_if; reflexivity.
+Qed.
+
+Lemma uskl_to_pskl_subst_unit : forall R α,
+  uskl_to_pskl (subst_uskl_in_uskl uskl_unit α R)
+  = subst_pskl_in_pskl pskl_unit α (uskl_to_pskl R).
+Proof. intros R α. rewrite uskl_to_pskl_subst. reflexivity. Qed.
+
+Lemma bskl_to_pskl_subst_unit : forall Q α,
+  bskl_to_pskl (subst_bskl_in_bskl bskl_unit α Q)
+  = subst_pskl_in_pskl pskl_unit α (bskl_to_pskl Q).
+Proof. intros Q α. rewrite bskl_to_pskl_subst. reflexivity. Qed.
 
 (** * 3. Transport of local closure and of the shape predicates.
 
@@ -720,6 +861,218 @@ Proof.
   intros P H; inversion H; subst; simpl; constructor; auto using pskl_to_uskl_lc.
 Qed.
 
+(* ⚙ The lemmas between this toggle and the next were stated where implicit
+   arguments are on; keep it so their callers' argument lists still fit. *)
+Set Implicit Arguments.
+
+Lemma lc_ptyp_to_btyp_syn : forall A, lc_ptyp A -> lc_btyp (ptyp_to_btyp_syn A).
+Proof.
+  intros A H. induction H; simpl.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+  - pick fresh α. apply (lc_btyp_all_syn_exists α).
+    specialize (H0 α). rewrite ptyp_to_btyp_syn_open in H0. simpl in H0. exact H0.
+Qed.
+
+Lemma lc_ptyp_to_btyp_inh : forall A, lc_ptyp A -> lc_btyp (ptyp_to_btyp_inh A).
+Proof.
+  intros A H. induction H; simpl.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+  - pick fresh α. apply (lc_btyp_all_inh_exists α).
+    specialize (H0 α). unfold open_btyp_wrt_btyp.
+    unfold open_ptyp_wrt_ptyp in H0.
+    rewrite ptyp_to_btyp_inh_open_rec in H0. simpl in H0. exact H0.
+Qed.
+
+Lemma lc_ptyp_to_utyp_syn : forall A, lc_ptyp A -> lc_utyp (ptyp_to_utyp_syn A).
+Proof.
+  intros A H. induction H; simpl.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+  - pick fresh α. apply (lc_utyp_all_syn_exists α).
+    specialize (H0 α). rewrite ptyp_to_utyp_syn_open in H0. simpl in H0. exact H0.
+Qed.
+
+(** Reverse paint-lc: a locally-closed syn-painting comes from a
+    locally-closed source.  Induction on the [lc_utyp] derivation. *)
+Lemma lc_ptyp_of_lc_utyp_syn : forall A,
+    lc_utyp (ptyp_to_utyp_syn A) -> lc_ptyp A.
+Proof.
+  intros A Hlc. remember (ptyp_to_utyp_syn A) as C eqn:HC. revert A HC.
+  induction Hlc; intros A0 HC; destruct A0; simpl in HC; inversion HC; subst;
+    try (constructor; eauto; fail).
+  - pick fresh α. apply (lc_ptyp_all_exists α).
+    eapply (H0 α (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))).
+    rewrite ptyp_to_utyp_syn_open. reflexivity.
+Qed.
+
+Lemma degree_ptyp_of_degree_btyp_inh : forall A k,
+    degree_btyp_wrt_btyp k (ptyp_to_btyp_inh A) -> degree_ptyp_wrt_ptyp k A.
+Proof.
+  induction A; intros k H; simpl in H; inversion H; subst; constructor; auto.
+Qed.
+
+Lemma lc_ptyp_of_lc_btyp_inh : forall A, lc_btyp (ptyp_to_btyp_inh A) -> lc_ptyp A.
+Proof.
+  intros A H. apply lc_ptyp_of_degree. apply degree_ptyp_of_degree_btyp_inh.
+  apply degree_btyp_wrt_btyp_of_lc_btyp. assumption.
+Qed.
+
+Lemma degree_ptyp_of_degree_btyp_syn : forall A k,
+    degree_btyp_wrt_btyp k (ptyp_to_btyp_syn A) -> degree_ptyp_wrt_ptyp k A.
+Proof.
+  induction A; intros k H; simpl in H; inversion H; subst; constructor; auto.
+Qed.
+
+Lemma lc_ptyp_of_lc_btyp_syn : forall A, lc_btyp (ptyp_to_btyp_syn A) -> lc_ptyp A.
+Proof.
+  intros A H. apply lc_ptyp_of_degree. apply degree_ptyp_of_degree_btyp_syn.
+  apply degree_btyp_wrt_btyp_of_lc_btyp. assumption.
+Qed.
+
+Lemma degree_btyp_of_degree_ptyp_erase : forall B k,
+    degree_ptyp_wrt_ptyp k (btyp_to_ptyp B) -> degree_btyp_wrt_btyp k B.
+Proof.
+  induction B; intros k H; simpl in H; inversion H; subst; constructor; auto.
+Qed.
+
+(** Erasure preserves local closure. *)
+Lemma degree_ptyp_btyp_to_ptyp : forall B k,
+    degree_btyp_wrt_btyp k B -> degree_ptyp_wrt_ptyp k (btyp_to_ptyp B).
+Proof.
+  induction B; intros k H; simpl; inversion H; subst; constructor; auto.
+Qed.
+
+Lemma lc_ptyp_btyp_to_ptyp : forall B, lc_btyp B -> lc_ptyp (btyp_to_ptyp B).
+Proof.
+  intros B H. apply lc_ptyp_of_degree, degree_ptyp_btyp_to_ptyp,
+    degree_btyp_wrt_btyp_of_lc_btyp, H.
+Qed.
+
+(** …and back: erasure preserves STRUCTURE, so it reflects local closure
+    too — needed where a rule states its domain as a [btyp] but its
+    well-formedness as the erasure's ([d_sd_typing__abs_anno]). *)
+Lemma lc_btyp_of_lc_ptyp_erase : forall B,
+    lc_ptyp (btyp_to_ptyp B) -> lc_btyp B.
+Proof.
+  intros B H. apply lc_btyp_of_degree, degree_btyp_of_degree_ptyp_erase,
+    degree_ptyp_wrt_ptyp_of_lc_ptyp, H.
+Qed.
+
+(** [utyp_to_btyp] preserves local closure (needed for the btyp-side
+    subst/open commute in the substitution lemma). *)
+Lemma lc_utyp_to_btyp : forall C, lc_utyp C -> lc_btyp (utyp_to_btyp C).
+Proof.
+  intros C H. induction H; simpl.
+  - apply lc_btyp_unit.
+  - apply lc_btyp_var_f.
+  - apply lc_btyp_arrow; assumption.
+  - apply lc_btyp_all_syn. intros α.
+    change (btyp_var_f α) with (utyp_to_btyp (utyp_var_f α)).
+    rewrite <- utyp_to_btyp_open. apply H0.
+  - apply lc_btyp_all_syn. intros α.
+    change (btyp_var_f α) with (utyp_to_btyp (utyp_var_f α)).
+    rewrite <- utyp_to_btyp_open. apply H0.
+Qed.
+
+(** A [utyp]'s [btyp] erasure has only synthesised foralls, so it is [is_styp]
+    once locally closed (lc rules out a dangling [var_b]). *)
+Lemma is_styp_utyp_to_btyp : forall C,
+    lc_utyp C -> is_styp (utyp_to_btyp C).
+Proof.
+  intros C Hlc. induction Hlc; simpl.
+  - apply is_styp__unit.
+  - apply is_styp__var.
+  - apply is_styp__arrow; assumption.
+  - apply is_styp__all with (L := empty). intros α Hα.
+    replace (open_btyp_wrt_btyp (utyp_to_btyp C) (btyp_var_f α))
+      with (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f α)))
+      by (rewrite utyp_to_btyp_open; reflexivity).
+    apply H0.
+  - apply is_styp__all with (L := empty). intros α Hα.
+    replace (open_btyp_wrt_btyp (utyp_to_btyp C) (btyp_var_f α))
+      with (utyp_to_btyp (open_utyp_wrt_utyp C (utyp_var_f α)))
+      by (rewrite utyp_to_btyp_open; reflexivity).
+    apply H0.
+Qed.
+
+(** The synthesised painting of any locally-closed [ptyp] is synthesised
+    ([is_styp]): every ∀ becomes [btyp_all_syn].  (Induct on [lc_ptyp] so the
+    ∀ body's [is_styp] follows from the per-instance IH.) *)
+Lemma is_styp_ptyp_to_btyp_syn : forall A,
+    lc_ptyp A -> is_styp (ptyp_to_btyp_syn A).
+Proof.
+  intros A H. induction H; simpl.
+  - constructor.
+  - constructor.
+  - constructor; assumption.
+  - apply is_styp__all with (L := empty). intros α _.
+    change (btyp_var_f α) with (ptyp_to_btyp_syn (ptyp_var_f α)).
+    rewrite <- ptyp_to_btyp_syn_open.
+    match goal with H : forall _, is_styp _ |- _ => apply H end.
+Qed.
+
+(** [bskl_to_pskl] preserves guardedness ([guarded] only ranges over
+    unit / var / arrow, all of which [bskl_to_pskl] maps homomorphically;
+    the arrow case needs local-closure preservation [lc_bskl_to_pskl]). *)
+Lemma guarded_bskl_to_pskl : forall Q,
+    guarded_bskl Q -> guarded_pskl (bskl_to_pskl Q).
+Proof.
+  intros Q H. induction H; simpl.
+  - apply guarded_pskl__unit.
+  - apply guarded_pskl__var.
+  - apply guarded_pskl__arrow; apply lc_bskl_to_pskl; assumption.
+Qed.
+
+Unset Implicit Arguments.
+
+Lemma lc_utyp_of_lc_uskl_incl : forall R,
+  lc_uskl R -> forall C, R = utyp_to_uskl C -> lc_utyp C.
+Proof.
+  intros R H; induction H; intros C0 HR;
+    destruct C0; simpl in HR; try discriminate HR; inversion HR; subst;
+    try solve [ constructor ].
+  - apply lc_utyp_arrow; [ apply IHlc_uskl1 | apply IHlc_uskl2 ]; reflexivity.
+  - apply lc_utyp_all_syn. intros α.
+    apply (H0 α (open_utyp_wrt_utyp C0 (utyp_var_f α))).
+    symmetry; apply utyp_to_uskl_open_var.
+  - apply lc_utyp_all_tag. intros α.
+    apply (H0 α (open_utyp_wrt_utyp C0 (utyp_var_f α))).
+    symmetry; apply utyp_to_uskl_open_var.
+Qed.
+
+Lemma guarded_utyp_of_guarded_uskl_incl : forall C,
+  guarded_uskl (utyp_to_uskl C) -> guarded_utyp C.
+Proof.
+  intros C H; destruct C; simpl in H; inversion H; subst.
+  - apply guarded_utyp__unit.
+  - apply guarded_utyp__var.
+  - apply guarded_utyp__arrow;
+      [ apply (lc_utyp_of_lc_uskl_incl (utyp_to_uskl C1));
+          [ assumption | reflexivity ]
+      | apply (lc_utyp_of_lc_uskl_incl (utyp_to_uskl C2));
+          [ assumption | reflexivity ] ].
+Qed.
+
+Lemma lc_pskl_of_lc_btyp : forall B,
+  lc_btyp B -> lc_pskl (bskl_to_pskl (btyp_to_bskl B)).
+Proof.
+  intros B H; induction H; simpl;
+    try solve [ constructor; assumption ].
+  - apply lc_pskl_all_syn. intro α.
+    rewrite <- bskl_to_pskl_open.
+    change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
+    rewrite <- btyp_to_bskl_open. auto.
+  - apply lc_pskl_all_syn. intro α.
+    rewrite <- bskl_to_pskl_open.
+    change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
+    rewrite <- btyp_to_bskl_open. auto.
+Qed.
+
 (** * 4. Transport of free variables.
 
     Every conversion is structural and renames nothing, so it preserves the
@@ -751,10 +1104,7 @@ Lemma ftvar_btyp_to_ptyp : forall B,
     ftvar_in_ptyp (btyp_to_ptyp B) = ftvar_in_btyp B.
 Proof. induction B; simpl; try reflexivity; try (rewrite IHB1, IHB2); auto. Qed.
 
-(** A TYPE has no ghosts, so its skeleton view is ghost-free.  ⚙ MOVED here
-    2026-08-16 from algo/consis/prop_completeness_consis.v: a fact about a
-    conversion, named for it, so this is its documented home (CLAUDE.md's
-    naming rules); the predicate itself moved to def_shapes.v. *)
+(** A TYPE has no ghosts, so its skeleton view is ghost-free. *)
 Lemma ptyp_to_pskl_no_ghost : forall A, pskl_no_ghost (ptyp_to_pskl A).
 Proof. induction A; simpl; tauto. Qed.
 
@@ -765,6 +1115,111 @@ Proof. induction A; simpl; fsetdec. Qed.
 Lemma ftvar_bskl_to_pskl : forall Q,
   ftvar_in_pskl (bskl_to_pskl Q) [=] ftvar_in_bskl Q.
 Proof. induction Q; simpl; fsetdec. Qed.
+
+(** Coercions never introduce free type variables. *)
+Lemma ftvar_btyp_to_utyp_syn : forall B,
+    ftvar_in_utyp (btyp_to_utyp_syn B) = ftvar_in_btyp B.
+Proof. induction B; simpl; congruence. Qed.
+
+Lemma ftvar_utyp_to_btyp : forall C,
+    ftvar_in_btyp (utyp_to_btyp C) = ftvar_in_utyp C.
+Proof. induction C; simpl; congruence. Qed.
+
+Lemma ftvar_pskl_to_bskl_syn : forall P,
+    ftvar_in_bskl (pskl_to_bskl_syn P) = ftvar_in_pskl P.
+Proof.
+  induction P; simpl; try reflexivity;
+    try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
+Qed.
+
+(* [btyp_to_bskl] / [bskl_to_uskl] preserve free tvars (only repaint). *)
+Lemma ftvar_btyp_to_bskl : forall B,
+    ftvar_in_bskl (btyp_to_bskl B) = ftvar_in_btyp B.
+Proof.
+  induction B; simpl; try reflexivity;
+    try (rewrite IHB1, IHB2; reflexivity); try (rewrite IHB; reflexivity).
+Qed.
+
+(* ⚙ The lemmas between this toggle and the next were stated where implicit
+   arguments are on; keep it so their callers' argument lists still fit. *)
+Set Implicit Arguments.
+
+(** ** Retractions up to colour — the binder cases need the free-variable
+    facts above. *)
+
+Lemma ptyp_to_btyp_syn_btyp_to_ptyp : forall B,
+    is_styp B ->
+    ptyp_to_btyp_syn (btyp_to_ptyp B) = B.
+Proof.
+  intros B Hsyn. induction Hsyn; simpl; try reflexivity.
+  - rewrite IHHsyn1, IHHsyn2; reflexivity.
+  - f_equal.
+    pick fresh α for (L `union` ftvar_in_btyp B).
+    apply open_btyp_wrt_btyp_inj with (α1 := α).
+    + rewrite ftvar_ptyp_to_btyp_syn, ftvar_btyp_to_ptyp. solve_notin_auto.
+    + fsetdec.
+    + specialize (H0 α ltac:(solve_notin_auto)).
+      rewrite btyp_to_ptyp_open in H0.
+      rewrite ptyp_to_btyp_syn_open in H0.
+      exact H0.
+Qed.
+
+(** A fully-inherited [btyp] is the inh-painting of its own erasure: re-painting
+    every (already-inh) quantifier returns the same type.  Needed by the
+    [forall_r] case of the abstraction-tail subsumption lemmas, where the result
+    [btyp_all_inh B] (with [is_ityp B]) must be matched against the painted
+    result [btyp_all_inh (ptyp_to_btyp_inh A)] forced by [d_typing__forall]. *)
+Lemma ptyp_to_btyp_inh_btyp_to_ptyp : forall B,
+    is_ityp B -> ptyp_to_btyp_inh (btyp_to_ptyp B) = B.
+Proof.
+  induction 1; simpl; try reflexivity.
+  - rewrite IHis_ityp1, IHis_ityp2. reflexivity.
+  - f_equal.
+    pick fresh α for (L `union` ftvar_in_btyp A).
+    apply open_btyp_wrt_btyp_inj with (α1 := α).
+    + rewrite ftvar_ptyp_to_btyp_inh, ftvar_btyp_to_ptyp. fsetdec.
+    + fsetdec.
+    + specialize (H0 α ltac:(solve_notin_auto)).
+      unfold open_btyp_wrt_btyp in H0 |- *.
+      rewrite btyp_to_ptyp_open_rec, ptyp_to_btyp_inh_open_rec in H0.
+      simpl in H0. exact H0.
+Qed.
+
+Lemma utyp_to_btyp_btyp_to_utyp_syn : forall B,
+    is_styp B -> utyp_to_btyp (btyp_to_utyp_syn B) = B.
+Proof.
+  intros B Hsyn.
+  rewrite <- (ptyp_to_utyp_syn_btyp_to_ptyp B).
+  rewrite utyp_to_btyp_ptyp_to_utyp_syn.
+  apply ptyp_to_btyp_syn_btyp_to_ptyp; assumption.
+Qed.
+
+Unset Implicit Arguments.
+
+(** An INHERITED [btyp] paints as an inherited [pskl]: every ∀ it has is
+    [btyp_all_inh], and [pskl_to_bskl_inh] paints every ∀ that way. *)
+Lemma inh_paint_bskl : forall B,
+  is_ityp B ->
+  btyp_to_bskl B = pskl_to_bskl_inh (bskl_to_pskl (btyp_to_bskl B)).
+Proof.
+  intros B H; induction H; simpl; try reflexivity.
+  - f_equal; assumption.
+  - (* ⚙ the ∀ row's binder is the RULE's [A], not the statement's [B] *)
+    f_equal.
+    pick fresh α for (L `union` ftvar_in_btyp A
+                      `union` ftvar_in_bskl
+                                (pskl_to_bskl_inh
+                                   (bskl_to_pskl (btyp_to_bskl A)))).
+    apply open_bskl_wrt_bskl_inj with (α1 := α);
+      [ rewrite ftvar_btyp_to_bskl; clear - Fr; fsetdec
+      | clear - Fr; fsetdec | ].
+    (* push the opening through the two paintings on the RIGHT, then the
+       goal IS the cofinite hypothesis *)
+    rewrite <- pskl_to_bskl_inh_open, <- bskl_to_pskl_open.
+    change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
+    rewrite <- btyp_to_bskl_open.
+    exact (H0 α ltac:(clear - Fr; fsetdec)).
+Qed.
 
 (* ===================================================================== *)
 (*  §5  ε TAGS ACROSS THE CONVERSIONS                                     *)

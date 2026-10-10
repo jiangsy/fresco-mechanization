@@ -18,31 +18,12 @@ Require Import src.fresco.decl.prop_wellformed.
 
 Set Implicit Arguments.
 
-(** * Splitting / inversion lemmas for refinement.
+(** * Substituting [unit] for a type variable ([α := 1]).
 
-    Only the coloured refinement relation [d_refine_syn] remains; the
-    former uncoloured [d_refine] split lemmas were removed with it. *)
+    NB there is no "refinement preserves well-formedness" lemma: with the
+    single-[Δ] refinement, well-formedness of both sides is a SEPARATE
+    precondition of the judgement, not a derived property. *)
 
-(* No [univ_ghost] split lemma: a universal ghost [⫯] now refines by three
-   rules (remove / fill-with-∀α / keep), so the output is not uniquely a
-   [bskl_univ_ghost].  Invert [d_refine_syn] directly where needed. *)
-
-(** NB the headline lemma "Refinement preserves well-formedness" (the old D4)
-    was DELETED upstream (declarative.tex 0dd3488): with the single-[Δ]
-    refinement, well-formedness of both sides is a SEPARATE precondition of the
-    judgement, not a derived property. *)
-
-Lemma ftvar_pskl_to_bskl_syn : forall P,
-    ftvar_in_bskl (pskl_to_bskl_syn P) = ftvar_in_pskl P.
-Proof.
-  induction P; simpl; try reflexivity;
-    try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
-Qed.
-
-(** The LHS of a consistency / subtyping judgment has no free tvars beyond the
-    RHS: every concrete tvar in [R] is matched (via [__var]) to the same tvar in
-    [Q]; ghosts/ghosts in [R] are tvar-free.  Hence [α ∉ ftvar Q ⇒ α ∉ ftvar R],
-    which is what makes [d_pat_sub]'s [forall_l] recursion strengthen. *)
 Lemma guarded_pskl_subst_unit : forall P α,
     guarded_pskl P -> guarded_pskl (subst_pskl_in_pskl pskl_unit α P).
 Proof.
@@ -60,6 +41,24 @@ Proof.
   - destruct_if; auto with fresco.
   - apply guarded_uskl__arrow; apply subst_uskl_in_uskl_lc_uskl; (assumption || apply lc_uskl_unit).
 Qed.
+
+(** The [∀◇] rows of the two [_subst_unit] lemmas below: the body [H0] is
+    checked at [Γ∖Δ].  If [α0 ∈ Δ] the entry is already gone, so the body
+    cannot mention [α0] ([ftvH0] is its free-variable lemma); otherwise [α0]
+    survives the minus and the IH substitutes it. *)
+Local Ltac subst_unit_minus α0 Δ H0 IH fresh_eq ftvH0 :=
+  let Hftv := fresh "Hftv" in
+  pose proof ftvH0 as Hftv;
+  destruct (AtomSetProperties.In_dec α0 Δ) as [Hin | Hnin];
+  [ rewrite (denv_minus_app _ ((α0 ~ dbind_tvar) ++ _)), denv_minus_cons_in,
+      <- denv_minus_app in H0 by exact Hin;
+    rewrite fresh_eq; [ exact H0 | ];
+    let Hα := fresh "Hα" in
+    intro Hα; apply Hftv, binds_denv_minus in Hα; tauto
+  | rewrite denv_minus_app; eapply IH;
+    rewrite (denv_minus_app _ ((α0 ~ dbind_tvar) ++ _)),
+      denv_minus_cons_notin by exact Hnin;
+    reflexivity ].
 
 Lemma d_wf_pskl_subst_unit : forall Ψ Γ P,
     {{ Γ ⨟ Ψ ⊢ₚₛ P }}d ->
@@ -80,20 +79,7 @@ Proof.
     eapply (H0 β ltac:(auto) ((β ~ dbind_tvar) ++ Γ1) α0 Γ2); reflexivity.
   - simpl. apply d_wf_pskl__univ_ghost;
       [ apply guarded_pskl_subst_unit; assumption | ].
-    destruct (AtomSetProperties.In_dec α0 Δ) as [Hin | Hnin].
-    + (* [α0 ∈ Δ]: [Γ∖Δ] has no entry for [α0], so [P] does not mention it *)
-      assert (Heqm : denv_minus (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) Δ
-                     = denv_minus (Γ1 ++ Γ2) Δ)
-        by (rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
-              denv_minus_cons_in, denv_minus_app; auto).
-      rewrite Heqm in H0.
-      rewrite subst_pskl_in_pskl_fresh_eq; [ exact H0 | ].
-      intro Hα. apply (d_wf_pskl_ftv H0) in Hα.
-      apply binds_denv_minus in Hα. tauto.
-    + rewrite denv_minus_app. eapply IHd_wf_pskl.
-      rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
-        denv_minus_cons_notin by exact Hnin.
-      reflexivity.
+    subst_unit_minus α0 Δ H0 IHd_wf_pskl subst_pskl_in_pskl_fresh_eq (d_wf_pskl_ftv H0).
 Qed.
 
 Lemma d_wf_uskl_subst_unit : forall Ψ Γ R,
@@ -120,45 +106,11 @@ Proof.
     eapply (H0 β ltac:(auto) ((β ~ dbind_tvar) ++ Γ1) α0 Γ2); reflexivity.
   - simpl. apply d_wf_uskl__univ_ghost;
       [ apply guarded_uskl_subst_unit; assumption | ].
-    destruct (AtomSetProperties.In_dec α0 Δ) as [Hin | Hnin].
-    + assert (Heqm : denv_minus (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) Δ
-                     = denv_minus (Γ1 ++ Γ2) Δ)
-        by (rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
-              denv_minus_cons_in, denv_minus_app; auto).
-      rewrite Heqm in H0.
-      rewrite subst_uskl_in_uskl_fresh_eq; [ exact H0 | ].
-      intro Hα. apply (d_wf_uskl_ftv H0) in Hα.
-      apply binds_denv_minus in Hα. tauto.
-    + rewrite denv_minus_app. eapply IHd_wf_uskl.
-      rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
-        denv_minus_cons_notin by exact Hnin.
-      reflexivity.
+    subst_unit_minus α0 Δ H0 IHd_wf_uskl subst_uskl_in_uskl_fresh_eq (d_wf_uskl_ftv H0).
   - apply d_wf_uskl__dot_ghost.
   - simpl. apply d_wf_uskl__dot_univ_ghost;
       [ apply guarded_uskl_subst_unit; assumption | ].
-    destruct (AtomSetProperties.In_dec α0 Δ) as [Hin | Hnin].
-    + assert (Heqm : denv_minus (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) Δ
-                     = denv_minus (Γ1 ++ Γ2) Δ)
-        by (rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
-              denv_minus_cons_in, denv_minus_app; auto).
-      rewrite Heqm in H0.
-      rewrite subst_uskl_in_uskl_fresh_eq; [ exact H0 | ].
-      intro Hα. apply (d_wf_uskl_ftv H0) in Hα.
-      apply binds_denv_minus in Hα. tauto.
-    + rewrite denv_minus_app. eapply IHd_wf_uskl.
-      rewrite (denv_minus_app Γ1 ((α0 ~ dbind_tvar) ++ Γ2)),
-        denv_minus_cons_notin by exact Hnin.
-      reflexivity.
-Qed.
-
-(** [pskl_to_bskl_inh] commutes with the tvar→unit substitution. *)
-Lemma pskl_to_bskl_inh_subst_unit : forall P α',
-    subst_bskl_in_bskl bskl_unit α' (pskl_to_bskl_inh P)
-    = pskl_to_bskl_inh (subst_pskl_in_pskl pskl_unit α' P).
-Proof.
-  induction P; intros α'; simpl; try reflexivity;
-    try (rewrite IHP1, IHP2; reflexivity); try (rewrite IHP; reflexivity).
-  - destruct_if; reflexivity.
+    subst_unit_minus α0 Δ H0 IHd_wf_uskl subst_uskl_in_uskl_fresh_eq (d_wf_uskl_ftv H0).
 Qed.
 
 Lemma is_sskl_subst_unit : forall Q α,
@@ -209,10 +161,10 @@ Proof.
   - apply guarded_bskl__arrow; apply subst_bskl_in_bskl_lc_bskl; (assumption || apply lc_bskl_unit).
 Qed.
 
-Lemma d_tags_skl_subst_unit : forall Δ R α,
-    d_tags_skl Δ R -> d_tags_skl Δ (subst_uskl_in_uskl uskl_unit α R).
+Lemma d_tags_skl_subst_unit : forall Ψ R α,
+    d_tags_skl Ψ R -> d_tags_skl Ψ (subst_uskl_in_uskl uskl_unit α R).
 Proof.
-  intros Δ R α H. induction H; simpl.
+  intros Ψ R α H. induction H; simpl.
   - apply d_tags_skl__unit; (assumption || fsetdec).
   - destruct_if;
       [ apply d_tags_skl__unit; (assumption || fsetdec)
@@ -225,65 +177,49 @@ Proof.
   - apply d_tags_skl__dot_univ_ghost; assumption.
 Qed.
 
-(** ⚙ The two erasures under [α := 1], in the shape the rows below rewrite
-    with; the general commutations are [uskl_to_pskl_subst] /
-    [bskl_to_pskl_subst] in fresco/prop_coercions.v. *)
-Lemma uskl_to_pskl_subst_unit : forall R α,
-  uskl_to_pskl (subst_uskl_in_uskl uskl_unit α R)
-  = subst_pskl_in_pskl pskl_unit α (uskl_to_pskl R).
-Proof. intros R α. rewrite uskl_to_pskl_subst. reflexivity. Qed.
-
-Lemma bskl_to_pskl_subst_unit : forall Q α,
-  bskl_to_pskl (subst_bskl_in_bskl bskl_unit α Q)
-  = subst_pskl_in_pskl pskl_unit α (bskl_to_pskl Q).
-Proof. intros Q α. rewrite bskl_to_pskl_subst. reflexivity. Qed.
-
-(** The UNCOLOURED refinement under [α := 1].  ⚙ Its coloured twin
-    [d_refine_syn_subst_unit] lives in prop_syntax_directed.v, which is
-    downstream; this one is needed HERE, by [d_pat_sub_subst_unit] below, for
-    the presupposition the consistency rows now carry. *)
-Lemma d_refine_pskl_subst_unit : forall Γ Δi P Q,
-    {{ Γ ⨟ Δi ⊢ᵣₚ P ⊳ Q }}d ->
-    forall Γ1 α0 Γ2, Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
-    {{ (Γ1 ++ Γ2) ⨟ Δi ⊢ᵣₚ
+(** The UNCOLOURED refinement under [α := 1], at any context (refinement
+    reads none).  ⚙ Its coloured twin [d_refine_syn_subst_unit] lives in
+    prop_syntax_directed.v; this one is needed HERE, by
+    [d_pat_sub_subst_unit] below, for the presupposition the consistency rows
+    carry. *)
+Lemma d_refine_pskl_subst_unit : forall Γ Δ P Q,
+    {{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ Q }}d ->
+    forall Γ' α0,
+    {{ Γ' ⨟ Δ ⊢ᵣₚ
       (subst_pskl_in_pskl pskl_unit α0 P) ⊳ (subst_pskl_in_pskl pskl_unit α0 Q) }}d.
 Proof.
-  intros Γ Δi P Q H. induction H; intros Γ1 α0 Γ2 Heq; subst; simpl.
+  intros Γ Δ P Q H. induction H; intros Γ' α0; simpl.
   - apply d_refine_pskl__unit.
   - destruct_if.
     + apply d_refine_pskl__unit.
     + apply d_refine_pskl__var.
-  - apply d_refine_pskl__arrow;
-      [ eapply IHd_refine_pskl1 | eapply IHd_refine_pskl2 ]; reflexivity.
-  - apply d_refine_pskl__all with (L := L `union` dom (Γ1 ++ Γ2) `union` {{α0}}).
+  - apply d_refine_pskl__arrow; auto.
+  - apply d_refine_pskl__all with (L := L `union` {{α0}}).
     intros α2 Hα2.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var
       by (first [ apply lc_pskl_unit | fsetdec ]).
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var
       by (first [ apply lc_pskl_unit | fsetdec ]).
-    eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
-      simpl_env; reflexivity.
+    apply H0. fsetdec.
   - apply d_refine_pskl__ghost.
     pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P' pskl_unit α0) as Hup.
     simpl in Hup. clear - H Hup. fsetdec.
-  - apply d_refine_pskl__univ_ghost_remove. eapply IHd_refine_pskl; reflexivity.
-  - apply d_refine_pskl__univ_ghost_fill
-      with (L := L `union` dom (Γ1 ++ Γ2) `union` {{α0}}).
+  - apply d_refine_pskl__univ_ghost_remove. auto.
+  - apply d_refine_pskl__univ_ghost_fill with (L := L `union` {{α0}}).
     intros α2 Hα2.
     rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var
       by (first [ apply lc_pskl_unit | fsetdec ]).
-    eapply (H0 α2 ltac:(solve_notin_auto) ((α2 ~ dbind_tvar) ++ Γ1) α0 Γ2);
-      simpl_env; reflexivity.
-  - apply d_refine_pskl__univ_ghost_keep. eapply IHd_refine_pskl; reflexivity.
+    apply H0. fsetdec.
+  - apply d_refine_pskl__univ_ghost_keep. auto.
 Qed.
 
-Lemma d_pat_consis_subst_unit : forall Δ Γ R Q,
-    {{ Δ ⨟ Γ ⊢ˢ R ∼ Q }}d ->
+Lemma d_pat_consis_subst_unit : forall Ψ Γ R Q,
+    {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d ->
     forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
-    {{ Δ ⨟ (Γ1 ++ Γ2) ⊢ˢ
+    {{ Ψ ⨟ (Γ1 ++ Γ2) ⊢ˢ
       (subst_uskl_in_uskl uskl_unit α R) ∼ (subst_bskl_in_bskl bskl_unit α Q) }}d.
 Proof.
-  intros Δ Γ R Q H. induction H; intros Γ1 α0 Γ2 Heq; subst.
+  intros Ψ Γ R Q H. induction H; intros Γ1 α0 Γ2 Heq; subst.
   - apply d_pat_consis__unit; (assumption || fsetdec).
   - simpl. destruct_if.
     + apply d_pat_consis__unit; (assumption || fsetdec).
@@ -324,25 +260,25 @@ Qed.
 
 (** The JOIN transports: both halves do, and the two erasures commute with
     the substitution. *)
-Lemma d_consis_join_subst_unit : forall Δ Γ R Q,
-    {{ Δ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
+Lemma d_consis_join_subst_unit : forall Ψ Γ R Q,
+    {{ Ψ ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
     forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
-    {{ Δ ⨟ (Γ1 ++ Γ2) ⊢ˢ
+    {{ Ψ ⨟ (Γ1 ++ Γ2) ⊢ˢ
       (subst_uskl_in_uskl uskl_unit α R) ∼ᵣ (subst_bskl_in_bskl bskl_unit α Q) }}d.
 Proof.
-  intros Δ Γ R Q [Hc Hr] Γ1 α Γ2 Heq. split.
+  intros Ψ Γ R Q [Hc Hr] Γ1 α Γ2 Heq. split.
   - eapply d_pat_consis_subst_unit; eauto.
   - rewrite uskl_to_pskl_subst_unit, bskl_to_pskl_subst_unit.
     eapply d_refine_pskl_subst_unit; eauto.
 Qed.
 
-Lemma d_pat_sub_subst_unit : forall Δ Γ m R Q,
-    {{ Δ ⨟ Γ ⊢ˢ[ m ] R ⩽ Q }}d ->
+Lemma d_pat_sub_subst_unit : forall Ψ Γ m R Q,
+    {{ Ψ ⨟ Γ ⊢ˢ[ m ] R ⩽ Q }}d ->
     forall Γ1 α Γ2, Γ = Γ1 ++ (α ~ dbind_tvar) ++ Γ2 ->
-    {{ Δ ⨟ (Γ1 ++ Γ2) ⊢ˢ[ m ]
+    {{ Ψ ⨟ (Γ1 ++ Γ2) ⊢ˢ[ m ]
       (subst_uskl_in_uskl uskl_unit α R) ⩽ (subst_bskl_in_bskl bskl_unit α Q) }}d.
 Proof.
-  intros Δ Γ m R Q H. induction H; intros Γ1 α0 Γ2 Heq; subst.
+  intros Ψ Γ m R Q H. induction H; intros Γ1 α0 Γ2 Heq; subst.
   - apply d_pat_sub__infer;
       [ (assumption || fsetdec) | eapply d_consis_join_subst_unit; eauto
       | apply is_sskl_subst_unit; assumption ].

@@ -10,12 +10,12 @@
       (fig:declarative-in-algo-context, full-algo-spec.tex:170-176; LHS
       flexible in FUNCTION mode only; targets' flexibles are reached through
       the consistency premises' own FlexR).  The transplant mirrors the
-      SETTLED formulations of the mech's [d_pat_sub] (decl/def_rules.v:479 —
-      the WT-reviewed skeleton side: [is_sskl]/guardedness on
-      Infer/UnivGhostR, [mod_comp_sk] on Ghost/GhostG, the scope premise on
-      ForallL) and, for the TY-only rules Check/ForallR absent from
-      [d_pat_sub], the fused appendix figure directly.  The N-indexed tag
-      premise of ForallL is [a_tags_sort] (def_decorated.v:96), exactly as in
+      SETTLED formulations of the mech's [d_pat_sub] (decl/def_rules.v —
+      [is_sskl]/guardedness on Infer/UnivGhostR, [mod_comp_sk] on
+      Ghost/GhostG, the scope premise on ForallL) and, for the TY-only rules
+      Check/ForallR absent from [d_pat_sub], the fused appendix figure
+      directly.  The N-indexed tag premise of ForallL is [a_tags_sort]
+      (deco_algo/def_decorated.v), exactly as in
       the decorated algorithmic system [a_subtag].
 
     - [ad_partial_precise]: partial precision [{{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[Ψ] ψ }}ad]
@@ -23,11 +23,9 @@
       precision: quantifiers of ψ whose tags are NOT in Ψ may be matched by
       ghosts in P.  Its definition "corresponds one to one to the definition
       of refinement in algorithmic contexts" (tex:1552-1554), so it mirrors
-      [ad_refine_pskl] (def_consis_refine.v:198) — including the placements the
-      mech settled there for the paper's external wf side conditions
-      (docs/WF-SIDE-CONDITIONS.md): the var rule carries the
-      [Δ ∨ a_binds_tvar] visibility disjunction, the ∀-rule extends only Δ
-      (the rigid binder is picked cofinitely), univ_ghost_fill extends Θ.
+      [ad_refine_pskl] (def_consis_refine.v) rule for rule: no scoping
+      premises (well-formedness is a presupposition), the ∀-rule extends both
+      Θ and Δ, univ_ghost_fill extends Θ.
       Targets ψ are decorated skeletons, so their quantifiers are always
       tagged ([uskl_all_tag]; [is_dskl] has no [all_syn] constructor) and
       their ghosts dotted — the subject-ghost rule is the only rule matching
@@ -131,65 +129,18 @@ Inductive ad_pat_sub :
 where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
   (ad_pat_sub NM M Ψ Θ R Q) : fresco_ad_scope.
 
-(* ⚙ RESTART NOTE (2026-08-11) — [ad_pat_sub_n], the NON-hygienic fuel mirror,
-   and its five bridge lemmas ([ad_pat_sub_of_n] / [_n_succ] / [_n_mono] /
-   [_n_rename_tvar] / [ad_pat_sub_to_n], ~230 lines in
-   algo/sub/prop_completeness_sub_precise.v §P5a) were DELETED: NOTHING in the
-   tree consumed any of them.  §1 of the completeness skeleton named [_n] as
-   the measure, but the development settled on the TAG-HYGIENIC fuel
-   [ad_pat_sub_fuel] (algo/sub/prop_completeness_sub_gen.v §1) and never came
-   back, so [_n] was scaffolding that outlived its plan.
-   To re-derive: copy [ad_pat_sub_fuel] (below) with the ORIGINAL fuel discipline
-   — every rule increments, leaves conclude at [S n].  ⚙ 2026-08-11: there is
-   nothing else to drop — [ad_pat_sub] now carries the [ftag_in_uskl] hygiene
-   itself, so "[_n] = non-hygienic mirror" no longer names a difference.
-   ⚠️ And check first whether [_gv] serves: the completeness track's measure is
-   [_gv]'s fuel, and a second mirror has to be bridged to [ad_pat_sub] all over
-   again — a lesson paid for twice, since [ad_pat_sub_g] was exactly such a
-   second mirror and was retired 2026-08-12. *)
+(* ⚙ There is deliberately no non-hygienic fuel mirror ([ad_pat_sub_n]):
+   nothing consumed one.  The completeness measure is [ad_pat_sub_fuel] below;
+   a second mirror would have to be bridged to [ad_pat_sub] all over again. *)
 
-(* ===================================================================== *)
-(*  THE TAG-HYGIENIC, LEAF-VALID FUEL MIRROR of [ad_pat_sub]              *)
-(*  (completeness-only)                                                   *)
-(* ===================================================================== *)
+(** [ad_pat_sub_fuel] is [ad_pat_sub] with the completeness measure made
+    visible: it differs in the FUEL discipline only.  Tag hygiene (ForallL's
+    [fresh Ψ'] read GLOBALLY — fresh from the subject's own tags too, since
+    the context-local reading does not survive the Arrow split and
+    precision-substitution is FALSE without it; docs/PAPER-GAPS.md) and the
+    leaf presupposition are carried by [ad_pat_sub] itself.
 
-(** ⚙ MERGED IN 2026-08-11 from [def_subtyping.v].  The two files
-    were one topic — the paper's all-in-one subtyping box and the mirror
-    the completeness proof measures it by — split only because the mirror
-    arrived later.  The split cost nothing to keep and nothing to remove:
-    the [_hyg] file's dependencies were this file's plus [Lia].
-
-    [ad_pat_sub_fuel] refines [ad_pat_sub] in ONE way — the FUEL discipline.
-    It used to refine it in three; the other two, TAG HYGIENE and the LEAF
-    PRESUPPOSITION, are now shared.
-
-    ⭐ 2026-08-11: THE HYGIENE IS NO LONGER A DIFFERENCE.  The paper's ForallL
-    side condition [fresh Ψ'] means the instantiation's tags are GLOBALLY
-    fresh — fresh from the SUBJECT's own tags too, not just from the tag
-    context — because the context-local reading does not survive the Arrow
-    split (a tag can leave the context on one branch while the subject still
-    carries it on the other), and precision-substitution is FALSE over such
-    derivations (docs/DESIGN-completeness-subtyping.md §5.2/§5.4).  That
-    premise now sits on [d_sub], [d_pat_sub] AND [ad_pat_sub] as well, so all
-    four judgments read the word the same way and a completeness statement over
-    the DECLARATIVE system can reach this mirror.  The one place it cost real
-    work was Phase 2's [d_consis_sub_trans_mid] (CST,
-    decl/prop_general_subsumption.v), whose ForallL case transports along
-    [utyp_tag_refines], where the subject GAINS tags; the repair is the
-    tags-bound twin [d_sub_tagsin] + wholesale freshening in
-    decl/prop_tag_swap.v §4-§5.  Details in docs/PAPER-GAPS.md.
-
-    ⭐⭐ 2026-08-12: NOR IS THE LEAF PRESUPPOSITION.  [ad_pat_sub]'s own
-    consistency-leaf rows carry it now, so the SECOND mirror this file used to
-    declare — [ad_pat_sub_g], the same fuel with the leaf data forgotten — is
-    gone, together with [ad_pat_sub_fuel_forget] and the ~20 [_g]-flavoured
-    lemmas that duplicated their [_gv] twins.  What kept [_g] alive was P7's
-    two ForallL rows, which reshape the join's subject along [≡ᵘ] before
-    handing it to the look layer; the leaf data survive that reshaping by
-    [ad_refine_pskl_tyequiv_source] (algo/sub/prop_completeness_sub_precise.v),
-    which is what let the mirror go.
-
-    1.     FUEL DISCIPLINE.  Precision-substitution must be fuel-PRESERVING
+    FUEL DISCIPLINE.  Precision-substitution must be fuel-PRESERVING
        (the completeness ForallL case applies its induction hypothesis to
        the substituted premise, subtyping-proofs.tex:3416-3429), but the
        ghostier subject may carry extra [∀◇]-wrappers (UnivGhostL steps)
@@ -201,19 +152,11 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
        non-incrementing rules recurse on structural sub-derivations, so
        the main induction uses lex(fuel, derivation)).
 
-    ⭐ THE TWO RELATIONS ARE INTERDERIVABLE (2026-08-12).  The erasure
-    [_fuel -> ad_pat_sub] is [ad_pat_sub_of_fuel] (prop_ctx_mono.v), and
-    the other direction — which a COMPLETENESS corollary over the declarative
-    system needs — is [ad_pat_sub_to_fuel] (algo/sub/prop_soundness_subtag.v),
-    UNCONDITIONAL at either sort over any Θ.  It was owed for a long time and
-    was only ever a FUEL question once hygiene and the leaf datum landed on
-    the plain relation; the fuel is the derivation's height, and the one real
-    step is regenerating ForallR's cofinite family at a single height.
-
-    ⚙ So this relation is NOT a mirror of [ad_pat_sub] in any sense a reader
-    needs to track: it is [ad_pat_sub] with the completeness measure made
-    visible, and it appears NOWHERE outside that proof.  Every rule and every
-    statement in the tree uses [ad_pat_sub]. *)
+    ⭐ THE TWO RELATIONS ARE INTERDERIVABLE: [ad_pat_sub_of_fuel]
+    (prop_ctx_mono.v) and [ad_pat_sub_to_fuel] (algo/sub/prop_soundness_subtag.v),
+    unconditional at either sort over any Θ — the fuel is the derivation's
+    height.  This relation appears NOWHERE outside the completeness proof:
+    every rule and every other statement in the tree uses [ad_pat_sub]. *)
 
 (* ===================================================================== *)
 (*  [ad_pat_sub_fuel] (completeness-only, P7's join): [ad_pat_sub] + FUEL.   *)
@@ -221,10 +164,7 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
 (*  ⭐ The four CONSISTENCY-LEAF rows — [__infer], [__check],              *)
 (*  [__univ_ghost_r] and [__arrow]'s DOMAIN — carry the SUBJECT's         *)
 (*  refinement into the leaf's counterpart (for [UnivGhostR], into the    *)
-(*  STRIPPED counterpart [Q], not [∀◇.Q]).  Since 2026-08-12 that is NOT  *)
-(*  a difference from [ad_pat_sub]: the plain relation carries the same   *)
-(*  premise, which is why this is the only mirror left.  The paragraph    *)
-(*  below is why the premise exists at all.                               *)
+(*  STRIPPED counterpart [Q], not [∀◇.Q]), exactly as [ad_pat_sub] does.  *)
 (*                                                                        *)
 (*  WHY.  thm:complete-subtyping needs, at each leaf, exactly the third   *)
 (*  solution condition of the AUGMENTED thm:complete-consistency          *)
@@ -314,17 +254,9 @@ Inductive ad_pat_sub_fuel :
     ad_pat_sub_fuel n NM (mode_fn M) Ψ Θ (ptyp_to_uskl_syn τ) Q ->
     ad_pat_sub_fuel n NM (mode_fn M) Ψ Θ (uskl_var_f α) Q.
 
-(* ⚙ RESTART NOTE (2026-08-12) — [ad_pat_sub_v], the fuel EXISTENTIALLY
-   CLOSED ([exists n, ad_pat_sub_fuel n …]), was deleted.  It existed so that
-   [ad_pat] / [ad_sd_typing] could embed the leaf-valid join without naming a
-   fuel in their rules — the fuel is the completeness measure's artefact, not
-   part of the specification.  Both halves of that reason are gone: since
-   [ad_pat_sub] carries the leaf presupposition itself, and
-   [ad_pat_sub_to_fuel] / [ad_pat_sub_of_fuel] make the two relations
-   INTERDERIVABLE, those rules embed [ad_pat_sub] — the paper's own relation —
-   directly.  So the tree has exactly two: [ad_pat_sub] in every rule and every
-   statement, and [ad_pat_sub_fuel] inside the subtyping-completeness proof,
-   where the measure actually lives. *)
+(* ⚙ There is no existentially-fuelled [ad_pat_sub_v]: [ad_pat] /
+   [ad_sd_typing] embed [ad_pat_sub] directly, which the two bridges above
+   make interderivable with the fuelled relation. *)
 
 (* ===================================================================== *)
 (*  Partial precision  [{{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad]                       *)

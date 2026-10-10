@@ -2,12 +2,8 @@
     (paper proofs.tex, lemma:suffix-moving), and — at the end — the two maps
     between [ad_pat_sub] and its fuel-indexed mirror.
 
-    ⚙ The mirror maps arrived 2026-08-12 from [prop_sub_mirrors.v], which had
-    shrunk to exactly those two lemmas once the three-relation era ended (see
-    the section header down there).  A file per mirror pair was not worth an
-    import line in nine consumers; what they have in common with the rest of
-    this file is the subject — the structural theory of the [ad_*] layer's
-    own relations, upstream of everything that uses them.
+    ⚙ The mirror maps share this file's subject — the structural theory of
+    the [ad_*] layer's own relations, upstream of everything that uses them.
 
     ⭐ THE OBSERVATION THAT MAKES THIS ONE LEMMA INSTEAD OF FIVE.  Every
     declarative-judgement-over-Θ reads its context in exactly two ways: a
@@ -462,13 +458,6 @@ Qed.
 (*  consume it), and algo/sub/prop_soundness_subtag.v sits BEFORE the      *)
 (*  completeness files in the dependency order.  [algo_decl/] is upstream  *)
 (*  of all of [algo/sub/], so the constraint is met here.                  *)
-(*                                                                        *)
-(*  ⚙ There used to be THREE relations: [ad_pat_sub_g] (the fuel with the  *)
-(*  leaf datum forgotten) and [ad_pat_sub_v] (the fuel existentially       *)
-(*  closed), both needed while [ad_pat_sub] itself did not carry the       *)
-(*  paper's leaf presupposition.  It does since 2026-08-12, so [_g], [_v]  *)
-(*  and the forgetful map [ad_pat_sub_fuel_forget] are all gone — with the *)
-(*  datum on the rule, the existential closure IS [ad_pat_sub].            *)
 (* ===================================================================== *)
 
 (** Fuel monotonicity for the leaf-valid hygienic join.  The fuel is the
@@ -504,12 +493,7 @@ Proof.
 Qed.
 
 (** The erasure the [ad_pat] / [ad_sd_typing] consumers want: a leaf-valid
-    join IS a plain declarative subtyping derivation.
-
-    ⚙ A DIRECT induction since 2026-08-12.  It used to factor through
-    [ad_pat_sub_g_of : _g -> ad_pat_sub] and then [ad_pat_sub_fuel_forget],
-    both of which are gone: once [ad_pat_sub] itself carries the leaf
-    presupposition, the leaf-FORGETTING mirror cannot reach it at all. *)
+    join IS a plain declarative subtyping derivation. *)
 Lemma ad_pat_sub_of_fuel : forall n NM M Ψ Θ R Q,
   ad_pat_sub_fuel n NM M Ψ Θ R Q ->
   {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad.

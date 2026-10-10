@@ -37,7 +37,7 @@ Definition decr_mode (m : mode) : mode :=
     in particular freshness from the tags already in the SUBJECT — and every
     subtyping judgment in the tree renders it that way, as a second premise
     [Ψ' ∩ ftag(subject) [=] ∅] beside [Ψ' ∩ Ψ [=] ∅] ([d_sub], [d_pat_sub],
-    [ad_pat_sub] and the [_g]/[_gv] mirrors).  The two are NOT
+    [ad_pat_sub] and its fuelled twin [ad_pat_sub_fuel]).  The two are NOT
     interchangeable: freshness from the tag context alone does not survive the
     Arrow rule (the context splits, the subject does not), and
     precision-substitution is FALSE over derivations that only have it
@@ -273,12 +273,13 @@ Inductive mod_comp_ty : btyp -> mode -> Prop :=
     mod_comp_ty B2 m ->
     mod_comp_ty (btyp_arrow B1 B2) (mode_fn m).
 
-(** Paper's [skmod{SK}{bid P}{M}] (declarative.tex:1535): the coloured
+(** Paper's [skmod{SK}{bid P}{M}] (declarative.tex:1596): the coloured
     mode/skeleton compatibility for skeleton inference.  Like [mod_comp_ty],
-    but the only difference (declarative.tex:1553) is that CHECK mode also
-    requires a SYNTHESISED skeleton [is_sskl] (ghosts [□]/[⫯] count as
-    synthesised), rather than an inherited one.  The inferred skeleton [Q] of
-    [{{ Γ ⊢ˢ[M] e ⦂ Q }}d] is always [mod_comp_sk Q M] (see [d_pat_mod_comp_sk]). *)
+    but the only difference (declarative.tex:1598-1600) is that CHECK mode
+    also requires a SYNTHESISED skeleton [is_sskl] (ghosts [□]/[⫯] count as
+    synthesised), rather than an inherited one.  (Its [ad] twin's invariance
+    under skeleton inference is [ad_pat_mod_comp_sk],
+    algo/pat/prop_soundness_pat.v.) *)
 Inductive mod_comp_sk : bskl -> mode -> Prop :=
 | mod_comp_sk__ti : forall Q, is_sskl Q -> mod_comp_sk Q mode_ti
 | mod_comp_sk__tc : forall Q, is_sskl Q -> mod_comp_sk Q mode_tc

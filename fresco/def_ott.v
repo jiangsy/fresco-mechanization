@@ -559,18 +559,7 @@ Inductive dbind : Set :=
  | dbind_typ (A:ptyp)
  | dbind_skl (P:pskl).
 
-Definition tagctx : Set := list atom.
-
-Definition psienv : Set := list atom.
-
 Definition denv : Set := list (atom*dbind).
-
-
-(* Forward declaration used in formulae; full definition lives in def_extra.v.
-   We pre-declare it here so def_ott.v compiles standalone. *)
-Definition list_disjoint (xs ys : list atom) : Prop :=
-  forall a, List.In a xs -> ~ List.In a ys.
-
 
 
 (* definitions *)
