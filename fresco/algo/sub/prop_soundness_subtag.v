@@ -1923,7 +1923,7 @@ Proof.
           apply ad_refine_pskl_refl; exact HwfS ]| apply is_sskl_pskl_to_bskl_syn; eauto using a_wf_pskl_lc
         ].
     + (* P0 = ◇ : the fill is the ghost rule *)
-      simpl. apply ad_refine_syn__ghost; clear; fsetdec.
+      simpl. apply ad_refine_syn_ghost_empty.
 
   - (* Check (TY) : audit-F2 — the consistency output [P'] is NOT literally [B]
        (for a flexible subject [α̂] it is the flex variable, ≡ B; paper
@@ -2144,7 +2144,7 @@ Proof.
       simpl.
       change (bskl_univ_ghost (pskl_to_bskl_syn ⌊ R ⌋ˢ))
         with (pskl_to_bskl_syn (pskl_univ_ghost ⌊ R ⌋ˢ)).
-      apply ad_refine_syn__ghost; clear; fsetdec.
+      apply ad_refine_syn_ghost_empty.
 
   - (* Arrow : a_consistag_sound_aux on the consistency premise (Δs = ∅),
        ⊴-transport its conclusions to Θ2, IH on the sub-premise. *)
@@ -2344,7 +2344,7 @@ Proof.
     + exists 0. apply ad_pat_sub_fuel__ghostg; [ exact HΨ | ].
       specialize (Hmod eq_refl). simpl in Hmod. exact Hmod.
     + simpl. change bskl_ghost with (pskl_to_bskl_syn pskl_ghost).
-      apply ad_refine_syn__ghost; clear; fsetdec.
+      apply ad_refine_syn_ghost_empty.
 
   - (* UnivGhostL (SK) : drop the subject's ∀◇ *)
     intros M Ψ Θ0 Θ1 P0 R P' Hne Hprem IH Hwf HlcS HwfP0 HwfS Hmod Hgf.
@@ -2653,17 +2653,8 @@ Proof.
        twin walk's [Assign-SkipTmVar] does not carry it either), and the two
        outputs weaken by [a_isub_cons_var_typ] / [a_wf_ptyp_isub]. *)
     intros NM M P0 Θ0 Θ1 Ξ α x Q P Hxout Hprem IH Hwf Hdecl HwfP0 Hαb Hmod Hgf.
-    assert (Huq : uniq (Ξ ++ (x ~ abind_var_typ Q) ++ Θ0))
-      by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (Hbx : binds x (abind_var_typ Q)
-                    (Ξ ++ (x ~ abind_var_typ Q) ++ Θ0))
-      by (apply binds_app_3; apply binds_app_2;
-          unfold binds; simpl; left; reflexivity).
-    assert (Hxfr : x `notin` ftvar_in_pskl P0).
-    { intro Hin.
-      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
-      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hc; discriminate Hc. }
+    assert (Hxfr : x `notin` ftvar_in_pskl P0)
+      by (eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact I | exact HwfP0 ]).
     assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfT : {{ ⊢ ((x ~ abind_var_typ Q) ++ Θ0) }}a)
@@ -2703,17 +2694,8 @@ Proof.
 
   - (* Flex-SkipTmVar (skeleton entry) — the same, at the entry's skeleton wf. *)
     intros NM M P0 Θ0 Θ1 Ξ α x Q P Hxout Hprem IH Hwf Hdecl HwfP0 Hαb Hmod Hgf.
-    assert (Huq : uniq (Ξ ++ (x ~ abind_var_skl Q) ++ Θ0))
-      by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (Hbx : binds x (abind_var_skl Q)
-                    (Ξ ++ (x ~ abind_var_skl Q) ++ Θ0))
-      by (apply binds_app_3; apply binds_app_2;
-          unfold binds; simpl; left; reflexivity).
-    assert (Hxfr : x `notin` ftvar_in_pskl P0).
-    { intro Hin.
-      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
-      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hc; discriminate Hc. }
+    assert (Hxfr : x `notin` ftvar_in_pskl P0)
+      by (eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact I | exact HwfP0 ]).
     assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfT : {{ ⊢ ((x ~ abind_var_skl Q) ++ Θ0) }}a)

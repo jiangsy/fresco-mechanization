@@ -36,7 +36,6 @@ Require Import src.fresco.algo.prop_metasubst.
 Require Import src.fresco.algo.prop_precise.
 Require Import src.fresco.algo.consis.prop_soundness_consis.
 Require Import src.fresco.algo.consis.prop_consis_rename.
-Require Import src.fresco.algo.consis.prop_consis_precise.   (* d_tags_skl_ftag *)
 Require Import src.fresco.algo.prop_refine.
 Require Import src.fresco.algo.prop_stability.
 Require Import src.fresco.algo.prop_pat_sub.
@@ -59,18 +58,6 @@ Set Implicit Arguments.
 (*  looked variable is renamed on the fly (a_looksub_rename_var) to keep  *)
 (*  it clear of guessed flexible names (Barendregt prose-completion).     *)
 (* ===================================================================== *)
-
-Lemma pskl_to_uskl_not_tag : forall P ε ψ,
-  pskl_to_uskl P <> uskl_all_tag ε ψ.
-Proof. destruct P; simpl; discriminate. Qed.
-
-Lemma pskl_to_uskl_not_dot_ghost : forall P,
-  pskl_to_uskl P <> uskl_dot_ghost.
-Proof. destruct P; simpl; discriminate. Qed.
-
-Lemma pskl_to_uskl_not_dot_univ_ghost : forall P ψ,
-  pskl_to_uskl P <> uskl_dot_univ_ghost ψ.
-Proof. destruct P; simpl; discriminate. Qed.
 
 (** Rename-composition for the decorated substitution: substituting at a
     RE-FRESHENED variable composes back — [αv' ∉ ftv R0] and the value's
@@ -1176,7 +1163,8 @@ Proof.
 Qed.
 
 (** Guardedness / ghost-freeness survive a skeleton-variable rename: the
-    variable instances of prop_pat_sub.v's [*_subst_mono]. *)
+    variable instances of the [*_subst_mono] lemmas (fresco/prop_basic.v,
+    algo/prop_pat_sub.v). *)
 Lemma guarded_uskl_subst_var : forall ψ α β,
   guarded_uskl ψ -> guarded_uskl (subst_uskl_in_uskl (uskl_var_f β) α ψ).
 Proof.
@@ -3406,17 +3394,8 @@ Proof.
     (* a TERM entry is never [a_binds_tvar], so [P0] cannot mention it — that
        is what supplies [a_wf_pskl_strip_mid]'s freshness, which the rule does
        not carry (nor does the twin walk's [Assign-SkipTmVar]). *)
-    assert (Hxfr : x `notin` ftvar_in_pskl P0).
-    { intro Hin.
-      assert (Huq : uniq (Ξw ++ (x ~ abind_var_typ Q) ++ Θ0))
-        by (apply a_wf_aenv_uniq; exact HwfΞ).
-      assert (Hbx : binds x (abind_var_typ Q) (Ξw ++ (x ~ abind_var_typ Q) ++ Θ0))
-        by (apply binds_app_3; apply binds_app_2;
-            unfold binds; simpl; left; reflexivity).
-      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
-      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hc;
-        discriminate Hc. }
+    assert (Hxfr : x `notin` ftvar_in_pskl P0)
+      by (eapply a_wf_pskl_tm_entry_fresh; [ exact HwfΞ | exact I | exact HwfP0 ]).
     apply a_subtag_flex__skip_tm_var.
     { exact Hnin. }
     apply IH.
@@ -3435,17 +3414,8 @@ Proof.
     (* a TERM entry is never [a_binds_tvar], so [P0] cannot mention it — that
        is what supplies [a_wf_pskl_strip_mid]'s freshness, which the rule does
        not carry (nor does the twin walk's [Assign-SkipTmVar]). *)
-    assert (Hxfr : x `notin` ftvar_in_pskl P0).
-    { intro Hin.
-      assert (Huq : uniq (Ξw ++ (x ~ abind_var_skl Q) ++ Θ0))
-        by (apply a_wf_aenv_uniq; exact HwfΞ).
-      assert (Hbx : binds x (abind_var_skl Q) (Ξw ++ (x ~ abind_var_skl Q) ++ Θ0))
-        by (apply binds_app_3; apply binds_app_2;
-            unfold binds; simpl; left; reflexivity).
-      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
-      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hc;
-        discriminate Hc. }
+    assert (Hxfr : x `notin` ftvar_in_pskl P0)
+      by (eapply a_wf_pskl_tm_entry_fresh; [ exact HwfΞ | exact I | exact HwfP0 ]).
     apply a_subtag_flex__skip_tm_skl.
     { exact Hnin. }
     apply IH.

@@ -69,6 +69,7 @@ Require Import src.fresco.algo.def_rules.
 Require Import src.fresco.algo.def_meta.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_consis_refine.
+Require Import src.fresco.algo.prop_swap.          (* a_wf_ptyp_ftv_tvarish *)
 Require Import src.fresco.algo.prop_basic.
 
 Set Implicit Arguments.

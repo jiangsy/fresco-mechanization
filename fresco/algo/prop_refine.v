@@ -79,6 +79,13 @@ Proof.
   intros * H; induction H; try assumption; constructor.
 Qed.
 
+(** [ad_refine_syn__ghost] at [Δ = empty]: the disjointness premise is
+    vacuous.  ⚙ Moved here 2026-10-10 from typing/prop_completeness_typing.v. *)
+Lemma ad_refine_syn_ghost_empty : forall Θ P,
+  {{ Θ ⨟ empty ⊢ᵣ bskl_ghost ⊳ (pskl_to_bskl_syn P) }}ad.
+Proof. intros; apply ad_refine_syn__ghost; clear; fsetdec. Qed.
+
+
 (** Hence the [is_iskl] premises of the structural rows are DERIVABLE from
     their sub-derivations; these constructors omit them. *)
 Lemma ad_refine_syn_arrow_intro : forall Θ Δ Q1 Q2 Q3 Q4,

@@ -134,12 +134,6 @@ Proof.
     | intros; clear; fsetdec ].
 Qed.
 
-(** [ad_refine_syn__ghost] at [Δ = empty]: the disjointness premise is
-    vacuous. *)
-Lemma ad_refine_syn_ghost_empty : forall Θ P,
-  {{ Θ ⨟ empty ⊢ᵣ bskl_ghost ⊳ (pskl_to_bskl_syn P) }}ad.
-Proof. intros; apply ad_refine_syn__ghost; clear; fsetdec. Qed.
-
 (* ===================================================================== *)
 (*  The two tails every base row shares                                   *)
 (* ===================================================================== *)
@@ -1148,15 +1142,6 @@ Proof.
   pose proof (a_inc_lookup_ftv β Hinc) as Hsc.
   destruct (α0 == β) as [-> | Hne];
     [ contradiction | apply Hsc in Hl; clear - Hl Hd Hne; fsetdec ].
-Qed.
-
-Lemma msubst_lookup_app_agree : forall (ζ X Y : metasubst) α,
-  msubst_lookup X α = msubst_lookup Y α ->
-  msubst_lookup (ζ ++ X) α = msubst_lookup (ζ ++ Y) α.
-Proof.
-  intros ζ; induction ζ as [ | [β τ] ζ' IH ]; intros X Y α Hxy;
-    [ exact Hxy | ].
-  simpl. destruct (α == β); [ reflexivity | apply IH; exact Hxy ].
 Qed.
 
 (** ⭐⭐ GUESS-COMPLETENESS — the paper's Abs step ⑯⑰, which its authors

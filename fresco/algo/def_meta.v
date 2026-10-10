@@ -46,6 +46,11 @@ Fixpoint msubst_lookup (κ : metasubst) (α : atom) : ptyp :=
   | (β, τ) :: κ' => if α == β then τ else msubst_lookup κ' α
   end.
 
+(** All of a metasubstitution's images are locally closed.  An [a_inc]
+    witness supplies it ([a_inc_msubst_lc], prop_compose.v). *)
+Definition msubst_lc (κ : metasubst) : Prop :=
+  forall α, lc_ptyp (msubst_lookup κ α).
+
 Fixpoint msubst_ptyp (κ : metasubst) (A : ptyp) : ptyp :=
   match A with
   | ptyp_unit => ptyp_unit

@@ -1808,7 +1808,7 @@ Proof.
         change (bskl_arrow (pskl_to_bskl_inh (ptyp_to_pskl (ptyp_var_f α)))
                            (pskl_to_bskl_syn P'))
           with (pskl_to_bskl_syn (pskl_arrow (pskl_var_f α) P')).
-        apply ad_refine_syn__ghost. clear; fsetdec.
+        apply ad_refine_syn_ghost_empty.
       - apply ad_refine_syn_arrow_intro;
           [ eapply a_guess_mono_refine;
               [ exact H1
@@ -1907,7 +1907,7 @@ Proof.
         change (bskl_arrow (pskl_to_bskl_syn (ptyp_to_pskl A))
                            (pskl_to_bskl_syn P'))
           with (pskl_to_bskl_syn (pskl_arrow (ptyp_to_pskl A) P')).
-        apply ad_refine_syn__ghost. clear; fsetdec.
+        apply ad_refine_syn_ghost_empty.
     + (* P0 = P → Q : the colouring is the consistency run's transport *)
       subst P0.
       destruct (a_consis_chk_annot_refine H1 Hwf HwfA HwfPP)
@@ -2428,7 +2428,7 @@ Proof.
     simpl_env in Hxf.
     assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
     assert (Hf1 : a_flex_tvar (Ξ ++ (x ~ abind_var_typ A) ++ Θc) a)
-      by (rewrite a_flex_tvar_insert_mid by exact Hax; exact Hf).
+      by (rewrite a_flex_tvar_mid_other by exact Hax; exact Hf).
     assert (Ha2 : a `in` dom ((x ~ abind_var_typ A) ++ αs ++ Θb))
       by (simpl_env; clear - Ha1; fsetdec).
     pose proof (IHt a Ha2 Hf1) as Hf2.
@@ -2447,7 +2447,7 @@ Proof.
     simpl_env in Hxf.
     assert (Hax : a <> x) by (intros ->; clear - Ha1 Hxf; fsetdec).
     assert (Hf1 : a_flex_tvar (Ξ ++ (x ~ abind_var_typ A) ++ Θd) a)
-      by (rewrite a_flex_tvar_insert_mid by exact Hax; exact Hf).
+      by (rewrite a_flex_tvar_mid_other by exact Hax; exact Hf).
     assert (Ha2 : a `in` dom ((x ~ abind_var_typ A) ++ Θc))
       by (simpl_env; clear - Ha1; fsetdec).
     pose proof (IHt a Ha2 Hf1) as Hf2.

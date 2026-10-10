@@ -151,53 +151,27 @@ Qed.
    preserved by [α := unit]. *)
 Lemma is_ityp_subst_unit : forall B α, is_ityp B -> is_ityp (subst_btyp_in_btyp btyp_unit α B).
 Proof.
-  intros B α H. induction H; simpl.
-  - auto with fresco.
-  (* [α] is the var rule's own binder; the lemma's variable is α.  (It read
-     [α0] before the rename, when the lemma binder was itself called α.) *)
-  - destruct (α0 == α); auto with fresco.
-  - auto with fresco.
-  - apply is_ityp__all with (L := L `union` {{α}}). intros β Hβ.
-    rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (first [ apply lc_btyp_unit | fsetdec ]). auto.
+  intros B α H. exact (@is_ityp_subst_mono B ptyp_unit α H mono_ptyp__unit).
 Qed.
 
 Lemma is_styp_subst_unit : forall B α, is_styp B -> is_styp (subst_btyp_in_btyp btyp_unit α B).
 Proof.
-  intros B α H. induction H; simpl.
-  - auto with fresco.
-  (* [α] is the var rule's own binder; the lemma's variable is α. *)
-  - destruct (α0 == α); auto with fresco.
-  - auto with fresco.
-  - apply is_styp__all with (L := L `union` {{α}}). intros β Hβ.
-    rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (first [ apply lc_btyp_unit | fsetdec ]). auto.
+  intros B α H. exact (@is_styp_subst_mono B ptyp_unit α H mono_ptyp__unit).
 Qed.
 
 Lemma guarded_btyp_subst_unit : forall B α, guarded_btyp B -> guarded_btyp (subst_btyp_in_btyp btyp_unit α B).
 Proof.
-  intros B α H. induction H; simpl.
-  - auto with fresco.
-  - destruct (α0 == α); auto with fresco.
-  - apply guarded_btyp__arrow;
-      apply subst_btyp_in_btyp_lc_btyp; solve [ apply lc_btyp_unit | assumption ].
+  intros B α H. exact (@guarded_btyp_subst_mono B ptyp_unit α H mono_ptyp__unit).
 Qed.
 
 Lemma guarded_utyp_subst_unit : forall C α, guarded_utyp C -> guarded_utyp (subst_utyp_in_utyp utyp_unit α C).
 Proof.
-  intros C α H. induction H; simpl.
-  - auto with fresco.
-  - destruct (α0 == α); auto with fresco.
-  - apply guarded_utyp__arrow;
-      apply subst_utyp_in_utyp_lc_utyp; solve [ apply lc_utyp_unit | assumption ].
+  intros C α H. exact (@guarded_utyp_subst_mono C ptyp_unit α H mono_ptyp__unit).
 Qed.
 
 Lemma is_dtyp_subst_unit : forall C α, is_dtyp C -> is_dtyp (subst_utyp_in_utyp utyp_unit α C).
 Proof.
-  intros C α H. induction H; simpl.
-  - auto with fresco.
-  - destruct (α0 == α); auto with fresco.
-  - auto with fresco.
-  - apply is_dtyp__all_tag with (L := L `union` {{α}}). intros β Hβ.
-    rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var by (first [ apply lc_utyp_unit | fsetdec ]). auto.
+  intros C α H. exact (@is_dtyp_subst_mono C ptyp_unit α H mono_ptyp__unit).
 Qed.
 
 (* [d_tags] is insensitive to a tvar:=unit substitution — the ε-tags it counts
@@ -316,15 +290,7 @@ Qed.
 Lemma is_iskl_subst_unit : forall Q α,
     is_iskl Q -> is_iskl (subst_bskl_in_bskl bskl_unit α Q).
 Proof.
-  intros Q α H. induction H; simpl.
-  - auto with fresco.
-  - destruct_if; auto with fresco.
-  - auto with fresco.
-  - apply is_iskl__all with (L := L `union` {{α}}). intros β Hβ.
-    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
-      try (apply lc_bskl_unit); try fsetdec. auto.
-  - auto with fresco.
-  - auto with fresco.
+  intros Q α H. exact (@is_iskl_subst_mono Q ptyp_unit α H mono_ptyp__unit).
 Qed.
 
 (* tvar:=unit substitution for skeleton refinement.  Refinement reads no
@@ -608,10 +574,7 @@ Qed.
 Lemma mod_comp_ty_subst_unit : forall B m α0,
     mod_comp_ty B m -> mod_comp_ty (subst_btyp_in_btyp btyp_unit α0 B) m.
 Proof.
-  intros B m α0 H. induction H.
-  - apply mod_comp_ty__ti. apply is_styp_subst_unit. assumption.
-  - apply mod_comp_ty__tc. apply is_ityp_subst_unit. assumption.
-  - simpl. apply mod_comp_ty__fn. assumption.
+  intros B m α0 H. exact (@mod_comp_ty_subst_mono B m ptyp_unit α0 H mono_ptyp__unit).
 Qed.
 
 Lemma d_sd_typing_subst_unit : forall m Γ e B,

@@ -565,7 +565,7 @@ Proof.
         clear - Hc Hcov. fsetdec. }
       assert (Hbne : b0 <> x2) by (intros ->; clear - Hx2 HbS0; fsetdec).
       assert (Hf1 : a_flex_tvar (Ξ2 ++ (x2 ~ bd') ++ Θc2') b0)
-        by (rewrite a_flex_tvar_insert_mid by exact Hbne; exact Hf).
+        by (rewrite a_flex_tvar_mid_other by exact Hbne; exact Hf).
       assert (Hbd1 : b0 `in` dom (Ξ2 ++ (x2 ~ bd') ++ Θc2'))
         by (apply a_flex_tvar_in_dom; exact Hf1).
       assert (Hb0in : b0 `in` dom Θb').

@@ -731,7 +731,7 @@ Proof.
     apply e_looksub__forall_l with (β := swap_atom a b β);
       [ eapply swap_notin_eq; eassumption
       | apply swap_pskl_ftv_in; exact Hocc
-      | apply swap_pskl_neq_ghost; exact Hnh
+      | apply swap_pskl_not_ghost; exact Hnh
       | apply forall_r_off_swap; exact Hfr | ].
     rewrite swap_pskl_open_var in Hd. exact Hd.
   - (* LS-UnivGhostL *)
@@ -740,7 +740,7 @@ Proof.
     exists S1'. split;
       [ exact HS1
       | apply e_looksub__univ_ghost_l;
-          [ apply swap_pskl_neq_ghost; exact Hnh
+          [ apply swap_pskl_not_ghost; exact Hnh
           | apply forall_r_off_swap; exact Hfr | exact Hd ] ].
 
   (* ------------------------- e_lookeq -------------------------- *)

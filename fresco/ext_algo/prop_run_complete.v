@@ -66,7 +66,6 @@ Require Import src.fresco.ext_algo.prop_solve.
 Require Import src.fresco.ext_algo.prop_guess.
 Require Import src.fresco.ext_algo.prop_solve_det.
 Require Import src.fresco.ext_algo.prop_solve_rel.
-Require Import src.fresco.ext_algo.prop_look_equiv.
 
 Open Scope fresco_e_scope.
 
@@ -3223,8 +3222,8 @@ Proof.
     destruct (α == b) as [-> | Hne].
     + (* the head atom is flexible on BOTH sides, by construction *)
       split; intros _; left; unfold binds; simpl; left; reflexivity.
-    + rewrite (a_flex_tvar_cons_flex_other (flex_pairs_r ρ ++ Θ1) Hne),
-              (a_flex_tvar_cons_flex_other (flex_pairs_r ρ ++ Θ2) Hne).
+    + rewrite (@a_flex_tvar_cons_other _ abind_flex_mono (flex_pairs_r ρ ++ Θ1) _ Hne),
+              (@a_flex_tvar_cons_other _ abind_flex_mono (flex_pairs_r ρ ++ Θ2) _ Hne).
       apply (IH V Θ1 Θ2 Hag α). clear - Hα Hne. fsetdec.
 Qed.
 

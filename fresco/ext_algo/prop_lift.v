@@ -2299,31 +2299,9 @@ Proof.
   assert (Hwfp' : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (open_pskl_wrt_pskl P (pskl_var_f α)) }}a)
     by (apply a_wf_pskl_all_syn_open_tvar;
         [ exact Hwfp | clear - Hαd HfrP; fsetdec ]).
-  assert (HΔtv' : forall γ, γ `in` ((add α Δ1) ∪ (add α Δ2)) ->
-            binds γ abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-  { intros γ Hγ. destruct (γ == α) as [-> | Hne].
-    - unfold binds; simpl; left; reflexivity.
-    - unfold binds; simpl; right. apply HΔtv. clear - Hγ Hne. fsetdec. }
-  assert (Hnfd' : no_flex_dep ((add α Δ1) ∪ (add α Δ2)) ((α ~ abind_tvar) ++ Θ0)).
-  { intros γ t Hb. unfold binds in Hb; simpl in Hb.
-    destruct Hb as [E | Hb]; [ inversion E | ].
-    pose proof (Hnfd γ t Hb) as Hd.
-    assert (Hτ : ftvar_in_ptyp t [<=] dom Θ0).
-    { apply a_wf_ptyp_ftv_dom.
-      eapply a_wf_aenv_binds_def_wf; [ exact Hwf | exact Hb ]. }
-    clear - Hd Hτ Hαd. fsetdec. }
-  assert (Hfaf' : flex_above_free ((add α Δ1) ∪ (add α Δ2)) ((α ~ abind_tvar) ++ Θ0)).
-  { intros Θa γ bb Θb Heq Hne.
-    destruct Θa as [ | [z bz] Θa ]; simpl in Heq.
-    - injection Heq as E1 E2 E3. exfalso. apply Hne. symmetry. exact E2.
-    - injection Heq as E1 E2 E3.
-      pose proof (Hfaf Θa γ bb Θb E3 Hne) as Hd.
-      assert (Hαn : α `notin` dom (Θa ++ (γ, bb) :: Θb))
-        by (rewrite <- E3; exact Hαd).
-      rewrite dom_app in Hαn. simpl in Hαn.
-      assert (Hαn2 : α `notin` add γ (dom Θb)) by (clear - Hαn; fsetdec).
-      apply (inter_empty_cong_l (D := add α (Δ1 ∪ Δ2)));
-        [ clear; fsetdec | apply inter_empty_add; [ exact Hd | exact Hαn2 ] ]. }
+  destruct (@delta_inv_open_tvar (Δ1 ∪ Δ2) ((add α Δ1) ∪ (add α Δ2)) α Θ0 Hwf Hαd
+              ltac:(clear; fsetdec) HΔtv Hnfd Hfaf)
+    as (HΔtv' & Hnfd' & Hfaf').
   assert (HΔsc' : (add α Δ1) ∪ (add α Δ2)
                   [<=] ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0))
     by (simpl; clear - HΔsc; fsetdec).
@@ -2496,38 +2474,16 @@ Proof.
   assert (HcovΔ' : Δ1' ∪ (add α2 Δ2') [<=] add α2 S0)
     by (clear - HcovΔ; fsetdec).
   assert (Hwfp0' : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_univ_ghost P0) }}a)
-    by (eapply a_wf_pskl_weaken_tvarish;
-        [ intros γ Hγ; apply (a_binds_tvar_weaken_mid nil (α ~ abind_tvar));
-          exact Hγ
-        | exact Hwfp0 ]).
+    by (eapply a_wf_pskl_tvar_mono;
+        [ exact Hwfp0
+        | intros γ Hγ; apply (a_binds_tvar_weaken_mid nil (α ~ abind_tvar));
+          exact Hγ ]).
   assert (Hwfp' : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (open_pskl_wrt_pskl P (pskl_var_f α)) }}a)
     by (apply a_wf_pskl_all_syn_open_tvar;
         [ exact Hwfp | clear - Hαd HfrP; fsetdec ]).
-  assert (HΔtv' : forall γ, γ `in` (Δ1 ∪ (add α Δ2)) ->
-            binds γ abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-  { intros γ Hγ. destruct (γ == α) as [-> | Hne].
-    - unfold binds; simpl; left; reflexivity.
-    - unfold binds; simpl; right. apply HΔtv. clear - Hγ Hne. fsetdec. }
-  assert (Hnfd' : no_flex_dep (Δ1 ∪ (add α Δ2)) ((α ~ abind_tvar) ++ Θ0)).
-  { intros γ t Hb. unfold binds in Hb; simpl in Hb.
-    destruct Hb as [E | Hb]; [ inversion E | ].
-    pose proof (Hnfd γ t Hb) as Hd.
-    assert (Hτ : ftvar_in_ptyp t [<=] dom Θ0).
-    { apply a_wf_ptyp_ftv_dom.
-      eapply a_wf_aenv_binds_def_wf; [ exact Hwf | exact Hb ]. }
-    clear - Hd Hτ Hαd. fsetdec. }
-  assert (Hfaf' : flex_above_free (Δ1 ∪ (add α Δ2)) ((α ~ abind_tvar) ++ Θ0)).
-  { intros Θa γ bb Θb Heq Hne.
-    destruct Θa as [ | [z bz] Θa ]; simpl in Heq.
-    - injection Heq as E1 E2 E3. exfalso. apply Hne. symmetry. exact E2.
-    - injection Heq as E1 E2 E3.
-      pose proof (Hfaf Θa γ bb Θb E3 Hne) as Hd.
-      assert (Hαn : α `notin` dom (Θa ++ (γ, bb) :: Θb))
-        by (rewrite <- E3; exact Hαd).
-      rewrite dom_app in Hαn. simpl in Hαn.
-      assert (Hαn2 : α `notin` add γ (dom Θb)) by (clear - Hαn; fsetdec).
-      apply (inter_empty_cong_l (D := add α (Δ1 ∪ Δ2)));
-        [ clear; fsetdec | apply inter_empty_add; [ exact Hd | exact Hαn2 ] ]. }
+  destruct (@delta_inv_open_tvar (Δ1 ∪ Δ2) (Δ1 ∪ (add α Δ2)) α Θ0 Hwf Hαd
+              ltac:(clear; fsetdec) HΔtv Hnfd Hfaf)
+    as (HΔtv' & Hnfd' & Hfaf').
   assert (HΔsc' : Δ1 ∪ (add α Δ2)
                   [<=] ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0))
     by (simpl; clear - HΔsc; fsetdec).
@@ -2703,35 +2659,13 @@ Proof.
     by (apply a_wf_pskl_all_syn_open_tvar;
         [ exact Hwfp0 | clear - Hαd HfrP0; fsetdec ]).
   assert (Hwfp' : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_univ_ghost P) }}a)
-    by (eapply a_wf_pskl_weaken_tvarish;
-        [ intros γ Hγ; apply (a_binds_tvar_weaken_mid nil (α ~ abind_tvar));
-          exact Hγ
-        | exact Hwfp ]).
-  assert (HΔtv' : forall γ, γ `in` ((add α Δ1) ∪ Δ2) ->
-            binds γ abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-  { intros γ Hγ. destruct (γ == α) as [-> | Hne].
-    - unfold binds; simpl; left; reflexivity.
-    - unfold binds; simpl; right. apply HΔtv. clear - Hγ Hne. fsetdec. }
-  assert (Hnfd' : no_flex_dep ((add α Δ1) ∪ Δ2) ((α ~ abind_tvar) ++ Θ0)).
-  { intros γ t Hb. unfold binds in Hb; simpl in Hb.
-    destruct Hb as [E | Hb]; [ inversion E | ].
-    pose proof (Hnfd γ t Hb) as Hd.
-    assert (Hτ : ftvar_in_ptyp t [<=] dom Θ0).
-    { apply a_wf_ptyp_ftv_dom.
-      eapply a_wf_aenv_binds_def_wf; [ exact Hwf | exact Hb ]. }
-    clear - Hd Hτ Hαd. fsetdec. }
-  assert (Hfaf' : flex_above_free ((add α Δ1) ∪ Δ2) ((α ~ abind_tvar) ++ Θ0)).
-  { intros Θa γ bb Θb Heq Hne.
-    destruct Θa as [ | [z bz] Θa ]; simpl in Heq.
-    - injection Heq as E1 E2 E3. exfalso. apply Hne. symmetry. exact E2.
-    - injection Heq as E1 E2 E3.
-      pose proof (Hfaf Θa γ bb Θb E3 Hne) as Hd.
-      assert (Hαn : α `notin` dom (Θa ++ (γ, bb) :: Θb))
-        by (rewrite <- E3; exact Hαd).
-      rewrite dom_app in Hαn. simpl in Hαn.
-      assert (Hαn2 : α `notin` add γ (dom Θb)) by (clear - Hαn; fsetdec).
-      apply (inter_empty_cong_l (D := add α (Δ1 ∪ Δ2)));
-        [ clear; fsetdec | apply inter_empty_add; [ exact Hd | exact Hαn2 ] ]. }
+    by (eapply a_wf_pskl_tvar_mono;
+        [ exact Hwfp
+        | intros γ Hγ; apply (a_binds_tvar_weaken_mid nil (α ~ abind_tvar));
+          exact Hγ ]).
+  destruct (@delta_inv_open_tvar (Δ1 ∪ Δ2) ((add α Δ1) ∪ Δ2) α Θ0 Hwf Hαd
+              ltac:(clear; fsetdec) HΔtv Hnfd Hfaf)
+    as (HΔtv' & Hnfd' & Hfaf').
   assert (HΔsc' : (add α Δ1) ∪ Δ2
                   [<=] ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0))
     by (simpl; clear - HΔsc; fsetdec).
@@ -3738,13 +3672,9 @@ Proof.
                             (pskl_var_f α)) }}a)
       by (eapply a_wf_pskl_strip_mid;
           [ exact HwfVsub | exact (Hstrip (pskl_var_f α) Hβτ) ]).
-    assert (HΔtv : forall γ, γ `in` (empty ∪ empty) ->
-                   binds γ abind_tvar (Ξ ++ Θ0))
-      by (intros γ Hγ; exfalso; clear - Hγ; fsetdec).
-    assert (Hnfd : no_flex_dep (empty ∪ empty) (Ξ ++ Θ0))
-      by (intros γ t Hb0; clear; fsetdec).
-    assert (Hfaf : flex_above_free (empty ∪ empty) (Ξ ++ Θ0))
-      by (intros Θa γ bb Θb Heq Hne0; clear; fsetdec).
+    pose proof (@rig_empty (Ξ ++ Θ0)) as HΔtv.
+    pose proof (@no_flex_dep_empty (Ξ ++ Θ0)) as Hnfd.
+    pose proof (@faf_empty (Ξ ++ Θ0)) as Hfaf.
     assert (HΔsc : empty ∪ empty [<=] ftvar_in_aenv (Ξ ++ Θ0))
       by (clear; fsetdec).
     destruct (IH S0 (Ξ' ++ Θ0'') empty empty
@@ -4166,13 +4096,9 @@ Proof.
       end.
       - apply a_wf_pskl_mono_ptyp; [ exact Hτmono | exact Hτwf ].
       - apply a_wf_pskl__var. exact (Hbt y Hy Hne0). }
-    assert (HΔtv : forall γ, γ `in` (empty ∪ empty) ->
-                   binds γ abind_tvar Θ0)
-      by (intros γ Hγ; exfalso; clear - Hγ; fsetdec).
-    assert (Hnfd : no_flex_dep (empty ∪ empty) Θ0)
-      by (intros γ t Hb0; clear; fsetdec).
-    assert (Hfaf : flex_above_free (empty ∪ empty) Θ0)
-      by (intros Θa γ bb Θb Heq Hne0; clear; fsetdec).
+    pose proof (@rig_empty Θ0) as HΔtv.
+    pose proof (@no_flex_dep_empty Θ0) as Hnfd.
+    pose proof (@faf_empty Θ0) as Hfaf.
     assert (HΔsc : empty ∪ empty [<=] ftvar_in_aenv Θ0) by (clear; fsetdec).
     destruct (IH S0 Θ0'' empty empty
                 (ptyp_to_pskl (subst_ptyp_in_ptyp t2 b (ptyp_var_f β')))
@@ -4841,9 +4767,9 @@ Proof.
     intros a b Hat. split; intros Hin; clear - Hin; fsetdec.
   - intros a b Hat. split; intros Hin; clear - Hin; fsetdec.
   - (* the Δ coverage *) clear; fsetdec.
-  - (* every Δ-name is rigid *) intros γ Hγ. clear - Hγ. fsetdec.
-  - (* no_flex_dep *) intros γ t Hb. clear; fsetdec.
-  - (* flex_above_free *) intros Θa γ bb Θb Heq Hne. clear; fsetdec.
+  - (* every Δ-name is rigid *) apply rig_empty.
+  - (* no_flex_dep *) apply no_flex_dep_empty.
+  - (* flex_above_free *) apply faf_empty.
   - (* Δ ⊆ ftvar_in_aenv Θ0 *) clear; fsetdec.
 Qed.
 
@@ -5270,10 +5196,10 @@ Proof.
       by (apply a_wf_pskl_all_syn_open_tvar;
           [ exact Hwfp0 | clear - Hαd HfrB; fsetdec ]).
     assert (Hwfp' : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ A }}a)
-      by (eapply a_wf_pskl_weaken_tvarish;
-          [ intros γ Hγ; apply (a_binds_tvar_weaken_mid nil (α ~ abind_tvar));
-            exact Hγ
-          | exact Hwfp ]).
+      by (eapply a_wf_pskl_tvar_mono;
+          [ exact Hwfp
+          | intros γ Hγ; apply (a_binds_tvar_weaken_mid nil (α ~ abind_tvar));
+            exact Hγ ]).
     assert (Hblk' : forall a, a `in` dom (Ξ ++ (α ~ abind_tvar) ++ Θ1) ->
               a `notin` dom ((α ~ abind_tvar) ++ Θ0) ->
               a `notin` cols_l ((α, α2) :: restrict_pairs α α2 ρ0)).
@@ -6231,7 +6157,7 @@ Proof.
     assert (Hwfp01 : {{ (Ξ ++ (α0 ~ abind_flex_mono_def
                 (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
            ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
-      by (eapply a_wf_pskl_weaken_tvarish; [ exact Hbigmon | exact Hwfp0 ]).
+      by (eapply a_wf_pskl_tvar_mono; [ exact Hwfp0 | exact Hbigmon ]).
     assert (Hwfp11 : {{ (Ξ ++ (α0 ~ abind_flex_mono_def
                 (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
            ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0) ⨟ empty ⊢ₚₛ
@@ -7465,7 +7391,7 @@ Proof.
         clear - Hc Hcov. fsetdec. }
       assert (Hbne : b0 <> x2) by (intros ->; clear - Hx2 HbS0; fsetdec).
       assert (Hf1 : a_flex_tvar (Ξ2 ++ (x2 ~ bd') ++ Θc2') b0)
-        by (rewrite a_flex_tvar_insert_mid by exact Hbne; exact Hf).
+        by (rewrite a_flex_tvar_mid_other by exact Hbne; exact Hf).
       assert (Hbd1 : b0 `in` dom (Ξ2 ++ (x2 ~ bd') ++ Θc2'))
         by (apply a_flex_tvar_in_dom; exact Hf1).
       assert (Hb0in : b0 `in` dom Θb').

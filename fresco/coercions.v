@@ -272,3 +272,11 @@ Fixpoint uskl_to_utyp (R : uskl) : utyp :=
   | uskl_dot_univ_ghost _ => utyp_unit
   end.
 
+(** Monotype embeddings into the skeleton sorts — used by the
+    definition-lookup rules (algo_decl/def_consis_refine.v).  ⚙ Moved here
+    from that file 2026-10-10, so that fresco/prop_basic.v's
+    monotype-substitution lemmas can be stated over them. *)
+Definition ptyp_to_bskl_syn (A : ptyp) : bskl :=
+  pskl_to_bskl_syn (ptyp_to_pskl A).
+Definition ptyp_to_uskl_syn (A : ptyp) : uskl :=
+  bskl_to_uskl (ptyp_to_bskl_syn A).

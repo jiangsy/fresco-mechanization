@@ -49,6 +49,7 @@ Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.fresco.notations.
+Require Import src.fresco.prop_tag.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
@@ -2480,7 +2481,7 @@ Proof.
   eapply a_binds_tvar_strengthen_kit;
     [ apply a_wf_aenv_uniq; exact HwfΘ
     | exact Hmon
-    | eapply a_wf_ptyp_ftv_binds; [ exact Hwf | exact Hα ]
+    | eapply a_wf_ptyp_ftv_tvarish; [ exact Hwf | exact Hα ]
     | clear - Hsub Hα; fsetdec ].
 Qed.
 

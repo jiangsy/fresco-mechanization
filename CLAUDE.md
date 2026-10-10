@@ -242,10 +242,14 @@ proof_fresco/   (this repository)
 │   │                      2026-08-06)
 │   ├── coercions.v       (paint/erase conversions — DEFINITIONS ONLY:
 │   │                      ptyp_to_btyp_syn, ptyp_to_utyp_syn,
-│   │                      btyp_to_utyp_syn, btyp_to_ptyp, … + the 4 Coercions)
+│   │                      btyp_to_utyp_syn, btyp_to_ptyp, … + the 4 Coercions;
+│   │                      since 2026-10-10 also the monotype embeddings
+│   │                      ptyp_to_bskl_syn / ptyp_to_uskl_syn, formerly in
+│   │                      algo_decl/def_consis_refine.v)
 │   ├── prop_tag.v        (ε-TAG EQUIVARIANCE, syntactic layer: §0 tags are
 │   │                      blind to tvar substitution, §1 the transposition on
-│   │                      atoms and atom SETS, §2 its action on `utyp`.
+│   │                      atoms and atom SETS, §2 its action on `utyp`,
+│   │                      §4 `ftag_in_uskl` across opening.
 │   │                      The paper's ForallL `fresh Ψ'` is a statement about
 │   │                      NAMES, and a swap is an automorphism with no side
 │   │                      condition where a one-way rename would need the
@@ -256,12 +260,19 @@ proof_fresco/   (this repository)
 │   │                      `algo/prop_pat_sub.v` imports both files)
 │   ├── prop_coercions.v  (everything ABOUT those conversions, and the only
 │   │                      place any of it goes: §1 retractions, §2 open /
-│   │                      open_rec commutation, §3 lc + shape-predicate
-│   │                      transport, §4 ftvar transport.  Created 2026-08-09
-│   │                      from eleven scattered files — see the ⚠️ below)
-│   ├── prop_basic.v      (the PREDICATE layer: the ghost-freeness kit and
-│   │                      ghost_free_auto.  Re-exports prop_coercions.v, so
-│   │                      its ~99 consumers see both)
+│   │                      open_rec commutation (and, since 2026-10-10,
+│   │                      substitution commutation), §3 lc + shape-predicate
+│   │                      transport, §4 ftvar transport, §5 tags, §6 the
+│   │                      monotype embeddings ptyp_to_{bskl,uskl}_syn.
+│   │                      Created 2026-08-09 from eleven scattered files —
+│   │                      see the ⚠️ below)
+│   ├── prop_basic.v      (the PREDICATE layer: the ghost-freeness kit,
+│   │                      ghost_free_auto, and — its last section — the
+│   │                      MONOTYPE-SUBSTITUTION kit: every shape predicate's
+│   │                      `X_subst_mono`, of which the decl `_subst_unit` /
+│   │                      `_rename_tvar` lemmas are one-line instances.
+│   │                      Re-exports prop_coercions.v, so its ~99 consumers
+│   │                      see both)
 │   ├── notations.v       (paper-faithful scoped notations)
 │   ├── ltac_utils.v      (tactics; coqhammer-backed)
 │   ├── decl/             (declarative system — FLAT, no subdirs)

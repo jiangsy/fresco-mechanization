@@ -30,6 +30,7 @@ Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.fresco.notations.
+Require Import src.fresco.prop_tag.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
@@ -51,7 +52,6 @@ Require Import src.fresco.algo.consis.prop_soundness_consis.
 Require Import src.fresco.algo.consis.prop_completeness_consis.
 Require Import src.fresco.algo.prop_mono_bridge.
 Require Import src.fresco.algo.prop_precise.
-Require Import src.fresco.deco_algo.prop_decorate_sub.
 Require Import src.fresco.algo.prop_pat_sub.
 Require Import src.fresco.algo.consis.prop_consis_precise.
 Require Import src.fresco.algo.sub.prop_looksub.
@@ -223,7 +223,7 @@ Proof.
 Qed.
 
 (* ⚙️ MOVED UP to sub/look/prop_rsubst.v (2026-08-04, the SolE-FlexR repair).
-   The whole mid-block weakening kit — [binds_weaken_inner],
+   The whole mid-block weakening kit — Metalib's [binds_weaken],
    [binds_strengthen_mid], [a_flex_tvar_weaken_mid], [a_non_flex_weaken_mid],
    [a_solve_sub_eq_weaken_mid_flex_size] and its two corollaries
    [a_solve_sub_weaken_mid_flex] / [a_solve_eq_weaken_mid_flex], plus
@@ -274,22 +274,12 @@ Proof.
   intro α. apply msubst_lookup_app_swap; exact Hdisj.
 Qed.
 
-(* Peel a COMMON PREFIX off both sides of a lookup equation: the prefix either
-   answers the lookup on both sides or is transparent on both.  With
+(* ⚙ Peeling a COMMON PREFIX off both sides of a lookup equation is
+   [msubst_lookup_app_agree] (prop_metasubst.v).  With
    [msubst_lookup_app_swap] this is all the block algebra the arrow row's
-   κ-reordering needs — a swap moves the top two blocks, this one gets at the
-   ones below. *)
-Lemma msubst_lookup_app_congr : forall κ0 κa κb α,
-  (forall β, msubst_lookup κa β = msubst_lookup κb β) ->
-  msubst_lookup (κ0 ++ κa) α = msubst_lookup (κ0 ++ κb) α.
-Proof.
-  intros κ0 κa κb α Heq.
-  destruct (AtomSetProperties.In_dec α (dom κ0)) as [Hin | Hnin].
-  - rewrite (@msubst_lookup_app_in κ0 κa α Hin).
-    rewrite (@msubst_lookup_app_in κ0 κb α Hin). reflexivity.
-  - rewrite (@msubst_lookup_app_notin κ0 κa α Hnin).
-    rewrite (@msubst_lookup_app_notin κ0 κb α Hnin). apply Heq.
-Qed.
+   κ-reordering needs — a swap moves the top two blocks, that one gets at the
+   ones below.  (Its pointwise-everywhere twin [msubst_lookup_app_congr] was
+   deleted 2026-10-10.) *)
 
 (* ⭐ An IMAGE BOUND transports across an append: a lookup either lands in the
    prefix — where the pointwise bound applies — or misses the prefix's domain
@@ -992,7 +982,7 @@ Proof.
       [ left | right; exists τ ]; analyze_binds Hb.
   - intros P0 Hf; inversion Hf; subst;
       [ eapply a_flex__var | eapply a_flex__var_def ];
-      apply binds_weaken_inner; eassumption.
+      apply binds_weaken; eassumption.
 Qed.
 
 (* ===================================================================== *)
@@ -3480,10 +3470,10 @@ Proof.
            { rewrite (list_app_assoc κs2 κs1 ((κc1 ++ κc2) ++ κ)).
              rewrite (list_app_assoc κc1 κc2 κ).
              apply msubst_pskl_lookup_congr. intro β.
-             apply msubst_lookup_app_congr. intro β0.
-             rewrite (@msubst_lookup_app_swap κc2 κs1 (κc1 ++ κ) β0 Hdisj2s1).
-             apply msubst_lookup_app_congr. intro β1.
-             apply (@msubst_lookup_app_swap κc1 κc2 κ β1 Hdisj12). }
+             apply msubst_lookup_app_agree.
+             rewrite (@msubst_lookup_app_swap κc2 κs1 (κc1 ++ κ) β Hdisj2s1).
+             apply msubst_lookup_app_agree.
+             apply (@msubst_lookup_app_swap κc1 κc2 κ β Hdisj12). }
            rewrite Hperm.
            eapply ad_partial_precise_psi_cong; [ exact Hpre2 | clear - HΨa; fsetdec ].
         -- (* ⭐⭐ THE SOLVE BLOCKS vs THE COLLECTED CONSTRAINTS — four cases.

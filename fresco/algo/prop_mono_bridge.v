@@ -29,23 +29,10 @@ Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.algo.prop_inc.
 Require Import src.fresco.algo.prop_stability.
+Require Import src.fresco.algo.prop_swap.          (* a_wf_ptyp_ftv_tvarish *)
 Require Import src.fresco.algo.prop_basic.
 
 Set Implicit Arguments.
-
-(** The syn painting of a monotype determines it. *)
-Lemma ptyp_to_bskl_syn_inj : forall A A',
-  mono_ptyp A -> mono_ptyp A' ->
-  ptyp_to_bskl_syn A = ptyp_to_bskl_syn A' ->
-  A = A'.
-Proof.
-  unfold ptyp_to_bskl_syn.
-  intros A A' HmA; revert A'; induction HmA as [ | α | A1 A2 Hm1 IH1 Hm2 IH2 ];
-    intros A' HmB Heq; destruct HmB; simpl in Heq; try discriminate.
-  - reflexivity.
-  - inversion Heq; reflexivity.
-  - inversion Heq. f_equal; [ apply IH1 | apply IH2 ]; auto.
-Qed.
 
 (* ===================================================================== *)
 (*  THE BRIDGE                                                            *)

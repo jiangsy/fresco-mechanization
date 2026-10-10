@@ -1107,11 +1107,11 @@ Proof.
   - (* FlexL — [nonflex] against the assign walk's own finding *)
     intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Hnhole Hd IH Heq Hsh HD.
     exfalso. subst. destruct Hnf as [_ Hf]. apply Hf.
-    apply a_flex_tvar_flex. eapply e_assign_target_flex; eassumption.
+    apply a_flex_var_iff_tvar. eapply e_assign_target_flex; eassumption.
   - (* FlexR — the mirror *)
     intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Hnhole Hd IH Heq Hsh HD.
     exfalso. subst. destruct Hnf as [_ Hf]. apply Hf.
-    apply a_flex_tvar_flex. eapply e_assign_target_flex; eassumption.
+    apply a_flex_var_iff_tvar. eapply e_assign_target_flex; eassumption.
   - (* GhostR *)
     intros Δ1 Δ2 S Θ0 P Hdis Heq Hsh HD. split; reflexivity.
   - (* UnivGhostR *)
@@ -1855,10 +1855,10 @@ Proof.
                          | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity
                          | cbn [swaps_pskl cs_out proj1_sig]; reflexivity ].
               ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
-                 apply a_flex_tvar_flex. eapply e_assign_target_flex;
+                 apply a_flex_var_iff_tvar. eapply e_assign_target_flex;
                    eassumption.
               ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
-                 apply a_flex_tvar_flex. eapply e_assign_target_flex;
+                 apply a_flex_var_iff_tvar. eapply e_assign_target_flex;
                    eassumption.
            ++ (* the runner recurses into [unifyvar] *)
               destruct (e_consis_inv_var_var Hd)
@@ -1880,10 +1880,10 @@ Proof.
                          | cbn [cs_ctx proj1_sig]; exact HT | ].
                  cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
               ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
-                 apply a_flex_tvar_flex. eapply e_assign_target_flex;
+                 apply a_flex_var_iff_tvar. eapply e_assign_target_flex;
                    eassumption.
               ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
-                 apply a_flex_tvar_flex. eapply e_assign_target_flex;
+                 apply a_flex_var_iff_tvar. eapply e_assign_target_flex;
                    eassumption.
         -- (* the two variables DIFFER *)
            cbv beta iota.
@@ -1908,10 +1908,10 @@ Proof.
                          | cbn [cs_ctx proj1_sig]; exact HT | ].
                  cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
               ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
-                 apply a_flex_tvar_flex. apply flex_bound_ck_flex_tvar.
+                 apply a_flex_var_iff_tvar. apply flex_bound_ck_flex_tvar.
                  exact Hbβ.
               ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
-                 apply a_flex_tvar_flex. apply flex_bound_ck_flex_tvar.
+                 apply a_flex_var_iff_tvar. apply flex_bound_ck_flex_tvar.
                  exact Hba.
            ++ destruct (sumbool_of_bool (flex_bound_ck Θ' β0))
                 as [Hbβ | Hbβ]; cbv beta iota.
@@ -1929,7 +1929,7 @@ Proof.
                        by (apply flex_tvar_flex_bound_ck; exact Hfb2).
                      rewrite Hca, Hcb in Hbb. discriminate.
                  --- exfalso. destruct Hnf as [_ Hf]. apply Hf.
-                     apply a_flex_tvar_flex. apply flex_bound_ck_flex_tvar.
+                     apply a_flex_var_iff_tvar. apply flex_bound_ck_flex_tvar.
                      exact Hbβ.
                  --- assert (Hcov0 : ftvar_in_aenv (nil ++ Θ')
                                ∪ ftvar_in_pskl (pskl_var_f α0) [<=] S1)
@@ -1967,7 +1967,7 @@ Proof.
                                  | cbn [cs_ctx proj1_sig]; exact HT | ].
                          cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
                      +++ exfalso. destruct Hnf as [_ Hf]. apply Hf.
-                         apply a_flex_tvar_flex. apply flex_bound_ck_flex_tvar.
+                         apply a_flex_var_iff_tvar. apply flex_bound_ck_flex_tvar.
                          exact Hba.
                  --- (* NEITHER is flexible: no rule can have fired *)
                      exfalso.
@@ -2011,7 +2011,7 @@ Proof.
            cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
         -- destruct (sumbool_of_bool (flex_bound_ck Θ' β0)) as [Hfb | Hfb];
              [ exfalso; destruct Hnf as [_ Hf]; apply Hf;
-               apply a_flex_tvar_flex; apply flex_bound_ck_flex_tvar;
+               apply a_flex_var_iff_tvar; apply flex_bound_ck_flex_tvar;
                exact Hfb | ].
            cbv beta iota.
            assert (Hcov0 : consis_call_cover Θ'
@@ -2321,7 +2321,7 @@ Proof.
            out_var_id Hav Hcov.
         -- destruct (sumbool_of_bool (flex_bound_ck Θ' α0)) as [Hfb | Hfb];
              [ exfalso; destruct Hnf as [_ Hf]; apply Hf;
-               apply a_flex_tvar_flex; apply flex_bound_ck_flex_tvar;
+               apply a_flex_var_iff_tvar; apply flex_bound_ck_flex_tvar;
                exact Hfb | ].
            cbv beta iota. do_pass (Q7 P0' eq_refl) Dc Hu Hcov Qd.
       * (* ⫯P0 ∼ → — U-UnivGhostR *)

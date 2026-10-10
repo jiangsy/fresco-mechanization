@@ -230,10 +230,8 @@ Proof. intros. rewrite Vpskl_univ_ghost. lia. Qed.
 (*  §3b  The variable/skeleton bridge — for the cross-edges                *)
 (* ===================================================================== *)
 
-(** [ptyp_to_pskl] preserves size (it never adds a node). *)
-Lemma size_ptyp_to_pskl : forall A,
-  size_pskl (ptyp_to_pskl A) = size_ptyp A.
-Proof. induction A; simpl; auto. Qed.
+(* [ptyp_to_pskl] preserves size: [size_pskl_ptyp_to_pskl]
+   (fresco/prop_coercions.v). *)
 
 (** A flexible-variable subject is measured identically as a skeleton and as a
     type: this is exactly the pairing that makes [V] constant on the cross-edges
@@ -242,7 +240,7 @@ Lemma Vpskl_var : forall Θ κ α,
   Vpskl Θ κ (pskl_var_f α) = Vvar Θ κ α.
 Proof.
   intros. unfold Vpskl, Vvar. cbn [msubst_pskl].
-  rewrite msubst_pskl_embed_ptyp. apply size_ptyp_to_pskl.
+  rewrite msubst_pskl_embed_ptyp. apply size_pskl_ptyp_to_pskl.
 Qed.
 
 (** [FlexL]: [consis(Θ0; P0; α̂)] -> [assign(Θ0; ·; α̂; P0)].  [V] is exactly
@@ -484,22 +482,23 @@ Qed.
 (*  the competing join from the grown target down to the sub-target.       *)
 (* ===================================================================== *)
 
+(** Every free variable of a wf skeleton is a tvar of the CONTEXT, never of
+    [Δ] ([a_wf_pskl_ftv_binds]), so the scoping premise is about [Θ'] alone.
+    ⚙ It used to read [α ∈ Δ ∨ α ∈ dom Θ'] with a [Δ ∩ dom Θ = ∅] premise to
+    kill the first disjunct — dead since the ∀ rule binds in the context too
+    (dropped 2026-10-10). *)
 Lemma a_wf_pskl_strengthen : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   forall Θ', uniq Θ ->
-  (forall x, x `in` Δ -> x `notin` dom Θ) ->
   (forall x b, binds x b Θ' -> binds x b Θ) ->
-  (forall α, α `in` ftvar_in_pskl P -> α `in` Δ \/ α `in` dom Θ') ->
+  (forall α, α `in` ftvar_in_pskl P -> α `in` dom Θ') ->
   {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
 Proof.
-  intros Θ Δ P H Θ' Hu Hdisj Hsub Hsc.
+  intros Θ Δ P H Θ' Hu Hsub Hsc.
   eapply a_wf_pskl_tvar_mono_ftv; [ exact H | ].
   intros α Hα Htv.
-  assert (HdΘ : α `in` dom Θ)
-    by (destruct Htv as [Hb|[Hb|[τ Hb]]]; apply binds_In in Hb; exact Hb).
-  destruct (Hsc α Hα) as [HΔ | Hd];
-    [ exfalso; exact (Hdisj α HΔ HdΘ)
-    | eapply a_binds_tvar_strengthen; eauto ].
+  pose proof (Hsc α Hα) as Hd.
+  eapply a_binds_tvar_strengthen; eauto.
 Qed.
 
 (** A ∀◇ body is well-formed at the wrapper's own [Θ ⨟ Δ]: its premise is at
@@ -1154,12 +1153,6 @@ Qed.
 (*  §1d  Rename-vs-embedding/metasubstitution commutations               *)
 (* ===================================================================== *)
 
-(** [subst_var_bskl_inh] (prop_soundness_consis.v) with the atoms first. *)
-Lemma pskl_to_bskl_inh_subst_var : forall α' α P,
-  subst_bskl_in_bskl (bskl_var_f α') α (pskl_to_bskl_inh P)
-  = pskl_to_bskl_inh (subst_pskl_in_pskl (pskl_var_f α') α P).
-Proof. intros; apply subst_var_bskl_inh. Qed.
-
 Lemma bskl_to_pskl_subst_var : forall α' α Q,
   subst_pskl_in_pskl (pskl_var_f α') α (bskl_to_pskl Q)
   = bskl_to_pskl (subst_bskl_in_bskl (bskl_var_f α') α Q).
@@ -1392,41 +1385,6 @@ Proof.
       * exfalso. apply (Hnd τ0). unfold binds. left. reflexivity.
       * rewrite msubst_lookup_cons_neq by exact Hne.
         apply IH. intros τ Hb. apply (Hnd τ). unfold binds. right. exact Hb.
-Qed.
-
-Lemma msubst_ptyp_lookup_refl : forall κ A,
-  (forall α, α `in` ftvar_in_ptyp A -> msubst_lookup κ α = ptyp_var_f α) ->
-  msubst_ptyp κ A = A.
-Proof.
-  intros κ A; induction A as [ | n | α2 | A1 IH1 A2 IH2 | A0 IH0 ];
-    intros Hlk; simpl in *.
-  - reflexivity.
-  - reflexivity.
-  - apply Hlk. fsetdec.
-  - rewrite IH1, IH2;
-      [ reflexivity
-      | intros α Hα; apply Hlk; fsetdec
-      | intros α Hα; apply Hlk; fsetdec ].
-  - rewrite IH0; [ reflexivity | intros α Hα; apply Hlk; fsetdec ].
-Qed.
-
-Lemma msubst_pskl_lookup_refl : forall κ P,
-  (forall α, α `in` ftvar_in_pskl P -> msubst_lookup κ α = ptyp_var_f α) ->
-  msubst_pskl κ P = P.
-Proof.
-  intros κ P;
-    induction P as [ | n | α2 | Pa IHa Pb IHb | Pb IHb | | Pt IHt ];
-    intros Hlk; simpl in *.
-  - reflexivity.
-  - reflexivity.
-  - rewrite Hlk; [ reflexivity | fsetdec ].
-  - rewrite IHa, IHb;
-      [ reflexivity
-      | intros α Hα; apply Hlk; fsetdec
-      | intros α Hα; apply Hlk; fsetdec ].
-  - rewrite IHb; [ reflexivity | intros α Hα; apply Hlk; fsetdec ].
-  - reflexivity.
-  - rewrite IHt; [ reflexivity | intros α Hα; apply Hlk; fsetdec ].
 Qed.
 
 (** ⇓-idempotence along a context restriction. *)
@@ -1992,7 +1950,7 @@ Lemma Vpskl_ptyp_to_pskl : forall Θ κ A,
 Proof.
   intros. unfold Vpskl, Vptyp.
   rewrite msubst_pskl_embed_ptyp. rewrite msubst_pskl_embed_ptyp.
-  apply size_ptyp_to_pskl.
+  apply size_pskl_ptyp_to_pskl.
 Qed.
 
 (** [Vvar] ignores a target prefix the image cannot mention (the walk cases
@@ -5914,7 +5872,7 @@ Proof.
         rewrite <- !Hreo.
         cbn [msubst_pskl].
         rewrite msubst_pskl_embed_ptyp.
-        rewrite size_ptyp_to_pskl. lia.
+        rewrite size_pskl_ptyp_to_pskl. lia.
       - left. rewrite length_app. simpl. lia. }
     destruct (IH _ Hlt) as [HcIH _].
     destruct (HcIH (add α1 N) empty empty (Ξ ++ Θ0')
@@ -6774,7 +6732,7 @@ Proof.
     pose proof (@ad_refine_syn_rename_gen _ _ _ _ Hprec ((α0 ~ abind_tvar) ++ Θ) α α0
                   ltac:(clear; fsetdec) Hα0Q
                   (rename_defs_cons_tvar Hwfth HαΘ Hα0Θ)) as Hp2.
-    rewrite !pskl_to_bskl_inh_subst_var in Hp2.
+    rewrite !subst_var_bskl_inh in Hp2.
     rewrite (msubst_pskl_subst_var ζ P1 Hαζ Hα0ζ Himg) in Hp2.
     rewrite bskl_to_pskl_subst_var in Hp2.
     assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f α0)
@@ -7037,7 +6995,7 @@ Proof.
       simpl in Hup. clear - Hup Hα0. fsetdec. }
     pose proof (@ad_refine_syn_rename_gen _ _ _ _ Hprec ((α0 ~ abind_tvar) ++ Θ) α α0
                   HαF Hα0Q (rename_defs_cons_tvar Hwfth HαΘ Hα0Θ)) as Hp2.
-    rewrite !pskl_to_bskl_inh_subst_var in Hp2.
+    rewrite !subst_var_bskl_inh in Hp2.
     rewrite (msubst_pskl_subst_var ζ P1 Hαζ Hα0ζ Himg) in Hp2.
     rewrite bskl_to_pskl_subst_var in Hp2.
     assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f α0)
@@ -7483,7 +7441,7 @@ Proof.
       simpl in Hup. clear - Hup Hα0. fsetdec. }
     pose proof (@ad_refine_syn_rename_gen _ _ _ _ Hprec ((α0 ~ abind_tvar) ++ Θ) α α0
                   HαF Hα0Q (rename_defs_cons_tvar Hwfth HαΘ Hα0Θ)) as Hp2.
-    rewrite !pskl_to_bskl_inh_subst_var in Hp2.
+    rewrite !subst_var_bskl_inh in Hp2.
     rewrite (msubst_pskl_subst_var ζ P1 Hαζ Hα0ζ Himg) in Hp2.
     rewrite bskl_to_pskl_subst_var in Hp2.
     assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f α0)

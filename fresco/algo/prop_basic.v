@@ -13,6 +13,7 @@ Require Import Metalib.Metatheory.
 Require Import src.fresco.notations.
 Require Import src.fresco.coercions.
 Require Import src.fresco.prop_coercions.
+Require Import src.fresco.prop_basic.          (* the monotype-substitution kit *)
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.decl.def_rules.
@@ -301,18 +302,8 @@ Proof.
   - pick fresh α. eauto.
 Qed.
 
-(* ===================================================================== *)
-(*  Embedding/open commutation (local; coercions.v lacks these two)       *)
-(* ===================================================================== *)
-
-Lemma ptyp_to_bskl_syn_open_var : forall A α,
-  ptyp_to_bskl_syn (open_ptyp_wrt_ptyp A (ptyp_var_f α))
-  = open_bskl_wrt_bskl (ptyp_to_bskl_syn A) (bskl_var_f α).
-Proof.
-  intros. unfold ptyp_to_bskl_syn, open_ptyp_wrt_ptyp, open_bskl_wrt_bskl.
-  rewrite ptyp_to_pskl_open_rec. rewrite pskl_to_bskl_syn_open_rec.
-  reflexivity.
-Qed.
+(* ⚙ The embedding/open commutation [ptyp_to_bskl_syn_open_var] that sat
+   here lives in fresco/prop_coercions.v §6 (2026-10-10). *)
 
 Lemma a_binds_tvar_weaken_cons : forall α (e : list (atom * abind)) Θ,
   a_binds_tvar α Θ ->
@@ -862,17 +853,8 @@ Proof.
     eauto using binds_strip_mid.
 Qed.
 
-(** Free variables of a well-formed type are tvar-ish in the context.
-    Same fact as [a_wf_ptyp_ftv_binds] (prop_swap.v); both names have
-    consumers outside this layer. *)
-Lemma a_wf_ptyp_ftv_tvarish : forall Θ A α,
-  a_wf_ptyp Θ A ->
-  α `in` ftvar_in_ptyp A ->
-  a_binds_tvar α Θ.
-Proof. intros; eapply a_wf_ptyp_ftv_binds; eauto. Qed.
-
 (** ** [wf] / [scope] bound the free variables by the domain.  ⚠️ These four
-    and [a_wf_ptyp_ftv_tvarish] just above are ONE family and this is their
+    and [a_wf_ptyp_ftv_tvarish] (prop_swap.v) are ONE family and this is their
     only home — do not re-prove an instance in a downstream file. *)
 
 Lemma a_wf_ptyp_ftv_dom : forall Θ A,
@@ -890,21 +872,6 @@ Lemma a_scope_pskl_ftv_dom : forall Θ P,
   a_scope_pskl Θ P -> ftvar_in_pskl P [<=] dom Θ.
 Proof.
   intros Θ P [_ H] α Hα. exact (a_binds_tvar_in_dom (H α Hα)).
-Qed.
-
-(** Embedding composition and substitution commutation for the fold step. *)
-Lemma pskl_to_uskl_ptyp : forall A,
-  pskl_to_uskl (ptyp_to_pskl A) = ptyp_to_uskl_syn A.
-Proof.
-  induction A; unfold ptyp_to_uskl_syn in *; simpl; f_equal; auto.
-Qed.
-
-Lemma pskl_to_uskl_subst : forall P τ β,
-  pskl_to_uskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β P)
-  = subst_uskl_in_uskl (ptyp_to_uskl_syn τ) β (pskl_to_uskl P).
-Proof.
-  induction P; intros; simpl; f_equal; auto.
-  destruct (eq_var α β); simpl; auto using pskl_to_uskl_ptyp.
 Qed.
 
 (* ===================================================================== *)
@@ -1018,31 +985,6 @@ Proof.
     try (intros τ0 Hc; inversion Hc; subst; congruence).
 Qed.
 
-(** A monotype's skeleton is guarded / locally closed. *)
-Lemma mono_ptyp_to_pskl_guarded : forall τ,
-  mono_ptyp τ -> guarded_pskl (ptyp_to_pskl τ).
-Proof.
-  destruct 1 as [ | α | A1 A2 ]; simpl;
-    [ apply guarded_pskl__unit | apply guarded_pskl__var
-    | apply guarded_pskl__arrow; apply mono_ptyp_to_pskl_lc; auto ].
-Qed.
-
-(** Guardedness is a HEAD-SHAPE property, so substituting a variable by a
-    MONOTYPE preserves it (a variable is guarded; a monotype is guarded).
-    This is the crux of the [univ_ghost] case below. *)
-Lemma guarded_pskl_mono_subst : forall P τ β,
-  guarded_pskl P ->
-  mono_ptyp τ ->
-  guarded_pskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
-Proof.
-  intros * HG Hm; destruct HG; simpl.
-  - apply guarded_pskl__unit.
-  - destruct (eq_var α β);
-      [ apply mono_ptyp_to_pskl_guarded; auto | apply guarded_pskl__var ].
-  - apply guarded_pskl__arrow;
-      apply subst_pskl_in_pskl_lc_pskl; auto using mono_ptyp_to_pskl_lc.
-Qed.
-
 (** A well-formed monotype's skeleton is a well-formed skeleton, in any [Δ]. *)
 Lemma a_wf_pskl_mono_ptyp : forall Θ Δ τ,
   mono_ptyp τ ->
@@ -1103,12 +1045,6 @@ Proof.
   clear - Hβ Hsc; fsetdec.
 Qed.
 
-(** Erasure undoes the syn painting of a type.  ⚙ A coercion retraction:
-    its home is fresco/prop_coercions.v; it lives here until it moves. *)
-Lemma bskl_to_pskl_ptyp_to_bskl_syn : forall A,
-  bskl_to_pskl (ptyp_to_bskl_syn A) = ptyp_to_pskl A.
-Proof. intros; unfold ptyp_to_bskl_syn; apply bskl_to_pskl_pskl_to_bskl_syn. Qed.
-
 (** A flexible definition's payload, read back as a skeleton through the
     syn painting, is well-formed (it is a well-formed monotype). *)
 Lemma a_wf_pskl_flex_def_payload : forall Θ Δ α τ,
@@ -1121,6 +1057,11 @@ Proof.
     [ eapply a_wf_aenv_binds_def_mono | eapply a_wf_aenv_binds_def_wf ];
     eassumption.
 Qed.
+
+Lemma a_wf_pskl_arrow_inv : forall Θ Δ P1 P2,
+  {{ Θ ⨟ Δ ⊢ₚₛ (pskl_arrow P1 P2) }}a -> {{ Θ ⨟ Δ ⊢ₚₛ P1 }}a /\ {{ Θ ⨟ Δ ⊢ₚₛ P2 }}a.
+Proof. intros * H; inversion H; auto. Qed.
+
 
 (** A monotype whose variables are all [a_binds_tvar] in Θ paints to a
     well-formed skeleton, in any [Δ]. *)
@@ -1179,7 +1120,7 @@ Proof.
       clear - Hn H1. fsetdec.
   - apply a_wf_pskl__ghost.
   - apply a_wf_pskl__univ_ghost;
-      [ apply guarded_pskl_mono_subst; auto | ].
+      [ apply guarded_pskl_subst_mono; auto | ].
     apply IHa_wf_pskl; [ exact Hm | ].
     intros α Hα. destruct (Hτ α Hα) as [Hb Hn]. split.
     + apply a_binds_tvar_aenv_minus. auto.
@@ -1209,6 +1150,25 @@ Lemma a_wf_aenv_uniq : forall Θ,
 Proof.
   intros Θ H; induction H; solve_uniq.
 Qed.
+
+(** A TERM entry is never [a_binds_tvar], so a skeleton well-formed in the
+    context cannot mention it — the freshness [a_wf_pskl_strip_mid] needs
+    at every Flex-SkipTmVar / Assign-SkipTmVar row, which the rules do not
+    carry. *)
+Lemma a_wf_pskl_tm_entry_fresh : forall Ξ x bd Θ0 Δ P,
+  {{ ⊢ (Ξ ++ (x ~ bd) ++ Θ0) }}a ->
+  abind_is_tm bd ->
+  {{ (Ξ ++ (x ~ bd) ++ Θ0) ⨟ Δ ⊢ₚₛ P }}a ->
+  x `notin` ftvar_in_pskl P.
+Proof.
+  intros * Hwf Htm HwfP Hin.
+  assert (Huq : uniq (Ξ ++ (x ~ bd) ++ Θ0)) by (apply a_wf_aenv_uniq; exact Hwf).
+  assert (Hbx : binds x bd (Ξ ++ (x ~ bd) ++ Θ0))
+    by (apply binds_app_3; apply binds_app_2; unfold binds; simpl; left; reflexivity).
+  destruct (a_wf_pskl_ftv_binds HwfP Hin) as [Hb | [Hb | [τ0 Hb]]];
+    pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq); subst; exact Htm.
+Qed.
+
 
 (* ===================================================================== *)
 (*  a_wf_ptyp / a_guess_mono / a_decls plumbing                           *)
@@ -1511,16 +1471,11 @@ Proof.
           | right; exists τ; exact Hin ].
 Qed.
 
-(** Metalib's [binds_weaken] at [aenv]; the name sub/look consumes. *)
-Lemma binds_weaken_inner : forall (x : atom) (b : abind) Ξl Ξm Θ0,
-  binds x b (Ξl ++ Θ0) -> binds x b (Ξl ++ Ξm ++ Θ0).
-Proof. intros; apply binds_weaken; assumption. Qed.
-
 Lemma a_flex_tvar_weaken_mid : forall Ξl Ξm Θ0 α,
   a_flex_tvar (Ξl ++ Θ0) α -> a_flex_tvar (Ξl ++ Ξm ++ Θ0) α.
 Proof.
   intros Ξl Ξm Θ0 α [Hb | [τ Hb]];
-    [ left | right; exists τ ]; apply binds_weaken_inner; exact Hb.
+    [ left | right; exists τ ]; apply binds_weaken; exact Hb.
 Qed.
 
 (** …and hence PEELING one head entry the atom is not the subject of.
@@ -1562,34 +1517,6 @@ Proof.
   intros β α P Hne HβP.
   pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α)) as Hs.
   simpl in Hs. clear - Hs Hne HβP. fsetdec.
-Qed.
-
-(* ⚙ These three mention [ptyp_to_bskl_syn] / [ptyp_to_uskl_syn], which are
-   defined in algo_decl/def_consis_refine.v rather than fresco/coercions.v — so
-   unlike their siblings they cannot live in fresco/prop_coercions.v. *)
-(** On a MONOTYPE the inherited and synthesised paintings coincide — they only
-    differ at quantifiers, and a monotype has none. *)
-Lemma ptyp_to_bskl_inh_syn_eq : forall A,
-  mono_ptyp A ->
-  pskl_to_bskl_inh (ptyp_to_pskl A) = ptyp_to_bskl_syn A.
-Proof.
-  unfold ptyp_to_bskl_syn.
-  intros A Hm; induction Hm; simpl; f_equal; auto.
-Qed.
-
-(** Free variables of monotype paintings. *)
-Lemma ftvar_ptyp_to_uskl_syn : forall τ,
-  ftvar_in_uskl (ptyp_to_uskl_syn τ) [=] ftvar_in_ptyp τ.
-Proof.
-  intros. rewrite <- pskl_to_uskl_ptyp.
-  rewrite ftvar_in_uskl_pskl. apply ftvar_ptyp_to_pskl.
-Qed.
-
-Lemma ftvar_ptyp_to_bskl_syn : forall τ,
-  ftvar_in_bskl (ptyp_to_bskl_syn τ) [=] ftvar_in_ptyp τ.
-Proof.
-  intros. rewrite <- (ftvar_bskl_to_pskl (ptyp_to_bskl_syn τ)).
-  rewrite bskl_to_pskl_ptyp_to_bskl_syn. apply ftvar_ptyp_to_pskl.
 Qed.
 
 (* ===================================================================== *)
@@ -1766,14 +1693,9 @@ Proof.
 Qed.
 
 
-(** ⚙ The two term-entry moves the abs rows make on the flexibility
-    picture: a term entry never carries a flex binding, so INSERTING or
-    STRIPPING one changes nothing (with the atom apart).  The first is
-    [a_flex_tvar_mid_other] with its arguments reordered. *)
-Lemma a_flex_tvar_insert_mid : forall (Ξ Θ : aenv) x (bd : abind) a,
-  a <> x ->
-  (a_flex_tvar (Ξ ++ (x ~ bd) ++ Θ) a <-> a_flex_tvar (Ξ ++ Θ) a).
-Proof. intros; apply a_flex_tvar_mid_other; auto. Qed.
+(** ⚙ The term-entry moves the abs rows make on the flexibility picture:
+    INSERTING an entry is [a_flex_tvar_mid_other] above (the former
+    [a_flex_tvar_insert_mid] was that lemma with its arguments reordered). *)
 
 Definition abind_nonflex (bd : abind) : Prop :=
   bd <> abind_flex_mono /\ forall τ, bd <> abind_flex_mono_def τ.
@@ -1800,6 +1722,108 @@ Proof.
       unfold binds in *; simpl; right; assumption.
 Qed.
 
+(** ⚙ The flexibility facts below were proved in ext_algo/ (prop_look_pair.v,
+    prop_solve_rel.v, prop_lift_kit.v) while that campaign left fresco/algo
+    alone; they are about [algo/]'s relations only and moved here
+    2026-10-10.  [a_flex_var_iff_tvar] also absorbs ext_algo/prop_consis.v's
+    one-direction copy [a_flex_tvar_flex]. *)
+
+Lemma a_flex_tvar_app_congr : forall (Ξ Θ Θ' : aenv),
+  (forall α, a_flex_tvar Θ α <-> a_flex_tvar Θ' α) ->
+  forall α, a_flex_tvar (Ξ ++ Θ) α <-> a_flex_tvar (Ξ ++ Θ') α.
+Proof.
+  intros * Hiff α.
+  pose proof (a_flex_tvar_app_iff Ξ Θ α).
+  pose proof (a_flex_tvar_app_iff Ξ Θ' α).
+  pose proof (Hiff α).
+  tauto.
+Qed.
+
+Lemma a_flex_of_tvar_iff : forall Θ Θ' P,
+  (forall α, a_flex_tvar Θ α <-> a_flex_tvar Θ' α) ->
+  a_flex Θ P -> a_flex Θ' P.
+Proof.
+  intros * Hiff Hf.
+  inversion Hf; subst.
+  - assert (Hft : a_flex_tvar Θ' α) by (apply Hiff; left; assumption).
+    destruct Hft as [Hb | [τ Hb]];
+      [ apply a_flex__var | eapply a_flex__var_def ]; eassumption.
+  - assert (Hft : a_flex_tvar Θ' α)
+      by (apply Hiff; right; eexists; eassumption).
+    destruct Hft as [Hb | [τ0 Hb]];
+      [ apply a_flex__var | eapply a_flex__var_def ]; eassumption.
+Qed.
+
+Lemma a_flex_tvar_rigid_prefix_iff : forall (Δr Θ : aenv) α,
+  (forall x bd, binds x bd Δr -> bd = abind_tvar) ->
+  (a_flex_tvar (Δr ++ Θ) α <-> a_flex_tvar Θ α).
+Proof.
+  intros * Hr.
+  pose proof (a_flex_tvar_app_iff Δr Θ α) as Hor.
+  assert (Hnf : ~ a_flex_tvar Δr α).
+  { intros [Hb | [τ Hb]]; pose proof (Hr _ _ Hb); discriminate. }
+  tauto.
+Qed.
+
+(** [a_flex] at a variable IS [a_flex_tvar] — the SE-FlexR side
+    conditions' bridge. *)
+Lemma a_flex_var_iff_tvar : forall Θ α,
+  a_flex Θ (pskl_var_f α) <-> a_flex_tvar Θ α.
+Proof.
+  intros. split.
+  - intros Hf; inversion Hf; subst;
+      [ left; assumption | right; eexists; eassumption ].
+  - intros [Hb | [τ Hb]];
+      [ eapply a_flex__var | eapply a_flex__var_def ]; eassumption.
+Qed.
+
+(** A rigid entry at an UNBOUND name is not flexible — the pair rows'
+    both-false case. *)
+Lemma a_flex_tvar_cons_tvar_self : forall β (Θ : aenv),
+  β `notin` dom Θ ->
+  ~ a_flex_tvar ((β ~ abind_tvar) ++ Θ) β.
+Proof.
+  intros * Hn [Hb | [τ Hb]]; unfold binds in Hb; simpl in Hb;
+    (destruct Hb as [Hb | Hb];
+     [ solve [ inversion Hb ]
+     | apply Hn; eapply binds_In; exact Hb ]).
+Qed.
+
+Lemma a_flex_tvar_one_flex : forall α (b : abind) x,
+  (b = abind_flex_mono \/ exists t, b = abind_flex_mono_def t) ->
+  (a_flex_tvar (α ~ b) x <-> x = α).
+Proof.
+  intros α b x Hb. split.
+  - intros [Hbd | [t Hbd]]; unfold binds in Hbd; simpl in Hbd;
+      destruct Hbd as [E | E]; try contradiction; inversion E; reflexivity.
+  - intros ->. destruct Hb as [-> | [t ->]];
+      [ left | right; exists t ]; unfold binds; simpl; left; reflexivity.
+Qed.
+
+Lemma a_flex_tvar_one_nonflex : forall (c : atom) (bd : abind) x,
+  bd <> abind_flex_mono ->
+  (forall t, bd <> abind_flex_mono_def t) ->
+  ~ a_flex_tvar (c ~ bd) x.
+Proof.
+  intros c bd x H1 H2 [Hb | [t Hb]]; unfold binds in Hb; simpl in Hb;
+    destruct Hb as [E | E]; try contradiction; inversion E; subst.
+  - apply H1; reflexivity.
+  - apply (H2 t); reflexivity.
+Qed.
+
+Lemma a_flex_tvar_cons_absent : forall (c : atom) (bd : abind) (Θ : aenv) x,
+  bd <> abind_flex_mono ->
+  (forall t, bd <> abind_flex_mono_def t) ->
+  x `notin` dom Θ ->
+  ~ a_flex_tvar ((c ~ bd) ++ Θ) x.
+Proof.
+  intros c bd Θ x H1 H2 Hx Hf. rewrite a_flex_tvar_app_iff in Hf.
+  destruct Hf as [Hf | Hf];
+    [ exact (@a_flex_tvar_one_nonflex c bd x H1 H2 Hf)
+    | exact (Hx (a_flex_tvar_in_dom Hf)) ].
+Qed.
+
+
 Lemma a_flex_tvar_strip_tvar : forall b Θ α,
   a_flex_tvar ((b ~ abind_tvar) ++ Θ) α -> a_flex_tvar Θ α.
 Proof.
@@ -1808,23 +1832,11 @@ Proof.
     solve [ discriminate Habs | left; exact Hb' | right; exists τ; exact Hb' ].
 Qed.
 
-(** [a_wf_pskl] reads Θ ONLY through [a_binds_tvar], so it weakens along any
-    TVAR-ISH monotone map (an alias of [a_wf_pskl_tvar_mono]).
-    [a_wf_pskl_weaken]'s [binds]-monotone form is too strong here: Flex-Solve
-    turns [α̂0]'s DECLARATION into a DEFINITION. *)
-Lemma a_wf_pskl_weaken_tvarish : forall Θ Θ' Δ P,
-  (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
-  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  {{ Θ' ⨟ Δ ⊢ₚₛ P }}a.
-Proof.
-  intros Θ Θ' Δ P Hmon Hwf. eapply a_wf_pskl_tvar_mono; eassumption.
-Qed.
-
 (** Variable renaming is the variable instance of monotype substitution. *)
 Lemma guarded_pskl_subst_var : forall P α β,
   guarded_pskl P ->
   guarded_pskl (subst_pskl_in_pskl (pskl_var_f β) α P).
 Proof.
   intros P α β H.
-  exact (@guarded_pskl_mono_subst P (ptyp_var_f β) α H (mono_ptyp__var β)).
+  exact (@guarded_pskl_subst_mono P (ptyp_var_f β) α H (mono_ptyp__var β)).
 Qed.

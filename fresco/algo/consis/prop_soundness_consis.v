@@ -940,6 +940,19 @@ Proof.
   pose proof (H Θ1 β b Θ2 Hsp Hne) as Hh. clear - Heq Hh. fsetdec.
 Qed.
 
+(** The trivial Δ-invariants at Δ = ∅.  ⚙ Moved here 2026-10-10 from
+    deco_algo/prop_decorate_sub.v. *)
+Lemma rig_empty : forall Θ : aenv,
+  forall α, α `in` (empty `union` empty) -> binds α abind_tvar Θ.
+Proof. intros Θ α Hα. exfalso. clear - Hα. fsetdec. Qed.
+
+Lemma no_flex_dep_empty : forall Θ, no_flex_dep (empty `union` empty) Θ.
+Proof. intros Θ β τ Hb. clear. fsetdec. Qed.
+
+Lemma faf_empty : forall Θ, flex_above_free (empty `union` empty) Θ.
+Proof. intros Θ Θ1 β b Θ2 Heq Hne. clear. fsetdec. Qed.
+
+
 Lemma no_flex_dep_tail : forall Δ (c : atom) (b : abind) Θ,
   no_flex_dep Δ ((c ~ b) ++ Θ) ->
   no_flex_dep Δ Θ.
@@ -1075,6 +1088,37 @@ Proof.
   clear - Hd Hsc Hfr. fsetdec.
 Qed.
 
+(** ⭐ The three Δ-invariants (every Δ-name a rigid of the context,
+    [no_flex_dep], [flex_above_free]) EXTEND under a fresh rigid opener:
+    what every ∀ row of the consistency / subtyping / splitting walks does
+    to them before its IH.  The new Δ' is any subset of [add α Δ] — the
+    rows put [α] in one or both halves. *)
+Lemma delta_inv_open_tvar : forall Δ Δ' α Θ,
+  {{ ⊢ Θ }}a ->
+  α `notin` dom Θ ->
+  Δ' [<=] add α Δ ->
+  (forall β, β `in` Δ -> binds β abind_tvar Θ) ->
+  no_flex_dep Δ Θ ->
+  flex_above_free Δ Θ ->
+  (forall β, β `in` Δ' -> binds β abind_tvar ((α ~ abind_tvar) ++ Θ)) /\
+  no_flex_dep Δ' ((α ~ abind_tvar) ++ Θ) /\
+  flex_above_free Δ' ((α ~ abind_tvar) ++ Θ).
+Proof.
+  intros Δ Δ' α Θ Hwf Hfr Hsub Hrig Hnd Hfaf. split; [ | split ].
+  - intros β Hβ. destruct (β == α) as [ -> | Hne ];
+      [ unfold binds; left; reflexivity
+      | unfold binds; right; apply Hrig; clear - Hβ Hne Hsub; fsetdec ].
+  - intros β τ Hb.
+    assert (Hd : add α Δ ∩ ftvar_in_ptyp τ [=] empty)
+      by (eapply (no_flex_dep_open_tvar Hwf Hnd Hfr); exact Hb).
+    clear - Hd Hsub. fsetdec.
+  - intros Θ1 β b Θ2 Heq Hne.
+    assert (Hd : add α Δ ∩ add β (dom Θ2) [=] empty)
+      by (eapply (faf_open_tvar Hfaf Hfr); eassumption).
+    clear - Hd Hsub. fsetdec.
+Qed.
+
+
 Lemma a_decls_no_def : forall Ξ β τ,
   a_decls Ξ ->
   binds β (abind_flex_mono_def τ) Ξ ->
@@ -1117,13 +1161,14 @@ Proof. intros; apply bskl_to_pskl_close_rec. Qed.
     opener; it and its two supports moved up from prop_completeness_consis.v (PART B),
     which is downstream and still sees them. *)
 
+(** ⚙ Bounded by the CONTEXT alone — every free variable of a wf skeleton
+    is a tvar of [Θ] ([a_wf_pskl_ftv_binds]).  The bound used to read
+    [Δ ∪ dom Θ] (strengthened 2026-10-10). *)
 Lemma a_wf_pskl_ftv_dom : forall Θ Δ P,
   {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  ftvar_in_pskl P [<=] (Δ `union` dom Θ).
+  ftvar_in_pskl P [<=] dom Θ.
 Proof.
-  intros * H γ Hγ.
-  destruct (a_wf_pskl_ftv_binds H Hγ) as [Hb | [Hb | [τ Hb]]];
-    apply binds_In in Hb; clear - Hb; fsetdec.
+  intros * H γ Hγ. exact (a_binds_tvar_in_dom (a_wf_pskl_ftv_binds H Hγ)).
 Qed.
 
 (** Opening a ∀-body at a CHOSEN fresh opener [β]: the ∀ rule records its
@@ -3159,7 +3204,10 @@ Proof.
                        (open_pskl_wrt_pskl P (pskl_var_f α))
                        (open_pskl_wrt_pskl P3 (pskl_var_f α))
                        ((α ~ abind_tvar) ++ Θ1)).
-    { apply IH.
+    { destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (add α Δ1 `union` add α Δ2) α Θ0
+                  ltac:(auto) ltac:(auto) ltac:(clear; fsetdec) Hrig
+                  ltac:(auto) ltac:(auto)) as (HΔr & HΔn & HΔf).
+      apply IH.
       - apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf ].
       - eapply a_wf_pskl_delta_mono;
           [ apply (a_wf_pskl_all_inv_at HwfP0 HαP0)
@@ -3167,14 +3215,9 @@ Proof.
       - eapply a_wf_pskl_delta_mono;
           [ apply (a_wf_pskl_all_inv_at HwfP HαP)
           | intros γ _ Hγ; clear - Hγ; fsetdec ].
-      - intros α0 Hα0. destruct (α0 == α) as [->|Hne].
-        + unfold binds; left; reflexivity.
-        + unfold binds; right. apply Hrig. clear - Hα0 Hne. fsetdec.
-      - apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
-          [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ].
-      - apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
-          [ clear; fsetdec
-          | apply faf_open_tvar; auto; clear - HαΔ1 HαΔ2; fsetdec ]. }
+      - exact HΔr.
+      - exact HΔn.
+      - exact HΔf. }
     destruct Hpostα
       as [Hleα [Hwfα [Hdomα [Hinvα [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
     assert (Hwf1 : {{ ⊢ Θ1 }}a)
@@ -3303,7 +3346,10 @@ Proof.
                        (open_pskl_wrt_pskl P (pskl_var_f α))
                        (open_pskl_wrt_pskl P3 (pskl_var_f α))
                        ((α ~ abind_tvar) ++ Θ1)).
-    { apply IH.
+    { destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (Δ1 `union` add α Δ2) α Θ0
+                  ltac:(auto) ltac:(auto) ltac:(clear; fsetdec) Hrig
+                  ltac:(auto) ltac:(auto)) as (HΔr & HΔn & HΔf).
+      apply IH.
       - apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf ].
       - apply a_wf_pskl__univ_ghost; auto; rewrite aenv_minus_empty.
         eapply a_wf_pskl_weaken; [ | exact Hwf0c ].
@@ -3311,14 +3357,9 @@ Proof.
       - eapply a_wf_pskl_delta_mono;
           [ apply (a_wf_pskl_all_inv_at HwfP HαP)
           | intros γ _ Hγ; clear - Hγ; fsetdec ].
-      - intros α0 Hα0. destruct (α0 == α) as [->|Hne].
-        + unfold binds; left; reflexivity.
-        + unfold binds; right. apply Hrig. clear - Hα0 Hne. fsetdec.
-      - apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
-          [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ].
-      - apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
-          [ clear; fsetdec
-          | apply faf_open_tvar; auto; clear - HαΔ1 HαΔ2; fsetdec ]. }
+      - exact HΔr.
+      - exact HΔn.
+      - exact HΔf. }
     destruct Hpostα
       as [Hleα [Hwfα [Hdomα [Hinvα [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
     assert (Hwf1 : {{ ⊢ Θ1 }}a)
@@ -3467,7 +3508,10 @@ Proof.
                        (pskl_univ_ghost P)
                        (open_pskl_wrt_pskl P3 (pskl_var_f α))
                        ((α ~ abind_tvar) ++ Θ1)).
-    { apply IH.
+    { destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (add α Δ1 `union` Δ2) α Θ0
+                  ltac:(auto) ltac:(auto) ltac:(clear; fsetdec) Hrig
+                  ltac:(auto) ltac:(auto)) as (HΔr & HΔn & HΔf).
+      apply IH.
       - apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf ].
       - eapply a_wf_pskl_delta_mono;
           [ apply (a_wf_pskl_all_inv_at HwfP0 HαP0)
@@ -3475,14 +3519,9 @@ Proof.
       - apply a_wf_pskl__univ_ghost; auto; rewrite aenv_minus_empty.
         eapply a_wf_pskl_weaken; [ | exact Hwf' ].
         intros y b Hb. unfold binds; right; exact Hb.
-      - intros α0 Hα0. destruct (α0 == α) as [->|Hne].
-        + unfold binds; left; reflexivity.
-        + unfold binds; right. apply Hrig. clear - Hα0 Hne. fsetdec.
-      - apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
-          [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ].
-      - apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
-          [ clear; fsetdec
-          | apply faf_open_tvar; auto; clear - HαΔ1 HαΔ2; fsetdec ]. }
+      - exact HΔr.
+      - exact HΔn.
+      - exact HΔf. }
     destruct Hpostα
       as [Hleα [Hwfα [Hdomα [Hinvα [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
     assert (Hwf1 : {{ ⊢ Θ1 }}a)
@@ -4166,19 +4205,10 @@ Proof.
       eapply a_wf_pskl_delta_mono;
         [ apply (HbodyS α ltac:(auto))
         | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
-    assert (Hrigα : forall α0, α0 `in` (add α Δ1 `union` add α Δ2) ->
-                    binds α0 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-    { intros α0 Hα0. destruct (α0 == α) as [->|Hne].
-      - unfold binds; left; reflexivity.
-      - unfold binds; right. apply Hrig. clear - Hα0 Hne. fsetdec. }
-    assert (Hnfdα : no_flex_dep (add α Δ1 `union` add α Δ2)
-                      ((α ~ abind_tvar) ++ Θ0)).
-    { apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ]. }
-    assert (Hfafα : flex_above_free (add α Δ1 `union` add α Δ2)
-                      ((α ~ abind_tvar) ++ Θ0)).
-    { apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply faf_open_tvar; auto ]. }
+    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (add α Δ1 `union` add α Δ2) α Θ0
+                ltac:(auto) ltac:(auto) ltac:(clear; fsetdec) Hrig
+                ltac:(auto) ltac:(auto))
+      as (Hrigα & Hnfdα & Hfafα).
     destruct (H0 α HαL HwfΘα HlcSα HwfP0α HwfSα Hrigα Hnfdα Hfafα)
       as [Hleα [Hwfα [Hnfdα1 [Hfafα1 [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
     assert (Hwf1 : {{ ⊢ Θ1 }}a)
@@ -4274,19 +4304,10 @@ Proof.
       eapply a_wf_pskl_delta_mono;
         [ apply (HbodyS α ltac:(auto))
         | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
-    assert (Hrigα : forall α0, α0 `in` (add α Δ1 `union` add α Δ2) ->
-                    binds α0 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-    { intros α0 Hα0. destruct (α0 == α) as [->|Hne].
-      - unfold binds; left; reflexivity.
-      - unfold binds; right. apply Hrig. clear - Hα0 Hne. fsetdec. }
-    assert (Hnfdα : no_flex_dep (add α Δ1 `union` add α Δ2)
-                      ((α ~ abind_tvar) ++ Θ0)).
-    { apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ]. }
-    assert (Hfafα : flex_above_free (add α Δ1 `union` add α Δ2)
-                      ((α ~ abind_tvar) ++ Θ0)).
-    { apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply faf_open_tvar; auto ]. }
+    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (add α Δ1 `union` add α Δ2) α Θ0
+                ltac:(auto) ltac:(auto) ltac:(clear; fsetdec) Hrig
+                ltac:(auto) ltac:(auto))
+      as (Hrigα & Hnfdα & Hfafα).
     destruct (H0 α HαL HwfΘα HlcSα HwfP0α HwfSα Hrigα Hnfdα Hfafα)
       as [Hleα [Hwfα [Hnfdα1 [Hfafα1 [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
     assert (Hwf1 : {{ ⊢ Θ1 }}a)
@@ -4381,19 +4402,10 @@ Proof.
       eapply a_wf_pskl_delta_mono;
         [ apply (HbodyS α ltac:(auto))
         | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
-    assert (Hrigα : forall α0, α0 `in` (Δ1 `union` add α Δ2) ->
-                    binds α0 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-    { intros α0 Hα0. destruct (α0 == α) as [->|Hne].
-      - unfold binds; left; reflexivity.
-      - unfold binds; right. apply Hrig. clear - Hα0 Hne. fsetdec. }
-    assert (Hnfdα : no_flex_dep (Δ1 `union` add α Δ2)
-                      ((α ~ abind_tvar) ++ Θ0)).
-    { apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ]. }
-    assert (Hfafα : flex_above_free (Δ1 `union` add α Δ2)
-                      ((α ~ abind_tvar) ++ Θ0)).
-    { apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply faf_open_tvar; auto ]. }
+    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (Δ1 `union` add α Δ2) α Θ0
+                ltac:(auto) ltac:(auto) ltac:(clear; fsetdec) Hrig
+                ltac:(auto) ltac:(auto))
+      as (Hrigα & Hnfdα & Hfafα).
     destruct (H0 α HαL HwfΘα HlcSα HwfP0α HwfSα Hrigα Hnfdα Hfafα)
       as [Hleα [Hwfα [Hnfdα1 [Hfafα1 [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
     assert (Hwf1 : {{ ⊢ Θ1 }}a)
@@ -4488,19 +4500,10 @@ Proof.
       eapply a_wf_pskl_delta_mono;
         [ apply (HbodyS α ltac:(auto))
         | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
-    assert (Hrigα : forall α0, α0 `in` (Δ1 `union` add α Δ2) ->
-                    binds α0 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-    { intros α0 Hα0. destruct (α0 == α) as [->|Hne].
-      - unfold binds; left; reflexivity.
-      - unfold binds; right. apply Hrig. clear - Hα0 Hne. fsetdec. }
-    assert (Hnfdα : no_flex_dep (Δ1 `union` add α Δ2)
-                      ((α ~ abind_tvar) ++ Θ0)).
-    { apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ]. }
-    assert (Hfafα : flex_above_free (Δ1 `union` add α Δ2)
-                      ((α ~ abind_tvar) ++ Θ0)).
-    { apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply faf_open_tvar; auto ]. }
+    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (Δ1 `union` add α Δ2) α Θ0
+                ltac:(auto) ltac:(auto) ltac:(clear; fsetdec) Hrig
+                ltac:(auto) ltac:(auto))
+      as (Hrigα & Hnfdα & Hfafα).
     destruct (H0 α HαL HwfΘα HlcSα HwfP0α HwfSα Hrigα Hnfdα Hfafα)
       as [Hleα [Hwfα [Hnfdα1 [Hfafα1 [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
     assert (Hwf1 : {{ ⊢ Θ1 }}a)
@@ -4626,19 +4629,10 @@ Proof.
     { simpl. apply a_wf_pskl__univ_ghost; [ exact HgS | ]. rewrite aenv_minus_empty.
       eapply a_wf_pskl_weaken; [ | exact HwfSbody ].
       intros y b Hb. unfold binds; right; exact Hb. }
-    assert (Hrigα : forall α0, α0 `in` (add α Δ1 `union` Δ2) ->
-                    binds α0 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-    { intros α0 Hα0. destruct (α0 == α) as [->|Hne].
-      - unfold binds; left; reflexivity.
-      - unfold binds; right. apply Hrig. clear - Hα0 Hne. fsetdec. }
-    assert (Hnfdα : no_flex_dep (add α Δ1 `union` Δ2)
-                      ((α ~ abind_tvar) ++ Θ0)).
-    { apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ]. }
-    assert (Hfafα : flex_above_free (add α Δ1 `union` Δ2)
-                      ((α ~ abind_tvar) ++ Θ0)).
-    { apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply faf_open_tvar; auto ]. }
+    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (add α Δ1 `union` Δ2) α Θ0
+                ltac:(auto) ltac:(auto) ltac:(clear; fsetdec) Hrig
+                ltac:(auto) ltac:(auto))
+      as (Hrigα & Hnfdα & Hfafα).
     destruct (H0 α HαL HwfΘα HlcS HwfP0α HwfSα Hrigα Hnfdα Hfafα)
       as [Hleα [Hwfα [Hnfdα1 [Hfafα1 [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
     assert (Hwf1 : {{ ⊢ Θ1 }}a)
@@ -4815,12 +4809,7 @@ Corollary a_consis_sound : forall Θ0 P0 P P' Θ1,
 Proof.
   intros * Hc Hwf HwfP0 HwfP.
   destruct (a_consis_sound_aux Hc Hwf HwfP0 HwfP
-              ltac:(intros α Hα; clear - Hα; solve_notin_auto)
-              ltac:(intros β τ Hb; apply inter_empty_pointwise;
-                    intros α Hα; clear - Hα; solve_notin_auto)
-              ltac:(intros Θa β b Θb Heq Hne;
-                    apply inter_empty_pointwise;
-                    intros α Hα; clear - Hα; solve_notin_auto))
+              (@rig_empty _) (@no_flex_dep_empty _) (@faf_empty _))
     as [Hle [Hwf1 [Hnfd [Hfaf [[Qt [HeQt [Hcons Hrs]]] Hrp]]]]].
   split; [ exact Hle | ].
   split.
@@ -4883,38 +4872,36 @@ Proof.
     assert (HαΘ0 : α `notin` dom Θ0)
       by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - H H0; fsetdec).
     apply a_scope_pskl_all_close.
+    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (add α Δ1 `union` add α Δ2) α Θ0
+                ltac:(auto) ltac:(auto) ltac:(clear; fsetdec) Hcov
+                ltac:(auto) ltac:(auto)) as (HΔr & HΔn & HΔf).
     apply IHHc.
     + apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf ].
     + apply a_wf_pskl_all_syn_open_tvar;
         [ exact HwfP0 | clear - HαΘ0 HαP0; fsetdec ].
     + apply a_wf_pskl_all_syn_open_tvar;
         [ exact HwfP | clear - HαΘ0 HαP; fsetdec ].
-    + intros α0 Hα0. destruct (α0 == α) as [->|Hne];
-        [ unfold binds; left; reflexivity
-        | unfold binds; right; apply Hcov; clear - Hα0 Hne; fsetdec ].
-    + apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ].
-    + apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply faf_open_tvar; auto; clear - HαΔ; fsetdec ].
+    + exact HΔr.
+    + exact HΔn.
+    + exact HΔf.
   - (* C-ForallSyn : the subject's opening, re-bound *)
     assert (HαP : α `notin` ftvar_in_pskl P) by (clear - H; fsetdec).
     assert (HαΔ : α `notin` (Δ1 `union` Δ2)) by (clear - H; fsetdec).
     assert (HαΘ0 : α `notin` dom Θ0)
       by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - H H0; fsetdec).
     apply a_scope_pskl_all_close.
+    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (Δ1 `union` add α Δ2) α Θ0
+                ltac:(auto) ltac:(auto) ltac:(clear; fsetdec) Hcov
+                ltac:(auto) ltac:(auto)) as (HΔr & HΔn & HΔf).
     apply IHHc.
     + apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf ].
     + eapply a_wf_pskl_delta_mono;
         [ apply (a_wf_pskl_reassoc HwfP0 α) | clear; fsetdec ].
     + apply a_wf_pskl_all_syn_open_tvar;
         [ exact HwfP | clear - HαΘ0 HαP; fsetdec ].
-    + intros α0 Hα0. destruct (α0 == α) as [->|Hne];
-        [ unfold binds; left; reflexivity
-        | unfold binds; right; apply Hcov; clear - Hα0 Hne; fsetdec ].
-    + apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ].
-    + apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply faf_open_tvar; auto; clear - HαΔ; fsetdec ].
+    + exact HΔr.
+    + exact HΔn.
+    + exact HΔf.
   - (* C-UnivGhost *)
     inversion HwfP0 as [ | | | | | Θz Δz P0z Hg0 Hwb0 ]; subst.
     inversion HwfP as [ | | | | | Θz Δz Pz Hgs Hwbs ]; subst.
@@ -4927,19 +4914,18 @@ Proof.
     assert (HαΘ0 : α `notin` dom Θ0)
       by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - H H0; fsetdec).
     apply a_scope_pskl_all_close.
+    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (add α Δ1 `union` Δ2) α Θ0
+                ltac:(auto) ltac:(auto) ltac:(clear; fsetdec) Hcov
+                ltac:(auto) ltac:(auto)) as (HΔr & HΔn & HΔf).
     apply IHHc.
     + apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf ].
     + apply a_wf_pskl_all_syn_open_tvar;
         [ exact HwfP0 | clear - HαΘ0 HαP0; fsetdec ].
     + eapply a_wf_pskl_delta_mono;
         [ apply (a_wf_pskl_reassoc HwfP α) | clear; fsetdec ].
-    + intros α0 Hα0. destruct (α0 == α) as [->|Hne];
-        [ unfold binds; left; reflexivity
-        | unfold binds; right; apply Hcov; clear - Hα0 Hne; fsetdec ].
-    + apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ].
-    + apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
-        [ clear; fsetdec | apply faf_open_tvar; auto; clear - HαΔ; fsetdec ].
+    + exact HΔr.
+    + exact HΔn.
+    + exact HΔf.
   - (* C-UnivGhost2 *)
     inversion HwfP as [ | | | | | Θz Δz Pz Hgs Hwbs ]; subst.
     rewrite aenv_minus_empty in Hwbs.

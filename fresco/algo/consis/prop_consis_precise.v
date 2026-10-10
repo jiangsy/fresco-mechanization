@@ -35,6 +35,7 @@ Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
 Require Import src.fresco.notations.
+Require Import src.fresco.prop_tag.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.coercions.
@@ -47,6 +48,7 @@ Require Import src.fresco.algo.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo.prop_inc.
+Require Import src.fresco.algo.prop_swap.          (* a_wf_ptyp_ftv_tvarish *)
 Require Import src.fresco.algo.prop_basic.
 Require Import src.fresco.algo.prop_stability.
 Require Import src.fresco.algo.prop_refine.
@@ -121,6 +123,11 @@ Proof. intros Ψ ε ψ H. inversion H; subst. eauto 8. Qed.
 Lemma d_tags_skl_dot_univ_ghost_inv : forall Ψ ψ,
   d_tags_skl Ψ (uskl_dot_univ_ghost ψ) -> d_tags_skl Ψ ψ.
 Proof. intros Ψ ψ H. inversion H; subst; auto. Qed.
+
+Lemma d_tags_skl_dot_ghost_inv : forall Ψ,
+  d_tags_skl Ψ uskl_dot_ghost -> Ψ [=] empty.
+Proof. intros Ψ H; inversion H; subst; auto. Qed.
+
 (** Recover the tag reading / re-tag under set-equality. *)
 Lemma a_tags_sort_d_tags : forall NM Ψ ψ,
   a_tags_sort NM Ψ ψ -> d_tags_skl Ψ ψ.
@@ -346,40 +353,10 @@ Qed.
 (*  Step (2) infrastructure — syntactic tags [ftag_in_uskl] (fresco/def_shapes.v). *)
 (* ===================================================================== *)
 
-Lemma ftag_in_uskl_open_rec_var : forall α' R k,
-  ftag_in_uskl (open_uskl_wrt_uskl_rec k (uskl_var_f α') R) [=] ftag_in_uskl R.
-Proof.
-  intros α' R; induction R; intros k; simpl; try fsetdec.
-  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; fsetdec.
-  - pose proof (IHR1 k); pose proof (IHR2 k); fsetdec.
-  - pose proof (IHR (S k)); fsetdec.
-  - pose proof (IHR (S k)); fsetdec.
-  - pose proof (IHR k); fsetdec.
-  - pose proof (IHR k); fsetdec.
-Qed.
-
-Lemma ftag_in_uskl_open_var : forall R α,
-  ftag_in_uskl (open_uskl_wrt_uskl R (uskl_var_f α)) [=] ftag_in_uskl R.
-Proof.
-  intros; unfold open_uskl_wrt_uskl; apply ftag_in_uskl_open_rec_var.
-Qed.
-
 (* ⚙ RESTART NOTE (2026-08-11): [ftag_in_pskl_to_uskl] ("a [pskl] painting is
    tag-free", [induction P; simpl; fsetdec]) lived here and had NO consumer;
    deleted along with [ftag_in_bskl_to_uskl], which duplicated
    fresco/prop_coercions.v §5's [ftag_bskl_to_uskl]. *)
-
-(** A decorated skeleton's tag reading is exactly its syntactic tags. *)
-Lemma d_tags_skl_ftag : forall Ψ ψ,
-  d_tags_skl Ψ ψ -> Ψ [=] ftag_in_uskl ψ.
-Proof.
-  intros Ψ ψ H; induction H; simpl; try fsetdec.
-  - match goal with |- _ [=] add _ (ftag_in_uskl ?R) =>
-      pick fresh α for L;
-      pose proof (H0 α ltac:(solve_notin_auto)) as Hα;
-      pose proof (ftag_in_uskl_open_var R α) as Hov
-    end; fsetdec.
-Qed.
 
 (** The consistency tag context is contained in the SUBJECT's syntactic
     tags — every solved tag is consumed at an [all_tag] node of the
@@ -1287,26 +1264,6 @@ Qed.
 (* ===================================================================== *)
 (*  ⊑ᵤ kit additions for the subtyping level (step (3)).                  *)
 (* ===================================================================== *)
-
-Lemma ftag_in_uskl_open_rec_upper : forall R ψ k,
-  ftag_in_uskl (open_uskl_wrt_uskl_rec k ψ R) [<=]
-  ftag_in_uskl R `union` ftag_in_uskl ψ.
-Proof.
-  intros R ψ; induction R; intros k; simpl; try fsetdec.
-  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; fsetdec.
-  - pose proof (IHR1 k); pose proof (IHR2 k); fsetdec.
-  - pose proof (IHR (S k)); fsetdec.
-  - pose proof (IHR (S k)); fsetdec.
-  - pose proof (IHR k); fsetdec.
-  - pose proof (IHR k); fsetdec.
-Qed.
-
-Lemma ftag_in_uskl_open_upper : forall R ψ,
-  ftag_in_uskl (open_uskl_wrt_uskl R ψ) [<=]
-  ftag_in_uskl R `union` ftag_in_uskl ψ.
-Proof.
-  intros; unfold open_uskl_wrt_uskl; apply ftag_in_uskl_open_rec_upper.
-Qed.
 
 (** The replaced tags all come from the (decorated) RHS. *)
 Lemma uskl_precise_ftag_rep : forall Θ Ψrep R' R,

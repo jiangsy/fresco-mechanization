@@ -42,7 +42,6 @@ Require Import src.fresco.ext_algo.def_dec.
 Require Import src.fresco.ext_algo.prop_dec.
 Require Import src.fresco.ext_algo.def_look.
 Require Import src.fresco.ext_algo.prop_look.
-Require Import src.fresco.ext_algo.prop_look_equiv.
 Require Import src.fresco.ext_algo.def_solve.
 Require Import src.fresco.ext_algo.prop_solve.
 Require Import src.fresco.ext_algo.prop_solve_det.
@@ -580,32 +579,6 @@ Qed.
 (*  §2h  e-solve context equivalence (rigid entries are invisible)        *)
 (* ===================================================================== *)
 
-Lemma a_flex_tvar_app_congr : forall (Ξ Θ Θ' : aenv),
-  (forall α, a_flex_tvar Θ α <-> a_flex_tvar Θ' α) ->
-  forall α, a_flex_tvar (Ξ ++ Θ) α <-> a_flex_tvar (Ξ ++ Θ') α.
-Proof.
-  intros * Hiff α.
-  pose proof (a_flex_tvar_app_iff Ξ Θ α).
-  pose proof (a_flex_tvar_app_iff Ξ Θ' α).
-  pose proof (Hiff α).
-  tauto.
-Qed.
-
-Lemma a_flex_of_tvar_iff : forall Θ Θ' P,
-  (forall α, a_flex_tvar Θ α <-> a_flex_tvar Θ' α) ->
-  a_flex Θ P -> a_flex Θ' P.
-Proof.
-  intros * Hiff Hf.
-  inversion Hf; subst.
-  - assert (Hft : a_flex_tvar Θ' α) by (apply Hiff; left; assumption).
-    destruct Hft as [Hb | [τ Hb]];
-      [ apply a_flex__var | eapply a_flex__var_def ]; eassumption.
-  - assert (Hft : a_flex_tvar Θ' α)
-      by (apply Hiff; right; eexists; eassumption).
-    destruct Hft as [Hb | [τ0 Hb]];
-      [ apply a_flex__var | eapply a_flex__var_def ]; eassumption.
-Qed.
-
 (* the recursive positions: the IH's context obligation is the iff,
    possibly lifted over the block/binder prefix the premise runs under *)
 Local Ltac ctx_equiv_ih :=
@@ -699,17 +672,6 @@ Proof.
   - eapply e_solve_cstr__eq.
     + eapply (proj2 e_solve_sub_eq_ctx_equiv); eassumption.
     + apply IHe_solve_cstr. apply a_flex_tvar_app_congr. exact Hiff.
-Qed.
-
-Lemma a_flex_tvar_rigid_prefix_iff : forall (Δr Θ : aenv) α,
-  (forall x bd, binds x bd Δr -> bd = abind_tvar) ->
-  (a_flex_tvar (Δr ++ Θ) α <-> a_flex_tvar Θ α).
-Proof.
-  intros * Hr.
-  pose proof (a_flex_tvar_app_iff Δr Θ α) as Hor.
-  assert (Hnf : ~ a_flex_tvar Δr α).
-  { intros [Hb | [τ Hb]]; pose proof (Hr _ _ Hb); discriminate. }
-  tauto.
 Qed.
 
 (** The assembly's enrichment move: an e-fold rigid-weakens freely

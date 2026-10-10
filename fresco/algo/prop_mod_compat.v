@@ -130,7 +130,7 @@ Lemma a_ty_mode_compat_subst_mono : forall M P τ β,
 Proof.
   intros M P τ β H Hm; induction H; simpl.
   - apply a_ty_mode_compat__ti.
-  - rewrite subst_ptyp_to_pskl_comm; apply a_ty_mode_compat__tc.
+  - rewrite <- ptyp_to_pskl_subst; apply a_ty_mode_compat__tc.
   - apply a_ty_mode_compat__fn; assumption.
 Qed.
 

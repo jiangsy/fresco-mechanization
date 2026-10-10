@@ -192,3 +192,308 @@ Proof.
   intros P α HP. apply pskl_no_ghost_open_rec; simpl; auto.
 Qed.
 
+(* ===================================================================== *)
+(*  MONOTYPE SUBSTITUTION preserves the shape predicates                   *)
+(*                                                                        *)
+(*  Substituting the painting of a monotype [τ] for a type variable keeps *)
+(*  every colour / category / guardedness predicate.  ⭐ These are the ONE *)
+(*  copy of each fact: the declarative [_subst_unit] (decl/              *)
+(*  prop_syntax_directed.v, decl/prop_skeleton.v) and [_rename_tvar]      *)
+(*  (decl/prop_renaming.v) lemmas, and the algorithmic / decorated        *)
+(*  [_subst_var] ones, are their [τ := unit] / [τ := β] instances.        *)
+(*  ⚙ Moved here 2026-10-10 from algo/prop_suffix_erase.v,               *)
+(*  algo/prop_pat_sub.v and algo/prop_basic.v.  Instantiate them with     *)
+(*  [exact], not [apply]: [apply] will not unfold [ptyp_to_btyp_syn ?τ].  *)
+(* ===================================================================== *)
+
+(* ⚙ [Set Implicit Arguments] is SCOPED to this section: these lemmas came
+   from files that set it, and their call sites apply them with the
+   inferable arguments implicit. *)
+Set Implicit Arguments.
+
+(** Monotype paintings: locally closed, guarded, and of every colour. *)
+Lemma mono_ptyp_to_btyp_syn_lc : forall τ,
+  mono_ptyp τ -> lc_btyp (ptyp_to_btyp_syn τ).
+Proof. induction 1; simpl; auto. Qed.
+
+Lemma mono_ptyp_to_utyp_syn_lc : forall τ,
+  mono_ptyp τ -> lc_utyp (ptyp_to_utyp_syn τ).
+Proof. induction 1; simpl; auto. Qed.
+
+Lemma mono_ptyp_to_uskl_syn_lc : forall τ,
+  mono_ptyp τ -> lc_uskl (ptyp_to_uskl_syn τ).
+Proof.
+  induction 1; simpl;
+    [ apply lc_uskl_unit | apply lc_uskl_var_f | apply lc_uskl_arrow; auto ].
+Qed.
+
+Lemma mono_ptyp_to_bskl_syn_lc : forall τ,
+  mono_ptyp τ -> lc_bskl (ptyp_to_bskl_syn τ).
+Proof.
+  induction 1; simpl;
+    [ apply lc_bskl_unit | apply lc_bskl_var_f | apply lc_bskl_arrow; auto ].
+Qed.
+
+Lemma mono_ptyp_to_pskl_guarded : forall τ,
+  mono_ptyp τ -> guarded_pskl (ptyp_to_pskl τ).
+Proof.
+  destruct 1 as [ | α | A1 A2 ]; simpl;
+    [ apply guarded_pskl__unit | apply guarded_pskl__var
+    | apply guarded_pskl__arrow; apply mono_ptyp_to_pskl_lc; auto ].
+Qed.
+
+Lemma mono_ptyp_to_btyp_syn_guarded : forall τ,
+  mono_ptyp τ -> guarded_btyp (ptyp_to_btyp_syn τ).
+Proof.
+  destruct 1; simpl;
+    [ apply guarded_btyp__unit | apply guarded_btyp__var
+    | apply guarded_btyp__arrow; apply mono_ptyp_to_btyp_syn_lc; auto ].
+Qed.
+
+Lemma mono_ptyp_to_utyp_syn_guarded : forall τ,
+  mono_ptyp τ -> guarded_utyp (ptyp_to_utyp_syn τ).
+Proof.
+  destruct 1; simpl;
+    [ apply guarded_utyp__unit | apply guarded_utyp__var
+    | apply guarded_utyp__arrow; apply mono_ptyp_to_utyp_syn_lc; auto ].
+Qed.
+
+Lemma mono_ptyp_to_uskl_syn_guarded : forall τ,
+  mono_ptyp τ -> guarded_uskl (ptyp_to_uskl_syn τ).
+Proof.
+  destruct 1; simpl;
+    [ apply guarded_uskl__unit | apply guarded_uskl__var
+    | apply guarded_uskl__arrow; apply mono_ptyp_to_uskl_syn_lc; auto ].
+Qed.
+
+Lemma mono_ptyp_to_bskl_syn_guarded : forall τ,
+  mono_ptyp τ -> guarded_bskl (ptyp_to_bskl_syn τ).
+Proof.
+  destruct 1; simpl;
+    [ apply guarded_bskl__unit | apply guarded_bskl__var
+    | apply guarded_bskl__arrow; apply mono_ptyp_to_bskl_syn_lc; auto ].
+Qed.
+
+(** A monotype carries no quantifier, so it is BOTH synthesised and
+    inherited — which is what lets substitution by it keep either colour. *)
+Lemma mono_ptyp_to_btyp_syn_is_styp : forall τ,
+  mono_ptyp τ -> is_styp (ptyp_to_btyp_syn τ).
+Proof.
+  induction 1; simpl;
+    [ apply is_styp__unit | apply is_styp__var | apply is_styp__arrow; auto ].
+Qed.
+
+Lemma mono_ptyp_to_btyp_syn_is_ityp : forall τ,
+  mono_ptyp τ -> is_ityp (ptyp_to_btyp_syn τ).
+Proof.
+  induction 1; simpl;
+    [ apply is_ityp__unit | apply is_ityp__var | apply is_ityp__arrow; auto ].
+Qed.
+
+Lemma mono_ptyp_to_utyp_syn_is_dtyp : forall τ,
+  mono_ptyp τ -> is_dtyp (ptyp_to_utyp_syn τ).
+Proof.
+  induction 1; simpl;
+    [ apply is_dtyp__unit | apply is_dtyp__var | apply is_dtyp__arrow; auto ].
+Qed.
+
+Lemma mono_ptyp_to_bskl_syn_is_sskl : forall τ,
+  mono_ptyp τ -> is_sskl (ptyp_to_bskl_syn τ).
+Proof.
+  induction 1; simpl;
+    [ apply is_sskl__unit | apply is_sskl__var | apply is_sskl__arrow; auto ].
+Qed.
+
+Lemma mono_ptyp_to_bskl_syn_is_iskl : forall τ,
+  mono_ptyp τ -> is_iskl (ptyp_to_bskl_syn τ).
+Proof.
+  induction 1; simpl;
+    [ apply is_iskl__unit | apply is_iskl__var | apply is_iskl__arrow; auto ].
+Qed.
+
+Lemma mono_ptyp_to_uskl_syn_is_dskl : forall τ,
+  mono_ptyp τ -> is_dskl (ptyp_to_uskl_syn τ).
+Proof.
+  induction 1; simpl;
+    [ apply is_dskl__unit | apply is_dskl__var | apply is_dskl__arrow; auto ].
+Qed.
+
+(** ** The substitution lemmas, types. *)
+
+Lemma is_styp_subst_mono : forall B τ α,
+  is_styp B -> mono_ptyp τ ->
+  is_styp (subst_btyp_in_btyp (ptyp_to_btyp_syn τ) α B).
+Proof.
+  intros B τ α H Hm; induction H; simpl.
+  - apply is_styp__unit.
+  - destruct_if; [ apply mono_ptyp_to_btyp_syn_is_styp; assumption
+                 | apply is_styp__var ].
+  - apply is_styp__arrow; assumption.
+  - apply is_styp__all with (L := L `union` singleton α). intros β Hβ.
+    rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var;
+      [ | clear - Hβ; fsetdec | apply mono_ptyp_to_btyp_syn_lc; assumption ].
+    apply H0. clear - Hβ; fsetdec.
+Qed.
+
+Lemma is_ityp_subst_mono : forall B τ α,
+  is_ityp B -> mono_ptyp τ ->
+  is_ityp (subst_btyp_in_btyp (ptyp_to_btyp_syn τ) α B).
+Proof.
+  intros B τ α H Hm; induction H; simpl.
+  - apply is_ityp__unit.
+  - destruct_if; [ apply mono_ptyp_to_btyp_syn_is_ityp; assumption
+                 | apply is_ityp__var ].
+  - apply is_ityp__arrow; assumption.
+  - apply is_ityp__all with (L := L `union` singleton α). intros β Hβ.
+    rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var;
+      [ | clear - Hβ; fsetdec | apply mono_ptyp_to_btyp_syn_lc; assumption ].
+    apply H0. clear - Hβ; fsetdec.
+Qed.
+
+Lemma mod_comp_ty_subst_mono : forall B m τ α,
+  mod_comp_ty B m -> mono_ptyp τ ->
+  mod_comp_ty (subst_btyp_in_btyp (ptyp_to_btyp_syn τ) α B) m.
+Proof.
+  intros B m τ α H Hm; induction H; simpl.
+  - apply mod_comp_ty__ti; apply is_styp_subst_mono; assumption.
+  - apply mod_comp_ty__tc; apply is_ityp_subst_mono; assumption.
+  - apply mod_comp_ty__fn; assumption.
+Qed.
+
+Lemma guarded_btyp_subst_mono : forall B τ α,
+  guarded_btyp B -> mono_ptyp τ ->
+  guarded_btyp (subst_btyp_in_btyp (ptyp_to_btyp_syn τ) α B).
+Proof.
+  intros B τ α H Hm; destruct H; simpl.
+  - auto with fresco.
+  - destruct_if; auto using mono_ptyp_to_btyp_syn_guarded with fresco.
+  - apply guarded_btyp__arrow;
+      apply subst_btyp_in_btyp_lc_btyp;
+      auto using mono_ptyp_to_btyp_syn_lc.
+Qed.
+
+Lemma guarded_utyp_subst_mono : forall C τ α,
+  guarded_utyp C -> mono_ptyp τ ->
+  guarded_utyp (subst_utyp_in_utyp (ptyp_to_utyp_syn τ) α C).
+Proof.
+  intros C τ α H Hm; destruct H; simpl.
+  - auto with fresco.
+  - destruct_if; auto using mono_ptyp_to_utyp_syn_guarded with fresco.
+  - apply guarded_utyp__arrow;
+      apply subst_utyp_in_utyp_lc_utyp;
+      auto using mono_ptyp_to_utyp_syn_lc.
+Qed.
+
+Lemma is_dtyp_subst_mono : forall C τ α,
+  is_dtyp C -> mono_ptyp τ ->
+  is_dtyp (subst_utyp_in_utyp (ptyp_to_utyp_syn τ) α C).
+Proof.
+  intros C τ α H Hm; induction H; simpl.
+  - auto with fresco.
+  - destruct_if; auto using mono_ptyp_to_utyp_syn_is_dtyp with fresco.
+  - auto with fresco.
+  - apply is_dtyp__all_tag with (L := L `union` {{α}}). intros β Hβ.
+    rewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var;
+      [ auto | clear - Hβ; fsetdec | apply mono_ptyp_to_utyp_syn_lc; assumption ].
+Qed.
+
+(** ** …and skeletons. *)
+
+Lemma guarded_pskl_subst_mono : forall P τ β,
+  guarded_pskl P -> mono_ptyp τ ->
+  guarded_pskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β P).
+Proof.
+  intros P τ β H Hm; destruct H; simpl.
+  - auto with fresco.
+  - destruct_if; auto using mono_ptyp_to_pskl_guarded with fresco.
+  - apply guarded_pskl__arrow;
+      apply subst_pskl_in_pskl_lc_pskl;
+      auto using mono_ptyp_to_pskl_lc.
+Qed.
+
+Lemma guarded_uskl_subst_mono : forall R τ β,
+  guarded_uskl R -> mono_ptyp τ ->
+  guarded_uskl (subst_uskl_in_uskl (ptyp_to_uskl_syn τ) β R).
+Proof.
+  intros R τ β H Hm; destruct H; simpl.
+  - auto with fresco.
+  - destruct_if; auto using mono_ptyp_to_uskl_syn_guarded with fresco.
+  - apply guarded_uskl__arrow;
+      apply subst_uskl_in_uskl_lc_uskl;
+      auto using mono_ptyp_to_uskl_syn_lc.
+Qed.
+
+Lemma guarded_bskl_subst_mono : forall Q τ β,
+  guarded_bskl Q -> mono_ptyp τ ->
+  guarded_bskl (subst_bskl_in_bskl (ptyp_to_bskl_syn τ) β Q).
+Proof.
+  intros Q τ β H Hm; destruct H; simpl.
+  - auto with fresco.
+  - destruct_if; auto using mono_ptyp_to_bskl_syn_guarded with fresco.
+  - apply guarded_bskl__arrow;
+      apply subst_bskl_in_bskl_lc_bskl;
+      auto using mono_ptyp_to_bskl_syn_lc.
+Qed.
+
+Lemma is_sskl_subst_mono : forall Q τ β,
+  is_sskl Q -> mono_ptyp τ ->
+  is_sskl (subst_bskl_in_bskl (ptyp_to_bskl_syn τ) β Q).
+Proof.
+  intros Q τ β H Hm; induction H; simpl.
+  - auto with fresco.
+  - destruct_if; auto using mono_ptyp_to_bskl_syn_is_sskl with fresco.
+  - auto with fresco.
+  - apply is_sskl__all with (L := L `union` {{β}}).
+    intros α Hα.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      [ auto | intro He; subst; clear - Hα; fsetdec
+      | apply mono_ptyp_to_bskl_syn_lc; assumption ].
+  - auto with fresco.
+  - auto with fresco.
+Qed.
+
+Lemma is_iskl_subst_mono : forall Q τ β,
+  is_iskl Q -> mono_ptyp τ ->
+  is_iskl (subst_bskl_in_bskl (ptyp_to_bskl_syn τ) β Q).
+Proof.
+  intros Q τ β H Hm; induction H; simpl.
+  - auto with fresco.
+  - destruct_if; auto using mono_ptyp_to_bskl_syn_is_iskl with fresco.
+  - auto with fresco.
+  - apply is_iskl__all with (L := L `union` {{β}}).
+    intros α Hα.
+    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
+      [ auto | intro He; subst; clear - Hα; fsetdec
+      | apply mono_ptyp_to_bskl_syn_lc; assumption ].
+  - auto with fresco.
+  - auto with fresco.
+Qed.
+
+Lemma mod_comp_sk_subst_mono : forall Q m τ β,
+  mod_comp_sk Q m -> mono_ptyp τ ->
+  mod_comp_sk (subst_bskl_in_bskl (ptyp_to_bskl_syn τ) β Q) m.
+Proof.
+  intros Q m τ β H Hm; induction H.
+  - auto using is_sskl_subst_mono with fresco.
+  - auto using is_sskl_subst_mono with fresco.
+  - simpl; auto with fresco.
+Qed.
+
+Lemma is_dskl_subst_mono : forall ψ τ β,
+  is_dskl ψ -> mono_ptyp τ ->
+  is_dskl (subst_uskl_in_uskl (ptyp_to_uskl_syn τ) β ψ).
+Proof.
+  intros ψ τ β H Hm; induction H; simpl.
+  - auto with fresco.
+  - destruct_if; auto using mono_ptyp_to_uskl_syn_is_dskl with fresco.
+  - auto with fresco.
+  - apply is_dskl__all_tag with (L := L `union` {{β}}).
+    intros α Hα.
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
+      [ auto | intro He; subst; clear - Hα; fsetdec
+      | apply mono_ptyp_to_uskl_syn_lc; assumption ].
+  - auto with fresco.
+  - auto with fresco.
+Qed.
+
+Unset Implicit Arguments.

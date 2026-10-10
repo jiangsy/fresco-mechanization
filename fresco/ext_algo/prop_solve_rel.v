@@ -227,24 +227,6 @@ Qed.
 (*  §2  Flex-agreement on a rel pair list                                 *)
 (* ===================================================================== *)
 
-
-Lemma a_flex_tvar_cons_flex_other : forall b (Θ : aenv) α,
-  α <> b ->
-  (a_flex_tvar ((b, abind_flex_mono) :: Θ) α <-> a_flex_tvar Θ α).
-Proof. intros. exact (@a_flex_tvar_cons_other b abind_flex_mono Θ α H). Qed.
-
-(** A rigid entry at an UNBOUND name is not flexible — the pair rows'
-    both-false case. *)
-Lemma a_flex_tvar_cons_tvar_self : forall β (Θ : aenv),
-  β `notin` dom Θ ->
-  ~ a_flex_tvar ((β ~ abind_tvar) ++ Θ) β.
-Proof.
-  intros * Hn [Hb | [τ Hb]]; unfold binds in Hb; simpl in Hb;
-    (destruct Hb as [Hb | Hb];
-     [ solve [ inversion Hb ]
-     | apply Hn; eapply binds_In; exact Hb ]).
-Qed.
-
 (** ⭐ [flex_agree_rel ρ V Θ1 Θ2] — §8c.9's context interface for the four
     REL-TRANSPORTS: identity agreement on the support [V] (exactly
     [flex_agree], prop_run_complete.v §3a), extended to ρ's PAIRS —
@@ -427,18 +409,6 @@ Proof.
       rewrite (a_flex_tvar_app_notin (flex_pairs_r ρn))
         by (rewrite dom_flex_pairs_r; clear - Hdr Hcr; fsetdec).
       apply Hagp. exact Hin.
-Qed.
-
-(** [a_flex] at a variable IS [a_flex_tvar] — the SE-FlexR side
-    conditions' bridge. *)
-Lemma a_flex_var_iff_tvar : forall Θ α,
-  a_flex Θ (pskl_var_f α) <-> a_flex_tvar Θ α.
-Proof.
-  intros. split.
-  - intros Hf; inversion Hf; subst;
-      [ left; assumption | right; eexists; eassumption ].
-  - intros [Hb | [τ Hb]];
-      [ eapply a_flex__var | eapply a_flex__var_def ]; eassumption.
 Qed.
 
 (** [a_non_flex] transports along the rel: flex-status of a paired (or

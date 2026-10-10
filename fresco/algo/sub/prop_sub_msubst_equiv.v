@@ -28,9 +28,11 @@ Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
 Require Import src.fresco.notations.
+Require Import src.fresco.prop_tag.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.ltac_utils.   (* solve_notin_auto *)
 Require Import src.fresco.coercions.
+Require Import src.fresco.prop_basic.
 Require Import src.fresco.prop_coercions.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
@@ -38,6 +40,7 @@ Require Import src.fresco.algo.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo.prop_inc.            (* a_tyequiv_pskl *)
+Require Import src.fresco.algo.prop_swap.          (* a_wf_ptyp_ftv_tvarish *)
 Require Import src.fresco.algo.prop_basic.           (* a_tyequiv_weaken_cons *)
 Require Import src.fresco.algo.prop_compose.        (* a_inc_lookup_{wf,mono}, msubst_lookup_notin *)
 Require Import src.fresco.algo.prop_normal.         (* a_inc_equiv_lookup_tvar *)
@@ -362,9 +365,6 @@ Qed.
 (*  is a [__flex_def] step.  Natural home is prop_normal.v; parked here   *)
 (*  to keep the rebuild local (moving it forces the full algo chain).     *)
 (* ===================================================================== *)
-
-Lemma msubst_pskl_nil : forall P, msubst_pskl nil P = P.
-Proof. induction P; cbn; f_equal; auto. Qed.
 
 (** Pointwise congruence: a metasubstitution each of whose lookups is
     ≡ᵗ-related to the variable itself relates every type to its image. *)
