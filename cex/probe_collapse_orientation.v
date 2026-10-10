@@ -33,11 +33,7 @@
     that this transposition moves names the coverage hypothesis pins.
 
     ⇒ A successor relation must be SEMANTIC (equi-generality, i.e.
-    [a_inc] in BOTH directions), not the collapse FUNCTION.  ⚙ What
-    survives untouched: [e_assign_absorb] (ext_algo/prop_consis_alias.v
-    §3), which is about ONE side and was the piece §8c.12c predicted;
-    and §1–§2 of that file, which characterise the ◇-walk and compute
-    the collapse.
+    [a_inc] in BOTH directions), not the collapse FUNCTION.
 
     WHAT IS MACHINE-CHECKED HERE:
       (1) [probe_orient_original] — the original derivation, with its
@@ -61,10 +57,26 @@ Require Import src.fresco.ext_algo.notations.
 Require Import src.fresco.ext_algo.def_supply.
 Require Import src.fresco.ext_algo.def_guess.
 Require Import src.fresco.ext_algo.def_consis.
-Require Import src.fresco.ext_algo.prop_consis_alias.
 
 Open Scope fresco_a_scope.
 Open Scope fresco_e_scope.
+
+(** THE ALIAS COLLAPSE — [collapse1 γ ε Θ] drops the alias entry
+    [γ ≔ ε̂] and renames [ε̂] back to [γ] everywhere (keys and payloads).
+    ⚙ [rename_aenv] is the DIRECTED rename (prop_swap.v): a collapse MERGES
+    [ε̂] into [γ] — it is not injective on {γ, ε̂} — so no transposition can
+    express it. *)
+
+(** Remove every [α]-keyed entry (under [uniq] there is at most one). *)
+Fixpoint aenv_remove (α : atom) (Θ : aenv) : aenv :=
+  match Θ with
+  | nil => nil
+  | (x, b) :: Θ' =>
+      if x == α then aenv_remove α Θ' else (x, b) :: aenv_remove α Θ'
+  end.
+
+Definition collapse1 (γ ε : atom) (Θ : aenv) : aenv :=
+  rename_aenv γ ε (aenv_remove γ Θ).
 
 (** The alias-carrying context, and its collapse. *)
 Definition po_ctx (γ ε α : atom) : aenv :=

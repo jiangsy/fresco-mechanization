@@ -23,31 +23,10 @@
     impredicative polymorphic subtyping, which the paper cites as its own
     motivation.
 
-    §2 below proves the principle for [guess^TY], in the two forms a measure
-    can use: the guessed type is no BIGGER than the skeleton it was guessed
-    from, and it contains no MORE ∀s.  ⭐ Read the [∀] row of the proof and
-    the principle is visible as a structural fact: [e_guess_mono__forall]
-    rebuilds the [∀] the skeleton already had, and no other row produces one.
-    [e_guess_mono__ghost] — the only row that INVENTS anything — invents a
-    flexible VARIABLE, which is ∀-free.
-
-    ⭐ §3–§6 CARRY THE BOUND THROUGH THE WHOLE EXTRACTION (phase 1b).
-    [a_sub__forall_l]'s [P1] comes from [a_extract] = collection → solving
-    fold → [guess^N]; §2 bounds only the last stage against ITS input.  §4
+    §1 counts the ∀s of a type, a skeleton and a constraint list, and §4
     bounds the collection's constraint yield by the COUNTERPART alone (the
-    subject is only walked, never deposited), §5 bounds each solving step by
-    its subject and its constraint, and §6 composes the three at
-    [e_extract__solve], where the fold's seed is [◇]:
-
-        e_extract_nall : nall_pskl Q' <= nall_pskl P'
-
-    — the guessed instantiation has no more ∀s than the INHERITED SKELETON,
-    which at the [e_sub__forall_l] call site is [P0].  That is the paper's
-
-        the polytypes we guess are determined by inherited information
-
-    with "inherited information" pinned to a single input, and it is the
-    bound the measure charges against [P0].
+    subject is only walked, never deposited).  [nall P0] is one component of
+    §17's lexicographic measure.
 
     ⚙ AND THE SECOND HALF OF THE ARGUMENT IS NOT A SIZE BOUND AT ALL (user,
     2026-08-13): after an instantiation the walk falls back to CONSISTENCY at
@@ -57,8 +36,7 @@
     benchmark/Fresco/lib/type.ml SI-Arrow).  So [a_sub] walks the arrow SPINE
     and nothing else, and a ∀ that an instantiation drops into a domain
     position can never fire [a_sub__forall_l] again.  A measure that counts
-    ∀s ON THE SPINE is therefore the shape to try, and §2's bound is what
-    keeps the spine's supply of ∀s finite. *)
+    ∀s ON THE SPINE is therefore the shape to try. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -142,39 +120,6 @@ Corollary nall_pskl_open : forall P β,
   nall_pskl (open_pskl_wrt_pskl P (pskl_var_f β)) = nall_pskl P.
 Proof. intros. apply nall_pskl_open_rec. Qed.
 
-(** Closing cannot change it either — it replaces a free variable by a bound
-    index, and both have count 0. *)
-Lemma nall_ptyp_close_rec : forall A β k,
-  nall_ptyp (close_ptyp_wrt_ptyp_rec k β A) = nall_ptyp A.
-Proof.
-  induction A; intros β k; simpl;
-    try reflexivity;
-    (* var_f — closing lands on a bound index, count 0 either way *)
-    try (match goal with |- context [ if ?c then _ else _ ] => destruct c end;
-         reflexivity);
-    first [ solve [ auto ] | f_equal; auto ].
-Qed.
-
-Corollary nall_ptyp_close : forall A β,
-  nall_ptyp (close_ptyp_wrt_ptyp β A) = nall_ptyp A.
-Proof. intros. apply nall_ptyp_close_rec. Qed.
-
-(** The [pskl] twin, for the solving layer's close rows (SS-ForallL,
-    SE-Forall, SE-GhostForall, SE-ForallGhost all rebuild their binder). *)
-Lemma nall_pskl_close_rec : forall P β k,
-  nall_pskl (close_pskl_wrt_pskl_rec k β P) = nall_pskl P.
-Proof.
-  induction P; intros β k; simpl;
-    try reflexivity;
-    try (match goal with |- context [ if ?c then _ else _ ] => destruct c end;
-         reflexivity);
-    first [ solve [ auto ] | f_equal; auto ].
-Qed.
-
-Corollary nall_pskl_close : forall P β,
-  nall_pskl (close_pskl_wrt_pskl β P) = nall_pskl P.
-Proof. intros. apply nall_pskl_close_rec. Qed.
-
 (** Reading a guessed TYPE back into [pskl] preserves the count — [∀] maps to
     [∀-syn], node for node.  ⚙ A conversion fact, named by the house rule
     (<relation>_<conversion>); it lives here rather than in
@@ -183,19 +128,6 @@ Proof. intros. apply nall_pskl_close_rec. Qed.
 Lemma nall_ptyp_to_pskl : forall A,
   nall_pskl (ptyp_to_pskl A) = nall_ptyp A.
 Proof. induction A; simpl; lia. Qed.
-
-(* ===================================================================== *)
-(*  §2  ⭐ [guess^TY] NEVER GUESSES A POLYTYPE OUT OF THIN AIR             *)
-(*                                                                        *)
-(*  The paper's design principle, as two theorems.  Both are               *)
-(*  HYPOTHESIS-FREE: they hold of the relation, not of a well-formed run.  *)
-(* ===================================================================== *)
-
-(** ⭐ AND THE COROLLARY THE MEASURE WILL QUOTE: a ∀-free skeleton is guessed
-    at a ∀-free type.  This is the case [a_sub__forall_l] needs to stay in,
-    because an instantiation with no ∀ makes the subject's ∀-count strictly
-    DROP across the row — the outer quantifier is consumed and nothing
-    replaces it. *)
 
 (* ===================================================================== *)
 (*  §3  Counting ∀s in a constraint list                                  *)
@@ -251,36 +183,6 @@ Proof.
     lia.
 Qed.
 
-Corollary e_looksub_nall : forall S0 Θ α m P P' S1 Ξ C,
-  {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-  nall_a_cstrs C <= nall_pskl P'.
-Proof. apply e_looksub_lookeq_nall. Qed.
-
-(* ===================================================================== *)
-(*  §5  ⭐ THE SOLVING LAYER INVENTS NO ∀ EITHER                           *)
-(*                                                                        *)
-(*  Each step's yield is bounded by its subject plus its constraint.  The *)
-(*  one generating row (SE-FlexR) hands the pattern to [guess^TY], which  *)
-(*  is where §2's bound is CONSUMED — the theorem below is what the       *)
-(*  paper's design principle buys downstream of the guess.                *)
-(* ===================================================================== *)
-
-(* ===================================================================== *)
-(*  §6  ⭐⭐ THE EXTRACTION'S BOUND — phase 1b's deliverable                *)
-(*                                                                        *)
-(*  Collection, fold and guess composed at [e_extract__solve]: the        *)
-(*  instantiation [a_sub__forall_l] recurses on carries no more ∀s than   *)
-(*  the INHERITED SKELETON [P'] — the subject does not appear on the      *)
-(*  right-hand side at all.  This is the paper's principle,               *)
-(*                                                                        *)
-(*      we only guess polytypes that can be determined by inherited       *)
-(*      type information                     (declarative.tex:856-860)    *)
-(*                                                                        *)
-(*  as a theorem: "inherited type information" is exactly [P'], and the   *)
-(*  ∀ the row consumed is gone for good — what replaces it was paid for   *)
-(*  by [P'], which is what the spine measure (the file header) charges.   *)
-(* ===================================================================== *)
-
 (* ===================================================================== *)
 (*  §7  ⭐⭐ THE HEAD CHAIN — the count [a_sub__forall_l] actually consumes *)
 (*                                                                        *)
@@ -306,7 +208,7 @@ Proof. apply e_looksub_lookeq_nall. Qed.
 (*      [e_sub__forall_l]'s own premise.                                  *)
 (*                                                                        *)
 (*  Net: hnall(subject) strictly decreases at every [e_sub__forall_l]     *)
-(*  ([e_extract_forall_l_hnall], §9) — with [nall P0] (via §6) and the    *)
+(*  ([e_extract_forall_l_hnall], §9) — with [nall P0] (§1) and the        *)
 (*  FN-depth of [M] the remaining lexicographic components.               *)
 (* ===================================================================== *)
 

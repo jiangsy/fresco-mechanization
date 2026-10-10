@@ -60,7 +60,7 @@
     ⚙ SCOPED TO THIS ENCODING, DELIBERATELY.  The fact the guard protects is
     the SUPPLY, and only the threaded encoding has one.  [e_looksub_sound]
     is unaffected — a SMALLER relation still maps into the [a_] side — and the
-    one place the two meet, [a_looksub_lookeq_rel_e] (prop_solve_rel.v §7),
+    one place the two meet, [a_looksub_lookeq_rel_e] (prop_lift_kit.v §7),
     pays for the asymmetry with [rel_e_absent_{sub,eq}]: at an α-free subject
     the a-side's own answer is already the empty one, so the transport hands
     back [Ξ = ·], [𝒞 = ·].  Guarding [a_looksub] too would reopen ~250
@@ -82,12 +82,6 @@ Require Import src.fresco.ext_algo.def_supply.
 Set Implicit Arguments.
 
 Open Scope fresco_e_scope.
-
-(* ⚙ [ftvar_in_a_cstr] / [ftvar_in_a_cstrs] / [ftvar_in_a_cstrs_app] MOVED
-   to fresco/algo/def_rules.v (2026-08-19).  This file's header said to move
-   them as soon as a [fresco/algo] consumer appeared; one has — the
-   collection's arrow rows read the function in their CROSS-HALF freshness
-   guard. *)
 
 Reserved Notation "{{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e"
   (at level 0, S1 at level 0, P at level 74, α at level 0, m at level 0,

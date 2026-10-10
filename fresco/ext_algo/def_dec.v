@@ -258,8 +258,8 @@ Proof.
   apply andb_prop in Hck; destruct Hck; split; auto.
 Qed.
 
-(** ⚙ MOVED here from prop_dec.v (2026-08-18): the runner's own dispatch
-    needs the CONVERSE direction while proving its ForallL / UnivGhostL
+(** The converse direction lives here rather than in prop_dec.v because the
+    runner's own dispatch needs it while proving its ForallL / UnivGhostL
     obligations, and prop_dec.v is downstream of def_look_impl.v. *)
 Lemma ghost_free_ck_complete : forall P,
   pskl_ghost_free P -> ghost_free_ck P = true.
@@ -514,3 +514,57 @@ Proof.
         [ exact Hg | eapply a_wf_pskl_lc; exact Hwf ]
       | exact Hwf ].
 Qed.
+
+(* ===================================================================== *)
+(*  Shared tactics for the runners' Equations obligations                 *)
+(* ===================================================================== *)
+
+(** Instantiate the shape premises Equations' splitting leaves as
+    [_ = _ -> …] implications at the clause's own constructors, and drop
+    the ones that do not apply.  ⚙ def_sub_impl.v keeps its own extended
+    variant (it also discharges [<>] and guarded-or-ghost premises). *)
+Ltac select_shape_premises :=
+  repeat match goal with
+         | Hp : forall _ _ _ _ _, _ = _ -> _ = _ -> _ = _ -> _ |- _ =>
+             first [ specialize (Hp _ _ _ _ _ eq_refl eq_refl eq_refl)
+                   | clear Hp ]
+         | Hp : forall _ _ _, _ = _ -> _ = _ -> _ = _ -> _ |- _ =>
+             first [ specialize (Hp _ _ _ eq_refl eq_refl eq_refl)
+                   | clear Hp ]
+         | Hp : forall _ _ _ _, _ = _ -> _ = _ -> _ |- _ =>
+             first [ specialize (Hp _ _ _ _ eq_refl eq_refl) | clear Hp ]
+         | Hp : forall _ _, _ = _ -> _ = _ -> _ |- _ =>
+             first [ specialize (Hp _ _ eq_refl eq_refl) | clear Hp ]
+         | Hp : forall _, _ = _ -> _ = _ -> _ |- _ =>
+             first [ specialize (Hp _ eq_refl eq_refl) | clear Hp ]
+         | Hp : forall _ _ _, _ = _ -> _ |- _ =>
+             first [ specialize (Hp _ _ _ eq_refl) | clear Hp ]
+         | Hp : forall _ _, _ = _ -> _ |- _ =>
+             first [ specialize (Hp _ _ eq_refl) | clear Hp ]
+         | Hp : forall _, _ = _ -> _ |- _ =>
+             first [ specialize (Hp _ eq_refl) | clear Hp ]
+         | Hp : _ = _ -> _ |- _ =>
+             first [ specialize (Hp eq_refl) | clear Hp ]
+         | Hp : _ /\ _ |- _ => destruct Hp
+         end.
+
+(** Add the components of every [lc_pskl] arrow / ⫯ hypothesis beside it.
+    Non-destructive: the originals stay (Equations' catch-all splitting
+    let-binds aliases of the scrutinees, whose lc goals close by conversion
+    against the ORIGINAL hypotheses). *)
+Ltac saturate_lc :=
+  repeat match goal with
+         | Hlc : lc_pskl (pskl_arrow ?a ?b) |- _ =>
+             lazymatch goal with
+             | _ : lc_pskl a, _ : lc_pskl b |- _ => fail
+             | _ => let Hx := fresh "Hlc0" in
+                    assert (Hx := Hlc); apply lc_pskl_arrow_inv in Hx;
+                    destruct Hx
+             end
+         | Hlc : lc_pskl (pskl_univ_ghost ?a) |- _ =>
+             lazymatch goal with
+             | _ : lc_pskl a |- _ => fail
+             | _ => let Hx := fresh "Hlc0" in
+                    assert (Hx := Hlc); apply lc_pskl_univ_ghost_inv in Hx
+             end
+         end.

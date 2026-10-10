@@ -1207,18 +1207,22 @@ Local Ltac ck_leaf :=
 (** ⚠️ The LEAF is tried FIRST: [apply andb_true_intro] unifies up to delta,
     so on [ghost_free_ck (P → Q)] it would happily UNFOLD the fixpoint and
     split a goal the [_ck_complete] lemma answers whole. *)
-Local Ltac ck_true := repeat (ck_leaf || (apply andb_true_intro; split)).
+Ltac ck_true_with leaf := repeat (leaf || (apply andb_true_intro; split)).
+Local Ltac ck_true := ck_true_with ltac:(idtac; ck_leaf).
 
 (** A runner test the derivation's own premises satisfy: prove the boolean
     TRUE first, then the rejecting branch is [congruence]. *)
-Local Ltac bool_true :=
+(** ⚙ Exported, parameterised by the LEAF: prop_pat_complete.v and
+    prop_typing_complete.v run it with their own leaf sets. *)
+Ltac bool_true_with leaf :=
   match goal with
   | |- context [ sumbool_of_bool ?b ] =>
       let Hbt := fresh "Hbt" in let Hb := fresh "Hb" in
-      assert (Hbt : b = true) by ck_true;
+      assert (Hbt : b = true) by (ck_true_with leaf);
       destruct (sumbool_of_bool b) as [Hb | Hb];
       [ cbv beta iota | congruence ]
   end.
+Local Ltac bool_true := bool_true_with ltac:(idtac; ck_leaf).
 
 (** An output the runner hands back UNCHANGED from its inputs — the chain
     fixes it because its free names are all in [S0]. *)

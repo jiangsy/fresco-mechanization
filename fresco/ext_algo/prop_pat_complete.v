@@ -665,17 +665,8 @@ Local Ltac ck_leaf_pat :=
         | apply pskl_eqb_complete; reflexivity
         | apply ptyp_eqb_complete; reflexivity ].
 
-Local Ltac ck_true_pat :=
-  repeat (ck_leaf_pat || (apply andb_true_intro; split)).
-
-Local Ltac bool_true_pat :=
-  match goal with
-  | |- context [ sumbool_of_bool ?b ] =>
-      let Hbt := fresh "Hbt" in let Hb := fresh "Hb" in
-      assert (Hbt : b = true) by ck_true_pat;
-      destruct (sumbool_of_bool b) as [Hb | Hb];
-      [ cbv beta iota | congruence ]
-  end.
+Local Ltac ck_true_pat := ck_true_with ltac:(idtac; ck_leaf_pat).
+Local Ltac bool_true_pat := bool_true_with ltac:(idtac; ck_leaf_pat).
 
 (** Run level 6's headline at the subtyping call the goal contains, then
     read the runner's answer off the same call. *)
@@ -714,8 +705,9 @@ Local Ltac kill_pat Hmot Hp0 He0 HΘ0 HD0 Hu0 Hcov0 Hder r Hr ps
   end.
 
 (** Read a DECOMPOSER's answer off the goal's own call.  ⚠️ The [match] is
-    DEPENDENT, so the scrutinee is DESTRUCTED, never rewritten. *)
-Local Ltac kill_dec Hcomp t Ht :=
+    DEPENDENT, so the scrutinee is DESTRUCTED, never rewritten.  Exported:
+    prop_typing_complete.v uses it too. *)
+Ltac kill_dec Hcomp t Ht :=
   let t0 := fresh "t0" in let Hs := fresh "Hs" in
   let Hpr := fresh "Hpr" in let Hcl := fresh "Hcl" in
   let Heq0 := fresh "Heq0" in

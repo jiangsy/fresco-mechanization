@@ -64,13 +64,6 @@ Proof.
   - pose proof (IH _ _ Hb') as Hsub. simpl. fsetdec.
 Qed.
 
-(** [dom] / [ftvar_in_aenv] normalisation — prop_consis.v §3's, verbatim. *)
-#[local] Ltac env_simp :=
-  simpl_env in *;
-  repeat (rewrite ftvar_in_aenv_app in * );
-  repeat (rewrite dom_app in * );
-  simpl ftvar_in_aenv in *; simpl dom in *; simpl_env in *.
-
 (* ===================================================================== *)
 (*  §1  The supply only grows                                             *)
 (* ===================================================================== *)

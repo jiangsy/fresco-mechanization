@@ -1,30 +1,13 @@
 (** ext_algo — §8c.10, campaign level 5: COMPLETENESS of the extracted
     [assign] / [unifyvar] / [consistency] block, [e_consis_call_impl].
 
-    ⛔ READ FIRST: docs/HANDOFF-extractable-algo-encoding.md §8c.10b.  The
-    level's first scoping — one induction whose motive relates the
-    derivation's output context to the runner's UP TO A RENAMING — was
-    REFUTED (cex/probe_consis_ghost_flex.v).  At a (ghost pattern,
-    flexible subject) node the rules admit both [U-GhostR] and [U-FlexL],
-    the runner takes [U-GhostR], and the two output contexts differ by a
-    solved-to-fresh-flexible entry: equi-general, but NOT a renaming.
-    Repairing that needs a generalization ([⊑]) transport, and it is
-    owed at exactly one row, [U-Arrow].
-
-    ⭐ WHAT THIS FILE PROVES INSTEAD, and why it is not a detour: the
-    divergence needs a [pskl_ghost] on one side, and HOLE-FREENESS IS
-    MAINTAINED BY THE WHOLE RECURSION — arrow halves and ∀ openings
-    inherit it, and the two rows that rewrite their skeletons
-    ([Assign-Assign], [Flex-Flex-Assign]) substitute a [ptyp] payload,
-    which has no ghosts.  So on ghost-free inputs the level IS the
-    originally-scoped design, and the induction skeleton built here — the
-    order's strong induction principle, the dispatch kills, the case
-    scripts — is what the [⊑] repair will reuse; only the ghost rows and
-    [U-Arrow]'s threading step change.
-
-    ⚙ [unifyvar] is INSIDE the ghost-free fragment unconditionally: its
-    only consistency premise runs on [ptyp_to_pskl] payloads.  So the
-    unify headline needs no restriction. *)
+    The three headlines (§8) hold on GHOST-CARRYING skeletons.  What makes
+    the ghost rows ordinary cases is the [<> ◇] guard on [U-FlexL] /
+    [U-FlexR] (algo/def_rules.v): every cell with a [◇] on one side admits
+    exactly one rule (§2), the one the runner takes.  The level's first
+    scoping — relating the two output contexts UP TO A RENAMING — was
+    refuted before that guard (cex/probe_consis_ghost_flex.v,
+    docs/HANDOFF-close-consis-unrestricted.md). *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -55,10 +38,6 @@ Require Import src.fresco.ext_algo.prop_consis.
 Require Import src.fresco.ext_algo.prop_termination.
 Require Import src.fresco.ext_algo.prop_solve_det.
 Require Import src.fresco.ext_algo.def_consis_impl.
-(* ⭐ the single-rule ghost inversions: since the [<> ◇] dispatch guards
-   landed (algo/def_rules.v) each ghost cell admits exactly ONE rule, which
-   is what lets the motive drop [consis_call_no_ghost]. *)
-Require Import src.fresco.ext_algo.prop_consis_inc.
 
 Set Implicit Arguments.
 
@@ -348,23 +327,96 @@ Fixpoint e_consis_call_order_sind S0 Θ c
 End e_consis_call_order_sind.
 
 (* ===================================================================== *)
-(*  §2  ⛔ RETIRED (2026-08-17) — [consis_call_no_ghost] and its four        *)
-(*  maintenance lemmas are GONE, and so is the restriction they served.    *)
+(*  §2  THE GHOST-ROW INVERSIONS — every ghost cell admits ONE rule       *)
 (*                                                                        *)
-(*  They existed for §8c.10b's divergence: at (pattern ◇, subject α̂) both  *)
-(*  [U-GhostR] and [U-FlexL] fired, at different output contexts, so the   *)
-(*  motive below had to exclude a [◇] on either side.  That divergence is   *)
-(*  now impossible — [U-FlexL] / [U-FlexR] carry [P0 <> ◇] / [P <> ◇]      *)
+(*  At a ghost SUBJECT only [U-Ghost] can fire unless the pattern is a     *)
+(*  variable, and at a ghost PATTERN only [U-GhostR] can unless the        *)
+(*  subject is.  [U-UnivGhostR] is excluded everywhere here because it     *)
+(*  demands a GUARDED subject and [◇] is not guarded.  The two variable    *)
+(*  cells are mirror images, and each admits exactly one rule as well     *)
+(*  because [U-FlexL] / [U-FlexR] carry [P0 <> ◇] / [P <> ◇]               *)
 (*  (algo/def_rules.v), which renders the reference implementation's       *)
-(*  ghost-first dispatch — so every ghost cell admits exactly ONE rule and *)
-(*  the six case-kills the restriction used to buy are now ordinary cases, *)
-(*  discharged by [do_ghost_cell] against the single-rule inversions of    *)
-(*  ext_algo/prop_consis_inc.v §3.                                        *)
-(*                                                                        *)
-(*  ⚙ [pskl_no_ghost] itself STAYS (fresco/def_shapes.v): its other consumer *)
-(*  is the Δ-monotonicity of partial precision.                            *)
+(*  ghost-first dispatch.  [do_ghost_cell] (§7) consumes these.            *)
 (* ===================================================================== *)
 
+(** ⚙ The surviving goals are the rule's own premises plus, at the [(◇,◇)]
+    overlap, a disjointness against [ftvar_in_pskl ◇ = ∅]. *)
+Local Ltac ghost_close :=
+  repeat split;
+  first [ assumption | reflexivity | (simpl in *; fsetdec) ].
+
+(** A ghost SUBJECT against a non-variable pattern: only [U-Ghost]. *)
+Lemma e_consis_inv_ghost_subject : forall Δ1 Δ2 S0 Θ0 P0 Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] pskl_ghost ∼ Q ⊣ Θ1 }}e ->
+  (forall β, P0 <> pskl_var_f β) ->
+  S1 = S0 /\ Θ1 = Θ0 /\ Q = P0 /\ Δ2 ∩ ftvar_in_pskl P0 [=] empty.
+Proof.
+  intros * Hd Hnv. inversion Hd; subst;
+    try solve [ congruence
+              | exfalso; eapply Hnv; reflexivity
+              | match goal with
+                | H : guarded_pskl pskl_ghost |- _ => inversion H
+                end ].
+  all: ghost_close.
+Qed.
+
+(** A ghost PATTERN against a non-variable subject: only [U-GhostR].
+    ⚙ The subject may itself be [◇]: there [U-Ghost] fires too, but it
+    returns the SAME triple, so the cell needs no uniqueness argument —
+    the level-5 analogue of [U-Rigid] versus [U-Flex], which [e_unify_refl]
+    settled the same way. *)
+Lemma e_consis_inv_ghost_pattern : forall Δ1 Δ2 S0 Θ0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_ghost ] P ∼ Q ⊣ Θ1 }}e ->
+  (forall β, P <> pskl_var_f β) ->
+  S1 = S0 /\ Θ1 = Θ0 /\ Q = P /\ Δ1 ∩ ftvar_in_pskl P [=] empty.
+Proof.
+  intros * Hd Hnv. inversion Hd; subst;
+    try solve [ congruence
+              | exfalso; eapply Hnv; reflexivity
+              | match goal with
+                | H : guarded_pskl pskl_ghost |- _ => inversion H
+                end ].
+  all: ghost_close.
+Qed.
+
+(** ⭐ FORMERLY DIVERGENT CELL 1 — a ghost subject against a FLEXIBLE
+    pattern.  [U-Ghost] leaves the context alone; [U-FlexR] would have
+    assigned, and the runner takes the first
+    (def_consis_impl.v:807-813).  Since the [<> ◇] dispatch guards landed
+    on [U-FlexL]/[U-FlexR] (algo/def_rules.v) the second route is BARRED,
+    so this cell now admits exactly ONE rule and the inversion is no
+    longer a disjunction — which is what retires the two-context problem
+    docs/HANDOFF-close-consis-unrestricted.md was written about. *)
+Lemma e_consis_inv_ghost_flex_pattern : forall Δ1 Δ2 S0 Θ0 β Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) ] pskl_ghost ∼ Q ⊣ Θ1 }}e ->
+  S1 = S0 /\ Θ1 = Θ0 /\ Q = pskl_var_f β
+    /\ Δ2 ∩ ftvar_in_pskl (pskl_var_f β) [=] empty.
+Proof.
+  intros * Hd. inversion Hd; subst;
+    try solve [ congruence
+              | match goal with
+                | H : guarded_pskl pskl_ghost |- _ => inversion H
+                end ].
+  ghost_close.
+Qed.
+
+(** ⭐ FORMERLY DIVERGENT CELL 2 — the mirror: a FLEXIBLE subject against
+    a ghost pattern.  [U-GhostR] versus [U-FlexL], the runner takes GhostR
+    (def_consis_impl.v:759-763, whose ghost-pattern arm is unconditional in
+    the subject), and the [<> ◇] guard now bars [U-FlexL] here, so this
+    cell too admits exactly one rule. *)
+Lemma e_consis_inv_flex_subject_ghost : forall Δ1 Δ2 S0 Θ0 α Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | pskl_ghost ] (pskl_var_f α) ∼ Q ⊣ Θ1 }}e ->
+  S1 = S0 /\ Θ1 = Θ0 /\ Q = pskl_var_f α
+    /\ Δ1 ∩ ftvar_in_pskl (pskl_var_f α) [=] empty.
+Proof.
+  intros * Hd. inversion Hd; subst;
+    try solve [ congruence
+              | match goal with
+                | H : guarded_pskl pskl_ghost |- _ => inversion H
+                end ].
+  ghost_close.
+Qed.
 
 (* ===================================================================== *)
 (*  §3  EQUIVARIANCE ALONG A CHAIN                                        *)
@@ -1299,11 +1351,9 @@ Local Ltac do_flex_l Hmot Hd Hu Hcov :=
     [U-FlexL]/[U-FlexR] (algo/def_rules.v) every cell with a [◇] on one
     side admits EXACTLY ONE rule — the ghost one, which is the rule the
     runner takes — so the case is: invert (a single-rule inversion from
-    ext_algo/prop_consis_inc.v §3), discharge the rule's own
+    §2), discharge the rule's own
     Δ-disjointness test that the runner performs, and answer with the
-    input.  The swap chain is EMPTY: nothing was invented.  ⚙ This is what
-    used to be [destruct Hnh0.] / [destruct Hnh1.] — the six case-kills the
-    ghost-free restriction bought. *)
+    input.  The swap chain is EMPTY: nothing was invented. *)
 Local Ltac do_ghost_cell Hdis :=
   match goal with
   | |- context [ sumbool_of_bool (is_empty ?S) ] =>
@@ -2378,12 +2428,6 @@ Qed.
 
 (* ===================================================================== *)
 (*  §8  THE THREE HEADLINES                                               *)
-(*                                                                        *)
-(*  ⭐ THE UNIFY ONE IS UNRESTRICTED.  A [unifyvar] call carries no        *)
-(*  skeleton and its one consistency premise runs on [ptyp_to_pskl]       *)
-(*  payloads, which have no ghosts at all — so the ghost-free fragment      *)
-(*  contains it outright (§2).  The other two carry the restriction, and  *)
-(*  §8c.10b says what lifting it costs.                                   *)
 (*                                                                        *)
 (*  The side conditions are prop_consis.v §4's, verbatim: the context is  *)
 (*  [uniq] and the supply covers it — ⚠️ including [Δ1] and [Δ2], which    *)

@@ -418,23 +418,6 @@ with e_sub_flex_order_to_call S0 NM M P0 Θ0 Ξ α
          | Hp : _ /\ _ |- _ => destruct Hp
          end.
 
-#[local] Ltac saturate_lc :=
-  repeat match goal with
-         | Hlc : lc_pskl (pskl_arrow ?a ?b) |- _ =>
-             lazymatch goal with
-             | _ : lc_pskl a, _ : lc_pskl b |- _ => fail
-             | _ => let Hx := fresh "Hlc0" in
-                    assert (Hx := Hlc); apply lc_pskl_arrow_inv in Hx;
-                    destruct Hx
-             end
-         | Hlc : lc_pskl (pskl_univ_ghost ?a) |- _ =>
-             lazymatch goal with
-             | _ : lc_pskl a |- _ => fail
-             | _ => let Hx := fresh "Hlc0" in
-                    assert (Hx := Hlc); apply lc_pskl_univ_ghost_inv in Hx
-             end
-         end.
-
 #[local] Ltac saturate_defs :=
   repeat match goal with
          | HF : Forall _ (_ ++ _) |- _ =>

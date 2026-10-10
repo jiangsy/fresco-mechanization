@@ -84,10 +84,6 @@ Proof.
   intros a Hin. apply (AtomSetFacts.empty_iff a). apply H. exact Hin.
 Qed.
 
-(* ⚙ [flex_tvar_flex_bound_ck] was a DUPLICATE of [flex_tvar_flex_bound_ck]; imported, not reproved (2026-08-23). *)
-
-(* ⚙ [rigid_bound_ck_complete] was a DUPLICATE of [rigid_bound_ck_complete]; imported, not reproved (2026-08-23). *)
-
 Lemma tvarish_ck_complete : forall Θ α,
   a_binds_tvar α Θ -> tvarish_ck Θ α = true.
 Proof.
@@ -109,12 +105,6 @@ Qed.
 Lemma guarded_shape_ck_complete : forall P,
   guarded_pskl P -> guarded_shape_ck P = true.
 Proof. intros P H; inversion H; subst; reflexivity. Qed.
-
-(* ⚙ [ghost_free_ck_complete] MOVED to def_dec.v (2026-08-18) — the runner's
-   ForallL / UnivGhostL obligations need it, and this file is downstream of
-   def_look_impl.v.  It is still in scope here, through def_dec.v. *)
-
-(* ⚙ [mono_ck_complete] was a DUPLICATE of [mono_ck_complete]; imported, not reproved (2026-08-23). *)
 
 (* ===================================================================== *)
 (*  §3  Context shapes and structural equality                            *)

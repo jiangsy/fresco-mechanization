@@ -22,6 +22,7 @@
                                                    plain declarative system
 
     §1  inference mode — input the ghost [□]           SOUNDNESS
+    §2  the entry-point exhibit: AT-Unit, end to end
     §3  the COMPLETENESS half, at the same entry point (2026-08-19)
     §4  DECIDABILITY of the THREADED relation
     §5  ⭐⭐⭐ COMPLETENESS AT THE PAPER'S JUDGEMENT — the lift, composed
@@ -52,6 +53,7 @@
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
+From Equations Require Import Equations.
 
 Require Import src.fresco.notations.
 Require Import src.fresco.coercions.
@@ -69,6 +71,8 @@ Require Import src.fresco.ext_algo.notations.
 Require Import src.fresco.ext_algo.def_supply.
 Require Import src.fresco.ext_algo.def_typing.
 Require Import src.fresco.ext_algo.prop_typing.
+Require Import src.fresco.ext_algo.def_consis_impl.
+Require Import src.fresco.ext_algo.def_sub_impl.
 Require Import src.fresco.ext_algo.def_typing_impl.
 Require Import src.fresco.algo.prop_inc.            (* [lc_aenv] *)
 Require Import src.fresco.ext_algo.prop_termination. (* [aenv_defs_mono] *)
@@ -78,6 +82,7 @@ Require Import src.fresco.prop_basic.
 Require Import src.fresco.algo.prop_basic.
 Require Import src.fresco.algo.typing.prop_soundness_typing.
 Require Import src.fresco.ext_algo.prop_solve_rel.
+Require Import src.fresco.ext_algo.prop_lift_kit.
 Require Import src.fresco.ext_algo.prop_lift.
 Require Import src.fresco.ext_algo.prop_lift_typing.  (* §13, [a_typing_rel_e] *)
 Require Import src.fresco.algo.prop_precise.   (* [a_wf_ptyp_to_wf_pskl] *)
@@ -116,6 +121,60 @@ Proof.
   apply e_typing_run_sound in Hrun.
   apply e_typing_sound_init in Hrun.
   apply a_typing_sound_infer; assumption.
+Qed.
+
+(* ===================================================================== *)
+(*  §2  The entry-point exhibit: AT-Unit, end to end                      *)
+(* ===================================================================== *)
+
+(** The AT-Unit branch at infer mode, end to end, through every layer the
+    runners depend on —
+    [simp e_typing_impl] (the derived clause equation), the [e_sub_impl]
+    wrapper, [simp e_sub_call_impl] (the tagged block's §8c.4 equation),
+    the term-level dispatch reducing at concrete mode/shape, and
+    [pskl_readback] computing.  ⚙ No [vm_compute]/[Eval] can do this: the
+    runners recurse on a Qed-opaque totality proof, so plain reduction is
+    stuck by design — the equations are quantified over the domain proof,
+    which is exactly why the chain goes through (§8c.3's "insensitive to
+    which domain proof was supplied").
+
+    The check-mode twin runs one layer deeper — SI-Check calls
+    [e_consis_impl], so it additionally exercises the consistency block's
+    §8c.4 equations ([simp e_consis_call_impl]; U-Unit answers).  It
+    became provable the moment def_consis_impl.v flipped, and it is the
+    end-to-end witness that ALL TWELVE runner blocks are now
+    computationally analysable. *)
+
+Lemma e_typing_run_complete_unit_infer : forall S0,
+  e_typing_run S0 mode_ti nil pskl_ghost exp_unit
+  = Some (mk_typing_result S0 nil ptyp_unit).
+Proof.
+  intros. unfold e_typing_run.
+  simp e_typing_impl.
+  cbn.
+  unfold e_sub_impl.
+  simp e_sub_call_impl.
+  cbn.
+  reflexivity.
+Qed.
+
+(** The check-mode twin, at the paper's own pattern shape [⌈unit⌉]: one
+    layer deeper — SI-Check runs the consistency block, whose U-Unit row
+    answers. *)
+Lemma e_typing_run_complete_unit_check : forall S0,
+  e_typing_run S0 mode_tc nil (ptyp_to_pskl ptyp_unit) exp_unit
+  = Some (mk_typing_result S0 nil ptyp_unit).
+Proof.
+  intros. unfold e_typing_run.
+  simp e_typing_impl.
+  cbn.
+  unfold e_sub_impl.
+  simp e_sub_call_impl.
+  cbn.
+  unfold e_consis_impl.
+  simp e_consis_call_impl.
+  cbn.
+  reflexivity.
 Qed.
 
 (* ===================================================================== *)

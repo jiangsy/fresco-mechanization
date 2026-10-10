@@ -33,7 +33,7 @@
     can need two right images.  Everything here is therefore stated over
     prop_solve_det.v §1's deliberately RELATIONAL [rel_pskl] / [rel_a_cstrs]
     at a pair list ρ that GROWS — which is also the currency §8c.9's
-    transport layer (prop_solve_rel.v §3-§7) already built a → a, so those
+    transport layer (prop_solve_rel.v §3-§6, prop_lift_kit.v §7) already built a → a, so those
     are what §4-§7 are copied from.
 
     §3  ⭐⭐⭐ the LOOK block — ALREADY CLOSED upstream, and why the chain
@@ -42,10 +42,12 @@
     §5  ⭐ the eq-solve, twelve rows
     §6  ⭐ the sub-solve, nine rows (and the leaked-opener column ρx)
     §7  ⭐ the constraint fold, three rows
-
-    ⛔ WHAT IS LEFT: extract, consis, sub, split, pat, typing.  ⚠️⚠️ THE
-    EXTRACT ROW IS NOT ROUTINE AND IS NOT A MISSING PROOF — as stated it is
-    FALSE.  See §7's closing note. *)
+    §8  ⭐⭐ the extract row — look, fold, guess, composed
+    §9  ⭐⭐⭐ the consistency rung ([a_assign] / [a_unify] / [a_consis])
+    §10 ⭐⭐⭐ the subtyping rung ([a_sub] / [a_sub_flex])
+    §11 ⭐⭐ the splitting rung
+    §12 ⭐⭐⭐ the skeleton-inference rung ([a_pat])
+    (the [a_typing] rung is prop_lift_typing.v) *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -79,15 +81,13 @@ Require Import src.fresco.ext_algo.def_extract.
 Require Import src.fresco.ext_algo.prop_solve.
 Require Import src.fresco.ext_algo.prop_solve_det.
 Require Import src.fresco.ext_algo.prop_solve_rel.
+Require Import src.fresco.ext_algo.prop_lift_kit.
 Require Import src.fresco.algo.def_meta.
 Require Import src.fresco.algo.prop_inc_strengthen.
 Require Import src.fresco.algo.consis.prop_consis_rename.
 Require Import src.fresco.algo.consis.prop_soundness_consis.
 Require Import src.fresco.ext_algo.def_consis.
 Require Import src.fresco.ext_algo.prop_consis.
-(* ⚙ for the [swaps_*] kit levels 7/8 added — [swaps_pskl_ptyp_to_pskl] here,
-   and [swaps_ptyp_open] / [ptyp_to_pskl_inj] for the blocks above. *)
-Require Import src.fresco.ext_algo.prop_typing_complete.
 Require Import src.fresco.ext_algo.def_sub.
 Require Import src.fresco.ext_algo.prop_sub.
 Require Import src.fresco.ext_algo.prop_extract.
@@ -117,7 +117,7 @@ Open Scope fresco_e_scope.
 (*  §8c.24's costed plan lists the collection as the lift's next block,    *)
 (*  nineteen rows in the CHAIN currency.  ⛔ DO NOT WRITE IT: the chain    *)
 (*  currency is UNAVAILABLE here, and the block is already proved in the   *)
-(*  currency that is — [a_looksub_lookeq_rel_e] (prop_solve_rel.v §7,      *)
+(*  currency that is — [a_looksub_lookeq_rel_e] (prop_lift_kit.v §7,       *)
 (*  campaign §8c.9's transport 5), which is stated a → e and needs only    *)
 (*  to be instantiated at the EMPTY pair list.                            *)
 (*                                                                        *)
@@ -163,19 +163,6 @@ Open Scope fresco_e_scope.
   let a0 := fresh "a0" in let b0 := fresh "b0" in let Hi := fresh "Hi" in
   intros a0 b0 Hi; revert Hi;
   rewrite ? in_app_iff; simpl; rewrite ? in_app_iff; tauto.
-
-(** ⚙ The SET form of [a_solve_cstr_generated_fresh] (algo/sub/
-    prop_solve_sub.v).  prop_look_pair.v has one, but that file is a heavy
-    dependency for a single fact the fold's arrow row needs. *)
-Lemma a_solve_cstr_block_fresh_set : forall Θ C P Ξ P',
-  {{ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ P' }}a ->
-  dom Ξ ∩ ftvar_in_aenv Θ [=] empty.
-Proof.
-  intros * H.
-  apply AtomSetProperties.empty_is_empty_1.
-  intros x Hx. apply AtomSetFacts.inter_iff in Hx. destruct Hx as [HA HB].
-  exact (a_solve_cstr_generated_fresh H HA HB).
-Qed.
 
 (* ===================================================================== *)
 (*  §4  ⭐ [guess^TY] LIFTS IN THE REL CURRENCY TOO — and this is the copy *)
@@ -1535,7 +1522,7 @@ Proof.
     assert (HcovT : ftvar_in_pskl Pmid2 ∪ ftvar_in_a_cstrs C2' [<=] S1)
       by (clear - Hout Hcov Hgr1; simpl in *; fsetdec).
     assert (Hd1b : dom Ξ2 ∩ ftvar_in_aenv (Ξ1 ++ Θ) [=] empty)
-      by (exact (a_solve_cstr_block_fresh_set HD)).
+      by (exact (a_solve_cstr_generated_fresh_set HD)).
     assert (Hblk2 : dom Ξ2 ∩ cols_l (ρnA ++ ρ) [=] empty).
     { rewrite cols_l_app. rewrite ftvar_in_aenv_app in Hd1b.
       pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds.
@@ -1564,30 +1551,23 @@ Qed.
 (* ===================================================================== *)
 (*  §8  ⭐⭐ THE EXTRACT ROW — look, fold, guess, COMPOSED                  *)
 (*                                                                        *)
-(*  [a_extract] has ONE rule and it is §3 → §7 → §4.  Every premise of the *)
-(*  three transports is now available at the composition EXCEPT one, and   *)
-(*  that one is carried here as an explicit hypothesis:                    *)
+(*  [a_extract] has ONE rule and it is §3 → §7 → §4.  What makes the       *)
+(*  composition go through are the rule's two cross-layer freshness       *)
+(*  guards ([a_extract__solve], [paper-gap], algo/def_rules.v):            *)
 (*                                                                        *)
 (*      ftvar_in_a_cstrs 𝒞 ∩ dom Ξs [=] empty                             *)
+(*      (ftvar_in_a_cstrs 𝒞 ∪ ftvar_in_pskl Q) ∩ dom Ξ' [=] empty           *)
 (*                                                                        *)
-(*  — the FOLD's generated flexibles are fresh for the constraints it is  *)
-(*  solving.  ⛔ WHY IT IS OWED, and it is the SAME species as the         *)
-(*  cross-half guard one layer down.  The collection LEAKS openers into    *)
-(*  [𝒞] (all five ∀ rows do), and those openers are bound NOWHERE — not in *)
-(*  [Θ0], not in [Ξ].  The fold then runs at [Ξ ++ Θ0] and [SE-FlexR]'s    *)
-(*  guess draws its flexibles fresh for [ftvar_in_aenv (Ξ ++ Θ0)] ONLY, so *)
-(*  it may draw a leaked opener.  Side 1 then reads that atom as FLEXIBLE  *)
-(*  (it is in [Ξs]) where side 2 reads its counterpart as a rigid free     *)
-(*  atom — no [flex_agree_rel] between the two contexts exists, which is   *)
-(*  precisely §7's premise, and it is the configuration                    *)
-(*  cex/probe_extract_conflated_opener.v refutes one level down.           *)
-(*                                                                        *)
-(*  ⭐ UNLIKE the solve layer's ∀-binders, this one IS expressible at the   *)
-(*  rule: [𝒞] and [Ξs] are both named in [a_extract__solve]'s premises.    *)
-(*  Transport 5's [∀ (a,b) ∈ ρx, a ∈ ftvar_in_a_cstrs 𝒞₁] is what connects *)
-(*  the guard to the pair columns.  ⇒ landing it is a RULE CHANGE          *)
-(*  ([paper-gap] + docs/PAPER-GAPS.md), and this lemma is the proof that   *)
-(*  it is exactly what the rung needs — nothing weaker, nothing more.      *)
+(*  ⛔ WHY THEY ARE OWED.  The collection LEAKS openers into [𝒞] (all five *)
+(*  ∀ rows do), and those openers are bound NOWHERE — not in [Θ0], not in  *)
+(*  [Ξ].  The fold runs at [Ξ ++ Θ0] and [SE-FlexR]'s guess draws its     *)
+(*  flexibles fresh for [ftvar_in_aenv (Ξ ++ Θ0)] ONLY, so without the    *)
+(*  guard it may draw a leaked opener.  Side 1 then reads that atom as    *)
+(*  FLEXIBLE (it is in [Ξs]) where side 2 reads its counterpart as a rigid *)
+(*  free atom — no [flex_agree_rel] between the two contexts exists, which *)
+(*  is precisely §7's premise.  The same leak between the two halves of   *)
+(*  [LE-Arrow] is what the collection's cross-half guard rules out; it is *)
+(*  machine-checked in cex/probe_extract_conflated_opener.v.              *)
 (* ===================================================================== *)
 
 (* ===================================================================== *)
@@ -1653,15 +1633,9 @@ Proof.
     + apply Hagp. exact Hin.
 Qed.
 
-Lemma a_extract_rel_e_gen :
-  forall Θ1 α m NM P1 P1' Ξ1L C1 Ξ1F Q1 Ξ1G Q1',
-  {{ Θ1 ⊢ P1 ≼[ α , m ] P1' ⤳ Ξ1L ⨾ C1 }}a ->
-  {{ (Ξ1L ++ Θ1) ⊩ C1 ⨾ pskl_ghost ⤳ Ξ1F ⨾ Q1 }}a ->
-  a_guess (Ξ1F ++ Ξ1L ++ Θ1) NM Q1 Ξ1G Q1' ->
-  (* ⛔ THE TWO GUARDS THE ROW OWES — see the box above.  The second is the
-     GUESS's half (2026-08-21, §8c.41). *)
-  ftvar_in_a_cstrs C1 ∩ dom Ξ1F [=] empty ->
-  (ftvar_in_a_cstrs C1 ∪ ftvar_in_pskl Q1) ∩ dom Ξ1G [=] empty ->
+
+Lemma a_extract_rel_e : forall Θ1 NM α m P1 P1' Ξ1 Q1',
+  {{ Θ1 ⊢ P1 ⊳[ NM , α , m ] P1' ⤳ Ξ1 ↪ Q1' }}a ->
   forall S0 Θ2 P2 P2' ρ V,
   rel_pskl ρ V P1 P2 ->
   rel_pskl ρ V P1' P2' ->
@@ -1686,14 +1660,14 @@ Lemma a_extract_rel_e_gen :
        can see — and [a_sub__forall_l]'s consumer reads it off the lift
        motive's block premise, since [dom Ξ1 ⊆ dom Θ1 \ dom Θ0]. *)
   V [<=] add α (ftvar_in_aenv Θ1) ->
-  dom (Ξ1L ++ Ξ1F ++ Ξ1G) ∩ cols_l ρ [=] empty ->
-  α `notin` dom (Ξ1L ++ Ξ1F ++ Ξ1G) ->
+  dom Ξ1 ∩ cols_l ρ [=] empty ->
+  α `notin` dom Ξ1 ->
   dom Θ2 [<=] S0 ->
   V ∪ cols_r ρ [<=] S0 ->
   ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] S0 ->
   exists S1 ρx ρn Ξ2 Q2',
     {{ S0 ↝ S1 ⊨ Θ2 ⊢ P2 ⊳[ NM , α , m ] P2' ⤳ Ξ2 ↪ Q2' }}e
-    /\ (Ξ1L ++ Ξ1F ++ Ξ1G) = flex_pairs_l ρn
+    /\ Ξ1 = flex_pairs_l ρn
     /\ Ξ2 = flex_pairs_r ρn
     /\ (forall a b, In (a, b) ρx ->
           a `notin` ftvar_in_aenv Θ1 /\ b `notin` S0)
@@ -1702,10 +1676,13 @@ Lemma a_extract_rel_e_gen :
        atoms of a skeleton wf over [Ξ1 ++ Θ1]: a leaked opener is bound
        nowhere, so the motive's block premise cannot keep it out of
        [dom Θ1] and [rel_aenv] would owe a binding for each. *)
-    /\ cols_l ρx ∩ dom (Ξ1L ++ Ξ1F ++ Ξ1G) [=] empty
+    /\ cols_l ρx ∩ dom Ξ1 [=] empty
     /\ rel_pskl (ρx ++ ρn ++ ρ) V Q1' Q2'.
 Proof.
-  intros Θ1 α m NM P1 P1' Ξ1L C1 Ξ1F Q1 Ξ1G Q1' HL HF HG Hguard Hguard2.
+  intros ? ? ? ? ? ? ? ? HD.
+  (* [a_extract] has one rule: look, fold, guess, and the rule's two guards *)
+  destruct HD as
+    [ Θ1 NM α m P1 P1' Ξ1L Ξ1F Ξ1G C1 Q1 Q1' HL HF HG Hguard Hguard2 ].
   intros S0 Θ2 P2 P2' ρ V HrP HrP' HαV Hαl Hαr Hagr Hscp1 Hblkρ HαΞ
     HdΘ Hscp2 Hcov.
   rewrite ! dom_app in Hblkρ, HαΞ.
@@ -1714,7 +1691,7 @@ Proof.
   assert (HαF : α `notin` dom Ξ1F) by (clear - HαΞ; fsetdec).
   assert (HαS0 : α `in` S0) by (clear - HαV Hscp2; fsetdec).
 
-  (* ---- STEP 1: the collection, transport 5 (prop_solve_rel.v §7) ---- *)
+  (* ---- STEP 1: the collection, transport 5 (prop_lift_kit.v §7) ---- *)
   assert (HcovL : V ∪ cols_r ρ ∪ ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] S0)
     by (clear - Hscp2 Hcov; fsetdec).
   pose proof (proj1 a_looksub_lookeq_rel_e) as HTL.
@@ -1785,7 +1762,7 @@ Proof.
 
   assert (Hscp1F : V ∩ ftvar_in_aenv Θ1 [<=] ftvar_in_aenv (Ξ1L ++ Θ1))
     by (rewrite ftvar_in_aenv_app; clear; fsetdec).
-  pose proof (a_solve_cstr_block_fresh_set HF) as HgfF.
+  pose proof (a_solve_cstr_generated_fresh_set HF) as HgfF.
   rewrite ftvar_in_aenv_app in HgfF.
   assert (HxsubL : cols_l ρxL [<=] ftvar_in_a_cstrs C1).
   { intros x Hx. destruct (cols_l_in_inv _ _ Hx) as [b Hin].
@@ -1903,125 +1880,6 @@ Proof.
       apply rel_atom__pair; rewrite ? in_app_iff; tauto.
   - intros a Ha. apply rel_atom__id. clear - Ha. fsetdec.
 Qed.
-
-(** ⭐⭐⭐ THE WRAPPER — and it is one [destruct], now that
-    [a_extract__solve] CARRIES the guard (2026-08-20, algo/def_rules.v).
-    The rung is CLOSED: [a_extract] lifts to [e_extract]. *)
-Lemma a_extract_rel_e : forall Θ1 NM α m P1 P1' Ξ1 Q1',
-  {{ Θ1 ⊢ P1 ⊳[ NM , α , m ] P1' ⤳ Ξ1 ↪ Q1' }}a ->
-  forall S0 Θ2 P2 P2' ρ V,
-  rel_pskl ρ V P1 P2 ->
-  rel_pskl ρ V P1' P2' ->
-  α `in` V ->
-  α `notin` cols_l ρ ->
-  α `notin` cols_r ρ ->
-  flex_agree_rel ρ V Θ1 Θ2 ->
-  (* ⭐⭐ the three scoping premises of §8c.41 — see [a_extract_rel_e_gen].
-     ⚙ [a_sub__forall_l] reads the middle one off the lift motive's block
-     premise and the last off its own choice of opener. *)
-  V [<=] add α (ftvar_in_aenv Θ1) ->
-  dom Ξ1 ∩ cols_l ρ [=] empty ->
-  α `notin` dom Ξ1 ->
-  dom Θ2 [<=] S0 ->
-  V ∪ cols_r ρ [<=] S0 ->
-  ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] S0 ->
-  exists S1 ρx ρn Ξ2 Q2',
-    {{ S0 ↝ S1 ⊨ Θ2 ⊢ P2 ⊳[ NM , α , m ] P2' ⤳ Ξ2 ↪ Q2' }}e
-    /\ Ξ1 = flex_pairs_l ρn
-    /\ Ξ2 = flex_pairs_r ρn
-    /\ (forall a b, In (a, b) ρx ->
-          a `notin` ftvar_in_aenv Θ1 /\ b `notin` S0)
-    /\ cols_l ρx ∩ dom Ξ1 [=] empty
-    /\ rel_pskl (ρx ++ ρn ++ ρ) V Q1' Q2'.
-Proof.
-  intros Θ1 NM α m P1 P1' Ξ1 Q1' HD.
-  destruct HD as
-    [ Θ0 NM0 α0 m0 Ps Ps' ΞL ΞF ΞG C0 Q0 Q0' HL HF HG Hgd Hgd2 ].
-  intros S0 Θ2 P2 P2' ρ V HrP HrP' HαV Hαl Hαr Hagr Hscp1 Hblkρ HαΞ
-    HdΘ Hscp2 Hcov.
-  eapply a_extract_rel_e_gen;
-    [ exact HL | exact HF | exact HG | exact Hgd | exact Hgd2
-    | exact HrP | exact HrP' | exact HαV | exact Hαl | exact Hαr
-    | exact Hagr | exact Hscp1 | exact Hblkρ | exact HαΞ
-    | exact HdΘ | exact Hscp2 | exact Hcov ].
-Qed.
-
-(* ===================================================================== *)
-(*  ✅ WHAT THE NEXT BLOCK OWED — AND THE GUARD THAT NOW PAYS IT          *)
-(*                                                                        *)
-(*  [a_extract] has ONE rule and it composes exactly §3, §7 and §4:        *)
-(*                                                                        *)
-(*      look    Θ0 ⊢ P ≼[α,m] P' ⤳ Ξ ⨾ 𝒞                                  *)
-(*      fold    (Ξ ++ Θ0) ⊩ 𝒞 ⨾ ◇ ⤳ Ξs ⨾ Q                                *)
-(*      guess   (Ξs ++ Ξ ++ Θ0) ⊢ guess^N Q ⤳ Ξ' ⨾ Q'                     *)
-(*                                                                        *)
-(*  so it LOOKS like three [destruct]s.  It is not, and the obstruction is *)
-(*  the SAME leak §6 names, now crossing between two SIBLING premises of   *)
-(*  the collection.                                                        *)
-(*                                                                        *)
-(*  ⚠️ THE CONFIGURATION (machine-checked; see the ✅ below).  [LE-Arrow]  *)
-(*  runs both halves at the SAME [Θ], so *)
-(*  a binder LEFT half 1 leaked into [𝒞1] and a flexible half 2 INVENTED   *)
-(*  into [Ξ2] may be the SAME ATOM: the first avoids                       *)
-(*  [add α (ftvar Θ ∪ ftvar P1 ∪ ftvar P1')], the second                   *)
-(*  [add α (add β̂ (ftvar Θ ∪ ftvar P2))], and neither excludes the other.  *)
-(*  Concretely, with [Q = α], [Q' = 0] and [P2 = α → α]:                   *)
-(*                                                                        *)
-(*      Θ ⊢ (∀α) → (α→α)  ∼[α]  (∀0) → β̂  ⤳ (γ ~ ⌢)  ⨾  [eq γ ; eq γ]     *)
-(*                                                                        *)
-(*  where the FIRST [γ] is half 1's leaked opener and the second is        *)
-(*  half 2's fresh flexible.  The e-side keeps them apart — the opener is  *)
-(*  drawn at [S0], the flexible at [S1 ⊇ add opener S0] — so §3 hands back *)
-(*  [𝒞2 = [eq γ1 ; eq γ2]] with [γ1 ≠ γ2] and [Ξ2 = (γ2 ~ ⌢)].            *)
-(*                                                                        *)
-(*  ⛔ AND THE FOLD THEN DISAGREES, not merely renames.  Put a non-ghost    *)
-(*  constraint ahead of the pair (nest one more arrow, so                  *)
-(*  [𝒞 = [eq 1 ; eq γ ; eq γ]]) and the accumulated pattern is [1] by the  *)
-(*  time the leaked [γ] is met.  Side 1 sees [γ] FLEXIBLE — it is in [Ξ] — *)
-(*  and fires [SE-FlexR]; side 2 sees [γ1] bound NOWHERE ([e_looksub]      *)
-(*  discards its openers, exactly as the implementation does) and has NO   *)
-(*  rule at [1 ∼ γ1]: not SE-Unit, not SE-Var, not SE-VacuousR, not        *)
-(*  SE-GuardedGhost.  The threaded fold is STUCK where the unthreaded one  *)
-(*  runs.  ⇒ no [flex_agree_rel] between [Ξ ++ Θ0] and [Ξ2 ++ Θ2] exists,  *)
-(*  which is precisely the premise §7 needs.                               *)
-(*                                                                        *)
-(*  ✅ MACHINE-CHECKED: [cex/probe_extract_conflated_opener.v], four        *)
-(*  lemmas, all Qed and assumptions-closed.  §1 builds the conflating       *)
-(*  collection; §2a runs the a-side fold on it; §2b shows the fold is      *)
-(*  STUCK once the opener is any atom the context does not bind; §3 builds *)
-(*  the THREADED collection at the same inputs and it returns TWO atoms    *)
-(*  where the a-side returns one; §4 composes them — the a-side fold runs  *)
-(*  and the threaded one cannot, at one configuration.  (The threaded fold *)
-(*  is refuted through [e_solve_cstr_sound], so §2b covers both.)          *)
-(*                                                                        *)
-(*  ✅✅ THE REPAIR IS LANDED (2026-08-19).  Both collection arrow rows now  *)
-(*  carry the CROSS-HALF FRESHNESS GUARD                                   *)
-(*                                                                        *)
-(*      ftvar_in_a_cstrs C1 ∩ dom Ξ2 [=] empty                            *)
-(*      ftvar_in_a_cstrs C2 ∩ dom Ξ1 [=] empty                            *)
-(*                                                                        *)
-(*  (fresco/algo/def_rules.v), so the configuration above is no longer      *)
-(*  derivable and [e_looksub_sound] discharges both conjuncts — the guard  *)
-(*  costs the threaded encoding NOTHING, and that is a theorem            *)
-(*  ([e_looksub_lookeq_cstr_old], prop_look.v §2c).  ⇒ the extract row's   *)
-(*  [flex_agree_rel] obligation is now available and this block is         *)
-(*  UNBLOCKED.  What it cost inside the mech: hand-off §8c.25.             *)
-(*                                                                        *)
-(*  ⚙ FOR THE RECORD — WHAT THE REPAIR HAD TO BE.  A PREMISE that the      *)
-(*  collection's leaked                                                    *)
-(*  openers are apart from its own block — the fourth instance of the      *)
-(*  prose-completion this tree has already had to make three times         *)
-(*  ([AT-Abs]'s [uniq (αs ++ Θ1)], [a_sub__forall_l]'s [uniq (Ξ ++ Θ0)],   *)
-(*  and [uniq Ξ] for [guess^TY]'s block).  ⚠️ [uniq Ξ] does NOT           *)
-(*  suffice here and no strengthening of it can: a leaked opener is not a  *)
-(*  block member, so [uniq] cannot see it.  ⛔ Nor is it derivable from a  *)
-(*  scoping hypothesis on the look's inputs — both side conditions above   *)
-(*  already dodge [ftvar_in_aenv Θ] and that is all a scoping premise      *)
-(*  buys.  The premise has to be about the DERIVATION, and where it is     *)
-(*  discharged ([a_sub__forall_l] is the only consumer) is the design      *)
-(*  question the next session opens on.  docs/PAPER-GAPS.md will want it   *)
-(*  once it is machine-checked.                                            *)
-(* ===================================================================== *)
 
 (* ===================================================================== *)
 (*  §9  ⭐⭐⭐ THE CONSIS RUNG — [a_assign] / [a_unify] / [a_consis] LIFT     *)
@@ -3130,7 +2988,7 @@ Proof.
       rewrite <- Ea. exact Ha0. }
     assert (Hfa2 : a_flex_tvar ((b ~ abind_flex_mono_def t2) ++ Θ0'') α').
     { assert (Hbig : a_flex_tvar (Ξ ++ (β ~ abind_flex_mono_def τ) ++ Θ0) α)
-        by (apply a_flex_tvar_prepend; exact Hfa).
+        by (apply a_flex_tvar_weaken_app; exact Hfa).
       apply (proj1 (flex_agree_rel_use Hagr Hrα)) in Hbig.
       apply (proj1 (a_flex_tvar_app_notin _ _ Hα'Ξ)). exact Hbig. }
     remember (V ∩ ftvar_in_aenv (Ξ ++ Θ0)) as VC eqn:EVC.
@@ -4241,7 +4099,7 @@ Proof.
       exact (Hinj α β β' Hrα Hrβ). }
     assert (Hflβ2 : a_flex_tvar Θ0'' β').
     { assert (Hbig : a_flex_tvar ((α ~ abind_flex_mono) ++ Θ0) β)
-        by (apply a_flex_tvar_prepend; exact Hflβ).
+        by (apply a_flex_tvar_weaken_app; exact Hflβ).
       apply (proj1 (flex_agree_rel_use Hagr Hrβ)) in Hbig.
       rewrite (@a_flex_tvar_cons_other b abind_flex_mono Θ0'' β'
                  ltac:(intros Ex; apply Hne2; symmetry; exact Ex)) in Hbig.
@@ -4275,7 +4133,7 @@ Proof.
       exact (Hinj α β b Hrα Hab). }
     assert (Hflα2 : a_flex_tvar Θ0'' α').
     { assert (Hbig : a_flex_tvar ((β ~ abind_flex_mono) ++ Θ0) α)
-        by (apply a_flex_tvar_prepend; exact Hflα).
+        by (apply a_flex_tvar_weaken_app; exact Hflα).
       apply (proj1 (flex_agree_rel_use Hagr Hrα)) in Hbig.
       rewrite (@a_flex_tvar_cons_other b abind_flex_mono Θ0'' α' Hne2) in Hbig.
       exact Hbig. }
@@ -7596,7 +7454,7 @@ Qed.
 (*  §12  ⭐⭐⭐ THE a_pat RUNG — [a_pat] lifts to [e_pat], all 10 rows        *)
 (*  (2026-08-22, §8c.44–§8c.45)                                            *)
 (*                                                                        *)
-(*  ⭐ The motive relates EXPRESSIONS ([rel_exp], §13d of prop_solve_rel): *)
+(*  ⭐ The motive relates EXPRESSIONS ([rel_exp], §13d of prop_lift_kit): *)
 (*  the abs rows open the body at a term variable fresh only for the       *)
 (*  CONTEXT while [e_pat]'s draw theirs from the SUPPLY, and that premise  *)
 (*  is part of the induction, so the renaming route is closed (§8c.33).    *)

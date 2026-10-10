@@ -45,13 +45,13 @@ Require Import src.fresco.ext_algo.def_extract.
 Require Import src.fresco.ext_algo.prop_solve.
 Require Import src.fresco.ext_algo.prop_solve_det.
 Require Import src.fresco.ext_algo.prop_solve_rel.
+Require Import src.fresco.ext_algo.prop_lift_kit.
 Require Import src.fresco.algo.def_meta.
 Require Import src.fresco.algo.prop_inc_strengthen.
 Require Import src.fresco.algo.consis.prop_consis_rename.
 Require Import src.fresco.algo.consis.prop_soundness_consis.
 Require Import src.fresco.ext_algo.def_consis.
 Require Import src.fresco.ext_algo.prop_consis.
-Require Import src.fresco.ext_algo.prop_typing_complete.
 Require Import src.fresco.ext_algo.def_sub.
 Require Import src.fresco.ext_algo.prop_sub.
 Require Import src.fresco.ext_algo.prop_extract.

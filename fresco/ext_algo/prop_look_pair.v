@@ -1,32 +1,23 @@
 (** ext_algo — THE LOOK-PAIR FOLD'S HOME (campaign §8c.9 §6b): the fused
-    look-pair/fold-transport lemma over SUPPLY-THREADED looks, and its
-    e-side prerequisites.
+    look-pair/fold-transport lemma over SUPPLY-THREADED looks, its kit, and
+    the extract level's run-completeness assembly.
 
-    §1 is the e-side look kit the pair induction leans on:
-
-    §1a  the e-look's context is INERT (every freshness condition reads
-         the SUPPLY), so derivations transport to ANY context — which is
-         what replaces the a-side [a_looksub_ctx_exchange] surgery;
-    §1c  the COLLECTION-PRESERVING re-rooting R′, e-side (since removed
-         as unused) — ⭐ stated with an
-         EXISTENTIAL opener, which kills the whole rebinding apparatus:
-         in its ForallL case the premise IS the goal at the derivation's
-         own opener (+ ctx_any), and in its ForallR case the IH's opener
-         is reused below the rebuilt root (+ prop_look.v §5's supply
-         respect for the [add]-exchange) — so NO swap is ever performed,
-         and no e-side swap kit exists or is needed.
-
-    §2 is the look-pair fold KIT (fourth pass), §3 the look-pair fold itself
-    (forthcoming): the pair induction is RUNNER-SIDED — side 1 an
-    arbitrary e-derivation (the Hhyg premise), side 2 the RUNNER's
-    computation ([e_lookeq_impl]/[e_looksub_impl] = Some) — because the
+    §2 is the look-pair fold KIT, §3 the look-pair fold itself, §4 the
+    assembly.  The pair induction is RUNNER-SIDED — side 1 an arbitrary
+    e-derivation (the Hhyg premise), side 2 the RUNNER's computation
+    ([e_lookeq_impl]/[e_looksub_impl] = Some) — because the
     two-arbitrary-derivations form is FALSE
     (cex/probe_bcore_ug2_flexr.v: LE-FlexR × LE-UnivGhost2 overlap at a
     (⫯, var) node; a variable is [guarded_pskl]).  See
     HANDOFF-extractable-algo-encoding.md §8c.9, third + fourth passes.
-    ⚙ §1c's R′ is NOT consumed by the runner-sided look-pair fold (the
-    diagonals re-root SIDE 1 by §2c's ForallR-first instead); it stays
-    as the exhibit docs/PAPER-GAPS.md cites. *)
+
+    ⚠️ THE E-LOOK'S CONTEXT IS ALMOST INERT.  Every FRESHNESS side
+    condition of the e-encoding reads the SUPPLY, so the context is carried
+    only to mirror the a-shape — but under the FlexR-PRIORITY GUARD two eq
+    rows read it for HATTEDNESS ([LE-FlexR] wants the counterpart flexible,
+    [LE-UnivGhost2] wants it not).  So a derivation transports to any
+    context the two AGREE with; the consumers here move between contexts
+    differing by RIGID entries only ([a_flex_tvar_cons_tvar_any]). *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -74,45 +65,6 @@ Open Scope fresco_a_scope.
 Open Scope fresco_e_scope.
 
 (* ===================================================================== *)
-(*  §1a  The e-look's context is INERT                                    *)
-(*                                                                        *)
-(*  Every freshness side condition of the e-encoding reads the SUPPLY;    *)
-(*  the context is carried only to mirror the a-shape (the projection     *)
-(*  [e_looksub_sound] reintroduces context-freshness from coverage).  So  *)
-(*  a derivation transports to ANY context — the re-rootings below lean   *)
-(*  on this where the a-side versions needed [a_looksub_ctx_exchange].    *)
-(* ===================================================================== *)
-
-(** ⚠️ ALMOST INERT (2026-08-18).  Every FRESHNESS side condition of the
-    e-encoding reads the SUPPLY, so the context is carried only to mirror the
-    a-shape — but under the FlexR-PRIORITY GUARD two eq rows read it for
-    HATTEDNESS ([LE-FlexR] wants the counterpart flexible, [LE-UnivGhost2]
-    wants it not).  So a derivation transports to any context the two AGREE
-    with, which is what every consumer here has: they move between contexts
-    differing by RIGID entries only ([a_flex_tvar_cons_tvar_any]). *)
-(** ⚠️ ALMOST INERT (2026-08-18).  Every FRESHNESS side condition of the
-    e-encoding reads the SUPPLY, so the context is carried only to mirror the
-    a-shape — but under the FlexR-PRIORITY GUARD two eq rows read it for
-    HATTEDNESS ([LE-FlexR] wants the counterpart flexible, [LE-UnivGhost2]
-    wants it not).  So a derivation transports to any context the two AGREE
-    with, which is what every consumer here has: they move between contexts
-    differing by RIGID entries only ([a_flex_tvar_cons_tvar_any]). *)
-(** ⚙ The shape every consumer of the lemma below needs: the two contexts
-    differ by RIGID prefixes only, which [a_flex_tvar] cannot see. *)
-Local Ltac flex_rigid_iff :=
-  let b := fresh "b" in
-  intros b; repeat rewrite a_flex_tvar_cons_tvar_any; reflexivity.
-
-(* ===================================================================== *)
-(*  §1c  The COLLECTION-PRESERVING re-rooting, e-side (R′)               *)
-(*                                                                        *)
-(*  Leaning on the inert context, R′ is stated with an EXISTENTIAL        *)
-(*  opener: in its ForallL case the premise IS the goal at the            *)
-(*  derivation's own opener, so no rebinding (hence no e-swap kit) is     *)
-(*  ever needed.                                                          *)
-(* ===================================================================== *)
-
-(* ===================================================================== *)
 (*  §2  THE LOOK-PAIR FOLD KIT (campaign §8c.9, fourth pass)                      *)
 (*                                                                        *)
 (*  Support for the RUNNER-SIDED pair induction (see the handoff's        *)
@@ -127,8 +79,7 @@ Local Ltac flex_rigid_iff :=
 (*         the (ForallL/UGL vs runner-ForallR) diagonals; its Var-bottom  *)
 (*         disjunct legitimately CHANGES the final sub-constraint, paid   *)
 (*         by §2g's keep-peel;                                            *)
-(*    §2d  the fold at a VAR pattern is a fixed point (build + invert);   *)
-(*    §2e  fold structure facts (generated-fresh, pure-eq ftv bound);     *)
+(*    §2e  fold structure facts (pure-eq ftv bound);                      *)
 (*    §2f  the JUNK-TARGET head transport — the (side-1 raw var target    *)
 (*         vs runner fresh-flexible) divergence.  ⭐ Since the             *)
 (*         FlexR-PRIORITY guard its two targets are PAIRED and it yields  *)
@@ -161,11 +112,11 @@ Proof.
   intros * [HV Hp] Hβ. split.
   - intros x Hx.
     assert (Hne : x <> β) by (clear - Hx Hβ; fsetdec).
-    rewrite (a_flex_tvar_cons_tvar_other Θ1 Hne). apply HV. exact Hx.
+    rewrite (a_flex_tvar_cons_tvar_any _ Θ1 _). apply HV. exact Hx.
   - intros a b Hin.
     pose proof (cols_l_in _ _ _ Hin) as Hc.
     assert (Hne : a <> β) by (clear - Hc Hβ; fsetdec).
-    rewrite (a_flex_tvar_cons_tvar_other Θ1 Hne). apply Hp. exact Hin.
+    rewrite (a_flex_tvar_cons_tvar_any _ Θ1 _). apply Hp. exact Hin.
 Qed.
 
 Lemma flex_agree_rel_push_tvar_r : forall ρ V Θ1 Θ2 β,
@@ -176,11 +127,11 @@ Proof.
   intros * [HV Hp] Hβ. split.
   - intros x Hx.
     assert (Hne : x <> β) by (clear - Hx Hβ; fsetdec).
-    rewrite (a_flex_tvar_cons_tvar_other Θ2 Hne). apply HV. exact Hx.
+    rewrite (a_flex_tvar_cons_tvar_any _ Θ2 _). apply HV. exact Hx.
   - intros a b Hin.
     pose proof (cols_r_in _ _ _ Hin) as Hc.
     assert (Hne : b <> β) by (clear - Hc Hβ; fsetdec).
-    rewrite (a_flex_tvar_cons_tvar_other Θ2 Hne). apply Hp. exact Hin.
+    rewrite (a_flex_tvar_cons_tvar_any _ Θ2 _). apply Hp. exact Hin.
 Qed.
 
 (* ===================================================================== *)
@@ -431,23 +382,6 @@ Qed.
 (* ===================================================================== *)
 (*  §2e  fold structure facts                                             *)
 (* ===================================================================== *)
-
-Lemma a_solve_cstr_generated_fresh_set : forall Θ C P Ξ P',
-  {{ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ P' }}a ->
-  dom Ξ ∩ ftvar_in_aenv Θ [=] empty.
-Proof.
-  intros * H; induction H.
-  - simpl. clear. fsetdec.
-  - eapply (proj1 a_solve_sub_eq_generated_fresh_set). eassumption.
-  - match goal with
-    | He : a_solve_eq _ _ _ _ _ |- _ =>
-        pose proof ((proj2 a_solve_sub_eq_generated_fresh_set)
-                      _ _ _ _ _ He) as Hh
-    end.
-    rewrite ftvar_in_aenv_app in IHa_solve_cstr.
-    rewrite dom_app.
-    clear - Hh IHa_solve_cstr. fsetdec.
-Qed.
 
 Lemma a_solve_cstr_pure_eq_ftv : forall Θ C P Ξ P',
   Forall a_cstr_is_eq C ->
@@ -833,13 +767,6 @@ Proof.
     clear - Ha Htl. fsetdec.
 Qed.
 
-Lemma binds_app_right : forall (x : atom) (bd : abind) (Ξ Θ : aenv),
-  binds x bd Θ -> binds x bd (Ξ ++ Θ).
-Proof.
-  intros. unfold binds in *. apply in_or_app. right. assumption.
-Qed.
-
-(* ⚙ [a_flex_tvar_in_dom] was a DUPLICATE of [a_flex_tvar_in_dom]; imported, not reproved (2026-08-23). *)
 
 (* ===================================================================== *)
 (*  §3  THE LOOK-PAIR FOLD — the fused look-pair/fold-transport (§8c.9 §6b)       *)
@@ -1433,11 +1360,11 @@ Proof.
           | apply Hflxr in Hf; clear - Hf Hbc Hfs2a ]; fsetdec. }
     assert (Hb1b : forall x bd, binds x bd Ξ1b ->
               binds x bd (Ξsa ++ Θf1))
-      by (intros x bd Hxb; apply binds_app_right; apply Hb1;
+      by (intros x bd Hxb; apply binds_app_3; apply Hb1;
           unfold binds in *; apply in_or_app; right; exact Hxb).
     assert (Hb2b : forall x bd, binds x bd (lk_block r2b) ->
               binds x bd (Ξ2a ++ Θf2))
-      by (intros x bd Hxb; apply binds_app_right; apply Hb2;
+      by (intros x bd Hxb; apply binds_app_3; apply Hb2;
           unfold binds in *; apply in_or_app; right; exact Hxb).
     assert (Hop1b : forall x, x `in` Sa1 -> x `notin` Sm ->
               x `notin` dom Ξ1b -> ~ a_flex_tvar (Ξsa ++ Θf1) x).
@@ -2509,6 +2436,122 @@ Proof.
       by (eapply rel_pskl_ghost_free; [ exact HrelP' | exact Hgf1 ]).
     inversion HrelP; subst;
       try solve [ exfalso; simpl in HαP1; clear - HαP1; fsetdec ].
+    (* arrow / ∀ / ⫯ subject — same root: one script for the three shapes *)
+    2-4:
+      ( ( revert Hs );
+      ( simp e_looksub_impl );
+      ( match goal with
+        | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
+            let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
+            destruct (sumbool_of_bool scr) as [Hmt | Hmf];
+            [ | exfalso; apply mem_false_notin in Hmf;
+                simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
+        end );
+      ( match goal with
+        | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
+            let Hgt := fresh "Hgt" in let Hgfx := fresh "Hgfx" in
+            destruct (sumbool_of_bool scr) as [Hgt | Hgfx];
+            [ | exfalso;
+                rewrite (ghost_free_ck_complete _ Hgf2') in Hgfx;
+                discriminate ]
+        end );
+      ( match goal with
+        | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
+            let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
+            let Er := fresh "Er" in
+            destruct call as [ [r1 Hr1] | ] eqn:Er;
+            [ | intros Hs; discriminate ]
+        end );
+      ( intros Hs );
+      ( inversion Hs; subst s; clear Hs );
+      ( simpl in Hb2, Hop2, Henr2, Hscp2 |- * );
+      ( set (sf := supply_fresh Sb0) in * );
+      ( assert (HαSa : α `in` Sa0) by (clear - HαV Hcov1; fsetdec) );
+      ( assert (HαSb : α `in` Sb0) by (clear - HαV Hcov2; fsetdec) );
+      ( pose proof (e_looksub_supply_grows Hprem) as Hgr1 );
+      ( assert (Hβ1Sa1 : β1n `in` Sa1) by (clear - Hgr1; fsetdec) );
+      ( pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hprem)
+          as (_ & Hbl1 & _ & _) );
+      ( assert (Hβ1Ξ1 : β1n `notin` dom Ξ1) by (clear - Hbl1; fsetdec) );
+      ( assert (Hnf1 : ~ a_flex_tvar Θf1 β1n)
+          by (apply Hop1; [ exact Hβ1Sa1 | exact Hβfr | exact Hβ1Ξ1 ]) );
+      ( pose proof (supply_fresh_notin Sb0) as Hsf0 );
+      ( pose proof (e_looksub_supply_grows Hr1) as Hgr2 );
+      ( assert (HsfS1 : sf `in` lk_supply r1) by (clear - Hgr2; fsetdec) );
+      ( pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hr1)
+          as (_ & Hbl2 & _ & _) );
+      ( assert (HsfΞ2 : sf `notin` dom (lk_block r1)) by (clear - Hbl2; fsetdec) );
+      ( assert (Hnf2 : ~ a_flex_tvar Θf2 sf)
+          by (apply Hop2; [ exact HsfS1 | exact Hsf0 | exact HsfΞ2 ]) );
+      ( assert (Hβ1f : β1n `in` ftvar_in_aenv Θf1)
+          by (apply Henr1; clear - Hβ1Sa1 Hβfr; fsetdec) );
+      ( assert (Hsff : sf `in` ftvar_in_aenv Θf2)
+          by (apply Henr2; clear - HsfS1 Hsf0; fsetdec) );
+      ( assert (Hagr' : flex_agree_rel ((β1n, sf) :: ρ) V Θf1 Θf2) );
+      [ ( apply flex_agree_rel_extend_pair_iff; [ exact Hagr | ] );
+          ( split; intros Hf; exfalso; [ exact (Hnf1 Hf) | exact (Hnf2 Hf) ] )
+      | ( assert (Hαl' : α `notin` cols_l ((β1n, sf) :: ρ))
+              by (simpl; clear - Hαl HαSa Hβfr; fsetdec) );
+          ( assert (Hαr' : α `notin` cols_r ((β1n, sf) :: ρ))
+              by (simpl; clear - Hαr HαSb Hsf0; fsetdec) );
+          ( assert (Hop1' : forall x, x `in` Sa1 -> x `notin` add β1n Sa0 ->
+                      x `notin` dom Ξ1 -> ~ a_flex_tvar Θf1 x)
+              by (intros x Hx1 Hx2 Hx3; apply Hop1;
+                  [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]) );
+          ( assert (Hop2' : forall x, x `in` lk_supply r1 -> x `notin` add sf Sb0 ->
+                      x `notin` dom (lk_block r1) -> ~ a_flex_tvar Θf2 x)
+              by (intros x Hx1 Hx2 Hx3; apply Hop2;
+                  [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]) );
+          ( assert (Henr1' : Sa1 ∖ (add β1n Sa0) [<=] ftvar_in_aenv Θf1)
+              by (clear - Henr1; fsetdec) );
+          ( assert (Henr2' : lk_supply r1 ∖ (add sf Sb0) [<=] ftvar_in_aenv Θf2)
+              by (clear - Henr2; fsetdec) );
+          ( assert (Hscp1' : V ∪ cols_l ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc1
+                      ∪ ftvar_in_a_cstrs C1 [<=] ftvar_in_aenv Θf1)
+              by (simpl; clear - Hscp1 Hβ1f; fsetdec) );
+          ( assert (Hscp2' : V ∪ cols_r ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc2
+                      ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2)
+              by (simpl; clear - Hscp2 Hsff; fsetdec) );
+          ( assert (Hrelacc' : rel_pskl ((β1n, sf) :: ρ) V acc1 acc2)
+              by (apply rel_pskl_extend_pair; exact Hrelacc) );
+          ( match type of HrelP with
+            | rel_pskl _ _ ?p1x ?p2x =>
+                assert (Hsz' : size_pskl p1x
+                         + size_pskl (open_pskl_wrt_pskl B1 (pskl_var_f β1n)) < n)
+                  by (rewrite ! size_pskl_open_pskl_wrt_pskl_var;
+                      clear - Hsz; simpl in *; lia);
+                assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V p1x p2x)
+                  by (apply rel_pskl_extend_pair; exact HrelP);
+                assert (Hcov1x : V ∪ ftvar_in_pskl p1x
+                         ∪ ftvar_in_pskl (open_pskl_wrt_pskl B1 (pskl_var_f β1n))
+                         [<=] add β1n Sa0)
+                  by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B1
+                                 (pskl_var_f β1n)) as Hup;
+                      clear - Hcov1 Hup; simpl in *; fsetdec);
+                assert (Hcov2x : V ∪ ftvar_in_pskl p2x
+                         ∪ ftvar_in_pskl (open_pskl_wrt_pskl B2 (pskl_var_f sf))
+                         [<=] add sf Sb0)
+                  by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B2
+                                 (pskl_var_f sf)) as Hup;
+                      clear - Hcov2 Hup; simpl in *; fsetdec)
+            end );
+          ( assert (Hrt' : rel_pskl ((β1n, sf) :: ρ) V
+                      (open_pskl_wrt_pskl B1 (pskl_var_f β1n))
+                      (open_pskl_wrt_pskl B2 (pskl_var_f sf)))
+              by (apply rel_pskl_open_pair; exact Hrt) );
+          ( pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ _ Hsz' Hprem
+                          _ _ _ _ _ _ _ (exist _ r1 Hr1) Er
+                          ((β1n, sf) :: ρ) _ _ _ _ _ _ _ L
+                          Hrs' Hrt'
+                          HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
+                          Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
+                          Hcov1x Hcov2x
+                        ltac:(look_pair_dr) ltac:(look_pair_scp) ltac:(look_pair_scp)
+                        ltac:(look_pair_flx) ltac:(look_pair_flx)) as HREC );
+          ( destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL) );
+          ( exists Ξs2, Q2c );
+          ( split; [ exact Hf2' | ] );
+          ( split; [ exact Hu | exact HL ] ) ] ).
     + (* var subject — the o2 crossing *)
       match goal with
       | Ha : rel_atom ρ V ?g1 ?g2 |- _ =>
@@ -2671,342 +2714,6 @@ Proof.
         apply a_solve_sub_forall_r_gen with (β := β2');
           [ exact Hgf2' | clear - Hβ2'; fsetdec | exact Hsolve2 ]. }
       split; [ exact Hu | exact HL ].
-    + (* arrow subject — same root *)
-      revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hgt := fresh "Hgt" in let Hgfx := fresh "Hgfx" in
-          destruct (sumbool_of_bool scr) as [Hgt | Hgfx];
-          [ | exfalso;
-              rewrite (ghost_free_ck_complete _ Hgf2') in Hgfx;
-              discriminate ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      set (sf := supply_fresh Sb0) in *.
-      assert (HαSa : α `in` Sa0) by (clear - HαV Hcov1; fsetdec).
-      assert (HαSb : α `in` Sb0) by (clear - HαV Hcov2; fsetdec).
-      pose proof (e_looksub_supply_grows Hprem) as Hgr1.
-      assert (Hβ1Sa1 : β1n `in` Sa1) by (clear - Hgr1; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hprem)
-        as (_ & Hbl1 & _ & _).
-      assert (Hβ1Ξ1 : β1n `notin` dom Ξ1) by (clear - Hbl1; fsetdec).
-      assert (Hnf1 : ~ a_flex_tvar Θf1 β1n)
-        by (apply Hop1; [ exact Hβ1Sa1 | exact Hβfr | exact Hβ1Ξ1 ]).
-      pose proof (supply_fresh_notin Sb0) as Hsf0.
-      pose proof (e_looksub_supply_grows Hr1) as Hgr2.
-      assert (HsfS1 : sf `in` lk_supply r1) by (clear - Hgr2; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hr1)
-        as (_ & Hbl2 & _ & _).
-      assert (HsfΞ2 : sf `notin` dom (lk_block r1)) by (clear - Hbl2; fsetdec).
-      assert (Hnf2 : ~ a_flex_tvar Θf2 sf)
-        by (apply Hop2; [ exact HsfS1 | exact Hsf0 | exact HsfΞ2 ]).
-      assert (Hβ1f : β1n `in` ftvar_in_aenv Θf1)
-        by (apply Henr1; clear - Hβ1Sa1 Hβfr; fsetdec).
-      assert (Hsff : sf `in` ftvar_in_aenv Θf2)
-        by (apply Henr2; clear - HsfS1 Hsf0; fsetdec).
-      assert (Hagr' : flex_agree_rel ((β1n, sf) :: ρ) V Θf1 Θf2).
-      { apply flex_agree_rel_extend_pair_iff; [ exact Hagr | ].
-        split; intros Hf; exfalso; [ exact (Hnf1 Hf) | exact (Hnf2 Hf) ]. }
-      assert (Hαl' : α `notin` cols_l ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαl HαSa Hβfr; fsetdec).
-      assert (Hαr' : α `notin` cols_r ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαr HαSb Hsf0; fsetdec).
-      assert (Hop1' : forall x, x `in` Sa1 -> x `notin` add β1n Sa0 ->
-                x `notin` dom Ξ1 -> ~ a_flex_tvar Θf1 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop1;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Hop2' : forall x, x `in` lk_supply r1 -> x `notin` add sf Sb0 ->
-                x `notin` dom (lk_block r1) -> ~ a_flex_tvar Θf2 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop2;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Henr1' : Sa1 ∖ (add β1n Sa0) [<=] ftvar_in_aenv Θf1)
-        by (clear - Henr1; fsetdec).
-      assert (Henr2' : lk_supply r1 ∖ (add sf Sb0) [<=] ftvar_in_aenv Θf2)
-        by (clear - Henr2; fsetdec).
-      assert (Hscp1' : V ∪ cols_l ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc1
-                ∪ ftvar_in_a_cstrs C1 [<=] ftvar_in_aenv Θf1)
-        by (simpl; clear - Hscp1 Hβ1f; fsetdec).
-      assert (Hscp2' : V ∪ cols_r ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc2
-                ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2)
-        by (simpl; clear - Hscp2 Hsff; fsetdec).
-      assert (Hrelacc' : rel_pskl ((β1n, sf) :: ρ) V acc1 acc2)
-        by (apply rel_pskl_extend_pair; exact Hrelacc).
-      match type of HrelP with
-      | rel_pskl _ _ ?p1x ?p2x =>
-          assert (Hsz' : size_pskl p1x
-                   + size_pskl (open_pskl_wrt_pskl B1 (pskl_var_f β1n)) < n)
-            by (rewrite ! size_pskl_open_pskl_wrt_pskl_var;
-                clear - Hsz; simpl in *; lia);
-          assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V p1x p2x)
-            by (apply rel_pskl_extend_pair; exact HrelP);
-          assert (Hcov1x : V ∪ ftvar_in_pskl p1x
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl B1 (pskl_var_f β1n))
-                   [<=] add β1n Sa0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B1
-                           (pskl_var_f β1n)) as Hup;
-                clear - Hcov1 Hup; simpl in *; fsetdec);
-          assert (Hcov2x : V ∪ ftvar_in_pskl p2x
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl B2 (pskl_var_f sf))
-                   [<=] add sf Sb0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B2
-                           (pskl_var_f sf)) as Hup;
-                clear - Hcov2 Hup; simpl in *; fsetdec)
-      end.
-      assert (Hrt' : rel_pskl ((β1n, sf) :: ρ) V
-                (open_pskl_wrt_pskl B1 (pskl_var_f β1n))
-                (open_pskl_wrt_pskl B2 (pskl_var_f sf)))
-        by (apply rel_pskl_open_pair; exact Hrt).
-      pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ _ Hsz' Hprem
-                    _ _ _ _ _ _ _ (exist _ r1 Hr1) Er
-                    ((β1n, sf) :: ρ) _ _ _ _ _ _ _ L
-                    Hrs' Hrt'
-                    HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
-                    Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x
-                  ltac:(look_pair_dr) ltac:(look_pair_scp) ltac:(look_pair_scp)
-                  ltac:(look_pair_flx) ltac:(look_pair_flx)) as HREC.
-      destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
-      exists Ξs2, Q2c.
-      split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
-    + (* ∀ subject — same root *)
-      revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hgt := fresh "Hgt" in let Hgfx := fresh "Hgfx" in
-          destruct (sumbool_of_bool scr) as [Hgt | Hgfx];
-          [ | exfalso;
-              rewrite (ghost_free_ck_complete _ Hgf2') in Hgfx;
-              discriminate ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      set (sf := supply_fresh Sb0) in *.
-      assert (HαSa : α `in` Sa0) by (clear - HαV Hcov1; fsetdec).
-      assert (HαSb : α `in` Sb0) by (clear - HαV Hcov2; fsetdec).
-      pose proof (e_looksub_supply_grows Hprem) as Hgr1.
-      assert (Hβ1Sa1 : β1n `in` Sa1) by (clear - Hgr1; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hprem)
-        as (_ & Hbl1 & _ & _).
-      assert (Hβ1Ξ1 : β1n `notin` dom Ξ1) by (clear - Hbl1; fsetdec).
-      assert (Hnf1 : ~ a_flex_tvar Θf1 β1n)
-        by (apply Hop1; [ exact Hβ1Sa1 | exact Hβfr | exact Hβ1Ξ1 ]).
-      pose proof (supply_fresh_notin Sb0) as Hsf0.
-      pose proof (e_looksub_supply_grows Hr1) as Hgr2.
-      assert (HsfS1 : sf `in` lk_supply r1) by (clear - Hgr2; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hr1)
-        as (_ & Hbl2 & _ & _).
-      assert (HsfΞ2 : sf `notin` dom (lk_block r1)) by (clear - Hbl2; fsetdec).
-      assert (Hnf2 : ~ a_flex_tvar Θf2 sf)
-        by (apply Hop2; [ exact HsfS1 | exact Hsf0 | exact HsfΞ2 ]).
-      assert (Hβ1f : β1n `in` ftvar_in_aenv Θf1)
-        by (apply Henr1; clear - Hβ1Sa1 Hβfr; fsetdec).
-      assert (Hsff : sf `in` ftvar_in_aenv Θf2)
-        by (apply Henr2; clear - HsfS1 Hsf0; fsetdec).
-      assert (Hagr' : flex_agree_rel ((β1n, sf) :: ρ) V Θf1 Θf2).
-      { apply flex_agree_rel_extend_pair_iff; [ exact Hagr | ].
-        split; intros Hf; exfalso; [ exact (Hnf1 Hf) | exact (Hnf2 Hf) ]. }
-      assert (Hαl' : α `notin` cols_l ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαl HαSa Hβfr; fsetdec).
-      assert (Hαr' : α `notin` cols_r ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαr HαSb Hsf0; fsetdec).
-      assert (Hop1' : forall x, x `in` Sa1 -> x `notin` add β1n Sa0 ->
-                x `notin` dom Ξ1 -> ~ a_flex_tvar Θf1 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop1;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Hop2' : forall x, x `in` lk_supply r1 -> x `notin` add sf Sb0 ->
-                x `notin` dom (lk_block r1) -> ~ a_flex_tvar Θf2 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop2;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Henr1' : Sa1 ∖ (add β1n Sa0) [<=] ftvar_in_aenv Θf1)
-        by (clear - Henr1; fsetdec).
-      assert (Henr2' : lk_supply r1 ∖ (add sf Sb0) [<=] ftvar_in_aenv Θf2)
-        by (clear - Henr2; fsetdec).
-      assert (Hscp1' : V ∪ cols_l ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc1
-                ∪ ftvar_in_a_cstrs C1 [<=] ftvar_in_aenv Θf1)
-        by (simpl; clear - Hscp1 Hβ1f; fsetdec).
-      assert (Hscp2' : V ∪ cols_r ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc2
-                ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2)
-        by (simpl; clear - Hscp2 Hsff; fsetdec).
-      assert (Hrelacc' : rel_pskl ((β1n, sf) :: ρ) V acc1 acc2)
-        by (apply rel_pskl_extend_pair; exact Hrelacc).
-      match type of HrelP with
-      | rel_pskl _ _ ?p1x ?p2x =>
-          assert (Hsz' : size_pskl p1x
-                   + size_pskl (open_pskl_wrt_pskl B1 (pskl_var_f β1n)) < n)
-            by (rewrite ! size_pskl_open_pskl_wrt_pskl_var;
-                clear - Hsz; simpl in *; lia);
-          assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V p1x p2x)
-            by (apply rel_pskl_extend_pair; exact HrelP);
-          assert (Hcov1x : V ∪ ftvar_in_pskl p1x
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl B1 (pskl_var_f β1n))
-                   [<=] add β1n Sa0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B1
-                           (pskl_var_f β1n)) as Hup;
-                clear - Hcov1 Hup; simpl in *; fsetdec);
-          assert (Hcov2x : V ∪ ftvar_in_pskl p2x
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl B2 (pskl_var_f sf))
-                   [<=] add sf Sb0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B2
-                           (pskl_var_f sf)) as Hup;
-                clear - Hcov2 Hup; simpl in *; fsetdec)
-      end.
-      assert (Hrt' : rel_pskl ((β1n, sf) :: ρ) V
-                (open_pskl_wrt_pskl B1 (pskl_var_f β1n))
-                (open_pskl_wrt_pskl B2 (pskl_var_f sf)))
-        by (apply rel_pskl_open_pair; exact Hrt).
-      pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ _ Hsz' Hprem
-                    _ _ _ _ _ _ _ (exist _ r1 Hr1) Er
-                    ((β1n, sf) :: ρ) _ _ _ _ _ _ _ L
-                    Hrs' Hrt'
-                    HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
-                    Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x
-                  ltac:(look_pair_dr) ltac:(look_pair_scp) ltac:(look_pair_scp)
-                  ltac:(look_pair_flx) ltac:(look_pair_flx)) as HREC.
-      destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
-      exists Ξs2, Q2c.
-      split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
-    + (* ⫯ subject — same root *)
-      revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hgt := fresh "Hgt" in let Hgfx := fresh "Hgfx" in
-          destruct (sumbool_of_bool scr) as [Hgt | Hgfx];
-          [ | exfalso;
-              rewrite (ghost_free_ck_complete _ Hgf2') in Hgfx;
-              discriminate ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      set (sf := supply_fresh Sb0) in *.
-      assert (HαSa : α `in` Sa0) by (clear - HαV Hcov1; fsetdec).
-      assert (HαSb : α `in` Sb0) by (clear - HαV Hcov2; fsetdec).
-      pose proof (e_looksub_supply_grows Hprem) as Hgr1.
-      assert (Hβ1Sa1 : β1n `in` Sa1) by (clear - Hgr1; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hprem)
-        as (_ & Hbl1 & _ & _).
-      assert (Hβ1Ξ1 : β1n `notin` dom Ξ1) by (clear - Hbl1; fsetdec).
-      assert (Hnf1 : ~ a_flex_tvar Θf1 β1n)
-        by (apply Hop1; [ exact Hβ1Sa1 | exact Hβfr | exact Hβ1Ξ1 ]).
-      pose proof (supply_fresh_notin Sb0) as Hsf0.
-      pose proof (e_looksub_supply_grows Hr1) as Hgr2.
-      assert (HsfS1 : sf `in` lk_supply r1) by (clear - Hgr2; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hr1)
-        as (_ & Hbl2 & _ & _).
-      assert (HsfΞ2 : sf `notin` dom (lk_block r1)) by (clear - Hbl2; fsetdec).
-      assert (Hnf2 : ~ a_flex_tvar Θf2 sf)
-        by (apply Hop2; [ exact HsfS1 | exact Hsf0 | exact HsfΞ2 ]).
-      assert (Hβ1f : β1n `in` ftvar_in_aenv Θf1)
-        by (apply Henr1; clear - Hβ1Sa1 Hβfr; fsetdec).
-      assert (Hsff : sf `in` ftvar_in_aenv Θf2)
-        by (apply Henr2; clear - HsfS1 Hsf0; fsetdec).
-      assert (Hagr' : flex_agree_rel ((β1n, sf) :: ρ) V Θf1 Θf2).
-      { apply flex_agree_rel_extend_pair_iff; [ exact Hagr | ].
-        split; intros Hf; exfalso; [ exact (Hnf1 Hf) | exact (Hnf2 Hf) ]. }
-      assert (Hαl' : α `notin` cols_l ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαl HαSa Hβfr; fsetdec).
-      assert (Hαr' : α `notin` cols_r ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαr HαSb Hsf0; fsetdec).
-      assert (Hop1' : forall x, x `in` Sa1 -> x `notin` add β1n Sa0 ->
-                x `notin` dom Ξ1 -> ~ a_flex_tvar Θf1 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop1;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Hop2' : forall x, x `in` lk_supply r1 -> x `notin` add sf Sb0 ->
-                x `notin` dom (lk_block r1) -> ~ a_flex_tvar Θf2 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop2;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Henr1' : Sa1 ∖ (add β1n Sa0) [<=] ftvar_in_aenv Θf1)
-        by (clear - Henr1; fsetdec).
-      assert (Henr2' : lk_supply r1 ∖ (add sf Sb0) [<=] ftvar_in_aenv Θf2)
-        by (clear - Henr2; fsetdec).
-      assert (Hscp1' : V ∪ cols_l ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc1
-                ∪ ftvar_in_a_cstrs C1 [<=] ftvar_in_aenv Θf1)
-        by (simpl; clear - Hscp1 Hβ1f; fsetdec).
-      assert (Hscp2' : V ∪ cols_r ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc2
-                ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2)
-        by (simpl; clear - Hscp2 Hsff; fsetdec).
-      assert (Hrelacc' : rel_pskl ((β1n, sf) :: ρ) V acc1 acc2)
-        by (apply rel_pskl_extend_pair; exact Hrelacc).
-      match type of HrelP with
-      | rel_pskl _ _ ?p1x ?p2x =>
-          assert (Hsz' : size_pskl p1x
-                   + size_pskl (open_pskl_wrt_pskl B1 (pskl_var_f β1n)) < n)
-            by (rewrite ! size_pskl_open_pskl_wrt_pskl_var;
-                clear - Hsz; simpl in *; lia);
-          assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V p1x p2x)
-            by (apply rel_pskl_extend_pair; exact HrelP);
-          assert (Hcov1x : V ∪ ftvar_in_pskl p1x
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl B1 (pskl_var_f β1n))
-                   [<=] add β1n Sa0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B1
-                           (pskl_var_f β1n)) as Hup;
-                clear - Hcov1 Hup; simpl in *; fsetdec);
-          assert (Hcov2x : V ∪ ftvar_in_pskl p2x
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl B2 (pskl_var_f sf))
-                   [<=] add sf Sb0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B2
-                           (pskl_var_f sf)) as Hup;
-                clear - Hcov2 Hup; simpl in *; fsetdec)
-      end.
-      assert (Hrt' : rel_pskl ((β1n, sf) :: ρ) V
-                (open_pskl_wrt_pskl B1 (pskl_var_f β1n))
-                (open_pskl_wrt_pskl B2 (pskl_var_f sf)))
-        by (apply rel_pskl_open_pair; exact Hrt).
-      pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ _ Hsz' Hprem
-                    _ _ _ _ _ _ _ (exist _ r1 Hr1) Er
-                    ((β1n, sf) :: ρ) _ _ _ _ _ _ _ L
-                    Hrs' Hrt'
-                    HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
-                    Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x
-                  ltac:(look_pair_dr) ltac:(look_pair_scp) ltac:(look_pair_scp)
-                  ltac:(look_pair_flx) ltac:(look_pair_flx)) as HREC.
-      destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
-      exists Ξs2, Q2c.
-      split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
   - (* LS-Arrow: the composition case (eq half via look_pair_fold_eq, sub via IHn) *)
     match goal with
     | Ha : e_lookeq Sa0 _ _ ?pa ?pa' ?sm ?xa ?ca,
@@ -3204,11 +2911,11 @@ Proof.
           | apply Hflxr in Hf; clear - Hf Hbc Hfs2a ]; fsetdec. }
     assert (Hb1b : forall x bd, binds x bd Ξ1b ->
               binds x bd (Ξsa ++ Θf1))
-      by (intros x bd Hxb; apply binds_app_right; apply Hb1;
+      by (intros x bd Hxb; apply binds_app_3; apply Hb1;
           unfold binds in *; apply in_or_app; right; exact Hxb).
     assert (Hb2b : forall x bd, binds x bd (lk_block r2b) ->
               binds x bd (Ξ2a ++ Θf2))
-      by (intros x bd Hxb; apply binds_app_right; apply Hb2;
+      by (intros x bd Hxb; apply binds_app_3; apply Hb2;
           unfold binds in *; apply in_or_app; right; exact Hxb).
     assert (Hop1b : forall x, x `in` Sa1 -> x `notin` Sm ->
               x `notin` dom Ξ1b -> ~ a_flex_tvar (Ξsa ++ Θf1) x).
@@ -3320,318 +3027,114 @@ Proof.
     end.
     inversion HrelP'; subst;
       try solve [ inversion hp2' ].
-    + (* unit target — same root through the catch-all *)
-      revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      set (sf := supply_fresh Sb0) in *.
-      assert (HαSa : α `in` Sa0) by (clear - HαV Hcov1; fsetdec).
-      assert (HαSb : α `in` Sb0) by (clear - HαV Hcov2; fsetdec).
-      pose proof (e_looksub_supply_grows Hprem) as Hgr1.
-      assert (Hβ1Sa1 : β1n `in` Sa1) by (clear - Hgr1; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hprem)
-        as (_ & Hbl1 & _ & _).
-      assert (Hβ1Ξ1 : β1n `notin` dom Ξ1) by (clear - Hbl1; fsetdec).
-      assert (Hnf1 : ~ a_flex_tvar Θf1 β1n)
-        by (apply Hop1; [ exact Hβ1Sa1 | exact Hβfr | exact Hβ1Ξ1 ]).
-      pose proof (supply_fresh_notin Sb0) as Hsf0.
-      pose proof (e_looksub_supply_grows Hr1) as Hgr2.
-      assert (HsfS1 : sf `in` lk_supply r1) by (clear - Hgr2; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hr1)
-        as (_ & Hbl2 & _ & _).
-      assert (HsfΞ2 : sf `notin` dom (lk_block r1)) by (clear - Hbl2; fsetdec).
-      assert (Hnf2 : ~ a_flex_tvar Θf2 sf)
-        by (apply Hop2; [ exact HsfS1 | exact Hsf0 | exact HsfΞ2 ]).
-      assert (Hβ1f : β1n `in` ftvar_in_aenv Θf1)
-        by (apply Henr1; clear - Hβ1Sa1 Hβfr; fsetdec).
-      assert (Hsff : sf `in` ftvar_in_aenv Θf2)
-        by (apply Henr2; clear - HsfS1 Hsf0; fsetdec).
-      assert (Hagr' : flex_agree_rel ((β1n, sf) :: ρ) V Θf1 Θf2).
-      { apply flex_agree_rel_extend_pair_iff; [ exact Hagr | ].
-        split; intros Hf; exfalso; [ exact (Hnf1 Hf) | exact (Hnf2 Hf) ]. }
-      assert (Hαl' : α `notin` cols_l ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαl HαSa Hβfr; fsetdec).
-      assert (Hαr' : α `notin` cols_r ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαr HαSb Hsf0; fsetdec).
-      assert (Hop1' : forall x, x `in` Sa1 -> x `notin` add β1n Sa0 ->
-                x `notin` dom Ξ1 -> ~ a_flex_tvar Θf1 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop1;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Hop2' : forall x, x `in` lk_supply r1 -> x `notin` add sf Sb0 ->
-                x `notin` dom (lk_block r1) -> ~ a_flex_tvar Θf2 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop2;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Henr1' : Sa1 ∖ (add β1n Sa0) [<=] ftvar_in_aenv Θf1)
-        by (clear - Henr1; fsetdec).
-      assert (Henr2' : lk_supply r1 ∖ (add sf Sb0) [<=] ftvar_in_aenv Θf2)
-        by (clear - Henr2; fsetdec).
-      assert (Hscp1' : V ∪ cols_l ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc1
-                ∪ ftvar_in_a_cstrs C1 [<=] ftvar_in_aenv Θf1)
-        by (simpl; clear - Hscp1 Hβ1f; fsetdec).
-      assert (Hscp2' : V ∪ cols_r ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc2
-                ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2)
-        by (simpl; clear - Hscp2 Hsff; fsetdec).
-      assert (Hrelacc' : rel_pskl ((β1n, sf) :: ρ) V acc1 acc2)
-        by (apply rel_pskl_extend_pair; exact Hrelacc).
-      match type of HrelP' with
-      | rel_pskl _ _ ?t1x ?t2x =>
-          assert (Hsz' : size_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                   + size_pskl t1x < n)
-            by (rewrite ! size_pskl_open_pskl_wrt_pskl_var;
-                clear - Hsz; simpl in *; lia);
-          assert (Hrt2' : rel_pskl ((β1n, sf) :: ρ) V t1x t2x)
-            by (apply rel_pskl_extend_pair; exact HrelP');
-          assert (Hcov1x : V
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                   ∪ ftvar_in_pskl t1x [<=] add β1n Sa0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0s
-                           (pskl_var_f β1n)) as Hup;
-                clear - Hcov1 Hup; simpl in *; fsetdec);
-          assert (Hcov2x : V
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q0s (pskl_var_f sf))
-                   ∪ ftvar_in_pskl t2x [<=] add sf Sb0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q0s
-                           (pskl_var_f sf)) as Hup;
-                clear - Hcov2 Hup; simpl in *; fsetdec)
-      end.
-      assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V
-                (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                (open_pskl_wrt_pskl Q0s (pskl_var_f sf)))
-        by (apply rel_pskl_open_pair; exact Hrs0).
-      pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ _ Hsz' Hprem
-                    _ _ _ _ _ _ _ (exist _ r1 Hr1) Er
-                    ((β1n, sf) :: ρ) _ _ _ _ _ _ _ L
-                    Hrs' Hrt2'
-                    HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
-                    Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x
-                  ltac:(look_pair_dr) ltac:(look_pair_scp) ltac:(look_pair_scp)
-                  ltac:(look_pair_flx) ltac:(look_pair_flx)) as HREC.
-      destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
-      exists Ξs2, Q2c.
-      split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
-    + (* var target — same root *)
-      revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      set (sf := supply_fresh Sb0) in *.
-      assert (HαSa : α `in` Sa0) by (clear - HαV Hcov1; fsetdec).
-      assert (HαSb : α `in` Sb0) by (clear - HαV Hcov2; fsetdec).
-      pose proof (e_looksub_supply_grows Hprem) as Hgr1.
-      assert (Hβ1Sa1 : β1n `in` Sa1) by (clear - Hgr1; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hprem)
-        as (_ & Hbl1 & _ & _).
-      assert (Hβ1Ξ1 : β1n `notin` dom Ξ1) by (clear - Hbl1; fsetdec).
-      assert (Hnf1 : ~ a_flex_tvar Θf1 β1n)
-        by (apply Hop1; [ exact Hβ1Sa1 | exact Hβfr | exact Hβ1Ξ1 ]).
-      pose proof (supply_fresh_notin Sb0) as Hsf0.
-      pose proof (e_looksub_supply_grows Hr1) as Hgr2.
-      assert (HsfS1 : sf `in` lk_supply r1) by (clear - Hgr2; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hr1)
-        as (_ & Hbl2 & _ & _).
-      assert (HsfΞ2 : sf `notin` dom (lk_block r1)) by (clear - Hbl2; fsetdec).
-      assert (Hnf2 : ~ a_flex_tvar Θf2 sf)
-        by (apply Hop2; [ exact HsfS1 | exact Hsf0 | exact HsfΞ2 ]).
-      assert (Hβ1f : β1n `in` ftvar_in_aenv Θf1)
-        by (apply Henr1; clear - Hβ1Sa1 Hβfr; fsetdec).
-      assert (Hsff : sf `in` ftvar_in_aenv Θf2)
-        by (apply Henr2; clear - HsfS1 Hsf0; fsetdec).
-      assert (Hagr' : flex_agree_rel ((β1n, sf) :: ρ) V Θf1 Θf2).
-      { apply flex_agree_rel_extend_pair_iff; [ exact Hagr | ].
-        split; intros Hf; exfalso; [ exact (Hnf1 Hf) | exact (Hnf2 Hf) ]. }
-      assert (Hαl' : α `notin` cols_l ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαl HαSa Hβfr; fsetdec).
-      assert (Hαr' : α `notin` cols_r ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαr HαSb Hsf0; fsetdec).
-      assert (Hop1' : forall x, x `in` Sa1 -> x `notin` add β1n Sa0 ->
-                x `notin` dom Ξ1 -> ~ a_flex_tvar Θf1 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop1;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Hop2' : forall x, x `in` lk_supply r1 -> x `notin` add sf Sb0 ->
-                x `notin` dom (lk_block r1) -> ~ a_flex_tvar Θf2 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop2;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Henr1' : Sa1 ∖ (add β1n Sa0) [<=] ftvar_in_aenv Θf1)
-        by (clear - Henr1; fsetdec).
-      assert (Henr2' : lk_supply r1 ∖ (add sf Sb0) [<=] ftvar_in_aenv Θf2)
-        by (clear - Henr2; fsetdec).
-      assert (Hscp1' : V ∪ cols_l ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc1
-                ∪ ftvar_in_a_cstrs C1 [<=] ftvar_in_aenv Θf1)
-        by (simpl; clear - Hscp1 Hβ1f; fsetdec).
-      assert (Hscp2' : V ∪ cols_r ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc2
-                ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2)
-        by (simpl; clear - Hscp2 Hsff; fsetdec).
-      assert (Hrelacc' : rel_pskl ((β1n, sf) :: ρ) V acc1 acc2)
-        by (apply rel_pskl_extend_pair; exact Hrelacc).
-      match type of HrelP' with
-      | rel_pskl _ _ ?t1x ?t2x =>
-          assert (Hsz' : size_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                   + size_pskl t1x < n)
-            by (rewrite ! size_pskl_open_pskl_wrt_pskl_var;
-                clear - Hsz; simpl in *; lia);
-          assert (Hrt2' : rel_pskl ((β1n, sf) :: ρ) V t1x t2x)
-            by (apply rel_pskl_extend_pair; exact HrelP');
-          assert (Hcov1x : V
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                   ∪ ftvar_in_pskl t1x [<=] add β1n Sa0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0s
-                           (pskl_var_f β1n)) as Hup;
-                clear - Hcov1 Hup; simpl in *; fsetdec);
-          assert (Hcov2x : V
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q0s (pskl_var_f sf))
-                   ∪ ftvar_in_pskl t2x [<=] add sf Sb0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q0s
-                           (pskl_var_f sf)) as Hup;
-                clear - Hcov2 Hup; simpl in *; fsetdec)
-      end.
-      assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V
-                (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                (open_pskl_wrt_pskl Q0s (pskl_var_f sf)))
-        by (apply rel_pskl_open_pair; exact Hrs0).
-      pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ _ Hsz' Hprem
-                    _ _ _ _ _ _ _ (exist _ r1 Hr1) Er
-                    ((β1n, sf) :: ρ) _ _ _ _ _ _ _ L
-                    Hrs' Hrt2'
-                    HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
-                    Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x
-                  ltac:(look_pair_dr) ltac:(look_pair_scp) ltac:(look_pair_scp)
-                  ltac:(look_pair_flx) ltac:(look_pair_flx)) as HREC.
-      destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
-      exists Ξs2, Q2c.
-      split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
-    + (* arrow target — same root *)
-      revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      set (sf := supply_fresh Sb0) in *.
-      assert (HαSa : α `in` Sa0) by (clear - HαV Hcov1; fsetdec).
-      assert (HαSb : α `in` Sb0) by (clear - HαV Hcov2; fsetdec).
-      pose proof (e_looksub_supply_grows Hprem) as Hgr1.
-      assert (Hβ1Sa1 : β1n `in` Sa1) by (clear - Hgr1; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hprem)
-        as (_ & Hbl1 & _ & _).
-      assert (Hβ1Ξ1 : β1n `notin` dom Ξ1) by (clear - Hbl1; fsetdec).
-      assert (Hnf1 : ~ a_flex_tvar Θf1 β1n)
-        by (apply Hop1; [ exact Hβ1Sa1 | exact Hβfr | exact Hβ1Ξ1 ]).
-      pose proof (supply_fresh_notin Sb0) as Hsf0.
-      pose proof (e_looksub_supply_grows Hr1) as Hgr2.
-      assert (HsfS1 : sf `in` lk_supply r1) by (clear - Hgr2; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hr1)
-        as (_ & Hbl2 & _ & _).
-      assert (HsfΞ2 : sf `notin` dom (lk_block r1)) by (clear - Hbl2; fsetdec).
-      assert (Hnf2 : ~ a_flex_tvar Θf2 sf)
-        by (apply Hop2; [ exact HsfS1 | exact Hsf0 | exact HsfΞ2 ]).
-      assert (Hβ1f : β1n `in` ftvar_in_aenv Θf1)
-        by (apply Henr1; clear - Hβ1Sa1 Hβfr; fsetdec).
-      assert (Hsff : sf `in` ftvar_in_aenv Θf2)
-        by (apply Henr2; clear - HsfS1 Hsf0; fsetdec).
-      assert (Hagr' : flex_agree_rel ((β1n, sf) :: ρ) V Θf1 Θf2).
-      { apply flex_agree_rel_extend_pair_iff; [ exact Hagr | ].
-        split; intros Hf; exfalso; [ exact (Hnf1 Hf) | exact (Hnf2 Hf) ]. }
-      assert (Hαl' : α `notin` cols_l ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαl HαSa Hβfr; fsetdec).
-      assert (Hαr' : α `notin` cols_r ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαr HαSb Hsf0; fsetdec).
-      assert (Hop1' : forall x, x `in` Sa1 -> x `notin` add β1n Sa0 ->
-                x `notin` dom Ξ1 -> ~ a_flex_tvar Θf1 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop1;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Hop2' : forall x, x `in` lk_supply r1 -> x `notin` add sf Sb0 ->
-                x `notin` dom (lk_block r1) -> ~ a_flex_tvar Θf2 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop2;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Henr1' : Sa1 ∖ (add β1n Sa0) [<=] ftvar_in_aenv Θf1)
-        by (clear - Henr1; fsetdec).
-      assert (Henr2' : lk_supply r1 ∖ (add sf Sb0) [<=] ftvar_in_aenv Θf2)
-        by (clear - Henr2; fsetdec).
-      assert (Hscp1' : V ∪ cols_l ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc1
-                ∪ ftvar_in_a_cstrs C1 [<=] ftvar_in_aenv Θf1)
-        by (simpl; clear - Hscp1 Hβ1f; fsetdec).
-      assert (Hscp2' : V ∪ cols_r ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc2
-                ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2)
-        by (simpl; clear - Hscp2 Hsff; fsetdec).
-      assert (Hrelacc' : rel_pskl ((β1n, sf) :: ρ) V acc1 acc2)
-        by (apply rel_pskl_extend_pair; exact Hrelacc).
-      match type of HrelP' with
-      | rel_pskl _ _ ?t1x ?t2x =>
-          assert (Hsz' : size_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                   + size_pskl t1x < n)
-            by (rewrite ! size_pskl_open_pskl_wrt_pskl_var;
-                clear - Hsz; simpl in *; lia);
-          assert (Hrt2' : rel_pskl ((β1n, sf) :: ρ) V t1x t2x)
-            by (apply rel_pskl_extend_pair; exact HrelP');
-          assert (Hcov1x : V
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                   ∪ ftvar_in_pskl t1x [<=] add β1n Sa0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0s
-                           (pskl_var_f β1n)) as Hup;
-                clear - Hcov1 Hup; simpl in *; fsetdec);
-          assert (Hcov2x : V
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q0s (pskl_var_f sf))
-                   ∪ ftvar_in_pskl t2x [<=] add sf Sb0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q0s
-                           (pskl_var_f sf)) as Hup;
-                clear - Hcov2 Hup; simpl in *; fsetdec)
-      end.
-      assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V
-                (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                (open_pskl_wrt_pskl Q0s (pskl_var_f sf)))
-        by (apply rel_pskl_open_pair; exact Hrs0).
-      pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ _ Hsz' Hprem
-                    _ _ _ _ _ _ _ (exist _ r1 Hr1) Er
-                    ((β1n, sf) :: ρ) _ _ _ _ _ _ _ L
-                    Hrs' Hrt2'
-                    HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
-                    Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x
-                  ltac:(look_pair_dr) ltac:(look_pair_scp) ltac:(look_pair_scp)
-                  ltac:(look_pair_flx) ltac:(look_pair_flx)) as HREC.
-      destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
-      exists Ξs2, Q2c.
-      split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
+    (* unit / var / arrow / ⫯ target — same root: one script for the four shapes *)
+    1-3,6:
+      ( ( revert Hs );
+      ( simp e_looksub_impl );
+      ( match goal with
+        | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
+            let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
+            destruct (sumbool_of_bool scr) as [Hmt | Hmf];
+            [ | exfalso; apply mem_false_notin in Hmf;
+                simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
+        end );
+      ( match goal with
+        | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
+            let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
+            let Er := fresh "Er" in
+            destruct call as [ [r1 Hr1] | ] eqn:Er;
+            [ | intros Hs; discriminate ]
+        end );
+      ( intros Hs );
+      ( inversion Hs; subst s; clear Hs );
+      ( simpl in Hb2, Hop2, Henr2, Hscp2 |- * );
+      ( set (sf := supply_fresh Sb0) in * );
+      ( assert (HαSa : α `in` Sa0) by (clear - HαV Hcov1; fsetdec) );
+      ( assert (HαSb : α `in` Sb0) by (clear - HαV Hcov2; fsetdec) );
+      ( pose proof (e_looksub_supply_grows Hprem) as Hgr1 );
+      ( assert (Hβ1Sa1 : β1n `in` Sa1) by (clear - Hgr1; fsetdec) );
+      ( pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hprem)
+          as (_ & Hbl1 & _ & _) );
+      ( assert (Hβ1Ξ1 : β1n `notin` dom Ξ1) by (clear - Hbl1; fsetdec) );
+      ( assert (Hnf1 : ~ a_flex_tvar Θf1 β1n)
+          by (apply Hop1; [ exact Hβ1Sa1 | exact Hβfr | exact Hβ1Ξ1 ]) );
+      ( pose proof (supply_fresh_notin Sb0) as Hsf0 );
+      ( pose proof (e_looksub_supply_grows Hr1) as Hgr2 );
+      ( assert (HsfS1 : sf `in` lk_supply r1) by (clear - Hgr2; fsetdec) );
+      ( pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hr1)
+          as (_ & Hbl2 & _ & _) );
+      ( assert (HsfΞ2 : sf `notin` dom (lk_block r1)) by (clear - Hbl2; fsetdec) );
+      ( assert (Hnf2 : ~ a_flex_tvar Θf2 sf)
+          by (apply Hop2; [ exact HsfS1 | exact Hsf0 | exact HsfΞ2 ]) );
+      ( assert (Hβ1f : β1n `in` ftvar_in_aenv Θf1)
+          by (apply Henr1; clear - Hβ1Sa1 Hβfr; fsetdec) );
+      ( assert (Hsff : sf `in` ftvar_in_aenv Θf2)
+          by (apply Henr2; clear - HsfS1 Hsf0; fsetdec) );
+      ( assert (Hagr' : flex_agree_rel ((β1n, sf) :: ρ) V Θf1 Θf2) );
+      [ ( apply flex_agree_rel_extend_pair_iff; [ exact Hagr | ] );
+          ( split; intros Hf; exfalso; [ exact (Hnf1 Hf) | exact (Hnf2 Hf) ] )
+      | ( assert (Hαl' : α `notin` cols_l ((β1n, sf) :: ρ))
+              by (simpl; clear - Hαl HαSa Hβfr; fsetdec) );
+          ( assert (Hαr' : α `notin` cols_r ((β1n, sf) :: ρ))
+              by (simpl; clear - Hαr HαSb Hsf0; fsetdec) );
+          ( assert (Hop1' : forall x, x `in` Sa1 -> x `notin` add β1n Sa0 ->
+                      x `notin` dom Ξ1 -> ~ a_flex_tvar Θf1 x)
+              by (intros x Hx1 Hx2 Hx3; apply Hop1;
+                  [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]) );
+          ( assert (Hop2' : forall x, x `in` lk_supply r1 -> x `notin` add sf Sb0 ->
+                      x `notin` dom (lk_block r1) -> ~ a_flex_tvar Θf2 x)
+              by (intros x Hx1 Hx2 Hx3; apply Hop2;
+                  [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]) );
+          ( assert (Henr1' : Sa1 ∖ (add β1n Sa0) [<=] ftvar_in_aenv Θf1)
+              by (clear - Henr1; fsetdec) );
+          ( assert (Henr2' : lk_supply r1 ∖ (add sf Sb0) [<=] ftvar_in_aenv Θf2)
+              by (clear - Henr2; fsetdec) );
+          ( assert (Hscp1' : V ∪ cols_l ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc1
+                      ∪ ftvar_in_a_cstrs C1 [<=] ftvar_in_aenv Θf1)
+              by (simpl; clear - Hscp1 Hβ1f; fsetdec) );
+          ( assert (Hscp2' : V ∪ cols_r ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc2
+                      ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2)
+              by (simpl; clear - Hscp2 Hsff; fsetdec) );
+          ( assert (Hrelacc' : rel_pskl ((β1n, sf) :: ρ) V acc1 acc2)
+              by (apply rel_pskl_extend_pair; exact Hrelacc) );
+          ( match type of HrelP' with
+            | rel_pskl _ _ ?t1x ?t2x =>
+                assert (Hsz' : size_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
+                         + size_pskl t1x < n)
+                  by (rewrite ! size_pskl_open_pskl_wrt_pskl_var;
+                      clear - Hsz; simpl in *; lia);
+                assert (Hrt2' : rel_pskl ((β1n, sf) :: ρ) V t1x t2x)
+                  by (apply rel_pskl_extend_pair; exact HrelP');
+                assert (Hcov1x : V
+                         ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
+                         ∪ ftvar_in_pskl t1x [<=] add β1n Sa0)
+                  by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0s
+                                 (pskl_var_f β1n)) as Hup;
+                      clear - Hcov1 Hup; simpl in *; fsetdec);
+                assert (Hcov2x : V
+                         ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q0s (pskl_var_f sf))
+                         ∪ ftvar_in_pskl t2x [<=] add sf Sb0)
+                  by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q0s
+                                 (pskl_var_f sf)) as Hup;
+                      clear - Hcov2 Hup; simpl in *; fsetdec)
+            end );
+          ( assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V
+                      (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
+                      (open_pskl_wrt_pskl Q0s (pskl_var_f sf)))
+              by (apply rel_pskl_open_pair; exact Hrs0) );
+          ( pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ _ Hsz' Hprem
+                          _ _ _ _ _ _ _ (exist _ r1 Hr1) Er
+                          ((β1n, sf) :: ρ) _ _ _ _ _ _ _ L
+                          Hrs' Hrt2'
+                          HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
+                          Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
+                          Hcov1x Hcov2x
+                        ltac:(look_pair_dr) ltac:(look_pair_scp) ltac:(look_pair_scp)
+                        ltac:(look_pair_flx) ltac:(look_pair_flx)) as HREC );
+          ( destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL) );
+          ( exists Ξs2, Q2c );
+          ( split; [ exact Hf2' | ] );
+          ( split; [ exact Hu | exact HL ] ) ] ).
     + (* ∀ target: TC splits on the runner's gf test *)
       match goal with
       | Hy : rel_pskl ρ V ?b1 ?b2,
@@ -3639,110 +3142,114 @@ Proof.
           rename Hy into Hrt; rename b1 into B1; rename b2 into B2
       end.
       destruct m.
-      * (* TI — the catch-all *)
-        revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      set (sf := supply_fresh Sb0) in *.
-      assert (HαSa : α `in` Sa0) by (clear - HαV Hcov1; fsetdec).
-      assert (HαSb : α `in` Sb0) by (clear - HαV Hcov2; fsetdec).
-      pose proof (e_looksub_supply_grows Hprem) as Hgr1.
-      assert (Hβ1Sa1 : β1n `in` Sa1) by (clear - Hgr1; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hprem)
-        as (_ & Hbl1 & _ & _).
-      assert (Hβ1Ξ1 : β1n `notin` dom Ξ1) by (clear - Hbl1; fsetdec).
-      assert (Hnf1 : ~ a_flex_tvar Θf1 β1n)
-        by (apply Hop1; [ exact Hβ1Sa1 | exact Hβfr | exact Hβ1Ξ1 ]).
-      pose proof (supply_fresh_notin Sb0) as Hsf0.
-      pose proof (e_looksub_supply_grows Hr1) as Hgr2.
-      assert (HsfS1 : sf `in` lk_supply r1) by (clear - Hgr2; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hr1)
-        as (_ & Hbl2 & _ & _).
-      assert (HsfΞ2 : sf `notin` dom (lk_block r1)) by (clear - Hbl2; fsetdec).
-      assert (Hnf2 : ~ a_flex_tvar Θf2 sf)
-        by (apply Hop2; [ exact HsfS1 | exact Hsf0 | exact HsfΞ2 ]).
-      assert (Hβ1f : β1n `in` ftvar_in_aenv Θf1)
-        by (apply Henr1; clear - Hβ1Sa1 Hβfr; fsetdec).
-      assert (Hsff : sf `in` ftvar_in_aenv Θf2)
-        by (apply Henr2; clear - HsfS1 Hsf0; fsetdec).
-      assert (Hagr' : flex_agree_rel ((β1n, sf) :: ρ) V Θf1 Θf2).
-      { apply flex_agree_rel_extend_pair_iff; [ exact Hagr | ].
-        split; intros Hf; exfalso; [ exact (Hnf1 Hf) | exact (Hnf2 Hf) ]. }
-      assert (Hαl' : α `notin` cols_l ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαl HαSa Hβfr; fsetdec).
-      assert (Hαr' : α `notin` cols_r ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαr HαSb Hsf0; fsetdec).
-      assert (Hop1' : forall x, x `in` Sa1 -> x `notin` add β1n Sa0 ->
-                x `notin` dom Ξ1 -> ~ a_flex_tvar Θf1 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop1;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Hop2' : forall x, x `in` lk_supply r1 -> x `notin` add sf Sb0 ->
-                x `notin` dom (lk_block r1) -> ~ a_flex_tvar Θf2 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop2;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Henr1' : Sa1 ∖ (add β1n Sa0) [<=] ftvar_in_aenv Θf1)
-        by (clear - Henr1; fsetdec).
-      assert (Henr2' : lk_supply r1 ∖ (add sf Sb0) [<=] ftvar_in_aenv Θf2)
-        by (clear - Henr2; fsetdec).
-      assert (Hscp1' : V ∪ cols_l ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc1
-                ∪ ftvar_in_a_cstrs C1 [<=] ftvar_in_aenv Θf1)
-        by (simpl; clear - Hscp1 Hβ1f; fsetdec).
-      assert (Hscp2' : V ∪ cols_r ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc2
-                ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2)
-        by (simpl; clear - Hscp2 Hsff; fsetdec).
-      assert (Hrelacc' : rel_pskl ((β1n, sf) :: ρ) V acc1 acc2)
-        by (apply rel_pskl_extend_pair; exact Hrelacc).
-      match type of HrelP' with
-      | rel_pskl _ _ ?t1x ?t2x =>
-          assert (Hsz' : size_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                   + size_pskl t1x < n)
-            by (rewrite ! size_pskl_open_pskl_wrt_pskl_var;
-                clear - Hsz; simpl in *; lia);
-          assert (Hrt2' : rel_pskl ((β1n, sf) :: ρ) V t1x t2x)
-            by (apply rel_pskl_extend_pair; exact HrelP');
-          assert (Hcov1x : V
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                   ∪ ftvar_in_pskl t1x [<=] add β1n Sa0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0s
-                           (pskl_var_f β1n)) as Hup;
-                clear - Hcov1 Hup; simpl in *; fsetdec);
-          assert (Hcov2x : V
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q0s (pskl_var_f sf))
-                   ∪ ftvar_in_pskl t2x [<=] add sf Sb0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q0s
-                           (pskl_var_f sf)) as Hup;
-                clear - Hcov2 Hup; simpl in *; fsetdec)
-      end.
-      assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V
-                (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                (open_pskl_wrt_pskl Q0s (pskl_var_f sf)))
-        by (apply rel_pskl_open_pair; exact Hrs0).
-      pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ _ Hsz' Hprem
-                    _ _ _ _ _ _ _ (exist _ r1 Hr1) Er
-                    ((β1n, sf) :: ρ) _ _ _ _ _ _ _ L
-                    Hrs' Hrt2'
-                    HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
-                    Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x
-                  ltac:(look_pair_dr) ltac:(look_pair_scp) ltac:(look_pair_scp)
-                  ltac:(look_pair_flx) ltac:(look_pair_flx)) as HREC.
-      destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
-      exists Ξs2, Q2c.
-      split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
+      (* TI / FN — the catch-all, one script for both modes *)
+      1,3:
+        ( ( revert Hs );
+        ( simp e_looksub_impl );
+        ( match goal with
+          | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
+              let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
+              destruct (sumbool_of_bool scr) as [Hmt | Hmf];
+              [ | exfalso; apply mem_false_notin in Hmf;
+                  simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
+          end );
+        ( match goal with
+          | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
+              let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
+              let Er := fresh "Er" in
+              destruct call as [ [r1 Hr1] | ] eqn:Er;
+              [ | intros Hs; discriminate ]
+          end );
+        ( intros Hs );
+        ( inversion Hs; subst s; clear Hs );
+        ( simpl in Hb2, Hop2, Henr2, Hscp2 |- * );
+        ( set (sf := supply_fresh Sb0) in * );
+        ( assert (HαSa : α `in` Sa0) by (clear - HαV Hcov1; fsetdec) );
+        ( assert (HαSb : α `in` Sb0) by (clear - HαV Hcov2; fsetdec) );
+        ( pose proof (e_looksub_supply_grows Hprem) as Hgr1 );
+        ( assert (Hβ1Sa1 : β1n `in` Sa1) by (clear - Hgr1; fsetdec) );
+        ( pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hprem)
+            as (_ & Hbl1 & _ & _) );
+        ( assert (Hβ1Ξ1 : β1n `notin` dom Ξ1) by (clear - Hbl1; fsetdec) );
+        ( assert (Hnf1 : ~ a_flex_tvar Θf1 β1n)
+            by (apply Hop1; [ exact Hβ1Sa1 | exact Hβfr | exact Hβ1Ξ1 ]) );
+        ( pose proof (supply_fresh_notin Sb0) as Hsf0 );
+        ( pose proof (e_looksub_supply_grows Hr1) as Hgr2 );
+        ( assert (HsfS1 : sf `in` lk_supply r1) by (clear - Hgr2; fsetdec) );
+        ( pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hr1)
+            as (_ & Hbl2 & _ & _) );
+        ( assert (HsfΞ2 : sf `notin` dom (lk_block r1)) by (clear - Hbl2; fsetdec) );
+        ( assert (Hnf2 : ~ a_flex_tvar Θf2 sf)
+            by (apply Hop2; [ exact HsfS1 | exact Hsf0 | exact HsfΞ2 ]) );
+        ( assert (Hβ1f : β1n `in` ftvar_in_aenv Θf1)
+            by (apply Henr1; clear - Hβ1Sa1 Hβfr; fsetdec) );
+        ( assert (Hsff : sf `in` ftvar_in_aenv Θf2)
+            by (apply Henr2; clear - HsfS1 Hsf0; fsetdec) );
+        ( assert (Hagr' : flex_agree_rel ((β1n, sf) :: ρ) V Θf1 Θf2) );
+        [ ( apply flex_agree_rel_extend_pair_iff; [ exact Hagr | ] );
+            ( split; intros Hf; exfalso; [ exact (Hnf1 Hf) | exact (Hnf2 Hf) ] )
+        | ( assert (Hαl' : α `notin` cols_l ((β1n, sf) :: ρ))
+                by (simpl; clear - Hαl HαSa Hβfr; fsetdec) );
+            ( assert (Hαr' : α `notin` cols_r ((β1n, sf) :: ρ))
+                by (simpl; clear - Hαr HαSb Hsf0; fsetdec) );
+            ( assert (Hop1' : forall x, x `in` Sa1 -> x `notin` add β1n Sa0 ->
+                        x `notin` dom Ξ1 -> ~ a_flex_tvar Θf1 x)
+                by (intros x Hx1 Hx2 Hx3; apply Hop1;
+                    [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]) );
+            ( assert (Hop2' : forall x, x `in` lk_supply r1 -> x `notin` add sf Sb0 ->
+                        x `notin` dom (lk_block r1) -> ~ a_flex_tvar Θf2 x)
+                by (intros x Hx1 Hx2 Hx3; apply Hop2;
+                    [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]) );
+            ( assert (Henr1' : Sa1 ∖ (add β1n Sa0) [<=] ftvar_in_aenv Θf1)
+                by (clear - Henr1; fsetdec) );
+            ( assert (Henr2' : lk_supply r1 ∖ (add sf Sb0) [<=] ftvar_in_aenv Θf2)
+                by (clear - Henr2; fsetdec) );
+            ( assert (Hscp1' : V ∪ cols_l ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc1
+                        ∪ ftvar_in_a_cstrs C1 [<=] ftvar_in_aenv Θf1)
+                by (simpl; clear - Hscp1 Hβ1f; fsetdec) );
+            ( assert (Hscp2' : V ∪ cols_r ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc2
+                        ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2)
+                by (simpl; clear - Hscp2 Hsff; fsetdec) );
+            ( assert (Hrelacc' : rel_pskl ((β1n, sf) :: ρ) V acc1 acc2)
+                by (apply rel_pskl_extend_pair; exact Hrelacc) );
+            ( match type of HrelP' with
+              | rel_pskl _ _ ?t1x ?t2x =>
+                  assert (Hsz' : size_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
+                           + size_pskl t1x < n)
+                    by (rewrite ! size_pskl_open_pskl_wrt_pskl_var;
+                        clear - Hsz; simpl in *; lia);
+                  assert (Hrt2' : rel_pskl ((β1n, sf) :: ρ) V t1x t2x)
+                    by (apply rel_pskl_extend_pair; exact HrelP');
+                  assert (Hcov1x : V
+                           ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
+                           ∪ ftvar_in_pskl t1x [<=] add β1n Sa0)
+                    by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0s
+                                   (pskl_var_f β1n)) as Hup;
+                        clear - Hcov1 Hup; simpl in *; fsetdec);
+                  assert (Hcov2x : V
+                           ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q0s (pskl_var_f sf))
+                           ∪ ftvar_in_pskl t2x [<=] add sf Sb0)
+                    by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q0s
+                                   (pskl_var_f sf)) as Hup;
+                        clear - Hcov2 Hup; simpl in *; fsetdec)
+              end );
+            ( assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V
+                        (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
+                        (open_pskl_wrt_pskl Q0s (pskl_var_f sf)))
+                by (apply rel_pskl_open_pair; exact Hrs0) );
+            ( pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ _ Hsz' Hprem
+                            _ _ _ _ _ _ _ (exist _ r1 Hr1) Er
+                            ((β1n, sf) :: ρ) _ _ _ _ _ _ _ L
+                            Hrs' Hrt2'
+                            HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
+                            Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
+                            Hcov1x Hcov2x
+                          ltac:(look_pair_dr) ltac:(look_pair_scp) ltac:(look_pair_scp)
+                          ltac:(look_pair_flx) ltac:(look_pair_flx)) as HREC );
+            ( destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL) );
+            ( exists Ξs2, Q2c );
+            ( split; [ exact Hf2' | ] );
+            ( split; [ exact Hu | exact HL ] ) ] ).
       * (* TC — gf split *)
         revert Hs. simp e_looksub_impl.
       match goal with
@@ -3897,7 +3404,7 @@ Proof.
                   ~ a_flex_tvar ((β1d ~ abind_tvar) ++ Θf1) x).
         { intros x Hx1 Hx2 Hx3.
           assert (Hne : x <> β1d) by (clear - Hx2; fsetdec).
-          rewrite (a_flex_tvar_cons_tvar_other Θf1 Hne).
+          rewrite (a_flex_tvar_cons_tvar_any _ Θf1 _).
           apply Hop1;
             [ clear - Hx1 Hx2 HS1'; fsetdec
             | clear - Hx2; fsetdec | simpl; auto ]. }
@@ -4020,110 +3527,6 @@ Proof.
       destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
       exists Ξs2, Q2c.
       split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ]. }
-      * (* FN — the catch-all *)
-        revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      set (sf := supply_fresh Sb0) in *.
-      assert (HαSa : α `in` Sa0) by (clear - HαV Hcov1; fsetdec).
-      assert (HαSb : α `in` Sb0) by (clear - HαV Hcov2; fsetdec).
-      pose proof (e_looksub_supply_grows Hprem) as Hgr1.
-      assert (Hβ1Sa1 : β1n `in` Sa1) by (clear - Hgr1; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hprem)
-        as (_ & Hbl1 & _ & _).
-      assert (Hβ1Ξ1 : β1n `notin` dom Ξ1) by (clear - Hbl1; fsetdec).
-      assert (Hnf1 : ~ a_flex_tvar Θf1 β1n)
-        by (apply Hop1; [ exact Hβ1Sa1 | exact Hβfr | exact Hβ1Ξ1 ]).
-      pose proof (supply_fresh_notin Sb0) as Hsf0.
-      pose proof (e_looksub_supply_grows Hr1) as Hgr2.
-      assert (HsfS1 : sf `in` lk_supply r1) by (clear - Hgr2; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hr1)
-        as (_ & Hbl2 & _ & _).
-      assert (HsfΞ2 : sf `notin` dom (lk_block r1)) by (clear - Hbl2; fsetdec).
-      assert (Hnf2 : ~ a_flex_tvar Θf2 sf)
-        by (apply Hop2; [ exact HsfS1 | exact Hsf0 | exact HsfΞ2 ]).
-      assert (Hβ1f : β1n `in` ftvar_in_aenv Θf1)
-        by (apply Henr1; clear - Hβ1Sa1 Hβfr; fsetdec).
-      assert (Hsff : sf `in` ftvar_in_aenv Θf2)
-        by (apply Henr2; clear - HsfS1 Hsf0; fsetdec).
-      assert (Hagr' : flex_agree_rel ((β1n, sf) :: ρ) V Θf1 Θf2).
-      { apply flex_agree_rel_extend_pair_iff; [ exact Hagr | ].
-        split; intros Hf; exfalso; [ exact (Hnf1 Hf) | exact (Hnf2 Hf) ]. }
-      assert (Hαl' : α `notin` cols_l ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαl HαSa Hβfr; fsetdec).
-      assert (Hαr' : α `notin` cols_r ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαr HαSb Hsf0; fsetdec).
-      assert (Hop1' : forall x, x `in` Sa1 -> x `notin` add β1n Sa0 ->
-                x `notin` dom Ξ1 -> ~ a_flex_tvar Θf1 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop1;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Hop2' : forall x, x `in` lk_supply r1 -> x `notin` add sf Sb0 ->
-                x `notin` dom (lk_block r1) -> ~ a_flex_tvar Θf2 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop2;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Henr1' : Sa1 ∖ (add β1n Sa0) [<=] ftvar_in_aenv Θf1)
-        by (clear - Henr1; fsetdec).
-      assert (Henr2' : lk_supply r1 ∖ (add sf Sb0) [<=] ftvar_in_aenv Θf2)
-        by (clear - Henr2; fsetdec).
-      assert (Hscp1' : V ∪ cols_l ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc1
-                ∪ ftvar_in_a_cstrs C1 [<=] ftvar_in_aenv Θf1)
-        by (simpl; clear - Hscp1 Hβ1f; fsetdec).
-      assert (Hscp2' : V ∪ cols_r ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc2
-                ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2)
-        by (simpl; clear - Hscp2 Hsff; fsetdec).
-      assert (Hrelacc' : rel_pskl ((β1n, sf) :: ρ) V acc1 acc2)
-        by (apply rel_pskl_extend_pair; exact Hrelacc).
-      match type of HrelP' with
-      | rel_pskl _ _ ?t1x ?t2x =>
-          assert (Hsz' : size_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                   + size_pskl t1x < n)
-            by (rewrite ! size_pskl_open_pskl_wrt_pskl_var;
-                clear - Hsz; simpl in *; lia);
-          assert (Hrt2' : rel_pskl ((β1n, sf) :: ρ) V t1x t2x)
-            by (apply rel_pskl_extend_pair; exact HrelP');
-          assert (Hcov1x : V
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                   ∪ ftvar_in_pskl t1x [<=] add β1n Sa0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0s
-                           (pskl_var_f β1n)) as Hup;
-                clear - Hcov1 Hup; simpl in *; fsetdec);
-          assert (Hcov2x : V
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q0s (pskl_var_f sf))
-                   ∪ ftvar_in_pskl t2x [<=] add sf Sb0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q0s
-                           (pskl_var_f sf)) as Hup;
-                clear - Hcov2 Hup; simpl in *; fsetdec)
-      end.
-      assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V
-                (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                (open_pskl_wrt_pskl Q0s (pskl_var_f sf)))
-        by (apply rel_pskl_open_pair; exact Hrs0).
-      pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ _ Hsz' Hprem
-                    _ _ _ _ _ _ _ (exist _ r1 Hr1) Er
-                    ((β1n, sf) :: ρ) _ _ _ _ _ _ _ L
-                    Hrs' Hrt2'
-                    HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
-                    Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x
-                  ltac:(look_pair_dr) ltac:(look_pair_scp) ltac:(look_pair_scp)
-                  ltac:(look_pair_flx) ltac:(look_pair_flx)) as HREC.
-      destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
-      exists Ξs2, Q2c.
-      split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
     + (* ◇ target — the spec collapse; only the runner's outputs matter *)
       destruct s as [r Hr]. simpl in *.
       destruct (e_looksub_ghost_target Hr) as [EΞ2 EC2].
@@ -4134,193 +3537,40 @@ Proof.
       * exists (@nil (atom * abind)). eexists.
         split; [ apply a_solve_cstr__sub; apply a_solve_sub_vacuous_gen | ].
         split; [ auto | simpl; clear; fsetdec ].
-    + (* ⫯ target — same root *)
-      revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      set (sf := supply_fresh Sb0) in *.
-      assert (HαSa : α `in` Sa0) by (clear - HαV Hcov1; fsetdec).
-      assert (HαSb : α `in` Sb0) by (clear - HαV Hcov2; fsetdec).
-      pose proof (e_looksub_supply_grows Hprem) as Hgr1.
-      assert (Hβ1Sa1 : β1n `in` Sa1) by (clear - Hgr1; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hprem)
-        as (_ & Hbl1 & _ & _).
-      assert (Hβ1Ξ1 : β1n `notin` dom Ξ1) by (clear - Hbl1; fsetdec).
-      assert (Hnf1 : ~ a_flex_tvar Θf1 β1n)
-        by (apply Hop1; [ exact Hβ1Sa1 | exact Hβfr | exact Hβ1Ξ1 ]).
-      pose proof (supply_fresh_notin Sb0) as Hsf0.
-      pose proof (e_looksub_supply_grows Hr1) as Hgr2.
-      assert (HsfS1 : sf `in` lk_supply r1) by (clear - Hgr2; fsetdec).
-      pose proof ((proj1 e_looksub_lookeq_block) _ _ _ _ _ _ _ _ _ Hr1)
-        as (_ & Hbl2 & _ & _).
-      assert (HsfΞ2 : sf `notin` dom (lk_block r1)) by (clear - Hbl2; fsetdec).
-      assert (Hnf2 : ~ a_flex_tvar Θf2 sf)
-        by (apply Hop2; [ exact HsfS1 | exact Hsf0 | exact HsfΞ2 ]).
-      assert (Hβ1f : β1n `in` ftvar_in_aenv Θf1)
-        by (apply Henr1; clear - Hβ1Sa1 Hβfr; fsetdec).
-      assert (Hsff : sf `in` ftvar_in_aenv Θf2)
-        by (apply Henr2; clear - HsfS1 Hsf0; fsetdec).
-      assert (Hagr' : flex_agree_rel ((β1n, sf) :: ρ) V Θf1 Θf2).
-      { apply flex_agree_rel_extend_pair_iff; [ exact Hagr | ].
-        split; intros Hf; exfalso; [ exact (Hnf1 Hf) | exact (Hnf2 Hf) ]. }
-      assert (Hαl' : α `notin` cols_l ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαl HαSa Hβfr; fsetdec).
-      assert (Hαr' : α `notin` cols_r ((β1n, sf) :: ρ))
-        by (simpl; clear - Hαr HαSb Hsf0; fsetdec).
-      assert (Hop1' : forall x, x `in` Sa1 -> x `notin` add β1n Sa0 ->
-                x `notin` dom Ξ1 -> ~ a_flex_tvar Θf1 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop1;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Hop2' : forall x, x `in` lk_supply r1 -> x `notin` add sf Sb0 ->
-                x `notin` dom (lk_block r1) -> ~ a_flex_tvar Θf2 x)
-        by (intros x Hx1 Hx2 Hx3; apply Hop2;
-            [ exact Hx1 | clear - Hx2; fsetdec | exact Hx3 ]).
-      assert (Henr1' : Sa1 ∖ (add β1n Sa0) [<=] ftvar_in_aenv Θf1)
-        by (clear - Henr1; fsetdec).
-      assert (Henr2' : lk_supply r1 ∖ (add sf Sb0) [<=] ftvar_in_aenv Θf2)
-        by (clear - Henr2; fsetdec).
-      assert (Hscp1' : V ∪ cols_l ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc1
-                ∪ ftvar_in_a_cstrs C1 [<=] ftvar_in_aenv Θf1)
-        by (simpl; clear - Hscp1 Hβ1f; fsetdec).
-      assert (Hscp2' : V ∪ cols_r ((β1n, sf) :: ρ) ∪ ftvar_in_pskl acc2
-                ∪ ftvar_in_a_cstrs (lk_cstrs r1) [<=] ftvar_in_aenv Θf2)
-        by (simpl; clear - Hscp2 Hsff; fsetdec).
-      assert (Hrelacc' : rel_pskl ((β1n, sf) :: ρ) V acc1 acc2)
-        by (apply rel_pskl_extend_pair; exact Hrelacc).
-      match type of HrelP' with
-      | rel_pskl _ _ ?t1x ?t2x =>
-          assert (Hsz' : size_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                   + size_pskl t1x < n)
-            by (rewrite ! size_pskl_open_pskl_wrt_pskl_var;
-                clear - Hsz; simpl in *; lia);
-          assert (Hrt2' : rel_pskl ((β1n, sf) :: ρ) V t1x t2x)
-            by (apply rel_pskl_extend_pair; exact HrelP');
-          assert (Hcov1x : V
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                   ∪ ftvar_in_pskl t1x [<=] add β1n Sa0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0s
-                           (pskl_var_f β1n)) as Hup;
-                clear - Hcov1 Hup; simpl in *; fsetdec);
-          assert (Hcov2x : V
-                   ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q0s (pskl_var_f sf))
-                   ∪ ftvar_in_pskl t2x [<=] add sf Sb0)
-            by (pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Q0s
-                           (pskl_var_f sf)) as Hup;
-                clear - Hcov2 Hup; simpl in *; fsetdec)
-      end.
-      assert (Hrs' : rel_pskl ((β1n, sf) :: ρ) V
-                (open_pskl_wrt_pskl P0s (pskl_var_f β1n))
-                (open_pskl_wrt_pskl Q0s (pskl_var_f sf)))
-        by (apply rel_pskl_open_pair; exact Hrs0).
-      pose proof (IHn (add β1n Sa0) Sa1 _ _ _ _ _ _ _ Hsz' Hprem
-                    _ _ _ _ _ _ _ (exist _ r1 Hr1) Er
-                    ((β1n, sf) :: ρ) _ _ _ _ _ _ _ L
-                    Hrs' Hrt2'
-                    HαV Hαl' Hαr' Hfold Hrelacc' Hagr'
-                    Hb1 Hb2 Hop1' Hop2' Henr1' Henr2' Hscp1' Hscp2'
-                    Hcov1x Hcov2x
-                  ltac:(look_pair_dr) ltac:(look_pair_scp) ltac:(look_pair_scp)
-                  ltac:(look_pair_flx) ltac:(look_pair_flx)) as HREC.
-      destruct HREC as (Ξs2 & Q2c & Hf2' & Hu & HL).
-      exists Ξs2, Q2c.
-      split; [ exact Hf2' | ]. split; [ exact Hu | exact HL ].
   - (* LS-UnivGhostL: the ⫯ unfolds — same-root everywhere except the
        (∀-gf target @ TC) diagonal *)
     inversion HrelP; subst.
     inversion HrelP'; subst;
       try solve [ inversion hp2' ].
-    + (* unit target *)
-      revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      clear E1.
-      match goal with
-      | Hr1x : looksub_spec _ _ _ _ _ _ ?r |- _ =>
-          eapply (IHn Sa0 Sa1) with (s := exist _ r Hr1x)
-      end; try eassumption.
-      all: try solve [ simpl in Hsz |- *; lia
-                     | clear - Hcov1; simpl in *; fsetdec
-                     | clear - Hcov2; simpl in *; fsetdec ].
-    + (* var target *)
-      revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      clear E1.
-      match goal with
-      | Hr1x : looksub_spec _ _ _ _ _ _ ?r |- _ =>
-          eapply (IHn Sa0 Sa1) with (s := exist _ r Hr1x)
-      end; try eassumption.
-      all: try solve [ simpl in Hsz |- *; lia
-                     | clear - Hcov1; simpl in *; fsetdec
-                     | clear - Hcov2; simpl in *; fsetdec ].
-    + (* arrow target *)
-      revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      clear E1.
-      match goal with
-      | Hr1x : looksub_spec _ _ _ _ _ _ ?r |- _ =>
-          eapply (IHn Sa0 Sa1) with (s := exist _ r Hr1x)
-      end; try eassumption.
-      all: try solve [ simpl in Hsz |- *; lia
-                     | clear - Hcov1; simpl in *; fsetdec
-                     | clear - Hcov2; simpl in *; fsetdec ].
+    (* unit / var / arrow / ⫯ target — one script for the four shapes *)
+    1-3,6:
+      ( ( revert Hs );
+      ( simp e_looksub_impl );
+      ( match goal with
+        | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
+            let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
+            destruct (sumbool_of_bool scr) as [Hmt | Hmf];
+            [ | exfalso; apply mem_false_notin in Hmf;
+                simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
+        end );
+      ( match goal with
+        | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
+            let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
+            let Er := fresh "Er" in
+            destruct call as [ [r1 Hr1] | ] eqn:Er;
+            [ | intros Hs; discriminate ]
+        end );
+      ( intros Hs );
+      ( inversion Hs; subst s; clear Hs );
+      ( simpl in Hb2, Hop2, Henr2, Hscp2 |- * );
+      ( clear E1 );
+      ( match goal with
+        | Hr1x : looksub_spec _ _ _ _ _ _ ?r |- _ =>
+            eapply (IHn Sa0 Sa1) with (s := exist _ r Hr1x)
+        end; try eassumption );
+      ( try solve [ simpl in Hsz |- *; lia
+                       | clear - Hcov1; simpl in *; fsetdec
+                       | clear - Hcov2; simpl in *; fsetdec ] ) ).
     + (* ∀ target: TC splits on the runner's gf test *)
       match goal with
       | Hy : rel_pskl ρ V ?b1 ?b2,
@@ -4328,32 +3578,35 @@ Proof.
           rename Hy into Hrt; rename b1 into B1; rename b2 into B2
       end.
       destruct m.
-      * (* TI — the catch-all *)
-        revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      clear E1.
-      match goal with
-      | Hr1x : looksub_spec _ _ _ _ _ _ ?r |- _ =>
-          eapply (IHn Sa0 Sa1) with (s := exist _ r Hr1x)
-      end; try eassumption.
-      all: try solve [ simpl in Hsz |- *; lia
-                     | clear - Hcov1; simpl in *; fsetdec
-                     | clear - Hcov2; simpl in *; fsetdec ].
+      (* TI / FN — the catch-all, one script for both modes *)
+      1,3:
+        ( ( revert Hs );
+        ( simp e_looksub_impl );
+        ( match goal with
+          | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
+              let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
+              destruct (sumbool_of_bool scr) as [Hmt | Hmf];
+              [ | exfalso; apply mem_false_notin in Hmf;
+                  simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
+          end );
+        ( match goal with
+          | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
+              let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
+              let Er := fresh "Er" in
+              destruct call as [ [r1 Hr1] | ] eqn:Er;
+              [ | intros Hs; discriminate ]
+          end );
+        ( intros Hs );
+        ( inversion Hs; subst s; clear Hs );
+        ( simpl in Hb2, Hop2, Henr2, Hscp2 |- * );
+        ( clear E1 );
+        ( match goal with
+          | Hr1x : looksub_spec _ _ _ _ _ _ ?r |- _ =>
+              eapply (IHn Sa0 Sa1) with (s := exist _ r Hr1x)
+          end; try eassumption );
+        ( try solve [ simpl in Hsz |- *; lia
+                         | clear - Hcov1; simpl in *; fsetdec
+                         | clear - Hcov2; simpl in *; fsetdec ] ) ).
       * (* TC — gf split *)
         revert Hs. simp e_looksub_impl.
       match goal with
@@ -4508,7 +3761,7 @@ Proof.
                   ~ a_flex_tvar ((β1d ~ abind_tvar) ++ Θf1) x).
         { intros x Hx1 Hx2 Hx3.
           assert (Hne : x <> β1d) by (clear - Hx2; fsetdec).
-          rewrite (a_flex_tvar_cons_tvar_other Θf1 Hne).
+          rewrite (a_flex_tvar_cons_tvar_any _ Θf1 _).
           apply Hop1;
             [ clear - Hx1 Hx2 HS1'; fsetdec
             | clear - Hx2; fsetdec | simpl; auto ]. }
@@ -4553,32 +3806,6 @@ Proof.
           all: try solve [ simpl in Hsz |- *; lia
                          | clear - Hcov1; simpl in *; fsetdec
                          | clear - Hcov2; simpl in *; fsetdec ]. }
-      * (* FN — the catch-all *)
-        revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      clear E1.
-      match goal with
-      | Hr1x : looksub_spec _ _ _ _ _ _ ?r |- _ =>
-          eapply (IHn Sa0 Sa1) with (s := exist _ r Hr1x)
-      end; try eassumption.
-      all: try solve [ simpl in Hsz |- *; lia
-                     | clear - Hcov1; simpl in *; fsetdec
-                     | clear - Hcov2; simpl in *; fsetdec ].
     + (* ◇ target — the spec collapse *)
       destruct s as [r Hr]. simpl in *.
       destruct (e_looksub_ghost_target Hr) as [EΞ2 EC2].
@@ -4589,32 +3816,6 @@ Proof.
       * exists (@nil (atom * abind)). eexists.
         split; [ apply a_solve_cstr__sub; apply a_solve_sub_vacuous_gen | ].
         split; [ auto | simpl; clear; fsetdec ].
-    + (* ⫯ target *)
-      revert Hs. simp e_looksub_impl.
-      match goal with
-      | |- context [ match sumbool_of_bool ?scr with _ => _ end ] =>
-          let Hmt := fresh "Hmt" in let Hmf := fresh "Hmf" in
-          destruct (sumbool_of_bool scr) as [Hmt | Hmf];
-          [ | exfalso; apply mem_false_notin in Hmf;
-              simpl in HαP2, Hmf; clear - HαP2 Hmf; fsetdec ]
-      end.
-      match goal with
-      | |- context [ match ?call with Some _ => _ | None => _ end = Some _ -> _ ] =>
-          let r1 := fresh "r1" in let Hr1 := fresh "Hr1" in
-          let Er := fresh "Er" in
-          destruct call as [ [r1 Hr1] | ] eqn:Er;
-          [ | intros Hs; discriminate ]
-      end.
-      intros Hs. inversion Hs; subst s; clear Hs.
-      simpl in Hb2, Hop2, Henr2, Hscp2 |- *.
-      clear E1.
-      match goal with
-      | Hr1x : looksub_spec _ _ _ _ _ _ ?r |- _ =>
-          eapply (IHn Sa0 Sa1) with (s := exist _ r Hr1x)
-      end; try eassumption.
-      all: try solve [ simpl in Hsz |- *; lia
-                     | clear - Hcov1; simpl in *; fsetdec
-                     | clear - Hcov2; simpl in *; fsetdec ].
 Qed.
 
 (* ===================================================================== *)

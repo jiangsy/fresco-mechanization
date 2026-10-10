@@ -1,26 +1,17 @@
 (** THE EXTRACT LEVEL'S FOUNDATIONS — structure facts about the look
-    judgements' collections and the fold, feeding §8c.9's b-core (the
-    fused look-pair/fold-transport lemma; docs/
+    judgements' collections and the fold, feeding the fused
+    look-pair/fold-transport lemma (prop_look_pair.v; docs/
     HANDOFF-extractable-algo-encoding.md §8c.9).
-
-    The collection is NOT deterministic up to renaming
-    (cex/cex_looksub_not_det.v), but two derivations of the same look
-    node differ ONLY by fresh names, by the ∀-peel slack at the final
-    sub-constraint, and by ◇-EMISSION slack ([≼m ◇] / [eq ◇] vs
-    nothing).  This file proves that inventory's foundation facts:
 
     §1  [a_cstr_is_eq], the PURE-EQ shape of a lookeq collection's
         constraints;
-    §2  an α-FREE subject collects NOTHING, through EVERY derivation
-        (crossing 4 of §8c.9's inventory: LS/LE-Absent vs a structural
-        derivation is no slack at all);
-    §3  the fold's head inversions and the PURE-EQ APPEND DECOMPOSITION
+    §2  the fold's head inversions and the PURE-EQ APPEND DECOMPOSITION
         [a_solve_cstr_app_inv], the mirror of [a_solve_cstr_app]
         (algo/sub/look/prop_eq_cstr.v) that the b-core's Arrow case
-        splits the given fold with.  ⚙ [a_solve_cstr_sub_inv] /
-        [a_solve_cstr_eq_inv] MOVED here from prop_run_complete.v §5
-        (2026-08-16, one fact one name one file — this file sits below
-        the runner-completeness stack, which now imports it). *)
+        splits the given fold with.
+
+    ⚙ Every fact here is about [algo/]'s relations only; the file sits in
+    ext_algo/ because its consumers do. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -49,14 +40,9 @@ Open Scope fresco_a_scope.
 Definition a_cstr_is_eq (c : a_cstr) : Prop := exists Q, c = a_cstr_eq Q.
 
 (* ===================================================================== *)
-(*  §2  An α-free subject collects nothing                                *)
+(*  §2  The fold's head inversions and the pure-eq append decomposition   *)
 (* ===================================================================== *)
 
-(* ===================================================================== *)
-(*  §3  The fold's head inversions and the pure-eq append decomposition   *)
-(* ===================================================================== *)
-
-(** ⚙ Moved from prop_run_complete.v §5 (2026-08-16) — see the header. *)
 Lemma a_solve_cstr_sub_inv : forall Θ m Q C P Ξ P',
   {{ Θ ⊩ (a_cstr_sub m Q :: C) ⨾ P ⤳ Ξ ⨾ P' }}a ->
   C = nil /\ {{ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a.

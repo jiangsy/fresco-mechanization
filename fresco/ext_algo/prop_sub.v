@@ -216,13 +216,6 @@ Proof. apply e_sub_sub_flex_dom_upper. Qed.
   try unfold disjoint in *; simpl_env in *;
   solve [ assumption | fsetdec ].
 
-(** [dom] / [ftvar_in_aenv] normalisation — prop_consis.v §3's, verbatim. *)
-#[local] Ltac env_simp :=
-  simpl_env in *;
-  repeat (rewrite ftvar_in_aenv_app in * );
-  repeat (rewrite dom_app in * );
-  simpl ftvar_in_aenv in *; simpl dom in *; simpl_env in *.
-
 Lemma e_sub_sub_flex_sound :
   (forall S0 NM M P0 Θ0 P Q S1 Θ1,
      {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e ->
