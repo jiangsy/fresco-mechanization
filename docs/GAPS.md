@@ -71,6 +71,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 - **Mechanization**: both directions were deleted in efc8707. See G-53.
 - **Evidence**: cex/cex_look_subst_stable_leak.v `look_subst_stable_unconditional_is_false` (Qed). A ∀-opener leaks into 𝒞, and substituting it for β breaks re-derivation.
 - **Ask for the authors**: Add `ftv Q ⊆ {α} ∪ ftv(Θ)` (or say "by Barendregt"). Where Q is a ForallL guess this cannot be a context bound, so read the outputs up to rigid renaming.
+- **Proof route**: the paper's two uses (forward :892, reverse :2651) need different things; the reverse use is open — see G-53 and the PAPER-GAPS "TO RETHINK (2026-10-10)" entry.
 - **Source**: PG:3343
 
 ### G-06 Ξ-strengthening is proved by solving Ξ away, not by direct induction
@@ -496,6 +497,7 @@ Other UNCERTAIN items: G-50 and G-51 (implementation) and G-54 (SolS-ForallR sor
 - **Option A — accept up to renaming**: map E.8 to the existing lemma, noting "forward direction, outputs up to renaming of fresh binders". Then fix the stale texts: the "kept on purpose" banner at fresco/algo/sub/prop_looksub.v (§4/§4b, ≈:667-720), the citations of the deleted lemmas at fresco/algo/sub/look/prop_sub_cstr.v (≈:137, ≈:2299) and fresco/deco_algo/prop_decorate_sub.v (≈:2287, ≈:2463), and the PROGRESS.md Part 1 row. (A draft of exactly these comment edits was made and reverted on 2026-10-10 pending this decision.)
 - **Option B — restore a paper-faithful lemma**: bring back both directions from efc8707^ (adjusted to current names), with the Barendregt premise; still no consumer. Optionally state a two-directional "up to renaming" version instead, closer to the paper's "iff".
 - **Either way**: the paper's statement needs the Barendregt condition or an up-to-renaming reading (G-05).
+- **Owner's direction (2026-10-10)**: up-to-renaming is acceptable, but it covers only the forward direction; whether the paper's proof ROUTE through E.8 is right is to be rethought first — see PAPER-GAPS "TO RETHINK (2026-10-10) — does the paper's proof route through Lemma E.8 hold?". Forward use (subtyping-proofs.tex:892): sound up to renaming. Reverse use (:2651, E.16 ForallL): open — the fixed-output reverse may fail at a fresh β (the deleted `_rev` needed `β ∈ ftv(Θ)`), and that case already has the `θψ_b = ψ_b` gap (PG:2967).
 
 ### G-54 SolS-ForallR's left-hand `A`: a slip, or a real restriction?
 - **Kind**: Mechanization to-do (ambiguity) · **Status**: UNCERTAIN

@@ -3378,6 +3378,56 @@ does not pin `P_0`'s shape, but the ALGORITHM dispatches on it — a `∀` `P_0`
 `ForallR`, not `Check`.  That is the paper's own case split, not a new
 hypothesis.
 
+## TO RETHINK (2026-10-10) — does the paper's proof route through Lemma E.8 hold? Its two uses need different things, and neither is the lemma as stated
+
+Lemma E.8 (`lemma:constraint-collection-stable-substitution`,
+subtyping-proofs.tex:506-522) claims an IFF with FIXED outputs: for `β ≠ α`
+and `α ∉ ftv(Q)`, `P` and `P[Q/β]` collect the same `Ξ ; 𝒞`.  The paper uses
+it twice, and the two uses must be checked separately.
+
+1. **Forward use, subtyping-proofs.tex:892** (decorated soundness, the
+   ForallL step: look on `P` ⟹ look on `P[⌊ψ_g⌋/β]`).  The fixed-output
+   forward direction is FALSE without a Barendregt premise
+   (`cex/cex_look_subst_stable_leak.v`: an exists-fresh ∀-row leaks its
+   binder into `𝒞`), and at this use the premise cannot be supplied — `ψ_g`
+   is the ForallL guess, whose variables come from the extract's fresh block,
+   generated after the look run.  What holds, and what this proof needs, is
+   the forward direction UP TO RENAMING of the run's fresh binders
+   (`a_looksub_lookeq_subst_gen_size`, deco_algo/prop_decorate_sub.v §14:
+   outputs `Ξ' ; 𝒞'` that solve to the same decorated result).  Verdict: the
+   route is sound under that reading (or under a global freshness convention
+   for look's binders, which the implementation's counter provides); the
+   lemma should say so.
+
+2. **Reverse use, subtyping-proofs.tex:2651** (Lemma E.16, ForallL case:
+   look on `P'[⌊ψ_b⌋/β]` ⟹ look on `P'`, same `Ξ_c ; 𝒞`).  OPEN.
+   - The mechanization once proved a fixed-output reverse
+     (`a_looksub_lookeq_subst_stable_rev`, deleted as unused in efc8707) with
+     NO Barendregt premise on `Q` — but with `β ∈ ftv(Θ)`: the substituted
+     variable had to be bound in the look run's context.  At the paper's use
+     `β` is the subject's own ∀-binder, which is in general NOT in the
+     context, so that lemma does not obviously apply there.
+   - Why it matters: at a fresh `β`, a ∀-row of the run on `P'[⌊ψ_b⌋/β]` may
+     pick `β` itself as its binder (nothing in the substituted subject
+     mentions `β`); undoing the substitution reintroduces `β` free in the
+     subject, the row's freshness side condition then fails, and re-picking
+     the binder changes `Ξ ; 𝒞` if it leaked.  So the FIXED-output reverse may
+     be false at a fresh `β`; the up-to-renaming reverse is presumably true.
+     Neither is mechanized now.
+   - Independently, the same ForallL case already has a known gap: its
+     IH instance needs `θψ_b = ψ_b` (the entry "GAP (proof-step,
+     2026-07-29) — … P6-Ss, ForallL case", below).  The mechanization proves
+     E.16 by a ρ-generalized induction that never undoes a substitution, so
+     it uses no reverse direction at all.
+   - To settle: decide (machine-check) whether the fixed-output reverse holds
+     at a fresh `β` — a counterexample, or a proof with a side condition the
+     paper's use can supply; and whether the paper's E.16 ForallL route can be
+     repaired with the up-to-renaming reverse plus a fix for the `θψ_b`
+     step.
+
+Mechanization status: docs/GAPS.md G-05 (the statement) and G-53 (how the
+mechanization links E.8).
+
 ## PROSE-COMPLETION — `lemma:constraint-collection-stable-substitution` needs its Barendregt condition stated (2026-08-01)
 
 The paper's constraint-collection stability lemma (algorithmic-proofs
