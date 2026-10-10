@@ -181,6 +181,26 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Automate constructor-only transport cases
+
+Supply transport now shares the same witness-processing step across the
+assignment, unification, and consistency cases. The step consumes each IH
+once, including both halves of the arrow case, then reconstructs one
+constructor with `eauto 2`. Only guessing and the three binder cases remain
+explicit. Delta transport likewise leaves only its two ghost cases and three
+binder cases explicit; constructor reconstruction and shallow automation
+solve the other cases. No new helper tactics or hint databases are added.
+
+**Reduction:** 101 nonblank, noncomment Coq lines. Supply transport's proof
+body shrinks 128→44; delta transport's shrinks 27→10. Statements and
+computational definitions are unchanged. Controlled compilation of the whole
+file takes 10.32s versus 10.27s before the change; the two proof construction
+times are 0.075s/0.112s versus 0.068s/0.113s. The witness-processing loop
+removes every consumed IH, and reconstruction search is bounded at depth 2.
+
+**Validation:** full `make coq`, all 34 flagship assumption checks closed,
+byte-identical extracted OCaml, and `git diff --check`.
+
 ## 2026-10-11 — Remove the obsolete backward-preservation proof layer
 
 The remaining consistency-binder closer now excludes a deleted opener's
