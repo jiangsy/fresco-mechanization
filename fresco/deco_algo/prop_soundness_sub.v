@@ -581,7 +581,7 @@ Proof.
                     `union` ftvar_in_pskl P1
                     `union` singleton b `union` dom Ξc
                     `union` ftvar_in_a_cstrs C)) as [αt Hαt];
-        assert (Hbne : b <> αt) by (intros ->; clear - Hαt; fsetdec);
+        assert (Hbne : b <> αt) by (intros ->; clear - Hαt; solve_notin_auto);
         assert (Hαvb : αv <> b) by (intros ->; clear - Hbfr; fsetdec);
         assert (HbR0 : b `notin` ftvar_in_pskl ⌊ R0 ⌋ˢ)
           by (clear - Hbfr; fsetdec);
@@ -589,14 +589,14 @@ Proof.
         apply a_looksub_rename_var with (α' := αt) in Dbody;
           [ | pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
                             ⌊ R0 ⌋ˢ (pskl_var_f b)) as Hup;
-              simpl in Hup; clear - Hαt Hup; fsetdec
-            | clear - Hαt; fsetdec
-            | clear - Hαt; fsetdec ];
+              simpl in Hup; clear - Hαt Hup; destruct_notin; fsetdec
+            | clear - Hαt; solve_notin_auto
+            | clear - Hαt; solve_notin_auto ];
         rewrite <- subst_pskl_in_pskl_open_pskl_wrt_pskl_var in Dbody;
           [ | clear - Hαvb; congruence | constructor ];
         (* (2) substitute the node's guess for the binder we were GIVEN *)
         assert (HαtP1 : αt `notin` ftvar_in_pskl P1)
-          by (clear - Hαt; fsetdec);
+          by (clear - Hαt; solve_notin_auto);
         destruct (a_looksub_subst_gen Dbody Hst Hbne HαtP1 HlcP1)
           as (Ξg & Cg & Dsub & Hstg);
         rewrite <- subst_pskl_in_pskl_intro in Dsub;
@@ -607,7 +607,7 @@ Proof.
       rename Dsub into Dβ0.
       (* freshness facts for the rebuilt family *)
       assert (Hαtψa : αt `notin` ftvar_in_uskl ψa)
-        by (clear - Hαt; fsetdec).
+        by (clear - Hαt; solve_notin_auto).
       assert (HαvStrip : αv `notin` ftvar_in_uskl
                            (pskl_to_uskl (uskl_to_pskl ψa))).
       { intro Hin.
@@ -658,7 +658,7 @@ Proof.
           by (apply is_dskl_lc; inversion Hsort; assumption).
         assert (Hαtg : αt `notin` ftvar_in_uskl ψg').
         { rewrite <- (ftvar_in_pskl_uskl_to_pskl ψg'). rewrite Hera.
-          clear - Hαt; fsetdec. }
+          clear - Hαt; solve_notin_auto. }
         assert (Hsubject :
             subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αt
               (open_uskl_wrt_uskl
@@ -668,7 +668,7 @@ Proof.
                 ψg').
         { rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcstrip ].
           rewrite subst_uskl_in_uskl_rename_compose;
-            [ | exact HαvStrip | clear - Hαt; fsetdec | clear - Hαt; fsetdec ].
+            [ | exact HαvStrip | clear - Hαt; solve_notin_auto | clear - Hαt; solve_notin_auto ].
           rewrite (subst_uskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
           reflexivity. }
         assert (Hresult :
@@ -678,7 +678,7 @@ Proof.
             = open_uskl_wrt_uskl (subst_uskl_in_uskl ψa αv R0) ψg').
         { rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcψ ].
           rewrite subst_uskl_in_uskl_rename_compose;
-            [ | exact Hαψ | clear - Hαt; fsetdec | clear - Hαt; fsetdec ].
+            [ | exact Hαψ | clear - Hαt; solve_notin_auto | clear - Hαt; solve_notin_auto ].
           rewrite (subst_uskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
           reflexivity. }
         (* the run now lives under the look rule's OWN binder, and carries the
@@ -744,7 +744,7 @@ Proof.
                 | exact HDg
                 | exact Hstg
                 | exact Hαtψa
-                | clear - Hαt; fsetdec
+                | clear - Hαt; solve_notin_auto
                 | exact Hlcψ
                 | exact HlcSg
                 | exact HwfΞΘ
@@ -881,20 +881,20 @@ Proof.
                     `union` ftvar_in_pskl P1
                     `union` singleton b `union` dom Ξc
                     `union` ftvar_in_a_cstrs C)) as [αt Hαt];
-        assert (Hbne : b <> αt) by (intros ->; clear - Hαt; fsetdec);
+        assert (Hbne : b <> αt) by (intros ->; clear - Hαt; solve_notin_auto);
         assert (Hαvb : αv <> b) by (intros ->; clear - Hbfr; fsetdec);
         assert (HbR0 : b `notin` ftvar_in_pskl ⌊ R0 ⌋ˢ)
           by (clear - Hbfr; fsetdec);
         apply a_looksub_rename_var with (α' := αt) in Dbody;
           [ | pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
                             ⌊ R0 ⌋ˢ (pskl_var_f b)) as Hup;
-              simpl in Hup; clear - Hαt Hup; fsetdec
-            | clear - Hαt; fsetdec
-            | clear - Hαt; fsetdec ];
+              simpl in Hup; clear - Hαt Hup; destruct_notin; fsetdec
+            | clear - Hαt; solve_notin_auto
+            | clear - Hαt; solve_notin_auto ];
         rewrite <- subst_pskl_in_pskl_open_pskl_wrt_pskl_var in Dbody;
           [ | clear - Hαvb; congruence | constructor ];
         assert (HαtP1 : αt `notin` ftvar_in_pskl P1)
-          by (clear - Hαt; fsetdec);
+          by (clear - Hαt; solve_notin_auto);
         destruct (a_looksub_subst_gen Dbody Hst Hbne HαtP1 HlcP1)
           as (Ξg & Cg & Dsub & Hstg);
         rewrite <- subst_pskl_in_pskl_intro in Dsub;
@@ -905,7 +905,7 @@ Proof.
       rename Dsub into Dβ0.
       (* freshness facts for the rebuilt family *)
       assert (Hαtψa : αt `notin` ftvar_in_uskl ψa)
-        by (clear - Hαt; fsetdec).
+        by (clear - Hαt; solve_notin_auto).
       assert (HαvStrip : αv `notin` ftvar_in_uskl
                            (pskl_to_uskl (uskl_to_pskl ψa))).
       { intro Hin.
@@ -956,7 +956,7 @@ Proof.
           by (apply is_dskl_lc; inversion Hsort; assumption).
         assert (Hαtg : αt `notin` ftvar_in_uskl ψg').
         { rewrite <- (ftvar_in_pskl_uskl_to_pskl ψg'). rewrite Hera.
-          clear - Hαt; fsetdec. }
+          clear - Hαt; solve_notin_auto. }
         assert (Hsubject :
             subst_uskl_in_uskl (pskl_to_uskl (uskl_to_pskl ψa)) αt
               (open_uskl_wrt_uskl
@@ -966,7 +966,7 @@ Proof.
                 ψg').
         { rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcstrip ].
           rewrite subst_uskl_in_uskl_rename_compose;
-            [ | exact HαvStrip | clear - Hαt; fsetdec | clear - Hαt; fsetdec ].
+            [ | exact HαvStrip | clear - Hαt; solve_notin_auto | clear - Hαt; solve_notin_auto ].
           rewrite (subst_uskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
           reflexivity. }
         assert (Hresult :
@@ -976,7 +976,7 @@ Proof.
             = open_uskl_wrt_uskl (subst_uskl_in_uskl ψa αv R0) ψg').
         { rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl; [ | exact Hlcψ ].
           rewrite subst_uskl_in_uskl_rename_compose;
-            [ | exact Hαψ | clear - Hαt; fsetdec | clear - Hαt; fsetdec ].
+            [ | exact Hαψ | clear - Hαt; solve_notin_auto | clear - Hαt; solve_notin_auto ].
           rewrite (subst_uskl_in_uskl_fresh_eq ψg'); [ | exact Hαtg ].
           reflexivity. }
         match type of Dβ0 with
@@ -1038,7 +1038,7 @@ Proof.
                 | exact HDg
                 | exact Hstg
                 | exact Hαtψa
-                | clear - Hαt; fsetdec
+                | clear - Hαt; solve_notin_auto
                 | exact Hlcψ
                 | exact HlcSg
                 | exact HwfΞΘ
@@ -3486,7 +3486,7 @@ Proof.
       - clear - Huq. solve_uniq.
       - intros α1 Hα1. unfold Θmid. simpl_env.
         clear - Huq Hα Hβ Hα1. destruct_uniq.
-        unfold disjoint in *. simpl_env in *. fsetdec. }
+        unfold disjoint in *. simpl_env in *. destruct_notin. fsetdec. }
     assert (Hbase : Θ0 ⊴ Θ').
     { unfold Θ', Θmid.
       replace (Ξw ++ (α0 ~ abind_flex_mono_def τab)

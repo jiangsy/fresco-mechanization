@@ -1,7 +1,7 @@
 (** COMPLETENESS OF SKELETON INFERENCE (section D, thm:complete-skeleton-
     inference) — the landing file for theorem 3 and its kit.
 
-    It leans on two wf anchors (plan: memory `remech-theorem3-plan`):
+    It leans on two wf anchors:
 
     - [ad_pat_target_wf] (K1, in pat/prop_soundness_pat.v): a declarative
       skeleton-inference derivation's target erasure is well-formed.  This
@@ -80,9 +80,6 @@ Qed.
 (*  the equational theory).                                               *)
 (* ===================================================================== *)
 
-(* A pending suffix carries no term entry. *)
-(** A skeleton entry's payload is scoped in the WHOLE context (its own
-    tail suffices, so a fortiori). *)
 (** ⭐ K2 — the Θ-side term entry of an increase comes from a Θ0-side one,
     with the payloads related by the equational theory under the FULL κ.
     The flex rows shrink κ, which is harmless because the source tail's
@@ -581,6 +578,19 @@ Definition pat_complete_concl (M : mode) (Θ0 : aenv) (P0 : pskl) (e : exp)
          a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
          {{ Θ ⨟ empty ⊢ₚᵣ (msubst_pskl ζ P1) ⊑ (bskl_to_pskl Q) }}ad).
 
+(** The IH every recursive row receives, at the row's sub-subject [e]. *)
+Definition pat_complete_ih (e : exp) : Prop :=
+  forall M' Θ0' P0' κ' Θ' Q',
+    {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
+    {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
+    a_sk_mode_compat M' P0' ->
+    κ' ∷ Θ0' ⊑ Θ' ->
+    (forall α, α `in` ftvar_in_exp e -> binds α abind_tvar Θ0') ->
+    lc_exp e ->
+    {{ Θ' ⊢ˢ[ M' ] e ⦂ Q' }}ad ->
+    {{ Θ' ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' }}ad ->
+    pat_complete_concl M' Θ0' P0' e κ' Θ' Q'.
+
 (* ===================================================================== *)
 (*  The three BASE rows.  The mech FUSED the paper's [P-Sub] into them,   *)
 (*  so each is exactly one invocation of thm:complete-subtyping at the    *)
@@ -938,31 +948,15 @@ Qed.
 (** The equivalence loses a term entry from both ends (the head of each):
     only the matching semantic row can have built it, and a pending suffix
     cannot supply the target's TERM head. *)
-Lemma a_inc_equiv_strip_var_skl_head : forall x (P : pskl) Θ0 κ1 κ2 (b' : abind) Θ,
-  a_inc_equiv ((x ~ abind_var_skl P) ++ Θ0) κ1 κ2 ((x ~ b') ++ Θ) ->
+Lemma a_inc_equiv_strip_tm_head : forall x (b : abind) Θ0 κ1 κ2 (b' : abind) Θ,
+  a_inc_equiv ((x ~ b) ++ Θ0) κ1 κ2 ((x ~ b') ++ Θ) ->
+  abind_is_tm b ->
   abind_is_tm b' ->
   a_inc_equiv Θ0 κ1 κ2 Θ.
 Proof.
-  intros x P Θ0 κ1 κ2 b' Θ Hie Htm.
-  inversion Hie; subst.
-  match goal with
-  | Hsuf : a_suffix ?ΞS, HeqT : ?l = ?r |- _ =>
-      first [ constr_eq l ((x ~ b') ++ Θ); symmetry in HeqT | idtac ];
-      destruct ΞS as [ | [z bz] Ξ' ]; simpl_env in HeqT;
-      [ inversion HeqT; subst; assumption
-      | inversion HeqT; subst;
-        inversion Hsuf as [ | ? ? ? ? Hsb ]; subst;
-        exfalso; destruct Hsb; exact Htm ]
-  end.
-Qed.
-
-Lemma a_inc_equiv_strip_var_typ_head : forall x (A : ptyp) Θ0 κ1 κ2 (b' : abind) Θ,
-  a_inc_equiv ((x ~ abind_var_typ A) ++ Θ0) κ1 κ2 ((x ~ b') ++ Θ) ->
-  abind_is_tm b' ->
-  a_inc_equiv Θ0 κ1 κ2 Θ.
-Proof.
-  intros x A Θ0 κ1 κ2 b' Θ Hie Htm.
-  inversion Hie; subst.
+  intros x b Θ0 κ1 κ2 b' Θ Hie Htm0 Htm.
+  destruct b; try contradiction Htm0;
+  inversion Hie; subst;
   match goal with
   | Hsuf : a_suffix ?ΞS, HeqT : ?l = ?r |- _ =>
       first [ constr_eq l ((x ~ b') ++ Θ); symmetry in HeqT | idtac ];
@@ -1019,17 +1013,7 @@ Lemma a_pat_complete_abs_check : forall Θ0 e κ Θ Q,
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp (exp_abs e) -> binds α abind_tvar Θ0) ->
   lc_exp (exp_abs e) ->
-  (forall x M' Θ0' P0' κ' Θ' Q',
-     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
-     {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
-     a_sk_mode_compat M' P0' ->
-     κ' ∷ Θ0' ⊑ Θ' ->
-     (forall α, α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-        binds α abind_tvar Θ0') ->
-     lc_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-     {{ Θ' ⊢ˢ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q' }}ad ->
-     {{ Θ' ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' }}ad ->
-     pat_complete_concl M' Θ0' P0' (open_exp_wrt_exp e (exp_var_f x)) κ' Θ' Q') ->
+  (forall x, pat_complete_ih (open_exp_wrt_exp e (exp_var_f x))) ->
   {{ Θ ⊢ˢ[ mode_tc ] (exp_abs e) ⦂ Q }}ad ->
   pat_complete_concl mode_tc Θ0 pskl_ghost (exp_abs e) κ Θ Q.
 Proof.
@@ -1152,7 +1136,7 @@ Proof.
              (fun h : abind_is_ty (abind_var_skl pskl_ghost) => h)
              Hwf1' HwfΘx Hζ). }
   split.
-  { eapply a_inc_equiv_strip_var_skl_head; [ exact Heqv | exact I ]. }
+  { eapply a_inc_equiv_strip_tm_head; [ exact Heqv | exact I | exact I ]. }
   { (* the precision, rebuilt through ⊤(◇ → ·) *)
     unfold ad_precise in Hprec |- *.
     rewrite bskl_to_pskl_pskl_to_bskl_syn in Hprec.
@@ -1176,17 +1160,7 @@ Lemma a_pat_complete_abs_anno_check : forall Θ0 A e κ Θ Q,
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp (exp_abs_anno A e) -> binds α abind_tvar Θ0) ->
   lc_exp (exp_abs_anno A e) ->
-  (forall x M' Θ0' P0' κ' Θ' Q',
-     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
-     {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
-     a_sk_mode_compat M' P0' ->
-     κ' ∷ Θ0' ⊑ Θ' ->
-     (forall α, α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-        binds α abind_tvar Θ0') ->
-     lc_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-     {{ Θ' ⊢ˢ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q' }}ad ->
-     {{ Θ' ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' }}ad ->
-     pat_complete_concl M' Θ0' P0' (open_exp_wrt_exp e (exp_var_f x)) κ' Θ' Q') ->
+  (forall x, pat_complete_ih (open_exp_wrt_exp e (exp_var_f x))) ->
   {{ Θ ⊢ˢ[ mode_tc ] (exp_abs_anno A e) ⦂ Q }}ad ->
   pat_complete_concl mode_tc Θ0 pskl_ghost (exp_abs_anno A e) κ Θ Q.
 Proof.
@@ -1321,7 +1295,7 @@ Proof.
   exists ζ.
   split; [ exact Hζs | ].
   split.
-  { eapply a_inc_equiv_strip_var_typ_head; [ exact Heqv | exact I ]. }
+  { eapply a_inc_equiv_strip_tm_head; [ exact Heqv | exact I | exact I ]. }
   { (* the precision, rebuilt through ⊤(⌈A⌉ → ·) *)
     unfold ad_precise in Hprec |- *.
     rewrite bskl_to_pskl_pskl_to_bskl_syn in Hprec.
@@ -1385,17 +1359,7 @@ Lemma a_pat_complete_abs : forall M Θ0 P0 e κ Θ Q,
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp (exp_abs e) -> binds α abind_tvar Θ0) ->
   lc_exp (exp_abs e) ->
-  (forall x M' Θ0' P0' κ' Θ' Q',
-     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
-     {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
-     a_sk_mode_compat M' P0' ->
-     κ' ∷ Θ0' ⊑ Θ' ->
-     (forall α, α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-        binds α abind_tvar Θ0') ->
-     lc_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-     {{ Θ' ⊢ˢ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q' }}ad ->
-     {{ Θ' ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' }}ad ->
-     pat_complete_concl M' Θ0' P0' (open_exp_wrt_exp e (exp_var_f x)) κ' Θ' Q') ->
+  (forall x, pat_complete_ih (open_exp_wrt_exp e (exp_var_f x))) ->
   {{ Θ ⊢ˢ[ M ] (exp_abs e) ⦂ Q }}ad ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
   pat_complete_concl M Θ0 P0 (exp_abs e) κ Θ Q.
@@ -1577,7 +1541,7 @@ Proof.
              (fun h : abind_is_ty bs => h)
              Hwf1' HwfΘx Hζ). }
   assert (Heqvs : a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ)
-    by (eapply a_inc_equiv_strip_var_skl_head; [ exact Heqv | exact I ]).
+    by (eapply a_inc_equiv_strip_tm_head; [ exact Heqv | exact I | exact I ]).
   exists ζ.
   split; [ exact Hζs | ].
   split; [ exact Heqvs | ].
@@ -1688,17 +1652,7 @@ Lemma a_pat_complete_abs_anno : forall M Θ0 P0 A e κ Θ Q,
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp (exp_abs_anno A e) -> binds α abind_tvar Θ0) ->
   lc_exp (exp_abs_anno A e) ->
-  (forall x M' Θ0' P0' κ' Θ' Q',
-     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
-     {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
-     a_sk_mode_compat M' P0' ->
-     κ' ∷ Θ0' ⊑ Θ' ->
-     (forall α, α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-        binds α abind_tvar Θ0') ->
-     lc_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-     {{ Θ' ⊢ˢ[ M' ] (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q' }}ad ->
-     {{ Θ' ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' }}ad ->
-     pat_complete_concl M' Θ0' P0' (open_exp_wrt_exp e (exp_var_f x)) κ' Θ' Q') ->
+  (forall x, pat_complete_ih (open_exp_wrt_exp e (exp_var_f x))) ->
   {{ Θ ⊢ˢ[ M ] (exp_abs_anno A e) ⦂ Q }}ad ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
   pat_complete_concl M Θ0 P0 (exp_abs_anno A e) κ Θ Q.
@@ -1936,7 +1890,7 @@ Proof.
              (fun h : abind_is_ty bA => h)
              HwfB' HwfΘx Hζb). }
   assert (Heqvbs : a_inc_equiv Θmid ζc0 (msubst_compose ζb κb) Θ)
-    by (eapply a_inc_equiv_strip_var_typ_head; [ exact Heqvb | exact I ]).
+    by (eapply a_inc_equiv_strip_tm_head; [ exact Heqvb | exact I | exact I ]).
   assert (Hwffin : {{ ⊢ (Ξ ++ Θ3) }}a)
     by (exact (@a_wf_aenv_strip_tm_mid Ξ x bA Θ3
                  (fun h : abind_is_ty bA => h) HwfB')).
@@ -2116,26 +2070,8 @@ Lemma a_pat_complete_app : forall M Θ0 P0 e1 e2 κ Θ Q,
   κ ∷ Θ0 ⊑ Θ ->
   (forall α, α `in` ftvar_in_exp (exp_app e1 e2) -> binds α abind_tvar Θ0) ->
   lc_exp (exp_app e1 e2) ->
-  (forall M' Θ0' P0' κ' Θ' Q',
-     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
-     {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
-     a_sk_mode_compat M' P0' ->
-     κ' ∷ Θ0' ⊑ Θ' ->
-     (forall α, α `in` ftvar_in_exp e2 -> binds α abind_tvar Θ0') ->
-     lc_exp e2 ->
-     {{ Θ' ⊢ˢ[ M' ] e2 ⦂ Q' }}ad ->
-     {{ Θ' ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' }}ad ->
-     pat_complete_concl M' Θ0' P0' e2 κ' Θ' Q') ->
-  (forall M' Θ0' P0' κ' Θ' Q',
-     {{ ⊢ Θ0' }}a -> {{ ⊢ Θ' }}a ->
-     {{ Θ0' ⨟ empty ⊢ₚₛ P0' }}a ->
-     a_sk_mode_compat M' P0' ->
-     κ' ∷ Θ0' ⊑ Θ' ->
-     (forall α, α `in` ftvar_in_exp e1 -> binds α abind_tvar Θ0') ->
-     lc_exp e1 ->
-     {{ Θ' ⊢ˢ[ M' ] e1 ⦂ Q' }}ad ->
-     {{ Θ' ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ' P0')) ⊳ Q' }}ad ->
-     pat_complete_concl M' Θ0' P0' e1 κ' Θ' Q') ->
+  pat_complete_ih e2 ->
+  pat_complete_ih e1 ->
   {{ Θ ⊢ˢ[ M ] (exp_app e1 e2) ⦂ Q }}ad ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
   pat_complete_concl M Θ0 P0 (exp_app e1 e2) κ Θ Q.

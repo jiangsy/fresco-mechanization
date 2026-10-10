@@ -1403,7 +1403,7 @@ Proof.
             solve [ discriminate | left; exact Hb' | right; exists τ; exact Hb' ]. }
         destruct (γ == α) as [-> | Hne].
         - destruct Hfl0 as [Hb | [τ Hb]]; apply binds_In in Hb;
-            clear - Hb Hα; fsetdec.
+            clear - Hb Hα; destruct_notin; fsetdec.
         - apply (HnfΔ γ); [ clear - Hγ Hne; fsetdec | exact Hfl0 ]. }
       assert (HdfΔ' : forall γ β τ, γ `in` add α Δx ->
                         binds β (abind_flex_mono_def τ) ((α ~ abind_tvar) ++ Θ) ->
@@ -1418,7 +1418,7 @@ Proof.
           assert (Ht : a_binds_tvar α Θ)
             by (eapply a_wf_ptyp_ftv_tvarish; eassumption).
           destruct Ht as [Hb | [Hb | [t Hb]]]; apply binds_In in Hb;
-            clear - Hb Hα; fsetdec.
+            clear - Hb Hα; destruct_notin; fsetdec.
         - apply (HdfΔ γ β τ); [ clear - Hγ Hne; fsetdec | exact Hb' ]. }
       assert (Hwfr' : {{ ⊢ ((α ~ abind_tvar) ++ Θx) }}a)
         by (apply a_wf_aenv__tvar; [ clear - Hα; solve_notin_auto | exact Hwfr ]).
@@ -1477,10 +1477,10 @@ Proof.
                             pose proof (@a_wf_aenv_def_ftv_dom _ _ _ Hwfr Hb') as Hsc;
                             pose proof (binds_In _ _ _ _ Hb') as Hin;
                             split; [ apply binds_cons_3; exact Hb' | ];
-                            split; [ intros ->; clear - Hin Hα; fsetdec | ];
+                            split; [ intros ->; clear - Hin Hα; destruct_notin; fsetdec | ];
                             split; intro Hc0; apply Hsc in Hc0;
-                              [ clear - Hc0 Hα; fsetdec
-                              | clear - Hc0 Hβ; fsetdec ])) as Hren.
+                              [ clear - Hc0 Hα; destruct_notin; fsetdec
+                              | clear - Hc0 Hβ; destruct_notin; fsetdec ])) as Hren.
         apply ad_refine_syn_delta_mono with (Δ := add β Δx) in Hren;
           [ | clear; fsetdec ].
         rewrite <- subst_bskl_in_bskl_intro in Hren;
@@ -1593,7 +1593,7 @@ Proof.
                       ltac:(simpl_env; clear - Hα; solve_notin_auto)
                       ltac:(intros β0 τ Hbd; simpl_env in Hbd;
                             pose proof (@a_wf_aenv_def_ftv_dom _ _ _ Hwfr Hbd) as Hsc;
-                            intro Hc0; apply Hsc in Hc0; clear - Hc0 Hα; fsetdec)
+                            intro Hc0; apply Hsc in Hc0; clear - Hc0 Hα; destruct_notin; fsetdec)
                       ltac:(clear - Hβ; solve_notin_auto)) as Hren.
         simpl_env in Hren. simpl in Hren.
         rewrite subst_bskl_in_bskl_fresh_eq in Hren;

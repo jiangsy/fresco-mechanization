@@ -49,6 +49,15 @@ Definition a_rigid_only (Θ : aenv) (γ : atom) : Prop :=
   ~ binds γ abind_flex_mono Θ /\
   (forall τ, ~ binds γ (abind_flex_mono_def τ) Θ).
 
+(** A rigid-only atom is neither a flexible nor a definition. *)
+Lemma a_rigid_only_flex_neq : forall Θ γ α,
+  a_rigid_only Θ γ -> binds α abind_flex_mono Θ -> α <> γ.
+Proof. intros Θ γ α [_ [Hnm _]] Hb ->. exact (Hnm Hb). Qed.
+
+Lemma a_rigid_only_def_neq : forall Θ γ α τ,
+  a_rigid_only Θ γ -> binds α (abind_flex_mono_def τ) Θ -> α <> γ.
+Proof. intros Θ γ α τ [_ [_ Hnd]] Hb ->. exact (Hnd τ Hb). Qed.
+
 Lemma a_rigid_only_in_dom : forall Θ γ,
   a_rigid_only Θ γ -> γ `in` dom Θ.
 Proof. intros Θ γ [Hb _]; eapply binds_In; exact Hb. Qed.
@@ -224,10 +233,9 @@ Proof.
     intros Θ0 α γ H; exact H.
   - (* Assign-SolveM : upgrade α̂, deposit fresh β̄s *)
     intros Θ0 Ξ α P βs τ Hα Hg Hm Huq Hfr γ H.
-    assert (Hγα : α <> γ).
-    { intros ->. destruct H as [_ [Hnm _]].
-      apply Hnm. apply binds_app_3. apply binds_app_2.
-      unfold binds; simpl; auto. }
+    assert (Hγα : α <> γ)
+      by (eapply a_rigid_only_flex_neq;
+          [ exact H | apply binds_app_3; apply binds_app_2; unfold binds; simpl; auto ]).
     assert (H' : a_rigid_only (Ξ ++ Θ0) γ)
       by (eapply a_rigid_only_strip_mid_nonrigid;
           [ | exact H ]; discriminate).
@@ -238,10 +246,9 @@ Proof.
     intros Hin. pose proof (Hfr γ Hin) as Hc. clear - Hc Hγd. fsetdec.
   - (* Assign-Assign : walk into β̂'s definition *)
     intros Θ0 Θ1 Ξ α β τ P Q Hflex Hβ Hc IH γ H.
-    assert (Hγβ : β <> γ).
-    { intros ->. destruct H as [_ [_ Hnd]].
-      eapply Hnd. apply binds_app_3. apply binds_app_2.
-      unfold binds; simpl; eauto. }
+    assert (Hγβ : β <> γ)
+      by (eapply a_rigid_only_def_neq;
+          [ exact H | apply binds_app_3; apply binds_app_2; unfold binds; simpl; eauto ]).
     apply a_rigid_only_cons_other; [ exact Hγβ | ].
     apply IH.
     eapply a_rigid_only_strip_mid_nonrigid; [ | exact H ]; discriminate.
@@ -250,10 +257,9 @@ Proof.
     apply IH. rewrite app_assoc. exact H.
   - (* Assign-Skip *)
     intros Θ0 Θ1 Ξ α β P Hne Hβ Hβd Ha IH γ H.
-    assert (Hγβ : β <> γ).
-    { intros ->. destruct H as [_ [Hnm _]].
-      apply Hnm. apply binds_app_3. apply binds_app_2.
-      unfold binds; simpl; auto. }
+    assert (Hγβ : β <> γ)
+      by (eapply a_rigid_only_flex_neq;
+          [ exact H | apply binds_app_3; apply binds_app_2; unfold binds; simpl; auto ]).
     apply a_rigid_only_cons_other; [ exact Hγβ | ].
     apply IH.
     eapply a_rigid_only_strip_mid_other; [ exact Hγβ | exact H ].
@@ -285,31 +291,31 @@ Proof.
     intros Θ0 α Hf γ H; exact H.
   - (* Flex-Flex-L *)
     intros Θ0 α β Hne Hf γ H.
-    assert (Hγα : α <> γ).
-    { intros ->. destruct H as [_ [Hnm _]].
-      apply Hnm. unfold binds; simpl; auto. }
+    assert (Hγα : α <> γ)
+      by (eapply a_rigid_only_flex_neq;
+          [ exact H | unfold binds; simpl; auto ]).
     apply a_rigid_only_cons_other; [ exact Hγα | ].
     eapply a_rigid_only_strip_head_other; [ exact Hγα | exact H ].
   - (* Flex-Flex-R *)
     intros Θ0 α β Hne Hf γ H.
-    assert (Hγβ : β <> γ).
-    { intros ->. destruct H as [_ [Hnm _]].
-      apply Hnm. unfold binds; simpl; auto. }
+    assert (Hγβ : β <> γ)
+      by (eapply a_rigid_only_flex_neq;
+          [ exact H | unfold binds; simpl; auto ]).
     apply a_rigid_only_cons_other; [ exact Hγβ | ].
     eapply a_rigid_only_strip_head_other; [ exact Hγβ | exact H ].
   - (* Flex-Flex-Assign *)
     intros Θ0 Θ1 α1 τ α β Q Hfα Hfβ Hα1 Hc IH γ H.
-    assert (Hγα1 : α1 <> γ).
-    { intros ->. destruct H as [_ [_ Hnd]].
-      eapply Hnd. unfold binds; simpl; eauto. }
+    assert (Hγα1 : α1 <> γ)
+      by (eapply a_rigid_only_def_neq;
+          [ exact H | unfold binds; simpl; eauto ]).
     apply a_rigid_only_cons_other; [ exact Hγα1 | ].
     apply IH.
     eapply a_rigid_only_strip_head_other; [ exact Hγα1 | exact H ].
   - (* Flex-Flex-Skip *)
     intros Θ0 Θ1 α1 α β Hn1 Hn2 Hα1 Hu IH γ H.
-    assert (Hγα1 : α1 <> γ).
-    { intros ->. destruct H as [_ [Hnm _]].
-      apply Hnm. unfold binds; simpl; auto. }
+    assert (Hγα1 : α1 <> γ)
+      by (eapply a_rigid_only_flex_neq;
+          [ exact H | unfold binds; simpl; auto ]).
     apply a_rigid_only_cons_other; [ exact Hγα1 | ].
     apply IH.
     eapply a_rigid_only_strip_head_other; [ exact Hγα1 | exact H ].
@@ -432,10 +438,9 @@ Proof.
   - (* UnivGhostL *) intros * Hm Hs IH γ H. apply IH, H.
   - (* Flex-Solve *)
     intros NM M P0 Θ0 Θ1 Ξ α0 α β Q Hne Hα Hβ Hs IH γ H.
-    assert (Hγα0 : α0 <> γ).
-    { intros ->. destruct H as [_ [Hnm _]].
-      apply Hnm. apply binds_app_3. apply binds_app_2.
-      unfold binds; simpl; auto. }
+    assert (Hγα0 : α0 <> γ)
+      by (eapply a_rigid_only_flex_neq;
+          [ exact H | apply binds_app_3; apply binds_app_2; unfold binds; simpl; auto ]).
     assert (H' : a_rigid_only (Ξ ++ Θ0) γ)
       by (eapply a_rigid_only_strip_mid_nonrigid;
           [ | exact H ]; discriminate).
@@ -447,10 +452,9 @@ Proof.
     exact H'.
   - (* Flex-Assign *)
     intros NM M P0 Θ0 Θ1 Ξ α β τ Q Hβ Hs IH γ H.
-    assert (Hγβ : β <> γ).
-    { intros ->. destruct H as [_ [_ Hnd]].
-      eapply Hnd. apply binds_app_3. apply binds_app_2.
-      unfold binds; simpl; eauto. }
+    assert (Hγβ : β <> γ)
+      by (eapply a_rigid_only_def_neq;
+          [ exact H | apply binds_app_3; apply binds_app_2; unfold binds; simpl; eauto ]).
     apply a_rigid_only_cons_other; [ exact Hγβ | ].
     apply IH.
     eapply a_rigid_only_strip_mid_nonrigid; [ | exact H ]; discriminate.
@@ -459,10 +463,9 @@ Proof.
     apply IH. rewrite app_assoc. exact H.
   - (* Flex-Skip *)
     intros * Hne Hβ Hβd Hf IH γ H.
-    assert (Hγβ : β <> γ).
-    { intros ->. destruct H as [_ [Hnm _]].
-      apply Hnm. apply binds_app_3. apply binds_app_2.
-      unfold binds; simpl; auto. }
+    assert (Hγβ : β <> γ)
+      by (eapply a_rigid_only_flex_neq;
+          [ exact H | apply binds_app_3; apply binds_app_2; unfold binds; simpl; auto ]).
     apply a_rigid_only_cons_other; [ exact Hγβ | ].
     apply IH.
     eapply a_rigid_only_strip_mid_other; [ exact Hγβ | exact H ].

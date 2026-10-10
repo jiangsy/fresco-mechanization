@@ -28,12 +28,10 @@
     vacuous: the [_step] rows split at their peeled [(α ~ abind_tvar)],
     the [_base] rows at their binder [(x ~ abind_var_typ A)].
 
-    ⛔ WHAT IS STILL OWED (the two walks): at the SUB level, core
-    PRESERVATION under [core_rigid_above] (mirroring
-    [a_sub_sub_flex_ty_core], typing/prop_rigidity.v:759); at the TYPING level,
-    SCOPE PROPAGATION — ⚠️ preservation is FALSE there, see the
-    counterexample in the ⛔ comment at the end of this file, which also
-    carries the case map. *)
+    The two walks: at the SUB level [a_sub_sub_flex_scope], and at the
+    TYPING level [a_typing_scope] — both SCOPE PROPAGATION rather than core
+    preservation, which is FALSE under [core_rigid_above] (see the ⚠️ note
+    before [a_sub_sub_flex_scope]). *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -602,11 +600,11 @@ Qed.
 (*  ⭐ THE REGION WALK over assignment / unification / consistency.        *)
 (* ===================================================================== *)
 
-(** WHY THIS IS OWED — the fact [a_split__flex] needs, and the one place
+(** WHY THIS IS NEEDED — the fact [a_split__flex] needs, and the one place
     output well-formedness is NOT enough.
 
     The [_base] check rows split their input TYPE, and [a_split__flex] IS
-    reachable at TC ([a_split_ty_shape], prop_soundness_typing.v:1351): it
+    reachable at TC ([a_split_ty_shape], pat/prop_soundness_pat.v): it
     invents TWO FRESH FLEXIBLES on TOP of the context — hence ABOVE any
     marker — and only the assignment brings them back down
     ([Assign-Depend] parks them in the pending suffix, which
@@ -1034,7 +1032,7 @@ Qed.
 (** ⭐ THE SPLIT'S SCOPE STEP — what the [_base] check rows need.
 
     At TC the split's input may be a bare FLEXIBLE ([a_split_ty_shape],
-    prop_soundness_typing.v:1351 — "at TC the row IS reachable … the whole
+    pat/prop_soundness_pat.v — "at TC the row IS reachable … the whole
     asymmetry"), and then the rule invents two fresh flexibles ON TOP of
     the context, i.e. above every marker.  They are nevertheless
     at-or-below the marker in the OUTPUT: the hypothesis puts the split
@@ -1159,7 +1157,7 @@ Qed.
 (* ===================================================================== *)
 
 (** ⚠️ WHY THIS IS SCOPE PROPAGATION AND NOT CORE PRESERVATION.  The shape
-    [a_sub_sub_flex_ty_core] uses (typing/prop_rigidity.v:759) — the OUTPUT's core
+    [a_sub_sub_flex_ty_core] uses (typing/prop_rigidity.v:746) — the OUTPUT's core
     IS the input's — is FALSE once [core_rigid] is relaxed to
     [core_rigid_above]: [a_sub_flex__assign] SUBSTITUTES the input skeleton
     ([subst_pskl_in_pskl ⌈τ⌉ β P0], algo/def_rules.v:1300), so when the
@@ -1733,6 +1731,88 @@ Qed.
 (*  ⭐ THE TYPING-LEVEL SCOPE WALK, and the two discharge corollaries.     *)
 (* ===================================================================== *)
 
+(** [a_typing_scope]'s two [_check_step] rows (AT-AbsCheck (∀) and
+    AT-AbsAnnoCheck (∀)), which are verbatim the same: the peeled binder is
+    RIGID, which is exactly why the side condition is
+    rigidity-above-the-marker.  The arguments are the row's own names. *)
+Local Ltac scope_check_step_row Hcore H0 H1 H2 IH Hwf HwfP0 Hexp
+    A0 A α Ξ Θ0 Θ1 :=
+  let Hpc := fresh "Hpc" in
+  pose proof (@pskl_ty_core_of_painting _ _ _ Hcore) as Hpc;
+  inversion Hpc; subst;
+  let HwfA0 := fresh "HwfA0" in let Hα := fresh "Hα" in
+  let Hwfα := fresh "Hwfα" in let HwfA0α := fresh "HwfA0α" in
+  assert (HwfA0 : a_wf_ptyp Θ0 (ptyp_all A0))
+    by (apply a_wf_ptyp_of_wf_pskl_empty; exact HwfP0);
+  assert (Hα : α `notin` dom Ξ `union` dom Θ0 `union` dom Θ1
+                 `union` ftvar_in_ptyp A0 `union` ftvar_in_ptyp A)
+    by (clear - H2; rewrite !dom_app in H2; fsetdec);
+  assert (Hwfα : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
+    by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]);
+  assert (HwfA0α : a_wf_ptyp ((α ~ abind_tvar) ++ Θ0)
+                     (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
+    by (apply a_wf_ptyp_all_open_at; exact HwfA0);
+  let Cα := fresh "Cα" in let HcoreA := fresh "HcoreA" in
+  let Hsc' := fresh "Hsc'" in let HcoreA' := fresh "HcoreA'" in
+  destruct (IH Hwfα
+              ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA0α)
+              (a_ty_mode_compat__tc _)
+              (a_wf_exp_weaken_cons α abind_tvar Hexp)
+              (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))
+              (pskl_ty_core__tc _))
+    as [Cα [HcoreA Hsc']];
+  pose proof HcoreA as HcoreA'; inversion HcoreA'; subst;
+  exists (ptyp_all A); split; [ apply ptyp_ty_core__tc | ];
+  let m0 := fresh "m0" in let b0 := fresh "b0" in
+  let Hbm := fresh "Hbm" in let Hmk := fresh "Hmk" in
+  let Hcr := fresh "Hcr" in let Hm0d := fresh "Hm0d" in
+  let Hαm0 := fresh "Hαm0" in let HmΞ := fresh "HmΞ" in
+  let Hin := fresh "Hin" in let Hout := fresh "Hout" in
+  intros m0 b0 Hbm Hmk Hcr;
+  assert (Hm0d : m0 `in` dom Θ0) by (apply binds_In in Hbm; exact Hbm);
+  assert (Hαm0 : α <> m0) by (intros ->; clear - Hα Hm0d; fsetdec);
+  assert (HmΞ : m0 `notin` dom Ξ)
+    by (clear - H0 Hm0d; destruct_uniq; unfold disjoint in *; fsetdec);
+  (* the input direction: the peeled [α] is rigid AT THE HEAD *)
+  assert (Hin : core_rigid_above m0 ((α ~ abind_tvar) ++ Θ0)
+                  (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
+    by (let γ := fresh "γ" in let Hγ := fresh "Hγ" in
+        let Hab := fresh "Hab" in let Hγα := fresh "Hγα" in
+        let Hup := fresh "Hup" in
+        intros γ Hγ Hab;
+        destruct (γ == α) as [-> | Hγα]; [ unfold binds; simpl; auto | ];
+        apply binds_cons_3; apply Hcr;
+        [ pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0
+                        (ptyp_var_f α)) as Hup;
+          simpl in Hup; simpl; clear - Hγ Hup Hγα; fsetdec
+        | rewrite (@above_dom_cons_other m0 α abind_tvar Θ0 Hαm0) in Hab;
+          clear - Hab Hγα; fsetdec ]);
+  pose proof (Hsc' m0 b0 ltac:(apply binds_cons_3; exact Hbm) Hmk Hin)
+    as Hout;
+  (* the output direction: strip the suffix by premise (2), then [α] *)
+  let γ := fresh "γ" in let Hγ := fresh "Hγ" in let Hab := fresh "Hab" in
+  let HγopA := fresh "HγopA" in let HabF := fresh "HabF" in
+  let Hb := fresh "Hb" in let HbΞ := fresh "HbΞ" in
+  let Hb' := fresh "Hb'" in let Hb'' := fresh "Hb''" in
+  let He := fresh "He" in
+  intros γ Hγ Hab; simpl in Hγ;
+  assert (HγopA : γ `in` ftvar_in_ptyp
+                    (open_ptyp_wrt_ptyp A (ptyp_var_f α)))
+    by (let Hlow := fresh "Hlow" in
+        pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A
+                      (ptyp_var_f α)) as Hlow; clear - Hγ Hlow; fsetdec);
+  assert (HabF : γ `in` above_dom m0 (Ξ ++ (α ~ abind_tvar) ++ Θ1))
+    by (let Hd := fresh "Hd" in
+        pose proof (@above_dom_drop_sub m0 nil (Ξ ++ (α ~ abind_tvar)) Θ1
+                      ltac:(simpl_env; simpl; clear - HmΞ Hαm0; solve_notin_auto))
+          as Hd;
+        simpl_env in Hd; clear - Hab Hd; fsetdec);
+  pose proof (Hout γ HγopA HabF) as Hb;
+  destruct (binds_app_1 _ _ _ _ _ Hb) as [HbΞ | Hb'];
+    [ exfalso; apply binds_In in HbΞ; exact (H1 γ HbΞ Hγ) | ];
+  destruct (binds_cons_1 _ _ _ _ _ _ Hb') as [[He _] | Hb''];
+    [ exfalso; subst γ; clear - Hα Hγ; fsetdec | exact Hb'' ].
+
 (** ⚠️ AT THE TYPING LEVEL THE CONCLUSION IS SCOPE PROPAGATION, NOT CORE
     PRESERVATION — see the counterexample recorded with [a_split_scope]. *)
 Definition typing_scope_concl (M : mode) (Θ0 : aenv) (P0 : pskl)
@@ -1947,64 +2027,9 @@ Proof.
                   ltac:(eapply a_wf_pskl_isub; [ exact HwfQ | exact Hlec ]))
       as Hsub.
     clear - Hc0 Hsub Hx; fsetdec.
-  - (* AT-AbsCheck (∀) : the peeled binder is RIGID, which is exactly why
-       the side condition is rigidity-above-the-marker *)
-    pose proof (@pskl_ty_core_of_painting _ _ _ Hcore) as Hpc.
-    inversion Hpc; subst.
-    assert (HwfA0 : a_wf_ptyp Θ0 (ptyp_all A0))
-      by (apply a_wf_ptyp_of_wf_pskl_empty; exact HwfP0).
-    assert (Hα : α `notin` dom Ξ `union` dom Θ0 `union` dom Θ1
-                   `union` ftvar_in_ptyp A0 `union` ftvar_in_ptyp A
-                   `union` ftvar_in_exp (exp_abs e))
-      by (clear - H2; rewrite !dom_app in H2; fsetdec).
-    assert (Hwfα : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]).
-    assert (HwfA0α : a_wf_ptyp ((α ~ abind_tvar) ++ Θ0)
-                       (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
-      by (apply a_wf_ptyp_all_open_at; exact HwfA0).
-    destruct (IHa_typing Hwfα
-                ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA0α)
-                (a_ty_mode_compat__tc _)
-                (a_wf_exp_weaken_cons α abind_tvar Hexp)
-                (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))
-                (pskl_ty_core__tc _))
-      as [Cα [HcoreA Hsc']].
-    pose proof HcoreA as HcoreA'.
-    inversion HcoreA'; subst.
-    exists (ptyp_all A). split; [ apply ptyp_ty_core__tc | ].
-    intros m0 b0 Hbm Hmk Hcr.
-    assert (Hm0d : m0 `in` dom Θ0) by (apply binds_In in Hbm; exact Hbm).
-    assert (Hαm0 : α <> m0) by (intros ->; clear - Hα Hm0d; fsetdec).
-    assert (HmΞ : m0 `notin` dom Ξ)
-      by (clear - H0 Hm0d; destruct_uniq; unfold disjoint in *; fsetdec).
-    (* the input direction: the peeled [α] is rigid AT THE HEAD *)
-    assert (Hin : core_rigid_above m0 ((α ~ abind_tvar) ++ Θ0)
-                    (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))).
-    { intros γ Hγ Hab.
-      destruct (γ == α) as [-> | Hγα]; [ unfold binds; simpl; auto | ].
-      apply binds_cons_3. apply Hcr.
-      - pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0
-                      (ptyp_var_f α)) as Hup.
-        simpl in Hup. simpl. clear - Hγ Hup Hγα; fsetdec.
-      - rewrite (@above_dom_cons_other m0 α abind_tvar Θ0 Hαm0) in Hab.
-        clear - Hab Hγα; fsetdec. }
-    pose proof (Hsc' m0 b0 ltac:(apply binds_cons_3; exact Hbm) Hmk Hin)
-      as Hout.
-    (* the output direction: strip the suffix by premise (2), then [α] *)
-    intros γ Hγ Hab. simpl in Hγ.
-    assert (HγopA : γ `in` ftvar_in_ptyp
-                      (open_ptyp_wrt_ptyp A (ptyp_var_f α)))
-      by (pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A
-                        (ptyp_var_f α)) as Hlow; clear - Hγ Hlow; fsetdec).
-    assert (HabF : γ `in` above_dom m0 (Ξ ++ (α ~ abind_tvar) ++ Θ1)).
-    { pose proof (@above_dom_drop_sub m0 nil (Ξ ++ (α ~ abind_tvar)) Θ1
-                    ltac:(simpl_env; simpl; clear - HmΞ Hαm0; solve_notin_auto)) as Hd.
-      simpl_env in Hd. clear - Hab Hd; fsetdec. }
-    pose proof (Hout γ HγopA HabF) as Hb.
-    destruct (binds_app_1 _ _ _ _ _ Hb) as [HbΞ | Hb'];
-      [ exfalso; apply binds_In in HbΞ; exact (H1 γ HbΞ Hγ) | ].
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb') as [[He _] | Hb''];
-      [ exfalso; subst γ; clear - Hα Hγ; fsetdec | exact Hb'' ].
+  - (* AT-AbsCheck (∀) *)
+    scope_check_step_row Hcore H0 H1 H2 IHa_typing Hwf HwfP0 Hexp
+      A0 A α Ξ Θ0 Θ1.
   - (* AT-AbsCheck (→) : the split's pieces, then the body run's suffix *)
     pose proof (@pskl_ty_core_of_painting _ _ _ Hcore) as Hpc.
     inversion Hpc; subst.
@@ -2072,59 +2097,8 @@ Proof.
       apply core_rigid_above_cons_other;
         [ exact HcrB | exact Hxm0 | exact HxB ].
   - (* AT-AbsAnnoCheck (∀) : verbatim the AbsCheck ∀ row *)
-    pose proof (@pskl_ty_core_of_painting _ _ _ Hcore) as Hpc.
-    inversion Hpc; subst.
-    assert (HwfA0 : a_wf_ptyp Θ0 (ptyp_all A0))
-      by (apply a_wf_ptyp_of_wf_pskl_empty; exact HwfP0).
-    assert (Hα : α `notin` dom Ξ `union` dom Θ0 `union` dom Θ1
-                   `union` ftvar_in_ptyp A0 `union` ftvar_in_ptyp A
-                   `union` ftvar_in_exp (exp_abs_anno Aan e))
-      by (clear - H2; rewrite !dom_app in H2; fsetdec).
-    assert (Hwfα : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]).
-    assert (HwfA0α : a_wf_ptyp ((α ~ abind_tvar) ++ Θ0)
-                       (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
-      by (apply a_wf_ptyp_all_open_at; exact HwfA0).
-    destruct (IHa_typing Hwfα
-                ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA0α)
-                (a_ty_mode_compat__tc _)
-                (a_wf_exp_weaken_cons α abind_tvar Hexp)
-                (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))
-                (pskl_ty_core__tc _))
-      as [Cα [HcoreA Hsc']].
-    pose proof HcoreA as HcoreA'. inversion HcoreA'; subst.
-    exists (ptyp_all A). split; [ apply ptyp_ty_core__tc | ].
-    intros m0 b0 Hbm Hmk Hcr.
-    assert (Hm0d : m0 `in` dom Θ0) by (apply binds_In in Hbm; exact Hbm).
-    assert (Hαm0 : α <> m0) by (intros ->; clear - Hα Hm0d; fsetdec).
-    assert (HmΞ : m0 `notin` dom Ξ)
-      by (clear - H0 Hm0d; destruct_uniq; unfold disjoint in *; fsetdec).
-    assert (Hin : core_rigid_above m0 ((α ~ abind_tvar) ++ Θ0)
-                    (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))).
-    { intros γ Hγ Hab.
-      destruct (γ == α) as [-> | Hγα]; [ unfold binds; simpl; auto | ].
-      apply binds_cons_3. apply Hcr.
-      - pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0
-                      (ptyp_var_f α)) as Hup.
-        simpl in Hup. simpl. clear - Hγ Hup Hγα; fsetdec.
-      - rewrite (@above_dom_cons_other m0 α abind_tvar Θ0 Hαm0) in Hab.
-        clear - Hab Hγα; fsetdec. }
-    pose proof (Hsc' m0 b0 ltac:(apply binds_cons_3; exact Hbm) Hmk Hin)
-      as Hout.
-    intros γ Hγ Hab. simpl in Hγ.
-    assert (HγopA : γ `in` ftvar_in_ptyp
-                      (open_ptyp_wrt_ptyp A (ptyp_var_f α)))
-      by (pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A
-                        (ptyp_var_f α)) as Hlow; clear - Hγ Hlow; fsetdec).
-    assert (HabF : γ `in` above_dom m0 (Ξ ++ (α ~ abind_tvar) ++ Θ1)).
-    { pose proof (@above_dom_drop_sub m0 nil (Ξ ++ (α ~ abind_tvar)) Θ1
-                    ltac:(simpl_env; simpl; clear - HmΞ Hαm0; solve_notin_auto)) as Hd.
-      simpl_env in Hd. clear - Hab Hd; fsetdec. }
-    pose proof (Hout γ HγopA HabF) as Hb.
-    destruct (binds_app_1 _ _ _ _ _ Hb) as [HbΞ | Hb'];
-      [ exfalso; apply binds_In in HbΞ; exact (H1 γ HbΞ Hγ) | ].
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb') as [[He _] | Hb''];
-      [ exfalso; subst γ; clear - Hα Hγ; fsetdec | exact Hb'' ].
+    scope_check_step_row Hcore H0 H1 H2 IHa_typing Hwf HwfP0 Hexp
+      A0 A α Ξ Θ0 Θ1.
   - (* AT-AbsAnnoCheck (→) : the AbsCheck → row with the consistency run
        between the split and the body *)
     pose proof (@pskl_ty_core_of_painting _ _ _ Hcore) as Hpc.
@@ -2289,6 +2263,36 @@ Qed.
     ([above_dom m ((m ~ b) ++ Θ) = ∅]), and the conclusion says a result
     atom lying in the discarded suffix would have to be RIGID — which
     [suffix_no_rigid_mid] forbids.  That IS premise (2). *)
+Lemma a_typing_scope_head_nil : forall m (b : abind) Θ0 A0 e A1 Ξ Θ2,
+  abind_marker b ->
+  {{ ((m ~ b) ++ Θ0) ⊢[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A1
+    ⊣ (Ξ ++ (m ~ b) ++ Θ2) }}a ->
+  {{ ⊢ ((m ~ b) ++ Θ0) }}a ->
+  {{ ((m ~ b) ++ Θ0) ⨟ empty ⊢ₚₛ (ptyp_to_pskl A0) }}a ->
+  {{ ((m ~ b) ++ Θ0) ⊢ᵉ e }}a ->
+  {{ ⊢ (Ξ ++ (m ~ b) ++ Θ2) }}a ->
+  a_suffix Ξ ->
+  forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp A1.
+Proof.
+  intros m b Θ0 A0 e A1 Ξ Θ2 Hmk Hrun Hwf HwfP0 Hexp HwfOut Hsuf γ Hγ HγA1.
+  destruct (a_typing_scope Hrun Hwf HwfP0 (a_ty_mode_compat__tc _) Hexp
+              (pskl_ty_core__tc A0)) as [C' [Hcore' Hsc']].
+  assert (HeqC' : C' = A1) by (inversion Hcore'; subst; reflexivity).
+  subst C'.
+  pose proof (Hsc' m b ltac:(unfold binds; simpl; auto) Hmk
+                (@core_rigid_above_head_marker m b Θ0 A0)) as Hout.
+  assert (Huq : uniq (Ξ ++ (m ~ b) ++ Θ2))
+    by (apply a_wf_aenv_uniq; exact HwfOut).
+  assert (HmΞ : m `notin` dom Ξ)
+    by (clear - Huq; destruct_uniq; unfold disjoint in *; simpl_env in *;
+        fsetdec).
+  assert (Hab : γ `in` above_dom m (Ξ ++ (m ~ b) ++ Θ2))
+    by (rewrite (@above_dom_app_notin m Ξ ((m ~ b) ++ Θ2) HmΞ);
+        clear - Hγ; fsetdec).
+  exact (@suffix_no_rigid_mid Ξ m b Θ2 γ Hsuf Huq Hγ (Hout γ HγA1 Hab)).
+Qed.
+
+(** The [_step] rows' instance: the marker is the peeled rigid binder. *)
 Corollary a_typing_scope_tvar_nil : forall α Θ0 A0 e A1 Ξ Θ2,
   {{ ((α ~ abind_tvar) ++ Θ0) ⊢[ mode_tc ; (ptyp_to_pskl A0) ] e ⦂ A1
     ⊣ (Ξ ++ (α ~ abind_tvar) ++ Θ2) }}a ->
@@ -2298,25 +2302,7 @@ Corollary a_typing_scope_tvar_nil : forall α Θ0 A0 e A1 Ξ Θ2,
   {{ ⊢ (Ξ ++ (α ~ abind_tvar) ++ Θ2) }}a ->
   a_suffix Ξ ->
   forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp A1.
-Proof.
-  intros α Θ0 A0 e A1 Ξ Θ2 Hrun Hwf HwfP0 Hexp HwfOut Hsuf γ Hγ HγA1.
-  destruct (a_typing_scope Hrun Hwf HwfP0 (a_ty_mode_compat__tc _) Hexp
-              (pskl_ty_core__tc A0)) as [C' [Hcore' Hsc']].
-  assert (HeqC' : C' = A1) by (inversion Hcore'; subst; reflexivity).
-  subst C'.
-  pose proof (Hsc' α abind_tvar ltac:(unfold binds; simpl; auto) I
-                (@core_rigid_above_head_marker α abind_tvar Θ0 A0)) as Hout.
-  assert (Huq : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ2))
-    by (apply a_wf_aenv_uniq; exact HwfOut).
-  assert (HαΞ : α `notin` dom Ξ)
-    by (clear - Huq; destruct_uniq; unfold disjoint in *; simpl_env in *;
-        fsetdec).
-  assert (Hab : γ `in` above_dom α (Ξ ++ (α ~ abind_tvar) ++ Θ2))
-    by (rewrite (@above_dom_app_notin α Ξ ((α ~ abind_tvar) ++ Θ2) HαΞ);
-        clear - Hγ; fsetdec).
-  exact (@suffix_no_rigid_mid Ξ α abind_tvar Θ2 γ Hsuf Huq Hγ
-           (Hout γ HγA1 Hab)).
-Qed.
+Proof. intros. eapply a_typing_scope_head_nil; [ | eassumption .. ]; exact I. Qed.
 
 (** The [_base] rows' instance: the marker is the TERM binder. *)
 Corollary a_typing_scope_tm_nil : forall x Apay Θ0 A0 e A1 Ξ Θ2,
@@ -2328,25 +2314,4 @@ Corollary a_typing_scope_tm_nil : forall x Apay Θ0 A0 e A1 Ξ Θ2,
   {{ ⊢ (Ξ ++ (x ~ abind_var_typ Apay) ++ Θ2) }}a ->
   a_suffix Ξ ->
   forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp A1.
-Proof.
-  intros x Apay Θ0 A0 e A1 Ξ Θ2 Hrun Hwf HwfP0 Hexp HwfOut Hsuf γ Hγ
-         HγA1.
-  destruct (a_typing_scope Hrun Hwf HwfP0 (a_ty_mode_compat__tc _) Hexp
-              (pskl_ty_core__tc A0)) as [C' [Hcore' Hsc']].
-  assert (HeqC' : C' = A1) by (inversion Hcore'; subst; reflexivity).
-  subst C'.
-  pose proof (Hsc' x (abind_var_typ Apay) ltac:(unfold binds; simpl; auto) I
-                (@core_rigid_above_head_marker x (abind_var_typ Apay) Θ0 A0))
-    as Hout.
-  assert (Huq : uniq (Ξ ++ (x ~ abind_var_typ Apay) ++ Θ2))
-    by (apply a_wf_aenv_uniq; exact HwfOut).
-  assert (HxΞ : x `notin` dom Ξ)
-    by (clear - Huq; destruct_uniq; unfold disjoint in *; simpl_env in *;
-        fsetdec).
-  assert (Hab : γ `in` above_dom x (Ξ ++ (x ~ abind_var_typ Apay) ++ Θ2))
-    by (rewrite (@above_dom_app_notin x Ξ
-                   ((x ~ abind_var_typ Apay) ++ Θ2) HxΞ);
-        clear - Hγ; fsetdec).
-  exact (@suffix_no_rigid_mid Ξ x (abind_var_typ Apay) Θ2 γ Hsuf Huq Hγ
-           (Hout γ HγA1 Hab)).
-Qed.
+Proof. intros. eapply a_typing_scope_head_nil; [ | eassumption .. ]; exact I. Qed.
