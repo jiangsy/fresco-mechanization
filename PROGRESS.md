@@ -181,6 +181,23 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Derivation induction for sub-collection determinism
+
+Replaced `looksub_rel_stmt`, `e_looksub_rel_n`, and the wrapper with a
+direct derivation-induction proof of `e_looksub_rel`. As in equality
+collection, induct on the second run and rename the first run onto its
+recursive supplies. Equality collection premises use `e_lookeq_rel`
+directly. Removed size arithmetic and redundant second-run inversions.
+
+**Reduction:** 63 nonblank, noncomment Coq lines, with no new helpers.
+The combined logical proof bodies shrink from 209 to 161 lines. All
+retained mathematical statements and computational definitions are
+unchanged.
+
+**Validation:** full `make coq`; all 34 headline assumption checks closed
+under the global context. Extracted OCaml unchanged.
+
+
 ## 2026-10-11 — Derivation induction for equality collection determinism
 
 Replaced `lookeq_rel_stmt`, its size-bounded proof `e_lookeq_rel_n`, and

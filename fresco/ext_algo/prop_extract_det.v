@@ -833,78 +833,56 @@ Proof.
   intros * H Hnh Hoff Hα; inversion H; subst; ls_kill.
 Qed.
 
-Definition looksub_rel_stmt (n : nat) : Prop :=
-  forall S0 Θ α m P P' S1 Ξ C,
-    {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-    size_pskl P + size_pskl P' <= n ->
-    add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
-    forall S1' Ξ' C',
-      {{ S0 ↝ S1' ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ' ⨾ C' }}e ->
-      exists ps,
-        (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0) /\
-        swaps_atoms ps S1 [=] S1' /\
-        swaps_aenv ps Ξ = Ξ' /\
-        swaps_cstrs ps C = C'.
-
-Lemma e_looksub_rel_n : forall n, looksub_rel_stmt n.
+Lemma e_looksub_rel : forall S0 Θ α m P P' S1 Ξ C S1' Ξ' C',
+  {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
+  {{ S0 ↝ S1' ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ' ⨾ C' }}e ->
+  add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
+  exists ps,
+    (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0) /\
+    swaps_atoms ps S1 [=] S1' /\
+    swaps_aenv ps Ξ = Ξ' /\
+    swaps_cstrs ps C = C'.
 Proof.
-  induction n as [ | n IH ]; unfold looksub_rel_stmt in *.
-  { intros S0 Θ α m P P' S1 Ξ C D1 Hsz; exfalso;
-      destruct P; simpl in Hsz; lia. }
-  intros S0 Θ α m P P' S1 Ξ C D1 Hsz Hcov S1' Ξ' C' D2.
-  destruct (sumbool_of_bool (mem α (ftvar_in_pskl P))) as [Hmem | Hmem].
-  2:{ apply mem_false_notin in Hmem.
-      destruct (e_looksub_absent_pins D1 Hmem) as [-> [-> HS]].
-      destruct (e_looksub_absent_pins D2 Hmem) as [-> [-> HS']].
-      exists nil. repeat apply conj; simpl; try reflexivity.
-      - intros ? ? [].
-      - clear - HS HS'. fsetdec. }
-  apply mem_true_in in Hmem. rename Hmem into HαP.
-  inversion D1; subst.
-
+  intros S0 Θ α m P P' S1 Ξ C S1' Ξ' C' D1 D2.
+  revert S1 Ξ C D1. generalize D2.
+  induction D2 as
+    [S0 Θ α m P'
+    |S0 Θ α m P P' Habs
+    |S0 Θ α m P Hnev
+    |S0 S1' Θ α A B Ξ' C' Hgf Hnev HgA HgB Dp'
+    |S0 S1' Θ α As Bt Ξ' C' β2 Hghf Hβ2 Hocc Hnev Dp' IH
+    |S0 Sm' S1' Θ α m Pa Pb Pa' Pb' X1' X2' Cc1' Cc2' D2a D2b IH
+    |S0 S1' Θ α m Ps Pt Ξ' C' β2 Hβ2 Hocc Hnhl Hoff Dp' IH
+    |S0 S1' Θ α m Ps P' Ξ' C' Hnhl Hoff Dp' IH];
+    intros D2 S1 Ξ C D1 Hcov;
+    match type of D1 with
+    | e_looksub _ _ _ _ ?P _ _ _ _ =>
+        destruct (sumbool_of_bool (mem α (ftvar_in_pskl P))) as [Hmem | Hmem]
+    end.
+  all: try (apply mem_false_notin in Hmem;
+    destruct (e_looksub_absent_pins D1 Hmem) as [HX [HC HS]];
+    destruct (e_looksub_absent_pins D2 Hmem) as [HX' [HC' HS']];
+    exists nil; repeat apply conj; simpl;
+    [intros ? ? [] | clear - HS HS'; fsetdec | congruence | congruence]).
+  all: apply mem_true_in in Hmem; rename Hmem into HαP.
   - (* LS-Var *)
-    destruct (e_looksub_inv_var D2) as [-> [-> ->]].
+    destruct (e_looksub_inv_var D1) as [-> [-> ->]].
     exists nil. repeat apply conj; simpl; try reflexivity. intros ? ? [].
 
   - (* LS-Absent — excluded *)
-    exfalso.
-    match goal with
-    | Hn : ?a `notin` ftvar_in_pskl _ |- _ => clear - Hn HαP; fsetdec
-    end.
+    exfalso. clear - Habs HαP; fsetdec.
 
   - (* LS-Vacuous *)
-    match goal with
-    | Hne : _ <> pskl_var_f α |- _ => rename Hne into Hnev
-    end.
-    destruct (e_looksub_inv_ghost D2 Hnev HαP) as [-> [-> ->]].
+    destruct (e_looksub_inv_ghost D1 Hnev HαP) as [-> [-> ->]].
     exists nil. repeat apply conj; simpl; try reflexivity. intros ? ? [].
 
   - (* LS-Check — down to the EQ layer, which §3 has already settled *)
-    match goal with
-    | Hne : _ <> pskl_var_f α |- _ => rename Hne into Hnev
-    end.
-    match goal with
-    | Hg1 : guarded_pskl ?A, Hg2 : guarded_pskl ?B |- _ =>
-        rename Hg1 into HgA; rename Hg2 into HgB
-    end.
     pose proof (e_looksub_inv_check D1 Hnev HgA HgB HαP) as Dp.
-    pose proof (e_looksub_inv_check D2 Hnev HgA HgB HαP) as Dp'.
     exact (e_lookeq_rel Dp Dp' Hcov).
 
   - (* LS-ForallR — the COUNTERPART opens; the subject is untouched *)
-    match type of D1 with
-    | e_looksub _ _ _ _ ?a (pskl_all_syn ?b) _ _ _ =>
-        rename a into As; rename b into Bt
-    end.
-    match goal with
-    | Hgf : pskl_ghost_free (pskl_all_syn _) |- _ => rename Hgf into Hghf
-    end.
-    match goal with
-    | Hne : _ <> pskl_var_f α |- _ => rename Hne into Hnev
-    end.
     destruct (e_looksub_inv_forall_r D1 Hghf Hnev HαP) as (β1 & Hβ1 & Dp).
-    destruct (e_looksub_inv_forall_r D2 Hghf Hnev HαP) as (β2 & Hβ2 & Dp').
-    simpl in Hsz, Hcov.
+    simpl in Hcov.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
     { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
       unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
@@ -923,11 +901,10 @@ Proof.
       by (unfold swap_atom; destruct (β1 == β1); congruence).
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Bt (pskl_var_f β2))
       as Hup.
-    destruct (IH _ _ _ _ _ _ _ _ _ Dpt
-                 ltac:(rewrite size_pskl_open_pskl_wrt_pskl_var; simpl; lia)
+    destruct (IH Dp' _ _ _ Dpt
                  ltac:(rewrite ftvar_in_aenv_cons_tvar;
                        clear - Hcov Hup; simpl in *; fsetdec)
-                 _ _ _ Dp')
+)
       as [ps' [Hav' [HS' [HX' HC']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
@@ -940,16 +917,9 @@ Proof.
     + cbn [swaps_cstrs]. exact HC'.
 
   - (* LS-Arrow — EQ first half, SUB second half *)
-    match type of D1 with
-    | e_looksub _ _ _ _ (pskl_arrow ?p1 ?p2) (pskl_arrow ?q1 ?q2) _ _ _ =>
-        rename p1 into Pa; rename p2 into Pb;
-        rename q1 into Pa'; rename q2 into Pb'
-    end.
     destruct (e_looksub_inv_arrow D1 HαP)
       as (Sm & X1 & X2 & Cc1 & Cc2 & -> & -> & D1a & D1b).
-    destruct (e_looksub_inv_arrow D2 HαP)
-      as (Sm' & X1' & X2' & Cc1' & Cc2' & -> & -> & D2a & D2b).
-    simpl in Hsz, Hcov, HαP.
+    simpl in Hcov, HαP.
     destruct (e_lookeq_rel D1a D2a ltac:(clear - Hcov; fsetdec))
       as [ps1 [Hav1 [HS1 [HX1 HC1]]]].
     assert (HΘ1 : swaps_aenv ps1 Θ = Θ)
@@ -972,8 +942,8 @@ Proof.
     destruct (e_looksub_swaps ps1 D1b Heq2) as [S2t [HS2t D1bt]].
     rewrite HΘ1, Hα1, HPb, HPb' in D1bt.
     pose proof (e_lookeq_supply_grows D2a) as Hgr1'.
-    destruct (IH _ _ _ _ _ _ _ _ _ D1bt ltac:(lia)
-                 ltac:(clear - Hcov Hgr1'; fsetdec) _ _ _ D2b)
+    destruct (IH D2b _ _ _ D1bt
+                 ltac:(clear - Hcov Hgr1'; fsetdec))
       as [ps2 [Hav2 [HS2 [HX2 HC2]]]].
     pose proof (e_lookeq_generated_in_supply D2a) as Hdom1'.
     pose proof (e_lookeq_block_ftvar D2a) as Hftv1'.
@@ -1000,19 +970,8 @@ Proof.
       reflexivity.
 
   - (* LS-ForallL — the SUBJECT peels *)
-    match type of D1 with
-    | e_looksub _ _ _ _ (pskl_all_syn ?p) ?q _ _ _ =>
-        rename p into Ps; rename q into Pt
-    end.
-    match goal with
-    | Hnh : _ <> pskl_ghost |- _ => rename Hnh into Hnhl
-    end.
-    match goal with
-    | Ho : forall_r_off _ _ |- _ => rename Ho into Hoff
-    end.
     destruct (e_looksub_inv_forall_l D1 Hnhl Hoff HαP) as (β1 & Hβ1 & Dp).
-    destruct (e_looksub_inv_forall_l D2 Hnhl Hoff HαP) as (β2 & Hβ2 & Dp').
-    simpl in Hsz, Hcov, HαP.
+    simpl in Hcov, HαP.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
     { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
       unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
@@ -1031,11 +990,10 @@ Proof.
       by (unfold swap_atom; destruct (β1 == β1); congruence).
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Ps (pskl_var_f β2))
       as Hup.
-    destruct (IH _ _ _ _ _ _ _ _ _ Dpt
-                 ltac:(rewrite size_pskl_open_pskl_wrt_pskl_var; simpl; lia)
+    destruct (IH Dp' _ _ _ Dpt
                  ltac:(rewrite ftvar_in_aenv_cons_tvar;
                        clear - Hcov Hup; simpl in *; fsetdec)
-                 _ _ _ Dp')
+)
       as [ps' [Hav' [HS' [HX' HC']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
@@ -1048,35 +1006,11 @@ Proof.
     + cbn [swaps_cstrs]. exact HC'.
 
   - (* LS-UnivGhostL — the subject's ⫯ is stripped *)
-    match type of D1 with
-    | e_looksub _ _ _ _ (pskl_univ_ghost ?p) _ _ _ _ => rename p into Ps
-    end.
-    match goal with
-    | Hnh : _ <> pskl_ghost |- _ => rename Hnh into Hnhl
-    end.
-    match goal with
-    | Ho : forall_r_off _ _ |- _ => rename Ho into Hoff
-    end.
     assert (Hα' : α `in` ftvar_in_pskl Ps) by (simpl in HαP; exact HαP).
     pose proof (e_looksub_inv_univ_ghost_l D1 Hnhl Hoff Hα') as Dp.
-    pose proof (e_looksub_inv_univ_ghost_l D2 Hnhl Hoff Hα') as Dp'.
-    simpl in Hsz, Hcov.
-    exact (IH _ _ _ _ _ _ _ _ _ Dp ltac:(lia)
-              ltac:(clear - Hcov; simpl in *; fsetdec) _ _ _ Dp').
-Qed.
-
-Corollary e_looksub_rel : forall S0 Θ α m P P' S1 Ξ C S1' Ξ' C',
-  {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-  {{ S0 ↝ S1' ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ' ⨾ C' }}e ->
-  add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
-  exists ps,
-    (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0) /\
-    swaps_atoms ps S1 [=] S1' /\
-    swaps_aenv ps Ξ = Ξ' /\
-    swaps_cstrs ps C = C'.
-Proof.
-  intros * D1 D2 Hcov.
-  exact (e_looksub_rel_n D1 (le_n _) Hcov D2).
+    simpl in Hcov.
+    exact (IH Dp' _ _ _ Dp
+              ltac:(clear - Hcov; simpl in *; fsetdec)).
 Qed.
 
 (* ===================================================================== *)
