@@ -2149,7 +2149,7 @@ Proof.
     cbn in HwfPθ.
     rewrite (uskl_to_pskl_msubst_uskl_syn κ Rb).
     exact HwfPθ. }
-  destruct (@a_extract_complete_gen n NM M Θ0 Θ κ empty Ψa
+  destruct (@a_extract_complete_gen n NM M Θ0 Θ κ Ψa
               (Ψ `union` Ψa) ψa Q
               (open_pskl_wrt_pskl ⌊ Rb ⌋ˢ (pskl_var_f α)) P0
               (open_uskl_wrt_uskl Rb (uskl_var_f α)) α
@@ -2162,14 +2162,12 @@ Proof.
               (Hlcb α) Htags
               ltac:(rewrite (ftag_in_uskl_open_var Rb α);
                     cbn in HΨaftag; clear - HΨaftag Hftjb; solve_notin_auto)
-              ltac:(clear; solve_notin_auto)
               (* ⭐ P6-L's new guess-scope premise (the SolE-FlexR repair):
                  read straight off the guess's own well-formedness *)
               ltac:(assert (Hdψ : ftvar_in_uskl ψa [<=] empty `union` dom Θ)
                       by (apply uskl_wf_ftv_dom; exact Hwfψa);
                     clear - Hdψ; solve_notin_auto)
               Hwfψa
-              ltac:(intros β α0 τ Hβ; exfalso; clear - Hβ; solve_notin_auto)
               ltac:(pose proof (ad_pat_sub_fuel_ftag_sub HD) as Hfs;
                     pose proof (ftag_in_uskl_open_upper Rj ψa) as Hou;
                     pose proof (d_tags_skl_ftag Hdtags) as Htg;

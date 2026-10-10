@@ -1016,12 +1016,11 @@ Qed.
 (*  conclusion exhibiting θa as the EXTENSION [κa ++ κ].                   *)
 (* ===================================================================== *)
 
-(** P6-L, GENERALIZED in Δ.  The paper-facing statement is the Δ = ∅ corollary
-    [a_extract_complete] at the end of the file — same convention as
-    P6-Cs / P6-Ss ([a_lookeq_solve_complete_gen] / [a_lookeq_solve_complete],
-    [a_looksub_solve_complete_gen] / [a_looksub_solve_complete]). *)
+(** P6-L, GENERALIZED in the join's ambient tag context [Ψsub] (P7b's
+    Sub-ForallL runs its premise at [Ψ ∪ Ψa]).  The paper-facing statement is
+    the [Ψsub := Ψa] corollary [a_extract_complete] at the end of the file. *)
 Theorem a_extract_complete_gen :
-  forall n NM M Θ0 Θ κ Δ Ψa Ψsub ψa Q P P0 R' α,
+  forall n NM M Θ0 Θ κ Ψa Ψsub ψa Q P P0 R' α,
   {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
   (NM = a_sub_mode_sk -> a_sk_mode_compat M P0) ->   (* skmod[SK]{P0}{M} *)
@@ -1033,13 +1032,11 @@ Theorem a_extract_complete_gen :
   lc_uskl R' ->
   a_tags_sort NM Ψa ψa ->
   (ftag_in_uskl R') ∩ Ψa [=] empty ->       (* the paper's "Ψ disjoint from Ψa" *)
-  Δ ∩ ftvar_in_uskl ψa [=] empty ->         (* ⌐ the precision HOLE rule's side condition *)
   (* ⭐ THE IDEAL GUESS IS Θ-SCOPED (2026-08-05, the SolE-FlexR repair): the
      repaired SolE-FlexR reads the SOLVE block's payloads off [ψa].
      [paper-external wf side condition — docs/WF-SIDE-CONDITIONS.md] *)
   ftvar_in_uskl ψa [<=] dom Θ ->
-  {{ Θ ⨟ Δ ⊢ₚₛ ⌊ ψa ⌋ˢ }}a ->                     (* the paper's wf premise for ψa *)
-  delta_def_fresh Δ Θ ->
+  {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψa ⌋ˢ }}a ->                     (* the paper's wf premise for ψa *)
   (* the join's AMBIENT tag context: the paper's [Ψ,Ψa] — P6-Ss's range
      parameter, surfaced (2026-07-31) for P7b's Sub-ForallL, whose row
      premise runs at [Ψ ∪ Ψa] with the ambient [Ψ ⊆ ftag R'] *)
@@ -1059,11 +1056,11 @@ Theorem a_extract_complete_gen :
     keys κa = keys Ξ /\
     (κa ++ κ) ∷ (Ξ ++ Θ0) ⊑ Θ /\                 (* inc[θa]{Θ0,Ξ}{Θ} *)
     a_inc_equiv Θ0 κ κ Θ /\                      (* inc[θ≡θa]{Θ0}{Θ} *)
-    {{ Θ ⨟ Δ ⊢ₚᵣ (msubst_pskl (κa ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ }}ad.
+    {{ Θ ⨟ empty ⊢ₚᵣ (msubst_pskl (κa ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ }}ad.
 Proof.
-  intros n NM M Θ0 Θ κ Δ Ψa Ψsub ψa Q P P0 R' α.
+  intros n NM M Θ0 Θ κ Ψa Ψsub ψa Q P P0 R' α.
   intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR
-         Htags Hdisj HΔψ Hψaw Hwfψ Hdfresh HΨsubU HΨsubL Hsubty
+         Htags Hdisj Hψaw Hwfψ HΨsubU HΨsubL Hsubty
          HwfSubj Hrefine.
   (* ---- (a)-(f) : P6-Ss at [Pi := □], [Ψi := ∅] ---- *)
   (* ⭐ THE SOLVE'S OWN BLOCK [Ξs] (2026-08-05, the SolE-FlexR repair).  The
@@ -1073,13 +1070,13 @@ Proof.
      avoid-set parameter is instantiated at the CONTEXT's own variables, the
      guess is run at [Ξs ++ Ξc ++ Θ0], and the three blocks are pairwise
      disjoint by construction rather than by a side condition. *)
-  destruct (@a_looksub_solve_complete n NM M Θ0 Θ κ Δ Ψa empty Ψa Ψsub ψa Q
+  destruct (@a_looksub_solve_complete n NM M Θ0 Θ κ empty Ψa empty Ψa Ψsub ψa Q
               P P0 pskl_ghost R' α
               HwfΘ HwfΘ0 HwfP0 ltac:(apply a_wf_pskl__ghost)
               HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR Htags Hdisj
-              ltac:(clear; solve_notin_auto) Hψaw Hdfresh
+              ltac:(clear; solve_notin_auto) Hψaw (delta_def_fresh_empty Θ)
               ltac:(cbn [msubst_pskl];
-                    apply ad_ppre__ghost; [ clear; solve_notin_auto | exact HΔψ ])
+                    apply ad_ppre__ghost; [ clear; solve_notin_auto | clear; fsetdec ])
               HΨsubU HΨsubL
               Hsubty HwfSubj Hrefine
               (ftvar_in_aenv Θ0) ltac:(clear; solve_notin_auto))
@@ -1088,7 +1085,7 @@ Proof.
         & HwfPa & HwfΞc & HαΞc & Hkeysc
         & HForc & Hincc & Heqv & Hκcfresh & Hprec & _ & Hapart).
   (* ---- (g) : P5b-i upgrades ⊑ᵖ[Ψa] to plain ⊑ ⌊ψa⌋ˢ ---- *)
-  assert (Hpre : {{ Θ ⨟ Δ ⊢ₚᵣ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ }}ad).
+  assert (Hpre : {{ Θ ⨟ empty ⊢ₚᵣ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ ⌊ ψa ⌋ˢ }}ad).
   { eapply ad_partial_precise_complete;
       [ exact HwfΘ | exact Htags | exact Hwfψ | ].
     eapply ad_partial_precise_psi_cong; [ exact Hprec | clear; fsetdec ]. }
@@ -1137,7 +1134,7 @@ Proof.
       by (inversion Htags; subst; apply uskl_ghost_free_to_pskl; assumption).
     assert (Hlcψ : lc_pskl ⌊ ψa ⌋ˢ) by (eapply a_wf_pskl_lc; exact Hwfψ).
     destruct (@a_guess_ty_witness (size_pskl Pa) (Ξs ++ Ξc ++ Θ0) Θ
-                (κs ++ κc ++ κ) Δ empty Pa ⌊ ψa ⌋ˢ
+                (κs ++ κc ++ κ) empty empty Pa ⌊ ψa ⌋ˢ
                 (le_n _) HwfΘ HwfPa
                 ltac:(unfold msubst_lc; intros α0;
                       eapply a_inc_lookup_lc; exact Hincc)
@@ -1267,24 +1264,11 @@ Proof.
     exact Hpre.
 Qed.
 
-(* ===================================================================== *)
-(*  §11  THE Δ-HYGIENE PREMISES ABSORB AT Δ = ∅                            *)
-(*                                                                        *)
-(*  Two of P6-L's premises are pure Δ-hygiene — [delta_def_fresh Δ Θ] (Δ's *)
-(*  members are fresh for Θ's flexible DEFINITIONS, inherited from P6-Ss)  *)
-(*  and [Δ ∩ ftv ψa = ∅] (the precision HOLE rule's own side condition).   *)
-(*  Both are VACUOUS at Δ = ∅, which is where every consumer enters: Δ     *)
-(*  tracks the counterpart's ∀-binders, so it is empty at the top of a run *)
-(*  and grows only inside the precision derivation.                       *)
-(*                                                                        *)
-(*  The remaining                                                         *)
-(*  premises are the paper's own EXTERNAL well-formedness side conditions  *)
-(*  (docs/WF-SIDE-CONDITIONS.md), and α's freshness is Barendregt.         *)
-(* ===================================================================== *)
-
-(** P6-L — THE PAPER'S STATEMENT ([lemma:complete-look]).  Use THIS one unless
-    you are threading a non-empty Δ down from an enclosing precision
-    derivation. *)
+(** P6-L — THE PAPER'S STATEMENT ([lemma:complete-look]): the ambient tag
+    context [Ψsub] of [a_extract_complete_gen] at its smallest, [Ψa].  The
+    remaining premises are the paper's own EXTERNAL well-formedness side
+    conditions (docs/WF-SIDE-CONDITIONS.md), and α's freshness is
+    Barendregt. *)
 Corollary a_extract_complete :
   forall n NM M Θ0 Θ κ Ψa ψa Q P P0 R' α,
   {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
@@ -1324,10 +1308,8 @@ Proof.
     [ exact HwfΘ | exact HwfΘ0 | exact HwfP0 | exact HmodSK | exact HmodTY
     | exact Hκ | exact HαΘ | exact HαΘ0 | exact HeraseR | exact HscopeR
     | exact HlcR | exact Htags | exact Hdisj
-    | clear; fsetdec                                 (* ∅ ∩ ftv ψa = ∅ *)
     | exact Hψaw
     | exact Hwfψ
-    | intros β α0 τ Hβ; exfalso; clear - Hβ; fsetdec (* delta_def_fresh ∅ Θ *)
     | clear; fsetdec | clear; fsetdec                (* Ψsub := Ψa *)
     | exact Hsubty | exact HwfSubj | exact Hrefine ].
 Qed.
