@@ -3,7 +3,7 @@
     consistency-proofs.tex:920).
 
     Companion of [a_solve_eq_complete_var] (P6-Cv,
-    [fresco/algo/prop_look_complete_var.v]), which this file's α-leaf case
+    sub/look/prop_eq_var.v), which this file's α-leaf case
     delegates to: where P6-Cv handles the single lookup variable, this lemma
     walks the whole source skeleton, emitting the constraint set 𝒞 and the
     collected flexibles Ξc and solving them against the input Pi.
@@ -3131,8 +3131,7 @@ Proof.
             + pose proof (HimgΔ1F p Hp) as Hi. clear - Hi Hα0; fsetdec.
             + apply Hκim; exact Hp. }
         (* P02 is Θ0-scoped and Ξc1's names are fresh for Θ0, so the collected
-           block misses it — which is what [fa_flexfree] needs to survive the
-           prefix (DESIGN §10.5). *)
+           block misses it. *)
         assert (HfrP02Ξ : (ftvar_in_pskl P02) ∩ (dom Ξc1) [=] empty).
         { pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd.
           intros α0; split; intros Hmem; [ | clear - Hmem; fsetdec ].

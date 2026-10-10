@@ -253,14 +253,14 @@ Qed.
    ⫯-headed stack LS-ForallR lifts the IH's collection with 𝒞 kept.
    docs/HANDOFF-extractable-algo-encoding.md §8c.15. *)
 
-(** THE MODE RESTRICTION, MACHINE-CHECKED.  [ad_pat_sub_fuel__forall_r] forces
+(** THE MODE RESTRICTION.  [ad_pat_sub_fuel__forall_r] forces
     [a_sub_mode_ty] + [mode_tc], and NM is invariant along a derivation, so
     under a Sub-ForallR only three rows can fire: [__check], [__forall_r] and
     [__forall_l_*].  Hence the subject there is either GUARDED (the next step
     is [__check], whose subtree is pure CONSISTENCY — no guesses) or
     ∀-HEADED (the next step is [__forall_l]).
 
-    In particular a ⊤◇ / ◇ / ◈ subject is IMPOSSIBLE at (ty, tc): stripping
+    In particular a ∀◇ / ◇ / ◈ subject is IMPOSSIBLE at (ty, tc): stripping
     those needs [a_sub_mode_sk].  That is what lets Sub-ForallR's α-stack
     branch assume the stack is built from ∀s alone. *)
 
@@ -352,7 +352,8 @@ Lemma a_looksub_solve_complete_leaf :
        κ, and is a rigid, hence not in [def_ftv Θ]).  UNLESS the lookup
        subject is an α-STACK, the one shape whose 𝒞 is [a_cstr_sub M P0] at
        whatever target it is handed — and that shape never needs LS-ForallR
-       at all ([alpha_stack_looksub]), so the binder is never introduced.
+       at all at a bare variable (LS-Var; the Sub-ForallR row splits a
+       stack by its head), so the binder is never introduced.
        The [mode_tc] guard is what makes Sub-Arrow VACUOUS (its conclusion is
        [mode_fn M]); that is the row which could not otherwise concatenate a
        left disjunct with a right one.
@@ -929,7 +930,8 @@ Theorem a_looksub_solve_complete_gen :
        κ, and is a rigid, hence not in [def_ftv Θ]).  UNLESS the lookup
        subject is an α-STACK, the one shape whose 𝒞 is [a_cstr_sub M P0] at
        whatever target it is handed — and that shape never needs LS-ForallR
-       at all ([alpha_stack_looksub]), so the binder is never introduced.
+       at all at a bare variable (LS-Var; the Sub-ForallR row splits a
+       stack by its head), so the binder is never introduced.
        The [mode_tc] guard is what makes Sub-Arrow VACUOUS (its conclusion is
        [mode_fn M]); that is the row which could not otherwise concatenate a
        left disjunct with a right one.
@@ -1198,7 +1200,7 @@ Proof.
                    Sub-ForallL rows do (only the renamed side differs: there
                    the SUBJECT moves, here the TARGET does).
          · RIGHT — P'' is an α-STACK, and such a run never descends the
-                   target at all: [alpha_stack_looksub] collects
+                   target at a bare variable: LS-Var collects
                    [a_cstr_sub tc P0] at the UNDESCENDED P0, so the binder is
                    never introduced.  The IH still supplies the solve, and
                    lifting it over the ∀ is P6-Sv's strengthen-then-rename
@@ -1459,7 +1461,7 @@ Proof.
         -- (* the SOLVE's block vs the constraints: both pass through *)
            exact HapartR.
       * (* ---- RIGHT: the lookup subject is an α-STACK.  Such a run never
-             descends the target ([alpha_stack_looksub]), so LS-ForallR is
+             descends the target at a bare variable (split below), so LS-ForallR is
              not used at all and the binder is never introduced — which is
              exactly the configuration in which β genuinely CAN occur in the
              descended 𝒞 (cex/cex_p6ss_sub_target_ftv.v).  The IH still
@@ -1496,8 +1498,7 @@ Proof.
              · at a ∀- or ⫯-headed stack LS-ForallR is now the ONLY row, and
                it lifts the IH's collection with 𝒞 KEPT, so the branch becomes
                the LEFT branch's own moves — β is stripped from the solve and
-               [β ∉ ftv Pa] comes from precision instead of from [β ∉ ftv 𝒞].
-           ⭐ [alpha_stack_looksub] is not called at all any more. *)
+               [β ∉ ftv Pa] comes from precision instead of from [β ∉ ftv 𝒞]. *)
         destruct Hstk as [ | Lst Pst Hstf | Pst Hstt ].
         -- (* ---- the BARE variable ---- *)
            (* the IH's collection is LS-Var, which PINS the constraint to the
@@ -3312,11 +3313,11 @@ Qed.
 (*  What works instead is the MODE-GUARDED DISJUNCTION this statement now  *)
 (*  carries.  [__forall_r] forces [a_sub_mode_ty] + [mode_tc], and NM is   *)
 (*  invariant along a derivation, so there only [__check], [__forall_r]    *)
-(*  and [__forall_l_*] can fire ([ad_pat_sub_fuel_ty_tc_subject]).  Hence     *)
+(*  and [__forall_l_*] can fire.  Hence                                   *)
 (*  under a Sub-ForallR this LEAF ([P = α]) is reachable only when P is an *)
 (*  α-STACK — every other α-leaf sits under LS-Check, i.e. inside P6-Cs,   *)
 (*  whose bound is already ψa-relative — and an α-stack never descends the *)
-(*  target at all ([alpha_stack_looksub]), so the binder is never          *)
+(*  target at a bare variable (LS-Var), so the binder is never             *)
 (*  introduced.  The mode guard is what makes Sub-Arrow vacuous, the row   *)
 (*  that could not otherwise concatenate a left disjunct with a right one. *)
 (*  docs/DESIGN-completeness-subtyping.md §8 (h).                          *)
@@ -3392,7 +3393,8 @@ Theorem a_looksub_solve_complete :
        κ, and is a rigid, hence not in [def_ftv Θ]).  UNLESS the lookup
        subject is an α-STACK, the one shape whose 𝒞 is [a_cstr_sub M P0] at
        whatever target it is handed — and that shape never needs LS-ForallR
-       at all ([alpha_stack_looksub]), so the binder is never introduced.
+       at all at a bare variable (LS-Var; the Sub-ForallR row splits a
+       stack by its head), so the binder is never introduced.
        The [mode_tc] guard is what makes Sub-Arrow VACUOUS (its conclusion is
        [mode_fn M]); that is the row which could not otherwise concatenate a
        left disjunct with a right one.

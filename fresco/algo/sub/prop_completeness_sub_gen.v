@@ -18,7 +18,7 @@
     (1) THE FUEL JUDGMENT IS [ad_pat_sub_fuel], the TAG-HYGIENIC fuel mirror
         (def_subtyping.v), because precision-substitution
         — which the ForallL case applies to its premise to get the derivation it
-        hands the IH — is FALSE over [_n] (the paper's "fresh Ψ'" means GLOBALLY
+        hands the IH — is FALSE over a plain fuel mirror (the paper's "fresh Ψ'" means GLOBALLY
         fresh, and a plain mirror of [ad_pat_sub] renders it only as freshness
         from the tag context, which does not survive the Arrow split).  P5's
         [ad_pat_sub_precise_upre_fuel] and ALL FIVE P6 lemmas are stated over
@@ -526,10 +526,8 @@ Qed.
 (*                                                                        *)
 (*  Sub-Check is NOT one of them: its counterpart is [pskl_to_bskl_inh B]  *)
 (*  for a merely GUARDED B, which is [is_sskl] only when B is ∀-free.  It  *)
-(*  takes the paper's own route instead — [a_consis_complete] for the  *)
-(*  run and the precision, then [a_consis_concrete_output_equiv]           *)
-(*  (prop_sub_concrete_rhs.v) to move that precision from the consistency  *)
-(*  OUTPUT to [P0].                                                       *)
+(*  takes the paper's own route instead — [a_consis_complete] for the run, *)
+(*  and the P0-fill premise for the precision ([a_sub_complete_check]).   *)
 (*                                                                        *)
 (*  THE ONE REAL TECHNICALITY.  Under the earlier rules consistency put a  *)
 (*  ∀'s fresh binder in Θ and refinement put it in Δ only, so the          *)
@@ -1088,12 +1086,10 @@ Qed.
 (*  ζ, which is the stability lemma again (in the FLIPPED direction) plus  *)
 (*  [ad_refine_syn_trans].                                                 *)
 (*                                                                        *)
-(*  So this case does NOT need [a_consis_concrete_output_equiv] after all: *)
-(*  the plan routed the precision through the consistency OUTPUT, but the  *)
-(*  algorithm never returns that output — [a_sub__check] hides it          *)
-(*  existentially inside [a_consis_chk] and returns [P0] (the note at      *)
-(*  DESIGN §9.1's end already observed this; what it did not observe is    *)
-(*  that the fill premise then closes the goal outright).                  *)
+(*  The precision need not go through the consistency OUTPUT: the         *)
+(*  algorithm never returns it — [a_sub__check] hides it existentially    *)
+(*  inside [a_consis_chk] and returns [P0] — and the fill premise closes   *)
+(*  the goal outright.                                                    *)
 (*                                                                        *)
 (*  TWO SIDE CONDITIONS THE MOTIVE DOES NOT CARRY, both external-wf in    *)
 (*  the sense of docs/WF-SIDE-CONDITIONS.md, both to be supplied by the    *)

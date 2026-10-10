@@ -1023,7 +1023,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §1f  The [_gv] STRUCTURAL MIRRORS the bundle's rows consume.          *)
+(*  §1f  The [ad_pat_sub_fuel] STRUCTURAL LEMMAS the bundle's rows consume. *)
 (*                                                                        *)
 (*  Each is the plain lemma of prop_pat_sub.v with the fuel carried        *)
 (*  UNCHANGED and the LEAF datum transported by the matching refinement    *)
@@ -1182,8 +1182,8 @@ Qed.
 (* ===================================================================== *)
 
 (** Discard an UNDEFINED flexible mid entry from a refinement by replacing it
-    with [1] — the refinement-side companion of [ad_pat_sub_subst_flex]
-    (prop_pat_sub.v:749), and the ingredient its [_gv] mirror was missing. *)
+    with [1] — the refinement-side companion of [ad_pat_consis_subst_flex]
+    (prop_pat_sub.v), and the ingredient its fuel version needs. *)
 Lemma ad_refine_pskl_subst_flex : forall Θ Δ P P',
   {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad ->
   forall Θ1 β Θ2,
@@ -1301,7 +1301,7 @@ Proof.
     eapply ad_refine_pskl_subst_flex; eauto.
 Qed.
 
-(** Step 2: the [_gv] mirror of [ad_pat_sub_subst_flex] (prop_pat_sub.v:749),
+(** Step 2: the [ad_pat_sub_fuel] version of [ad_pat_consis_subst_flex] (prop_pat_sub.v),
     fuel-preserving, with the four LEAF rows transported by step 1. *)
 Lemma ad_pat_sub_fuel_subst_flex : forall n NM M Ψ Θ R Q,
   ad_pat_sub_fuel n NM M Ψ Θ R Q ->
@@ -1430,7 +1430,7 @@ Qed.
 (* ===================================================================== *)
 
 (** Step 3: drop a DEFINED flexible mid entry from a refinement by unfolding
-    it to its definition — the companion of [ad_pat_sub_subst_flex_def]. *)
+    it to its definition — the companion of [ad_pat_consis_subst_flex_def]. *)
 Lemma ad_refine_pskl_subst_flex_def : forall Θ Δ P P',
   {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad ->
   forall Θ1 β τ0 Θ2,
@@ -1600,8 +1600,8 @@ Proof.
     clear; fsetdec.
 Qed.
 
-(** Step 4: the [_gv] mirror of [ad_pat_sub_subst_flex_def]
-    (prop_pat_sub.v:1031), fuel-preserving, leaves transported by step 3. *)
+(** Step 4: the [ad_pat_sub_fuel] version of [ad_pat_consis_subst_flex_def]
+    (prop_pat_sub.v), fuel-preserving, leaves transported by step 3. *)
 Lemma ad_pat_sub_fuel_subst_flex_def : forall n NM M Ψ Θ R Q,
   ad_pat_sub_fuel n NM M Ψ Θ R Q ->
   forall Θ1 β τ0 Θ2,
@@ -2216,7 +2216,7 @@ Proof.
     (* pick a fresh decoration of P1 to instantiate the cofinite family *)
     assert (HlcP1 : lc_pskl P1) by (eapply a_wf_pskl_lc; eauto).
     (* ⭐ ONE WIDER AVOID-SET (hand-off §6.1): the decoration is chosen fresh
-       anyway, so [_gv]'s extra ForallL hygiene premise costs nothing but
+       anyway, so [ad_pat_sub_fuel]'s extra ForallL hygiene premise costs nothing but
        naming the subject's tags in the set we avoid. *)
     destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1
                 (L `union` Ψ `union` ftag_in_uskl (uskl_all_tag ε R)))
@@ -2774,7 +2774,7 @@ Qed.
 (*  carries the leaf presupposition, each of these owes the refinement     *)
 (*  premise a transport of its own — and [ad_refine_pskl_subst_flex] /     *)
 (*  [_subst_flex_def] / [_rename_ctx] live in THIS file, downstream of     *)
-(*  prop_pat_sub.v.  Their [_gv] twins are the lemmas just above; the two  *)
+(*  prop_pat_sub.v.  Their fuel twins are the lemmas just above; the two   *)
 (*  families now sit together.  Both consumers (algo/prop_suffix_erase.v,  *)
 (*  algo/prop_rename_decl.v) import this file already.                     *)
 (* ===================================================================== *)

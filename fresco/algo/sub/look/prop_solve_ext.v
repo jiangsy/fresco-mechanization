@@ -15,11 +15,7 @@
       a fresh flexible block inserted in the middle;
     - the three packages the five P6 lemmas are actually stated over:
       [solve_ext], its subtyping twin [solve_sub_ext], and [solve_eq_mono_concl];
-    - the per-case kits (GhostG, Flex, Topholeg) built directly on them.
-
-    ⚙ SPLIT 2026-08-09 out of prop_kit.v.  "kit" named nothing: the file was
-    6952 lines and three separable concerns, and the audit had already found
-    it to be the source of most duplicate names in the tree. *)
+    - the per-case kits (GhostG, Flex, Topholeg) built directly on them. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.

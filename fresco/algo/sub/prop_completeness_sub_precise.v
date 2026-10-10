@@ -3,10 +3,8 @@
     Paper: [thm:complete-subtyping] (algorithmic.tex:1446); proofs
     subtyping-proofs.tex:1526-3536.  Plan: docs/DESIGN-completeness-subtyping.md.
 
-    This file builds bottom-up, starting at P5b.  ⚙ It used to open with a
-    P5a block — the non-hygienic fuel measure [ad_pat_sub_n] and its five
-    bridges — which was deleted 2026-08-11 with the judgment it served; see
-    the RESTART NOTE below and in algo_decl/def_subtyping.v. *)
+    This file builds bottom-up, starting at P5b, over the tag-hygienic fuel
+    mirror [ad_pat_sub_fuel] (algo_decl/def_subtyping.v). *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -53,15 +51,6 @@ Local Ltac join_refine_inh :=
   match goal with Hj : ad_consis_join _ _ _ _ |- _ =>
     let Hr := fresh "Hjr" in destruct Hj as [_ Hr];
     try rewrite bskl_to_pskl_pskl_to_bskl_inh in Hr; exact Hr end.
-
-(* ⚙ RESTART NOTE (2026-08-10) — P5a's fuel-measure block ([ad_pat_sub_of_n],
-   [ad_pat_sub_n_succ], [ad_pat_sub_n_mono], [ad_pat_sub_n_rename_tvar],
-   [ad_pat_sub_to_n]) was DELETED with the [ad_pat_sub_n] judgment it served
-   (algo_decl/def_subtyping.v — see the note there).  Nothing outside
-   the block ever used it: the completeness track settled on the tag-hygienic
-   fuel [ad_pat_sub_fuel], whose own bridges are
-   [ad_pat_sub_fuel_le] / [ad_pat_sub_of_fuel]
-   (def_subtyping.v). *)
 
 (* ===================================================================== *)
 (*  P5b — partial-precision-complete + precision-substitution.            *)
@@ -431,7 +420,7 @@ Proof. intros R Hg. inversion Hg; subst. eauto. Qed.
 (*  (Sub-ForallL item 3).                                                 *)
 (*                                                                        *)
 (*  Same per-rule transports as step (3); the NEW obligations are the     *)
-(*  leaf refinements the [_gv] rows carry at [__infer] / [__check] /      *)
+(*  leaf refinements the fuel rows carry at   [__infer] / [__check] /      *)
 (*  [__univ_ghost_r] / [__arrow]'s domain.  Each is transported to the    *)
 (*  ghostier subject by [uskl_precise_erase_refine] (item 1) at Δ = ∅ —   *)
 (*  whose assumed-target-wf premise is exactly the row's [Hwfq] — and     *)

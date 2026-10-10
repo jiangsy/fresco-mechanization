@@ -745,9 +745,9 @@ Qed.
 (* ===================================================================== *)
 
 (* ===================================================================== *)
-(*  §5  Rigid renames of a look run (moved from prop_look_complete_cstr,  *)
-(*  2026-07-31 — the exists-fresh ForallR consumers need them below the   *)
-(*  decoration layer).  This is the CANONICAL rename asset of the cluster: *)
+(*  §5  Rigid renames of a look run (the exists-fresh ForallR consumers    *)
+(*  need them below the decoration layer).  This is the CANONICAL rename   *)
+(*  asset of the cluster:                                                 *)
 (*  §6's rename of the looked-for variable has to MOVE binders, and it     *)
 (*  moves them with the lemma proved here.                                 *)
 (* ===================================================================== *)
