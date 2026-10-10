@@ -3918,13 +3918,13 @@ Proof.
   - (* FlexL : decorated *)
     assert (Hvis : forall α0, α0 `in` ftvar_in_pskl P0 -> a_binds_tvar α0 Θ0).
     { intros α0 Hα0. exact (a_wf_pskl_ftv_binds HwfP0 Hα0). }
-    destruct (a_assign_sound H0 a_decls__nil Hwf HwfP0) as [Hle Hcons].
+    destruct (a_assign_sound H1 a_decls__nil Hwf HwfP0) as [Hle Hcons].
     simpl in Hle.
     assert (Hwf1 : {{ ⊢ Θ1 }}a)
       by (eapply a_assign_preserves_wf;
-          [ exact H0 | apply a_decls__nil | exact Hwf | exact HwfP0 ]).
+          [ exact H1 | apply a_decls__nil | exact Hwf | exact HwfP0 ]).
     assert (Hfα : a_flex_tvar Θ0 α)
-      by (pose proof (a_assign_subject_flex H0) as Hf; simpl in Hf; exact Hf).
+      by (pose proof (a_assign_subject_flex H1) as Hf; simpl in Hf; exact Hf).
     assert (HαnΔ : α `notin` (Δ1 `union` Δ2)).
     { destruct Hfα as [Hb | [τ Hb]];
         eapply faf_flex_notin; try exact Hfaf; try exact Hb; discriminate. }
@@ -3932,7 +3932,7 @@ Proof.
     { intros α0 Hα0. apply binds_In with (a := abind_tvar). apply Hrig; auto. }
     assert (Hinv : no_flex_dep (Δ1 `union` Δ2) Θ1 /\
                    flex_above_free (Δ1 `union` Δ2) Θ1).
-    { destruct (a_assign_preserves_inv (Δ := Δ1 `union` Δ2) H0
+    { destruct (a_assign_preserves_inv (Δ := Δ1 `union` Δ2) H1
                   a_decls__nil Hwf HwfP0
                   ltac:(simpl; exact Hnfd) Hfaf
                   ltac:(simpl; solve_notin_auto)
@@ -3944,7 +3944,7 @@ Proof.
     destruct Hinv as [Hnfd1 Hfaf1].
     assert (Hbα1 : a_binds_tvar α Θ1)
       by (eapply a_assign_subject_binds;
-          [ exact H0 | apply a_decls__nil | exact Hwf | exact HwfP0 ]).
+          [ exact H1 | apply a_decls__nil | exact Hwf | exact HwfP0 ]).
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     split; [ exact Hnfd1 | ]. split; [ exact Hfaf1 | ].
     split.
@@ -3963,13 +3963,13 @@ Proof.
     rewrite uskl_to_pskl_pskl_to_uskl in HwfS.
     assert (Hvis : forall α0, α0 `in` ftvar_in_pskl P -> a_binds_tvar α0 Θ0).
     { intros α0 Hα0. exact (a_wf_pskl_ftv_binds HwfS Hα0). }
-    destruct (a_assign_sound H0 a_decls__nil Hwf HwfS) as [Hle Hcons].
+    destruct (a_assign_sound H1 a_decls__nil Hwf HwfS) as [Hle Hcons].
     simpl in Hle.
     assert (Hwf1 : {{ ⊢ Θ1 }}a)
       by (eapply a_assign_preserves_wf;
-          [ exact H0 | apply a_decls__nil | exact Hwf | exact HwfS ]).
+          [ exact H1 | apply a_decls__nil | exact Hwf | exact HwfS ]).
     assert (Hfα : a_flex_tvar Θ0 α)
-      by (pose proof (a_assign_subject_flex H0) as Hf; simpl in Hf; exact Hf).
+      by (pose proof (a_assign_subject_flex H1) as Hf; simpl in Hf; exact Hf).
     assert (HαnΔ : α `notin` (Δ1 `union` Δ2)).
     { destruct Hfα as [Hb | [τ Hb]];
         eapply faf_flex_notin; try exact Hfaf; try exact Hb; discriminate. }
@@ -3977,7 +3977,7 @@ Proof.
     { intros α0 Hα0. apply binds_In with (a := abind_tvar). apply Hrig; auto. }
     assert (Hinv : no_flex_dep (Δ1 `union` Δ2) Θ1 /\
                    flex_above_free (Δ1 `union` Δ2) Θ1).
-    { destruct (a_assign_preserves_inv (Δ := Δ1 `union` Δ2) H0
+    { destruct (a_assign_preserves_inv (Δ := Δ1 `union` Δ2) H1
                   a_decls__nil Hwf HwfS
                   ltac:(simpl; exact Hnfd) Hfaf
                   ltac:(simpl; solve_notin_auto)
@@ -3989,13 +3989,13 @@ Proof.
     destruct Hinv as [Hnfd1 Hfaf1].
     assert (Hbα1 : a_binds_tvar α Θ1)
       by (eapply a_assign_subject_binds;
-          [ exact H0 | apply a_decls__nil | exact Hwf | exact HwfS ]).
+          [ exact H1 | apply a_decls__nil | exact Hwf | exact HwfS ]).
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     split; [ exact Hnfd1 | ]. split; [ exact Hfaf1 | ].
     split.
     + exists (bskl_var_f α). split; [ reflexivity | ].
       split.
-      * eapply ad_pat_consis_psi_cong; [ exact Hcons | symmetry; exact H1 ].
+      * eapply ad_pat_consis_psi_cong; [ exact Hcons | symmetry; exact H2 ].
       * replace (pskl_to_bskl_inh (pskl_var_f α)) with (bskl_var_f α)
           by reflexivity.
         apply ad_refine_syn__var.
