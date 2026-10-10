@@ -691,13 +691,11 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     {{ empty ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
     is_sskl Q ->
     {{ Ψ ⨟ Γ ⊢ˢ[ mode_ti ] R ⩽ Q }}d
-| d_pat_sub__univ_ghost_r : forall Γ R Q,
+| d_pat_sub__univ_ghost_r : forall Ψ Γ R Q,
     (* Paper [UnivGhostR] (replaces the out-of-sync [check]; WT review):
        the checking rule produces a [TopHole] on the RHS, requires BOTH
        [R] and the synthesised body [Q] guarded, and [Q] synthesised
        ([is_sskl]) — answering WT's "shouldn't Q be synthesised?". *)
-    (* Todo: lift Ψ quantification above *)
-    forall Ψ,
     Ψ [=] empty ->
     guarded_uskl R ->
     guarded_bskl Q ->
@@ -706,15 +704,14 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
        the conclusion's, not the consistency premise's *)
     {{ empty ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ[ mode_tc ] R ⩽ (bskl_univ_ghost Q) }}d
-| d_pat_sub__ghost : forall m Γ P,
+| d_pat_sub__ghost : forall m Ψ Γ P,
     (* Paper [Ghost]: a [Hole] is below any inherited skeleton [inh{P}].
        [mod_comp_sk … m] is the judgment-wide [skmod{SK}] wf-condition
        (declarative.tex:2049, defined at :1596): it excludes an ill-moded fill (a poly [inh{P}] at
        ti/tc is not [is_sskl]), so the sub output stays mode-compatible — the
        skeleton analog of [d_sub] having no ghost rule. *)
     (* No premise on the fill, as in the paper (see [d_pat_consis__ghost]). *)
-    (* Todo: lift Ψ quantification above *)
-    forall Ψ, Ψ [=] empty ->
+    Ψ [=] empty ->
     mod_comp_sk (pskl_to_bskl_inh P) m ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] uskl_ghost ⩽ (pskl_to_bskl_inh P) }}d
 | d_pat_sub__ghostg : forall m Ψ Γ,
