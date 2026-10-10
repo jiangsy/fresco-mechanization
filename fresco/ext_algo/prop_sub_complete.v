@@ -1,15 +1,14 @@
 (** ext_algo — §8c.11 / §8c.13, campaign level 6: the SUBTYPING runner's
     COMPLETENESS.
 
-    §1  a strong-induction principle for [e_sub_call_order]
     §3  equivariance along a CHAIN, for [e_sub] / [e_sub_flex]
     §4  the ROOT INVERSIONS — §8c.11's overlap table, as lemmas
     §5  the [SI-Flex-Solve] REALIGNMENT, and §5b the three small pieces
         the SUB half needs ([swaps_pskl_open], the wf chain iteration,
         [split_at_tvar]'s completeness, [e_extract]'s inversion)
     §6  THE MOTIVE
-    §7  THE MAIN INDUCTION — §7a the flex half, §7b the sub half,
-        §7c the two joined through §1's principle
+    §7  ordinary induction on [e_sub_call_order], with subtyping and
+        flexible-walk cases
     §8  the three headlines
 
     ⭐ §4 IS THE LEVEL'S GOOD NEWS.  [guarded_pskl] is [unit | var | arrow]
@@ -105,211 +104,6 @@ Set Implicit Arguments.
 
 Open Scope fresco_a_scope.
 Open Scope fresco_e_scope.
-
-(* ===================================================================== *)
-(*  §1  Strong induction for [e_sub_call_order]                           *)
-(*                                                                        *)
-(*  prop_consis_complete.v §1's idiom, verbatim: the runner recurses on    *)
-(*  the ORDER, so completeness must too, and the order's own [Induction]   *)
-(*  scheme gives an IH only at the immediate sub-orders.  Hand-write the   *)
-(*  principle with every RECURSIVE premise DOUBLED — the order premise     *)
-(*  itself and its motive companion — so a case script may use either.     *)
-(*                                                                        *)
-(*  ⚙ Three premises have no companion because they are not recursive      *)
-(*  calls of this block: [Check]'s [e_consis_order], [Arrow]'s first       *)
-(*  conjunct (also an [e_consis_order]) and [ForallL]'s first conjunct     *)
-(*  (an [e_extract_order]).                                               *)
-(* ===================================================================== *)
-
-Section e_sub_call_order_sind.
-
-Variable Qc : supply -> a_sub_mode -> mode -> pskl -> aenv -> sub_call -> Prop.
-
-Hypothesis Hsub : forall S0 NM M P0 Θ0 P,
-    (* Check — one consistency run *)
-    (M = mode_tc -> e_consis_order empty empty S0 Θ0 P0 P) ->
-    (* ForallR — peel the pattern's quantifier *)
-    (forall B,
-       M = mode_tc -> P0 = pskl_all_syn B ->
-       e_sub_call_order (add (supply_fresh S0) S0) a_sub_mode_ty mode_tc
-         (open_pskl_wrt_pskl B (pskl_var_f (supply_fresh S0)))
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ0) (sub_call_sub P)) ->
-    (forall B,
-       M = mode_tc -> P0 = pskl_all_syn B ->
-       Qc (add (supply_fresh S0) S0) a_sub_mode_ty mode_tc
-         (open_pskl_wrt_pskl B (pskl_var_f (supply_fresh S0)))
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ0) (sub_call_sub P)) ->
-    (* FlexMono — enter the walk *)
-    (forall α M',
-       P = pskl_var_f α -> M = mode_fn M' ->
-       e_sub_call_order S0 NM M' P0 Θ0 (sub_call_flex nil α)) ->
-    (forall α M',
-       P = pskl_var_f α -> M = mode_fn M' ->
-       Qc S0 NM M' P0 Θ0 (sub_call_flex nil α)) ->
-    (* Arrow — the domain goes to consistency, the codomain stays *)
-    (forall M' P0a P0b P1 P2,
-       M = mode_fn M' -> P0 = pskl_arrow P0a P0b -> P = pskl_arrow P1 P2 ->
-       e_consis_order empty empty S0 Θ0 P0a P1
-       /\ (forall S1 Θ1 Q1,
-             {{ S0 ↝ S1 ⊨ Θ0 ⊢[ empty | empty | P0a ] P1 ∼ Q1 ⊣ Θ1 }}e ->
-             e_sub_call_order S1 NM M' P0b Θ1 (sub_call_sub P2))) ->
-    (forall M' P0a P0b P1 P2,
-       M = mode_fn M' -> P0 = pskl_arrow P0a P0b -> P = pskl_arrow P1 P2 ->
-       forall S1 Θ1 Q1,
-         {{ S0 ↝ S1 ⊨ Θ0 ⊢[ empty | empty | P0a ] P1 ∼ Q1 ⊣ Θ1 }}e ->
-         Qc S1 NM M' P0b Θ1 (sub_call_sub P2)) ->
-    (* ForallL — extract an instantiation, then recurse on the opened body *)
-    (forall Q,
-       P = pskl_all_syn Q -> M <> mode_ti ->
-       (guarded_pskl P0 \/ P0 = pskl_ghost) ->
-       e_extract_order (add (supply_fresh S0) S0) Θ0 NM (supply_fresh S0) M
-         (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0))) P0
-       /\ (forall S1 Ξ P1,
-             {{ (add (supply_fresh S0) S0) ↝ S1 ⊨ Θ0
-                ⊢ (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
-                ⊳[ NM , (supply_fresh S0) , M ] P0 ⤳ Ξ ↪ P1 }}e ->
-             {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P1 }}a ->
-             e_sub_call_order S1 NM M P0 (Ξ ++ Θ0)
-               (sub_call_sub (open_pskl_wrt_pskl Q P1)))) ->
-    (forall Q,
-       P = pskl_all_syn Q -> M <> mode_ti ->
-       (guarded_pskl P0 \/ P0 = pskl_ghost) ->
-       forall S1 Ξ P1,
-         {{ (add (supply_fresh S0) S0) ↝ S1 ⊨ Θ0
-            ⊢ (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
-            ⊳[ NM , (supply_fresh S0) , M ] P0 ⤳ Ξ ↪ P1 }}e ->
-         {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P1 }}a ->
-         Qc S1 NM M P0 (Ξ ++ Θ0)
-           (sub_call_sub (open_pskl_wrt_pskl Q P1))) ->
-    (* UnivGhostL — strip the subject's ⫯ *)
-    (forall Q,
-       P = pskl_univ_ghost Q -> M <> mode_ti ->
-       e_sub_call_order S0 NM M P0 Θ0 (sub_call_sub Q)) ->
-    (forall Q,
-       P = pskl_univ_ghost Q -> M <> mode_ti ->
-       Qc S0 NM M P0 Θ0 (sub_call_sub Q)) ->
-    Qc S0 NM M P0 Θ0 (sub_call_sub P).
-
-Hypothesis Hflex : forall S0 NM M P0 Θ0 Ξ α,
-    (* Flex-Solve — the head IS the target, undefined *)
-    (forall Θ0',
-       Θ0 = (α ~ abind_flex_mono) ++ Θ0' ->
-       e_sub_call_order
-         (add (supply_fresh (add (supply_fresh S0) S0))
-            (add (supply_fresh S0) S0))
-         NM (mode_fn M) P0
-         (Ξ ++ (α ~ abind_flex_mono_def
-                      (ptyp_arrow (ptyp_var_f (supply_fresh S0))
-                         (ptyp_var_f (supply_fresh (add (supply_fresh S0) S0)))))
-             ++ (supply_fresh (add (supply_fresh S0) S0) ~ abind_flex_mono)
-             ++ (supply_fresh S0 ~ abind_flex_mono) ++ Θ0')
-         (sub_call_sub
-            (pskl_arrow (pskl_var_f (supply_fresh S0))
-               (pskl_var_f (supply_fresh (add (supply_fresh S0) S0)))))) ->
-    (forall Θ0',
-       Θ0 = (α ~ abind_flex_mono) ++ Θ0' ->
-       Qc (add (supply_fresh (add (supply_fresh S0) S0))
-             (add (supply_fresh S0) S0))
-         NM (mode_fn M) P0
-         (Ξ ++ (α ~ abind_flex_mono_def
-                      (ptyp_arrow (ptyp_var_f (supply_fresh S0))
-                         (ptyp_var_f (supply_fresh (add (supply_fresh S0) S0)))))
-             ++ (supply_fresh (add (supply_fresh S0) S0) ~ abind_flex_mono)
-             ++ (supply_fresh S0 ~ abind_flex_mono) ++ Θ0')
-         (sub_call_sub
-            (pskl_arrow (pskl_var_f (supply_fresh S0))
-               (pskl_var_f (supply_fresh (add (supply_fresh S0) S0)))))) ->
-    (* Flex-Assign — a defined head is substituted away and dropped *)
-    (forall β τ Θ0',
-       Θ0 = (β ~ abind_flex_mono_def τ) ++ Θ0' ->
-       e_sub_call_order S0 NM (mode_fn M)
-         (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0)
-         (Ξ ++ Θ0')
-         (sub_call_sub
-            (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)))) ->
-    (forall β τ Θ0',
-       Θ0 = (β ~ abind_flex_mono_def τ) ++ Θ0' ->
-       Qc S0 NM (mode_fn M)
-         (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0)
-         (Ξ ++ Θ0')
-         (sub_call_sub
-            (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)))) ->
-    (* Flex-Depend / Flex-Skip — an undefined non-target head *)
-    (forall β Θ0',
-       Θ0 = (β ~ abind_flex_mono) ++ Θ0' ->
-       e_sub_call_order S0 NM M P0 Θ0'
-         (sub_call_flex (Ξ ++ (β ~ abind_flex_mono)) α)
-       /\ e_sub_call_order S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    (forall β Θ0',
-       Θ0 = (β ~ abind_flex_mono) ++ Θ0' ->
-       Qc S0 NM M P0 Θ0' (sub_call_flex (Ξ ++ (β ~ abind_flex_mono)) α)
-       /\ Qc S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    (* Flex-SkipRigid *)
-    (forall β Θ0',
-       Θ0 = (β ~ abind_tvar) ++ Θ0' ->
-       e_sub_call_order S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    (forall β Θ0',
-       Θ0 = (β ~ abind_tvar) ++ Θ0' ->
-       Qc S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    (* Flex-SkipTmVar, both payload sorts *)
-    (forall x A Θ0',
-       Θ0 = (x ~ abind_var_typ A) ++ Θ0' ->
-       e_sub_call_order S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    (forall x A Θ0',
-       Θ0 = (x ~ abind_var_typ A) ++ Θ0' ->
-       Qc S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    (forall x Q Θ0',
-       Θ0 = (x ~ abind_var_skl Q) ++ Θ0' ->
-       e_sub_call_order S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    (forall x Q Θ0',
-       Θ0 = (x ~ abind_var_skl Q) ++ Θ0' ->
-       Qc S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    Qc S0 NM M P0 Θ0 (sub_call_flex Ξ α).
-
-Fixpoint e_sub_call_order_sind S0 NM M P0 Θ0 c
-    (H : e_sub_call_order S0 NM M P0 Θ0 c) {struct H} : Qc S0 NM M P0 Θ0 c :=
-  match H in e_sub_call_order S0' NM' M' P0' Θ0' c'
-        return Qc S0' NM' M' P0' Θ0' c' with
-  | e_sub_call_order__sub _ _ _ _ _ _ p1 p2 p3 p4 p5 p6 =>
-      @Hsub _ _ _ _ _ _
-        p1
-        p2
-        (fun B E1 E2 => e_sub_call_order_sind (p2 B E1 E2))
-        p3
-        (fun α M' E1 E2 => e_sub_call_order_sind (p3 α M' E1 E2))
-        p4
-        (fun M' P0a P0b P1 P2 E1 E2 E3 S1 Θ1 Q1 Hrun =>
-           match p4 M' P0a P0b P1 P2 E1 E2 E3 with
-           | conj _ Hrec => e_sub_call_order_sind (Hrec S1 Θ1 Q1 Hrun)
-           end)
-        p5
-        (fun Q E1 E2 Hg S1 Ξ P1 Hrun Hwf =>
-           match p5 Q E1 E2 Hg with
-           | conj _ Hrec => e_sub_call_order_sind (Hrec S1 Ξ P1 Hrun Hwf)
-           end)
-        p6
-        (fun Q E1 E2 => e_sub_call_order_sind (p6 Q E1 E2))
-  | e_sub_call_order__flex _ _ _ _ _ _ _ q1 q2 q3 q4 q5 q6 =>
-      @Hflex _ _ _ _ _ _ _
-        q1
-        (fun Θ0' E => e_sub_call_order_sind (q1 Θ0' E))
-        q2
-        (fun β τ Θ0' E => e_sub_call_order_sind (q2 β τ Θ0' E))
-        q3
-        (fun β Θ0' E =>
-           match q3 β Θ0' E with
-           | conj Ha Hb =>
-               conj (e_sub_call_order_sind Ha) (e_sub_call_order_sind Hb)
-           end)
-        q4
-        (fun β Θ0' E => e_sub_call_order_sind (q4 β Θ0' E))
-        q5
-        (fun x A Θ0' E => e_sub_call_order_sind (q5 x A Θ0' E))
-        q6
-        (fun x Q Θ0' E => e_sub_call_order_sind (q6 x Q Θ0' E))
-  end.
-
-End e_sub_call_order_sind.
 
 (* ===================================================================== *)
 (*  §3  EQUIVARIANCE ALONG A CHAIN                                        *)
@@ -600,7 +394,6 @@ Lemma e_sub_flex_inv_var_skl : forall S0 NM M P0 Θ0 Ξ α x Qp Q S1 Θ1,
     e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1'.
 Proof. intros * Hd. inversion Hd; subst. eauto. Qed.
 
-
 (* ===================================================================== *)
 (*  §5  THE [SI-Flex-Solve] REALIGNMENT                                   *)
 (*                                                                        *)
@@ -811,12 +604,8 @@ Definition sub_call_complete (S0 : supply) (NM : a_sub_mode) (M : mode)
 (* ===================================================================== *)
 (*  §7  THE MAIN INDUCTION                                                *)
 (*                                                                        *)
-(*  ⭐ SPLIT AT §1's TWO HYPOTHESES (§8c.20).  [sub_call_complete_sub]     *)
-(*  and [sub_call_complete_flex] are LITERALLY [Hsub] / [Hflex] with       *)
-(*  [Qc] replaced by [sub_call_complete]; §7c then feeds them to           *)
-(*  [e_sub_call_order_sind] in three lines.  The alternative — one         *)
-(*  monolithic induction — puts ~120 lines of premises and both halves'    *)
-(*  case trees in a single script.                                        *)
+(*  The combined call order exposes every recursive call to generated    *)
+(*  induction; its two cases share the same completeness setup.           *)
 (* ===================================================================== *)
 
 (** prop_consis_complete.v §7's [kill_ccall], with this level's extra
@@ -844,306 +633,6 @@ Local Ltac split_eqdec Hl Hr :=
   | |- context [ @eq_dec ?T ?E ?x ?y ] =>
       destruct (@eq_dec T E x y) as [ Hl | Hr ]
   end.
-
-(* --------------------------------------------------------------------- *)
-(*  §7a  THE FLEX HALF — §1's [Hflex], with [Qc := sub_call_complete]      *)
-(*                                                                        *)
-(*  Each row: invert the derivation with its §4 lemma, walk the runner's   *)
-(*  own tests, recurse through the motive premise, re-wrap the head.  ⭐   *)
-(*  The only non-routine one is [SI-Flex-Solve], whose two invented names  *)
-(*  are realigned by §5's chain.                                          *)
-(* --------------------------------------------------------------------- *)
-Lemma sub_call_complete_flex : forall S0 NM M P0 Θ0 Ξ α,
-    (* Flex-Solve — the head IS the target, undefined *)
-    (forall Θ0',
-       Θ0 = (α ~ abind_flex_mono) ++ Θ0' ->
-       e_sub_call_order
-         (add (supply_fresh (add (supply_fresh S0) S0))
-            (add (supply_fresh S0) S0))
-         NM (mode_fn M) P0
-         (Ξ ++ (α ~ abind_flex_mono_def
-                      (ptyp_arrow (ptyp_var_f (supply_fresh S0))
-                         (ptyp_var_f (supply_fresh (add (supply_fresh S0) S0)))))
-             ++ (supply_fresh (add (supply_fresh S0) S0) ~ abind_flex_mono)
-             ++ (supply_fresh S0 ~ abind_flex_mono) ++ Θ0')
-         (sub_call_sub
-            (pskl_arrow (pskl_var_f (supply_fresh S0))
-               (pskl_var_f (supply_fresh (add (supply_fresh S0) S0)))))) ->
-    (forall Θ0',
-       Θ0 = (α ~ abind_flex_mono) ++ Θ0' ->
-       sub_call_complete (add (supply_fresh (add (supply_fresh S0) S0))
-             (add (supply_fresh S0) S0))
-         NM (mode_fn M) P0
-         (Ξ ++ (α ~ abind_flex_mono_def
-                      (ptyp_arrow (ptyp_var_f (supply_fresh S0))
-                         (ptyp_var_f (supply_fresh (add (supply_fresh S0) S0)))))
-             ++ (supply_fresh (add (supply_fresh S0) S0) ~ abind_flex_mono)
-             ++ (supply_fresh S0 ~ abind_flex_mono) ++ Θ0')
-         (sub_call_sub
-            (pskl_arrow (pskl_var_f (supply_fresh S0))
-               (pskl_var_f (supply_fresh (add (supply_fresh S0) S0)))))) ->
-    (* Flex-Assign — a defined head is substituted away and dropped *)
-    (forall β τ Θ0',
-       Θ0 = (β ~ abind_flex_mono_def τ) ++ Θ0' ->
-       e_sub_call_order S0 NM (mode_fn M)
-         (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0)
-         (Ξ ++ Θ0')
-         (sub_call_sub
-            (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)))) ->
-    (forall β τ Θ0',
-       Θ0 = (β ~ abind_flex_mono_def τ) ++ Θ0' ->
-       sub_call_complete S0 NM (mode_fn M)
-         (subst_pskl_in_pskl (ptyp_to_pskl τ) β P0)
-         (Ξ ++ Θ0')
-         (sub_call_sub
-            (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α)))) ->
-    (* Flex-Depend / Flex-Skip — an undefined non-target head *)
-    (forall β Θ0',
-       Θ0 = (β ~ abind_flex_mono) ++ Θ0' ->
-       e_sub_call_order S0 NM M P0 Θ0'
-         (sub_call_flex (Ξ ++ (β ~ abind_flex_mono)) α)
-       /\ e_sub_call_order S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    (forall β Θ0',
-       Θ0 = (β ~ abind_flex_mono) ++ Θ0' ->
-       sub_call_complete S0 NM M P0 Θ0' (sub_call_flex (Ξ ++ (β ~ abind_flex_mono)) α)
-       /\ sub_call_complete S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    (* Flex-SkipRigid *)
-    (forall β Θ0',
-       Θ0 = (β ~ abind_tvar) ++ Θ0' ->
-       e_sub_call_order S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    (forall β Θ0',
-       Θ0 = (β ~ abind_tvar) ++ Θ0' ->
-       sub_call_complete S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    (* Flex-SkipTmVar, both payload sorts *)
-    (forall x A Θ0',
-       Θ0 = (x ~ abind_var_typ A) ++ Θ0' ->
-       e_sub_call_order S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    (forall x A Θ0',
-       Θ0 = (x ~ abind_var_typ A) ++ Θ0' ->
-       sub_call_complete S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    (forall x Q Θ0',
-       Θ0 = (x ~ abind_var_skl Q) ++ Θ0' ->
-       e_sub_call_order S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    (forall x Q Θ0',
-       Θ0 = (x ~ abind_var_skl Q) ++ Θ0' ->
-       sub_call_complete S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
-    sub_call_complete S0 NM M P0 Θ0 (sub_call_flex Ξ α).
-Proof.
-  intros S0 NM M P0 Θ0 Ξ α hsl Hsl hag Hag hdp Hdp hrg Hrg htv Htv hts Hts.
-  unfold sub_call_complete.
-  intros HP HP0 HD Hord Hu Hcov Sd Θd Qd Hd.
-  cbn [sub_call_uniq sub_call_cover sub_call_run] in *.
-  destruct Θ0 as [ | [γ b] Θ0' ]; [ destruct (e_sub_flex_inv_nil Hd) | ].
-  destruct b as [ | A | Qp | | τ ].
-  - (* rigid head — SI-Flex-SkipRigid *)
-    rewrite e_sub_call_impl_equation_3. cbv beta iota.
-    destruct (e_sub_flex_inv_tvar Hd) as [Hne [Hnf [Θd' [-> Ds]]]].
-    split_eqdec Heq Hne2; [ congruence | ]. cbv beta iota.
-    destruct (sumbool_of_bool (mem γ (ftvar_in_pskl P0))) as [Hm | Hm];
-      [ exfalso; apply mem_true_in in Hm; contradiction | ].
-    cbv beta iota.
-    assert (Hu0 : uniq (Ξ ++ Θ0')) by (clear - Hu; solve_uniq).
-    assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0') ∪ ftvar_in_pskl P0
-                    ∪ singleton α [<=] S0)
-      by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
-          simpl in *; fsetdec).
-    kill_scall (Hrg γ Θ0' eq_refl) Hu0 Hcov0 Ds r Hr ps Hav HS HT HQ.
-    exists (mk_sub_result (sb_supply r) ((γ ~ abind_tvar) ++ sb_ctx r)
-              (sb_out r)), ps.
-    split; [ reflexivity | ].
-    repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
-            | | cbn [sb_out proj1_sig]; exact HQ ].
-    cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
-    head_fresh Hav Hcov.
-  - (* term variable, TYPE payload — SI-Flex-SkipTmVar *)
-    rewrite e_sub_call_impl_equation_4. cbv beta iota.
-    destruct (e_sub_flex_inv_var_typ Hd) as [Θd' [-> Ds]].
-    assert (Hu0 : uniq (Ξ ++ Θ0')) by (clear - Hu; solve_uniq).
-    assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0') ∪ ftvar_in_pskl P0
-                    ∪ singleton α [<=] S0)
-      by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
-          simpl in *; fsetdec).
-    kill_scall (Htv γ A Θ0' eq_refl) Hu0 Hcov0 Ds r Hr ps Hav HS HT HQ.
-    exists (mk_sub_result (sb_supply r) ((γ ~ abind_var_typ A) ++ sb_ctx r)
-              (sb_out r)), ps.
-    split; [ reflexivity | ].
-    repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
-            | | cbn [sb_out proj1_sig]; exact HQ ].
-    cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
-    head_fresh Hav Hcov.
-  - (* term variable, SKELETON payload *)
-    rewrite e_sub_call_impl_equation_5. cbv beta iota.
-    destruct (e_sub_flex_inv_var_skl Hd) as [Θd' [-> Ds]].
-    assert (Hu0 : uniq (Ξ ++ Θ0')) by (clear - Hu; solve_uniq).
-    assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0') ∪ ftvar_in_pskl P0
-                    ∪ singleton α [<=] S0)
-      by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
-          simpl in *; fsetdec).
-    kill_scall (Hts γ Qp Θ0' eq_refl) Hu0 Hcov0 Ds r Hr ps Hav HS HT HQ.
-    exists (mk_sub_result (sb_supply r) ((γ ~ abind_var_skl Qp) ++ sb_ctx r)
-              (sb_out r)), ps.
-    split; [ reflexivity | ].
-    repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
-            | | cbn [sb_out proj1_sig]; exact HQ ].
-    cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
-    head_fresh Hav Hcov.
-  - (* undefined flexible head *)
-    rewrite e_sub_call_impl_equation_6. cbv beta iota.
-    split_eqdec Heq Hne.
-    + (* ⭐ SI-Flex-Solve — the head IS the target *)
-      subst γ. cbv beta iota.
-      destruct (e_sub_flex_inv_self Hd) as [ad [bd [Had [Hbd Ds]]]].
-      assert (Hcov1 : ftvar_in_aenv (Ξ ++ Θ0') ∪ ftvar_in_pskl P0
-                      ∪ singleton α [<=] S0)
-        by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
-            simpl in *; fsetdec).
-      destruct (e_sub_flex_solve_realign Had Hbd Hcov1 Ds)
-        as [ps0 [Sd0 [Hav0 [HS0 Ds0]]]].
-      pose proof (supply_fresh_notin S0) as Ha1.
-      pose proof (supply_fresh_notin (add (supply_fresh S0) S0)) as Hb1.
-      pose proof (dom_subset_ftvar_in_aenv Ξ) as HdΞ.
-      pose proof (dom_subset_ftvar_in_aenv Θ0') as HdΘ.
-      assert (HΞS : ftvar_in_aenv Ξ [<=] S0)
-        by (clear - Hcov1; rewrite ftvar_in_aenv_app in Hcov1; fsetdec).
-      assert (HΘS : ftvar_in_aenv Θ0' [<=] S0)
-        by (clear - Hcov1; rewrite ftvar_in_aenv_app in Hcov1; fsetdec).
-      assert (HαS : α `in` S0) by (clear - Hcov1; fsetdec).
-      assert (Hu1 : uniq (Ξ ++ Θ0')) by (clear - Hu; solve_uniq).
-      assert (HαΞ : α `notin` dom Ξ)
-        by (clear - Hu; destruct_uniq; unfold disjoint in *;
-            simpl in *; fsetdec).
-      assert (HαΘ : α `notin` dom Θ0')
-        by (clear - Hu; destruct_uniq; simpl in *; fsetdec).
-      (* the two invented names dodge the whole context, and each other *)
-      assert (Ha1Ξ : supply_fresh S0 `notin` dom Ξ)
-        by (clear - Ha1 HdΞ HΞS; fsetdec).
-      assert (Ha1Θ : supply_fresh S0 `notin` dom Θ0')
-        by (clear - Ha1 HdΘ HΘS; fsetdec).
-      assert (Hb1Ξ : supply_fresh (add (supply_fresh S0) S0)
-                     `notin` dom Ξ)
-        by (clear - Hb1 HdΞ HΞS; fsetdec).
-      assert (Hb1Θ : supply_fresh (add (supply_fresh S0) S0)
-                     `notin` dom Θ0')
-        by (clear - Hb1 HdΘ HΘS; fsetdec).
-      assert (Hu2 : uniq (Ξ ++ (supply_fresh S0 ~ abind_flex_mono) ++ Θ0'))
-        by (apply uniq_insert_mid; assumption).
-      assert (Hu3 : uniq (Ξ ++ (supply_fresh (add (supply_fresh S0) S0)
-                                  ~ abind_flex_mono)
-                             ++ (supply_fresh S0 ~ abind_flex_mono) ++ Θ0')).
-      { apply uniq_insert_mid; [ exact Hu2 | exact Hb1Ξ | ].
-        clear - Hb1 Hb1Θ. simpl. fsetdec. }
-      assert (Hu0 : uniq (Ξ ++ (α ~ abind_flex_mono_def
-                       (ptyp_arrow (ptyp_var_f (supply_fresh S0))
-                          (ptyp_var_f (supply_fresh (add (supply_fresh S0) S0)))))
-                     ++ (supply_fresh (add (supply_fresh S0) S0)
-                           ~ abind_flex_mono)
-                     ++ (supply_fresh S0 ~ abind_flex_mono) ++ Θ0')).
-      { apply uniq_insert_mid; [ exact Hu3 | exact HαΞ | ].
-        clear - HαΘ HαS Ha1 Hb1. simpl. fsetdec. }
-      assert (Hcov0 : ftvar_in_aenv (Ξ ++ (α ~ abind_flex_mono_def
-                       (ptyp_arrow (ptyp_var_f (supply_fresh S0))
-                          (ptyp_var_f (supply_fresh (add (supply_fresh S0) S0)))))
-                     ++ (supply_fresh (add (supply_fresh S0) S0)
-                           ~ abind_flex_mono)
-                     ++ (supply_fresh S0 ~ abind_flex_mono) ++ Θ0')
-                    ∪ ftvar_in_pskl P0
-                    ∪ ftvar_in_pskl (pskl_arrow
-                         (pskl_var_f (supply_fresh S0))
-                         (pskl_var_f (supply_fresh (add (supply_fresh S0) S0))))
-                    [<=] add (supply_fresh (add (supply_fresh S0) S0))
-                           (add (supply_fresh S0) S0))
-        by (clear - Hcov1; repeat rewrite ftvar_in_aenv_app in *;
-            simpl in *; fsetdec).
-      kill_scall (Hsl Θ0' eq_refl) Hu0 Hcov0 Ds0 r Hr ps Hav HS HT HQ.
-      exists r, (ps0 ++ ps).
-      split; [ reflexivity | ].
-      repeat apply conj.
-      * intros a0 b0 Hin. apply in_app_or in Hin.
-        destruct Hin as [Hin | Hin]; [ exact (Hav0 _ _ Hin) | ].
-        destruct (Hav _ _ Hin) as [Ha0 Hb0]. split; fsetdec.
-      * rewrite swaps_atoms_app. rewrite <- HS.
-        apply swaps_atoms_cong. symmetry. exact HS0.
-      * rewrite swaps_aenv_app. exact HT.
-      * rewrite swaps_pskl_app. exact HQ.
-    + cbv beta iota.
-      destruct (e_sub_flex_inv_other_flex (not_eq_sym Hne) Hd)
-        as [[Hin Dd] | [Hni [Θd' [-> Ds]]]].
-      * (* SI-Flex-Depend — the head occurs in the subject *)
-        destruct (sumbool_of_bool (mem γ (ftvar_in_pskl P0))) as [Hm | Hm];
-          [ | exfalso; apply mem_false_notin in Hm; contradiction ].
-        cbv beta iota.
-        assert (Hu0 : uniq ((Ξ ++ (γ ~ abind_flex_mono)) ++ Θ0'))
-          by (clear - Hu; solve_uniq).
-        assert (Hcov0 : ftvar_in_aenv ((Ξ ++ (γ ~ abind_flex_mono)) ++ Θ0')
-                        ∪ ftvar_in_pskl P0 ∪ singleton α [<=] S0)
-          by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
-              simpl in *; fsetdec).
-        kill_scall (proj1 (Hdp γ Θ0' eq_refl)) Hu0 Hcov0 Dd
-          r Hr ps Hav HS HT HQ.
-        exists r, ps. split; [ reflexivity | ].
-        repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
-      * (* SI-Flex-Skip — the head is re-wrapped *)
-        destruct (sumbool_of_bool (mem γ (ftvar_in_pskl P0))) as [Hm | Hm];
-          [ exfalso; apply mem_true_in in Hm; contradiction | ].
-        cbv beta iota.
-        assert (Hu0 : uniq (Ξ ++ Θ0')) by (clear - Hu; solve_uniq).
-        assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0') ∪ ftvar_in_pskl P0
-                        ∪ singleton α [<=] S0)
-          by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
-              simpl in *; fsetdec).
-        kill_scall (proj2 (Hdp γ Θ0' eq_refl)) Hu0 Hcov0 Ds
-          r Hr ps Hav HS HT HQ.
-        exists (mk_sub_result (sb_supply r)
-                  ((γ ~ abind_flex_mono) ++ sb_ctx r) (sb_out r)), ps.
-        split; [ reflexivity | ].
-        repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
-                | | cbn [sb_out proj1_sig]; exact HQ ].
-        cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
-        head_fresh Hav Hcov.
-  - (* defined flexible head — SI-Flex-Assign *)
-    rewrite e_sub_call_impl_equation_7. cbv beta iota.
-    destruct (e_sub_flex_inv_def Hd) as [Θd' [-> Dc]].
-    assert (Hu0 : uniq (Ξ ++ Θ0')) by (clear - Hu; solve_uniq).
-    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P0
-                  (ptyp_to_pskl τ) γ) as Hsu1.
-    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper (pskl_var_f α)
-                  (ptyp_to_pskl τ) γ) as Hsu2.
-    pose proof (ftvar_ptyp_to_pskl τ) as Hftτ.
-    assert (HΞΘ : ftvar_in_aenv (Ξ ++ Θ0') [<=] S0)
-      by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
-          simpl in *; fsetdec).
-    assert (HαS : α `in` S0) by (clear - Hcov; fsetdec).
-    assert (Hτ : ftvar_in_pskl (ptyp_to_pskl τ) [<=] S0)
-      by (rewrite Hftτ; clear - Hcov;
-          repeat rewrite ftvar_in_aenv_app in *; simpl in *; fsetdec).
-    assert (HP0S : ftvar_in_pskl P0 [<=] S0) by (clear - Hcov; fsetdec).
-    assert (Hb1 : ftvar_in_pskl
-              (subst_pskl_in_pskl (ptyp_to_pskl τ) γ P0) [<=] S0).
-    { clear - Hsu1 Hτ HP0S.
-      assert (Hrm : remove γ (ftvar_in_pskl P0) [<=] ftvar_in_pskl P0)
-        by (clear; fsetdec).
-      fsetdec. }
-    assert (Hb2 : ftvar_in_pskl
-              (subst_pskl_in_pskl (ptyp_to_pskl τ) γ (pskl_var_f α))
-              [<=] S0).
-    { clear - Hsu2 Hτ HαS. simpl in Hsu2.
-      assert (Hrm : remove γ (singleton α) [<=] singleton α)
-        by (clear; fsetdec).
-      fsetdec. }
-    assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0')
-                    ∪ ftvar_in_pskl (subst_pskl_in_pskl (ptyp_to_pskl τ) γ P0)
-                    ∪ ftvar_in_pskl (subst_pskl_in_pskl (ptyp_to_pskl τ) γ
-                          (pskl_var_f α)) [<=] S0)
-      by (clear - HΞΘ Hb1 Hb2; fsetdec).
-    kill_scall (Hag γ τ Θ0' eq_refl) Hu0 Hcov0 Dc r Hr ps Hav HS HT HQ.
-    exists (mk_sub_result (sb_supply r)
-              ((γ ~ abind_flex_mono_def τ) ++ sb_ctx r) (sb_out r)), ps.
-    split; [ reflexivity | ].
-    repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
-            | | cbn [sb_out proj1_sig]; exact HQ ].
-    cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
-    head_fresh Hav Hcov.
-Qed.
 
 (** The CONSISTENCY runner's completeness at a sub-runner call site —
     prop_consis_complete.v §7's [kill_ccall] through the [e_consis_impl]
@@ -1478,308 +967,439 @@ Local Ltac do_sk_tc_p0 Hd p0 :=
               | intros ? Habs; discriminate Habs
               | intros ? Habs; discriminate Habs | discriminate ] ].
 
-(* --------------------------------------------------------------------- *)
-(*  §7b  THE SUB HALF — §1's [Hsub], with [Qc := sub_call_complete]        *)
-(*                                                                        *)
-(*  The case tree is the runner's dispatch, clause for clause (§8c.13's    *)
-(*  table): mode first, then [NM], then the shape column the arm keys on.  *)
-(*  ⭐ Its one genuinely new row is [SI-ForallL] — the row all five        *)
-(*  dispatch guards were landed for: it runs [e_extract_impl] and then     *)
-(*  recurses at the extraction's output, so the derivation's extraction    *)
-(*  has to be moved onto the runner's rails, which is [e_extract_det].     *)
-(* --------------------------------------------------------------------- *)
-Lemma sub_call_complete_sub : forall S0 NM M P0 Θ0 P,
-    (* Check — one consistency run *)
-    (M = mode_tc -> e_consis_order empty empty S0 Θ0 P0 P) ->
-    (* ForallR — peel the pattern's quantifier *)
-    (forall B,
-       M = mode_tc -> P0 = pskl_all_syn B ->
-       e_sub_call_order (add (supply_fresh S0) S0) a_sub_mode_ty mode_tc
-         (open_pskl_wrt_pskl B (pskl_var_f (supply_fresh S0)))
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ0) (sub_call_sub P)) ->
-    (forall B,
-       M = mode_tc -> P0 = pskl_all_syn B ->
-       sub_call_complete (add (supply_fresh S0) S0) a_sub_mode_ty mode_tc
-         (open_pskl_wrt_pskl B (pskl_var_f (supply_fresh S0)))
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ0) (sub_call_sub P)) ->
-    (* FlexMono — enter the walk *)
-    (forall α M',
-       P = pskl_var_f α -> M = mode_fn M' ->
-       e_sub_call_order S0 NM M' P0 Θ0 (sub_call_flex nil α)) ->
-    (forall α M',
-       P = pskl_var_f α -> M = mode_fn M' ->
-       sub_call_complete S0 NM M' P0 Θ0 (sub_call_flex nil α)) ->
-    (* Arrow — the domain goes to consistency, the codomain stays *)
-    (forall M' P0a P0b P1 P2,
-       M = mode_fn M' -> P0 = pskl_arrow P0a P0b -> P = pskl_arrow P1 P2 ->
-       e_consis_order empty empty S0 Θ0 P0a P1
-       /\ (forall S1 Θ1 Q1,
-             {{ S0 ↝ S1 ⊨ Θ0 ⊢[ empty | empty | P0a ] P1 ∼ Q1 ⊣ Θ1 }}e ->
-             e_sub_call_order S1 NM M' P0b Θ1 (sub_call_sub P2))) ->
-    (forall M' P0a P0b P1 P2,
-       M = mode_fn M' -> P0 = pskl_arrow P0a P0b -> P = pskl_arrow P1 P2 ->
-       forall S1 Θ1 Q1,
-         {{ S0 ↝ S1 ⊨ Θ0 ⊢[ empty | empty | P0a ] P1 ∼ Q1 ⊣ Θ1 }}e ->
-         sub_call_complete S1 NM M' P0b Θ1 (sub_call_sub P2)) ->
-    (* ForallL — extract an instantiation, then recurse on the opened body *)
-    (forall Q,
-       P = pskl_all_syn Q -> M <> mode_ti ->
-       (guarded_pskl P0 \/ P0 = pskl_ghost) ->
-       e_extract_order (add (supply_fresh S0) S0) Θ0 NM (supply_fresh S0) M
-         (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0))) P0
-       /\ (forall S1 Ξ P1,
-             {{ (add (supply_fresh S0) S0) ↝ S1 ⊨ Θ0
-                ⊢ (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
-                ⊳[ NM , (supply_fresh S0) , M ] P0 ⤳ Ξ ↪ P1 }}e ->
-             {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P1 }}a ->
-             e_sub_call_order S1 NM M P0 (Ξ ++ Θ0)
-               (sub_call_sub (open_pskl_wrt_pskl Q P1)))) ->
-    (forall Q,
-       P = pskl_all_syn Q -> M <> mode_ti ->
-       (guarded_pskl P0 \/ P0 = pskl_ghost) ->
-       forall S1 Ξ P1,
-         {{ (add (supply_fresh S0) S0) ↝ S1 ⊨ Θ0
-            ⊢ (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
-            ⊳[ NM , (supply_fresh S0) , M ] P0 ⤳ Ξ ↪ P1 }}e ->
-         {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P1 }}a ->
-         sub_call_complete S1 NM M P0 (Ξ ++ Θ0)
-           (sub_call_sub (open_pskl_wrt_pskl Q P1))) ->
-    (* UnivGhostL — strip the subject's ⫯ *)
-    (forall Q,
-       P = pskl_univ_ghost Q -> M <> mode_ti ->
-       e_sub_call_order S0 NM M P0 Θ0 (sub_call_sub Q)) ->
-    (forall Q,
-       P = pskl_univ_ghost Q -> M <> mode_ti ->
-       sub_call_complete S0 NM M P0 Θ0 (sub_call_sub Q)) ->
-    sub_call_complete S0 NM M P0 Θ0 (sub_call_sub P).
-Proof.
-  intros S0 NM M P0 Θ0 P hck hfr Hfr hfm Hfm har Har hfl Hfl hug Hug.
-  unfold sub_call_complete.
-  intros HP HP0 HD Hord Hu Hcov Sd Θd Qd Hd.
-  cbn [sub_call_lc sub_call_uniq sub_call_cover sub_call_run] in *.
-  rewrite e_sub_call_impl_equation_1.
-  destruct M as [ | | M' ]; cbv beta iota.
-  - (* ============ mode TI — SI-Infer, and nothing else ============ *)
-    destruct (e_sub_inv_ti Hd) as [-> [-> [-> ->]]]. cbv beta iota. answer_id.
-  - (* ================= mode TC ================= *)
-    destruct NM; cbv beta iota.
-    + (* --- NM = ty : SI-ForallR outranks the subject dispatch --- *)
-      destruct P0 as [ | n0 | γ0 | P0a P0b | B | | P0b ]; cbv beta iota.
-      * do_ty_tc_p Hd Hu Hcov Hfl P.
-      * inversion HP0.
-      * do_ty_tc_p Hd Hu Hcov Hfl P.
-      * do_ty_tc_p Hd Hu Hcov Hfl P.
-      * (* ⭐ SI-ForallR — peel the pattern's ∀, then SPLIT the junk block *)
-        destruct (e_sub_inv_forall_r Hd)
-          as [-> [Hgf [ad [Xd [Hsuf [HuX [Had Dr]]]]]]].
-        bool_true.
-        pose proof (supply_fresh_notin S0) as Ha1.
-        pose proof (dom_subset_ftvar_in_aenv Θ0) as Hd0.
-        (* PRE-SWAP the derivation's opener onto [supply_fresh S0] *)
-        assert (Hav0 : forall a b, In (a, b) ((ad, supply_fresh S0) :: nil) ->
-                       a `notin` S0 /\ b `notin` S0)
-          by (intros a b [Heq | []]; inversion Heq; subst;
-              split; assumption).
-        assert (Hsad : swaps_atom ((ad, supply_fresh S0) :: nil) ad
-                       = supply_fresh S0)
-          by (simpl; unfold swap_atom;
-              destruct (ad == ad); [ reflexivity | congruence ]).
-        assert (HfixΘ : forall (X : aenv), ftvar_in_aenv X [<=] S0 ->
-                  swaps_aenv ((ad, supply_fresh S0) :: nil) X = X)
-          by (intros X HX; apply swaps_aenv_fresh_id; intros a b Hin;
-              destruct (Hav0 a b Hin) as [Hxa Hxb]; split; fsetdec).
-        assert (HfixP : forall X, ftvar_in_pskl X [<=] S0 ->
-                  swaps_pskl ((ad, supply_fresh S0) :: nil) X = X)
-          by (intros X HX; apply swaps_pskl_fresh_id; intros a b Hin;
-              destruct (Hav0 a b Hin) as [Hxa Hxb]; split; fsetdec).
-        destruct (e_sub_swaps ((ad, supply_fresh S0) :: nil) Dr
-                    (S0' := add (supply_fresh S0) S0)) as [Sd1 [HSd1 Dr1]].
-        { simpl. rewrite swap_atoms_add.
-          rewrite (swap_atoms_notin ad (supply_fresh S0) S0)
-            by (clear - Had Ha1; fsetdec).
-          unfold swap_atom. destruct (ad == ad); [ reflexivity | congruence ]. }
-        rewrite swaps_aenv_cons_tvar, Hsad in Dr1.
-        rewrite (HfixΘ Θ0) in Dr1
-          by (clear - Hcov; simpl in *; fsetdec).
-        rewrite swaps_pskl_open, swaps_pskl_var_f, Hsad in Dr1.
-        rewrite (HfixP B) in Dr1 by (clear - Hcov; simpl in *; fsetdec).
-        rewrite (HfixP P) in Dr1 by (clear - Hcov; simpl in *; fsetdec).
-        rewrite swaps_aenv_app_dist, swaps_aenv_cons_tvar, Hsad in Dr1.
-        (* the premise's own side conditions, at the runner's opener *)
-        assert (Ha1d : supply_fresh S0 `notin` dom Θ0)
-          by (clear - Ha1 Hd0 Hcov; simpl in *; fsetdec).
-        assert (Hu1 : uniq ((supply_fresh S0 ~ abind_tvar) ++ Θ0))
-          by (clear - Hu Ha1d; solve_uniq).
-        assert (Hcov1 : ftvar_in_aenv ((supply_fresh S0 ~ abind_tvar) ++ Θ0)
-                        ∪ ftvar_in_pskl (open_pskl_wrt_pskl B
-                             (pskl_var_f (supply_fresh S0)))
-                        ∪ ftvar_in_pskl P [<=] add (supply_fresh S0) S0).
-        { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B
-                        (pskl_var_f (supply_fresh S0))) as Hop.
-          simpl in Hop. clear - Hop Hcov. simpl in *. fsetdec. }
-        kill_scall (Hfr B eq_refl eq_refl) Hu1 Hcov1 Dr1 r Hr ps Hav HS HT HQ.
-        (* the recursive answer's own outputs *)
-        cbn [sub_call_spec sub_spec] in Hr.
-        pose proof ((proj1 e_sub_sub_flex_sound) _ _ _ _ _ _ _ _ _ Hr Hu1 Hcov1)
-          as [Hra [Huc [Hcvc Hqc]]].
-        (* the counterpart the runner tests for *)
-        assert (Hout : sb_out r = open_pskl_wrt_pskl B
-                         (pskl_var_f (supply_fresh S0))).
-        { rewrite <- HQ. apply swaps_pskl_fresh_id.
-          intros a0 b0 Hin. destruct (Hav a0 b0 Hin) as [Hya Hyb].
-          pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B
-                        (pskl_var_f (supply_fresh S0))) as Hop.
-          simpl in Hop. split; clear - Hya Hyb Hop Hcov; simpl in *; fsetdec. }
-        bool_true.
-        (* the output context, decomposed at the runner's own marker *)
-        assert (Hctx : sb_ctx r
-                  = swaps_aenv ps (swaps_aenv ((ad, supply_fresh S0) :: nil) Xd)
-                    ++ (supply_fresh S0 ~ abind_tvar)
-                    ++ swaps_aenv ps (swaps_aenv ((ad, supply_fresh S0) :: nil) Θd)).
-        { rewrite <- HT. rewrite swaps_aenv_app_dist, swaps_aenv_cons_tvar.
-          repeat f_equal.
-          apply swaps_atom_notin. intros a0 b0 Hin.
-          destruct (Hav a0 b0 Hin) as [Hya Hyb].
-          split; intro Heq0; subst; clear - Hya Hyb; fsetdec. }
-        assert (Hsufr : a_suffix
-                  (swaps_aenv ps (swaps_aenv ((ad, supply_fresh S0) :: nil) Xd)))
-          by (apply a_suffix_swaps; apply a_suffix_swaps; exact Hsuf).
-        assert (HΘfix : swaps_aenv ps
-                  (swaps_aenv ((ad, supply_fresh S0) :: nil) Θ0) = Θ0).
-        { rewrite (HfixΘ Θ0) by (clear - Hcov; simpl in *; fsetdec).
-          apply swaps_aenv_fresh_id. intros a0 b0 Hin.
-          destruct (Hav a0 b0 Hin) as [Hya Hyb].
-          split; clear - Hya Hyb Hcov; simpl in *; fsetdec. }
-        assert (HuXr : uniq
-                  (swaps_aenv ps (swaps_aenv ((ad, supply_fresh S0) :: nil) Xd)
-                   ++ Θ0)).
-        { rewrite <- HΘfix. rewrite <- ! swaps_aenv_app_dist.
-          apply swaps_aenv_uniq. apply swaps_aenv_uniq. exact HuX. }
-        destruct (split_at_tvar_complete Hctx Huc)
-          as [[pp Hpp] [Hsp Hpr]].
-        simpl in Hpr; subst pp.
-        rewrite Hsp. cbv beta iota. cbn [fst snd].
-        bool_true.
-        exists (mk_sub_result (sb_supply r)
-                  (swaps_aenv ps (swaps_aenv ((ad, supply_fresh S0) :: nil) Θd))
-                  (pskl_all_syn B)), (((ad, supply_fresh S0) :: nil) ++ ps).
-        split; [ reflexivity | ].
-        repeat apply conj.
-        -- intros a0 b0 Hin. apply in_app_or in Hin.
-           destruct Hin as [Hin | Hin]; [ exact (Hav0 a0 b0 Hin) | ].
-           destruct (Hav a0 b0 Hin) as [Hya Hyb].
-           split; clear - Hya Hyb; fsetdec.
-        -- cbn [sb_supply]. rewrite swaps_atoms_app. rewrite <- HS.
-           apply swaps_atoms_cong. symmetry. exact HSd1.
-        -- cbn [sb_ctx]. rewrite swaps_aenv_app. reflexivity.
-        -- cbn [sb_out]. rewrite swaps_pskl_app, ! swaps_pskl_all_syn.
-           rewrite (HfixP B) by (clear - Hcov; simpl in *; fsetdec).
-           f_equal. apply swaps_pskl_fresh_id. intros a0 b0 Hin.
-           destruct (Hav a0 b0 Hin) as [Hya Hyb].
-           split; clear - Hya Hyb Hcov; simpl in *; fsetdec.
-      * do_ty_tc_p Hd Hu Hcov Hfl P.
-      * do_ty_tc_p Hd Hu Hcov Hfl P.
-    + (* --- NM = sk : the runner keys on the SUBJECT --- *)
-      destruct P as [ | n | γ | Pa Pb | Q | | Pb ]; cbv beta iota.
-      * do_sk_tc_p0 Hd P0.
-      * kill_var_b.
-      * do_sk_tc_p0 Hd P0.
-      * do_sk_tc_p0 Hd P0.
-      * (* SI-ForallL *)
-        do_forall_l Hd Hu Hcov
-          (Hfl Q eq_refl ltac:(discriminate)) S0 Θ0 P0 Q.
-      * (* SI-Ghost *) do_ghost Hd.
-      * (* SI-UnivGhostL *)
-        do_univ_ghost_l Hd Hu Hcov (Hug Pb eq_refl ltac:(discriminate)).
-  - (* ================= mode FN ================= *)
-    destruct P as [ | n | γ | Pa Pb | Q | | Pb ]; cbv beta iota.
-    * (* 1 : no rule fires *) destruct (e_sub_inv_fn_unit_none Hd).
-    * kill_var_b.
-    * (* SI-FlexMono — enter the walk with an EMPTY accumulator *)
-      pose proof (e_sub_inv_flex_mono Hd) as Df.
-      assert (Hcov0 : ftvar_in_aenv (nil ++ Θ0) ∪ ftvar_in_pskl P0
-                      ∪ singleton γ [<=] S0)
-        by (clear - Hcov; simpl in *; fsetdec).
-      assert (Hu0 : uniq (nil ++ Θ0)) by (clear - Hu; simpl; assumption).
-      kill_scall (Hfm γ M' eq_refl eq_refl) Hu0 Hcov0 Df
-        r Hr ps Hav HS HT HQ.
-      exists r, ps. split; [ reflexivity | ].
-      repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
-    * (* SI-Arrow, at an arrow pattern; every other pattern rejects *)
-      destruct P0 as [ | n0 | γ0 | P0a P0b | B | | P0b ]; cbv beta iota;
-        [ | | | | | | ];
-        try solve [ destruct (e_sub_inv_arrow_none Hd
-                      ltac:(intros ? ? Habs; discriminate Habs)) ].
-      destruct (e_sub_inv_arrow Hd) as [Sm [Θm [Qd1 [Qd2 [-> [D1 D2]]]]]].
-      assert (Hcov1 : consis_call_cover Θ0
-                (consis_call_consis empty empty P0a Pa) [<=] S0)
-        by (cbn [consis_call_cover]; clear - Hcov; simpl in *; fsetdec).
-      kill_consis Hu Hcov1 D1 r1 Hr1 ps1 Hav1 HS1 HT1 HQ1.
-      cbn [consis_call_spec consis_spec] in Hr1.
-      (* what the FIRST premise's own soundness puts in scope for the second *)
-      pose proof ((proj2 (proj2 e_assign_unify_consis_sound))
-                    _ _ _ _ _ _ _ _ _ Hr1 Hu
-                    ltac:(clear - Hcov; simpl in *; fsetdec))
-        as [Da1 [Hu1' Hcov1']].
-      pose proof (e_consis_supply_grows Hr1) as Hgr1.
-      pose proof ((proj2 (proj2 e_assign_unify_consis_out_ftvar))
-                    _ _ _ _ _ _ _ _ _ Hr1 Hu
-                    ltac:(clear - Hcov; simpl in *; fsetdec)) as Hout1.
-      (* move the SECOND premise onto the runner's rails *)
-      destruct (e_sub_swaps ps1 D2 (S0' := cs_supply r1)) as [S2t [HS2t D2t]];
-        [ symmetry; exact HS1 | ].
-      rewrite HT1 in D2t.
-      rewrite (swaps_pskl_fresh_id ps1 P0b) in D2t
-        by (intros a0 b0 Hin; destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0];
-            split; clear - Ha0 Hb0 Hcov; simpl in *; fsetdec).
-      rewrite (swaps_pskl_fresh_id ps1 Pb) in D2t
-        by (intros a0 b0 Hin; destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0];
-            split; clear - Ha0 Hb0 Hcov; simpl in *; fsetdec).
-      assert (Hcov2 : ftvar_in_aenv (cs_ctx r1) ∪ ftvar_in_pskl P0b
-                      ∪ ftvar_in_pskl Pb [<=] cs_supply r1)
-        by (clear - Hcov Hcov1' Hgr1; simpl in *; fsetdec).
-      kill_scall (Har M' P0a P0b Pa Pb eq_refl eq_refl eq_refl _ _ _ Hr1)
-        Hu1' Hcov2 D2t r2 Hr2 ps2 Hav2 HS2 HT2 HQ2.
-      exists (mk_sub_result (sb_supply r2) (sb_ctx r2)
-                (pskl_arrow (cs_out r1) (sb_out r2))), (ps1 ++ ps2).
-      split; [ reflexivity | ].
-      repeat apply conj.
-      -- intros a0 b0 Hin. apply in_app_or in Hin.
-         destruct Hin as [Hin | Hin]; [ exact (Hav1 a0 b0 Hin) | ].
-         destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
-         split; clear - Ha0 Hb0 Hgr1; fsetdec.
-      -- cbn [sb_supply]. rewrite swaps_atoms_app. rewrite <- HS2.
-         apply swaps_atoms_cong. symmetry. exact HS2t.
-      -- cbn [sb_ctx]. rewrite swaps_aenv_app. exact HT2.
-      -- cbn [sb_out]. rewrite swaps_pskl_app, ! swaps_pskl_arrow.
-         rewrite HQ1 in *. f_equal; [ | exact HQ2 ].
-         apply swaps_pskl_fresh_id. intros a0 b0 Hin.
-         destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
-         split; clear - Ha0 Hb0 Hout1; fsetdec.
-
-    * (* SI-ForallL *)
-      do_forall_l Hd Hu Hcov
-        (Hfl Q eq_refl ltac:(discriminate)) S0 Θ0 P0 Q.
-    * (* SI-Ghost, at sk only *)
-      destruct NM; cbv beta iota;
-        [ destruct (e_sub_inv_fn_ty_ghost_none Hd) | do_ghost Hd ].
-    * (* SI-UnivGhostL, at sk only *)
-      destruct NM; cbv beta iota;
-        [ destruct (e_sub_inv_fn_ty_univ_ghost_none Hd)
-        | do_univ_ghost_l Hd Hu Hcov (Hug Pb eq_refl ltac:(discriminate)) ].
-Qed.
-
-(* --------------------------------------------------------------------- *)
-(*  §7c  The two halves, joined                                           *)
-(* --------------------------------------------------------------------- *)
-
 Lemma e_sub_call_impl_complete : forall S0 NM M P0 Θ0 c
     (H0 : e_sub_call_order S0 NM M P0 Θ0 c),
     sub_call_complete S0 NM M P0 Θ0 c.
 Proof.
-  intros. apply (e_sub_call_order_sind sub_call_complete);
-    [ exact sub_call_complete_sub | exact sub_call_complete_flex
-    | exact H0 ].
+  intros S0 NM M P0 Θ0 c H0.
+  induction H0 as
+    [S0 NM M P0 Θ0 P hck hfr Hfr hfm Hfm har hart Har hfl hflt Hfl hug Hug
+    |S0 NM M P0 Θ0 Ξ α hsl Hsl hag Hag hdep Hdep hskip Hskip hrg Hrg htv Htv hts Hts];
+    unfold sub_call_complete;
+    intros HP HP0 HD Hord Hu Hcov Sd Θd Qd Hd;
+    cbn [sub_call_lc sub_call_uniq sub_call_cover sub_call_run] in *.
+  - (* subtyping *)
+    rewrite e_sub_call_impl_equation_1.
+    destruct M as [ | | M' ]; cbv beta iota.
+    + (* ============ mode TI — SI-Infer, and nothing else ============ *)
+      destruct (e_sub_inv_ti Hd) as [-> [-> [-> ->]]]. cbv beta iota. answer_id.
+    + (* ================= mode TC ================= *)
+      destruct NM; cbv beta iota.
+      * (* --- NM = ty : SI-ForallR outranks the subject dispatch --- *)
+        destruct P0 as [ | n0 | γ0 | P0a P0b | B | | P0b ]; cbv beta iota.
+        -- do_ty_tc_p Hd Hu Hcov Hfl P.
+        -- inversion HP0.
+        -- do_ty_tc_p Hd Hu Hcov Hfl P.
+        -- do_ty_tc_p Hd Hu Hcov Hfl P.
+        -- (* ⭐ SI-ForallR — peel the pattern's ∀, then SPLIT the junk block *)
+          destruct (e_sub_inv_forall_r Hd)
+            as [-> [Hgf [ad [Xd [Hsuf [HuX [Had Dr]]]]]]].
+          bool_true.
+          pose proof (supply_fresh_notin S0) as Ha1.
+          pose proof (dom_subset_ftvar_in_aenv Θ0) as Hd0.
+          (* PRE-SWAP the derivation's opener onto [supply_fresh S0] *)
+          assert (Hav0 : forall a b, In (a, b) ((ad, supply_fresh S0) :: nil) ->
+                         a `notin` S0 /\ b `notin` S0)
+            by (intros a b [Heq | []]; inversion Heq; subst;
+                split; assumption).
+          assert (Hsad : swaps_atom ((ad, supply_fresh S0) :: nil) ad
+                         = supply_fresh S0)
+            by (simpl; unfold swap_atom;
+                destruct (ad == ad); [ reflexivity | congruence ]).
+          assert (HfixΘ : forall (X : aenv), ftvar_in_aenv X [<=] S0 ->
+                    swaps_aenv ((ad, supply_fresh S0) :: nil) X = X)
+            by (intros X HX; apply swaps_aenv_fresh_id; intros a b Hin;
+                destruct (Hav0 a b Hin) as [Hxa Hxb]; split; fsetdec).
+          assert (HfixP : forall X, ftvar_in_pskl X [<=] S0 ->
+                    swaps_pskl ((ad, supply_fresh S0) :: nil) X = X)
+            by (intros X HX; apply swaps_pskl_fresh_id; intros a b Hin;
+                destruct (Hav0 a b Hin) as [Hxa Hxb]; split; fsetdec).
+          destruct (e_sub_swaps ((ad, supply_fresh S0) :: nil) Dr
+                      (S0' := add (supply_fresh S0) S0)) as [Sd1 [HSd1 Dr1]].
+          { simpl. rewrite swap_atoms_add.
+            rewrite (swap_atoms_notin ad (supply_fresh S0) S0)
+              by (clear - Had Ha1; fsetdec).
+            unfold swap_atom. destruct (ad == ad); [ reflexivity | congruence ]. }
+          rewrite swaps_aenv_cons_tvar, Hsad in Dr1.
+          rewrite (HfixΘ Θ0) in Dr1
+            by (clear - Hcov; simpl in *; fsetdec).
+          rewrite swaps_pskl_open, swaps_pskl_var_f, Hsad in Dr1.
+          rewrite (HfixP B) in Dr1 by (clear - Hcov; simpl in *; fsetdec).
+          rewrite (HfixP P) in Dr1 by (clear - Hcov; simpl in *; fsetdec).
+          rewrite swaps_aenv_app_dist, swaps_aenv_cons_tvar, Hsad in Dr1.
+          (* the premise's own side conditions, at the runner's opener *)
+          assert (Ha1d : supply_fresh S0 `notin` dom Θ0)
+            by (clear - Ha1 Hd0 Hcov; simpl in *; fsetdec).
+          assert (Hu1 : uniq ((supply_fresh S0 ~ abind_tvar) ++ Θ0))
+            by (clear - Hu Ha1d; solve_uniq).
+          assert (Hcov1 : ftvar_in_aenv ((supply_fresh S0 ~ abind_tvar) ++ Θ0)
+                          ∪ ftvar_in_pskl (open_pskl_wrt_pskl B
+                               (pskl_var_f (supply_fresh S0)))
+                          ∪ ftvar_in_pskl P [<=] add (supply_fresh S0) S0).
+          { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B
+                          (pskl_var_f (supply_fresh S0))) as Hop.
+            simpl in Hop. clear - Hop Hcov. simpl in *. fsetdec. }
+          kill_scall (Hfr B eq_refl eq_refl) Hu1 Hcov1 Dr1 r Hr ps Hav HS HT HQ.
+          (* the recursive answer's own outputs *)
+          cbn [sub_call_spec sub_spec] in Hr.
+          pose proof ((proj1 e_sub_sub_flex_sound) _ _ _ _ _ _ _ _ _ Hr Hu1 Hcov1)
+            as [Hra [Huc [Hcvc Hqc]]].
+          (* the counterpart the runner tests for *)
+          assert (Hout : sb_out r = open_pskl_wrt_pskl B
+                           (pskl_var_f (supply_fresh S0))).
+          { rewrite <- HQ. apply swaps_pskl_fresh_id.
+            intros a0 b0 Hin. destruct (Hav a0 b0 Hin) as [Hya Hyb].
+            pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B
+                          (pskl_var_f (supply_fresh S0))) as Hop.
+            simpl in Hop. split; clear - Hya Hyb Hop Hcov; simpl in *; fsetdec. }
+          bool_true.
+          (* the output context, decomposed at the runner's own marker *)
+          assert (Hctx : sb_ctx r
+                    = swaps_aenv ps (swaps_aenv ((ad, supply_fresh S0) :: nil) Xd)
+                      ++ (supply_fresh S0 ~ abind_tvar)
+                      ++ swaps_aenv ps (swaps_aenv ((ad, supply_fresh S0) :: nil) Θd)).
+          { rewrite <- HT. rewrite swaps_aenv_app_dist, swaps_aenv_cons_tvar.
+            repeat f_equal.
+            apply swaps_atom_notin. intros a0 b0 Hin.
+            destruct (Hav a0 b0 Hin) as [Hya Hyb].
+            split; intro Heq0; subst; clear - Hya Hyb; fsetdec. }
+          assert (Hsufr : a_suffix
+                    (swaps_aenv ps (swaps_aenv ((ad, supply_fresh S0) :: nil) Xd)))
+            by (apply a_suffix_swaps; apply a_suffix_swaps; exact Hsuf).
+          assert (HΘfix : swaps_aenv ps
+                    (swaps_aenv ((ad, supply_fresh S0) :: nil) Θ0) = Θ0).
+          { rewrite (HfixΘ Θ0) by (clear - Hcov; simpl in *; fsetdec).
+            apply swaps_aenv_fresh_id. intros a0 b0 Hin.
+            destruct (Hav a0 b0 Hin) as [Hya Hyb].
+            split; clear - Hya Hyb Hcov; simpl in *; fsetdec. }
+          assert (HuXr : uniq
+                    (swaps_aenv ps (swaps_aenv ((ad, supply_fresh S0) :: nil) Xd)
+                     ++ Θ0)).
+          { rewrite <- HΘfix. rewrite <- ! swaps_aenv_app_dist.
+            apply swaps_aenv_uniq. apply swaps_aenv_uniq. exact HuX. }
+          destruct (split_at_tvar_complete Hctx Huc)
+            as [[pp Hpp] [Hsp Hpr]].
+          simpl in Hpr; subst pp.
+          rewrite Hsp. cbv beta iota. cbn [fst snd].
+          bool_true.
+          exists (mk_sub_result (sb_supply r)
+                    (swaps_aenv ps (swaps_aenv ((ad, supply_fresh S0) :: nil) Θd))
+                    (pskl_all_syn B)), (((ad, supply_fresh S0) :: nil) ++ ps).
+          split; [ reflexivity | ].
+          repeat apply conj.
+          ++ intros a0 b0 Hin. apply in_app_or in Hin.
+             destruct Hin as [Hin | Hin]; [ exact (Hav0 a0 b0 Hin) | ].
+             destruct (Hav a0 b0 Hin) as [Hya Hyb].
+             split; clear - Hya Hyb; fsetdec.
+          ++ cbn [sb_supply]. rewrite swaps_atoms_app. rewrite <- HS.
+             apply swaps_atoms_cong. symmetry. exact HSd1.
+          ++ cbn [sb_ctx]. rewrite swaps_aenv_app. reflexivity.
+          ++ cbn [sb_out]. rewrite swaps_pskl_app, ! swaps_pskl_all_syn.
+             rewrite (HfixP B) by (clear - Hcov; simpl in *; fsetdec).
+             f_equal. apply swaps_pskl_fresh_id. intros a0 b0 Hin.
+             destruct (Hav a0 b0 Hin) as [Hya Hyb].
+             split; clear - Hya Hyb Hcov; simpl in *; fsetdec.
+        -- do_ty_tc_p Hd Hu Hcov Hfl P.
+        -- do_ty_tc_p Hd Hu Hcov Hfl P.
+      * (* --- NM = sk : the runner keys on the SUBJECT --- *)
+        destruct P as [ | n | γ | Pa Pb | Q | | Pb ]; cbv beta iota.
+        -- do_sk_tc_p0 Hd P0.
+        -- kill_var_b.
+        -- do_sk_tc_p0 Hd P0.
+        -- do_sk_tc_p0 Hd P0.
+        -- (* SI-ForallL *)
+          do_forall_l Hd Hu Hcov
+            (Hfl Q eq_refl ltac:(discriminate)) S0 Θ0 P0 Q.
+        -- (* SI-Ghost *) do_ghost Hd.
+        -- (* SI-UnivGhostL *)
+          do_univ_ghost_l Hd Hu Hcov (Hug Pb eq_refl ltac:(discriminate)).
+    + (* ================= mode FN ================= *)
+      destruct P as [ | n | γ | Pa Pb | Q | | Pb ]; cbv beta iota.
+      -- (* 1 : no rule fires *) destruct (e_sub_inv_fn_unit_none Hd).
+      -- kill_var_b.
+      -- (* SI-FlexMono — enter the walk with an EMPTY accumulator *)
+        pose proof (e_sub_inv_flex_mono Hd) as Df.
+        assert (Hcov0 : ftvar_in_aenv (nil ++ Θ0) ∪ ftvar_in_pskl P0
+                        ∪ singleton γ [<=] S0)
+          by (clear - Hcov; simpl in *; fsetdec).
+        assert (Hu0 : uniq (nil ++ Θ0)) by (clear - Hu; simpl; assumption).
+        kill_scall (Hfm γ M' eq_refl eq_refl) Hu0 Hcov0 Df
+          r Hr ps Hav HS HT HQ.
+        exists r, ps. split; [ reflexivity | ].
+        repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
+      -- (* SI-Arrow, at an arrow pattern; every other pattern rejects *)
+        destruct P0 as [ | n0 | γ0 | P0a P0b | B | | P0b ]; cbv beta iota;
+          [ | | | | | | ];
+          try solve [ destruct (e_sub_inv_arrow_none Hd
+                        ltac:(intros ? ? Habs; discriminate Habs)) ].
+        destruct (e_sub_inv_arrow Hd) as [Sm [Θm [Qd1 [Qd2 [-> [D1 D2]]]]]].
+        assert (Hcov1 : consis_call_cover Θ0
+                  (consis_call_consis empty empty P0a Pa) [<=] S0)
+          by (cbn [consis_call_cover]; clear - Hcov; simpl in *; fsetdec).
+        kill_consis Hu Hcov1 D1 r1 Hr1 ps1 Hav1 HS1 HT1 HQ1.
+        cbn [consis_call_spec consis_spec] in Hr1.
+        (* what the FIRST premise's own soundness puts in scope for the second *)
+        pose proof ((proj2 (proj2 e_assign_unify_consis_sound))
+                      _ _ _ _ _ _ _ _ _ Hr1 Hu
+                      ltac:(clear - Hcov; simpl in *; fsetdec))
+          as [Da1 [Hu1' Hcov1']].
+        pose proof (e_consis_supply_grows Hr1) as Hgr1.
+        pose proof ((proj2 (proj2 e_assign_unify_consis_out_ftvar))
+                      _ _ _ _ _ _ _ _ _ Hr1 Hu
+                      ltac:(clear - Hcov; simpl in *; fsetdec)) as Hout1.
+        (* move the SECOND premise onto the runner's rails *)
+        destruct (e_sub_swaps ps1 D2 (S0' := cs_supply r1)) as [S2t [HS2t D2t]];
+          [ symmetry; exact HS1 | ].
+        rewrite HT1 in D2t.
+        rewrite (swaps_pskl_fresh_id ps1 P0b) in D2t
+          by (intros a0 b0 Hin; destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0];
+              split; clear - Ha0 Hb0 Hcov; simpl in *; fsetdec).
+        rewrite (swaps_pskl_fresh_id ps1 Pb) in D2t
+          by (intros a0 b0 Hin; destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0];
+              split; clear - Ha0 Hb0 Hcov; simpl in *; fsetdec).
+        assert (Hcov2 : ftvar_in_aenv (cs_ctx r1) ∪ ftvar_in_pskl P0b
+                        ∪ ftvar_in_pskl Pb [<=] cs_supply r1)
+          by (clear - Hcov Hcov1' Hgr1; simpl in *; fsetdec).
+        kill_scall (Har M' P0a P0b Pa Pb eq_refl eq_refl eq_refl _ _ _ Hr1)
+          Hu1' Hcov2 D2t r2 Hr2 ps2 Hav2 HS2 HT2 HQ2.
+        exists (mk_sub_result (sb_supply r2) (sb_ctx r2)
+                  (pskl_arrow (cs_out r1) (sb_out r2))), (ps1 ++ ps2).
+        split; [ reflexivity | ].
+        repeat apply conj.
+        ++ intros a0 b0 Hin. apply in_app_or in Hin.
+           destruct Hin as [Hin | Hin]; [ exact (Hav1 a0 b0 Hin) | ].
+           destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
+           split; clear - Ha0 Hb0 Hgr1; fsetdec.
+        ++ cbn [sb_supply]. rewrite swaps_atoms_app. rewrite <- HS2.
+           apply swaps_atoms_cong. symmetry. exact HS2t.
+        ++ cbn [sb_ctx]. rewrite swaps_aenv_app. exact HT2.
+        ++ cbn [sb_out]. rewrite swaps_pskl_app, ! swaps_pskl_arrow.
+           rewrite HQ1 in *. f_equal; [ | exact HQ2 ].
+           apply swaps_pskl_fresh_id. intros a0 b0 Hin.
+           destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
+           split; clear - Ha0 Hb0 Hout1; fsetdec.
+
+      -- (* SI-ForallL *)
+        do_forall_l Hd Hu Hcov
+          (Hfl Q eq_refl ltac:(discriminate)) S0 Θ0 P0 Q.
+      -- (* SI-Ghost, at sk only *)
+        destruct NM; cbv beta iota;
+          [ destruct (e_sub_inv_fn_ty_ghost_none Hd) | do_ghost Hd ].
+      -- (* SI-UnivGhostL, at sk only *)
+        destruct NM; cbv beta iota;
+          [ destruct (e_sub_inv_fn_ty_univ_ghost_none Hd)
+          | do_univ_ghost_l Hd Hu Hcov (Hug Pb eq_refl ltac:(discriminate)) ].
+  - (* flexible walk *)
+    destruct Θ0 as [ | [γ b] Θ0' ]; [ destruct (e_sub_flex_inv_nil Hd) | ].
+    destruct b as [ | A | Qp | | τ ].
+    + (* rigid head — SI-Flex-SkipRigid *)
+      rewrite e_sub_call_impl_equation_3. cbv beta iota.
+      destruct (e_sub_flex_inv_tvar Hd) as [Hne [Hnf [Θd' [-> Ds]]]].
+      split_eqdec Heq Hne2; [ congruence | ]. cbv beta iota.
+      destruct (sumbool_of_bool (mem γ (ftvar_in_pskl P0))) as [Hm | Hm];
+        [ exfalso; apply mem_true_in in Hm; contradiction | ].
+      cbv beta iota.
+      assert (Hu0 : uniq (Ξ ++ Θ0')) by (clear - Hu; solve_uniq).
+      assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0') ∪ ftvar_in_pskl P0
+                      ∪ singleton α [<=] S0)
+        by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
+            simpl in *; fsetdec).
+      kill_scall (Hrg γ Θ0' eq_refl) Hu0 Hcov0 Ds r Hr ps Hav HS HT HQ.
+      exists (mk_sub_result (sb_supply r) ((γ ~ abind_tvar) ++ sb_ctx r)
+                (sb_out r)), ps.
+      split; [ reflexivity | ].
+      repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
+              | | cbn [sb_out proj1_sig]; exact HQ ].
+      cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+      head_fresh Hav Hcov.
+    + (* term variable, TYPE payload — SI-Flex-SkipTmVar *)
+      rewrite e_sub_call_impl_equation_4. cbv beta iota.
+      destruct (e_sub_flex_inv_var_typ Hd) as [Θd' [-> Ds]].
+      assert (Hu0 : uniq (Ξ ++ Θ0')) by (clear - Hu; solve_uniq).
+      assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0') ∪ ftvar_in_pskl P0
+                      ∪ singleton α [<=] S0)
+        by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
+            simpl in *; fsetdec).
+      kill_scall (Htv γ A Θ0' eq_refl) Hu0 Hcov0 Ds r Hr ps Hav HS HT HQ.
+      exists (mk_sub_result (sb_supply r) ((γ ~ abind_var_typ A) ++ sb_ctx r)
+                (sb_out r)), ps.
+      split; [ reflexivity | ].
+      repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
+              | | cbn [sb_out proj1_sig]; exact HQ ].
+      cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+      head_fresh Hav Hcov.
+    + (* term variable, SKELETON payload *)
+      rewrite e_sub_call_impl_equation_5. cbv beta iota.
+      destruct (e_sub_flex_inv_var_skl Hd) as [Θd' [-> Ds]].
+      assert (Hu0 : uniq (Ξ ++ Θ0')) by (clear - Hu; solve_uniq).
+      assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0') ∪ ftvar_in_pskl P0
+                      ∪ singleton α [<=] S0)
+        by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
+            simpl in *; fsetdec).
+      kill_scall (Hts γ Qp Θ0' eq_refl) Hu0 Hcov0 Ds r Hr ps Hav HS HT HQ.
+      exists (mk_sub_result (sb_supply r) ((γ ~ abind_var_skl Qp) ++ sb_ctx r)
+                (sb_out r)), ps.
+      split; [ reflexivity | ].
+      repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
+              | | cbn [sb_out proj1_sig]; exact HQ ].
+      cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+      head_fresh Hav Hcov.
+    + (* undefined flexible head *)
+      rewrite e_sub_call_impl_equation_6. cbv beta iota.
+      split_eqdec Heq Hne.
+      * (* ⭐ SI-Flex-Solve — the head IS the target *)
+        subst γ. cbv beta iota.
+        destruct (e_sub_flex_inv_self Hd) as [ad [bd [Had [Hbd Ds]]]].
+        assert (Hcov1 : ftvar_in_aenv (Ξ ++ Θ0') ∪ ftvar_in_pskl P0
+                        ∪ singleton α [<=] S0)
+          by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
+              simpl in *; fsetdec).
+        destruct (e_sub_flex_solve_realign Had Hbd Hcov1 Ds)
+          as [ps0 [Sd0 [Hav0 [HS0 Ds0]]]].
+        pose proof (supply_fresh_notin S0) as Ha1.
+        pose proof (supply_fresh_notin (add (supply_fresh S0) S0)) as Hb1.
+        pose proof (dom_subset_ftvar_in_aenv Ξ) as HdΞ.
+        pose proof (dom_subset_ftvar_in_aenv Θ0') as HdΘ.
+        assert (HΞS : ftvar_in_aenv Ξ [<=] S0)
+          by (clear - Hcov1; rewrite ftvar_in_aenv_app in Hcov1; fsetdec).
+        assert (HΘS : ftvar_in_aenv Θ0' [<=] S0)
+          by (clear - Hcov1; rewrite ftvar_in_aenv_app in Hcov1; fsetdec).
+        assert (HαS : α `in` S0) by (clear - Hcov1; fsetdec).
+        assert (Hu1 : uniq (Ξ ++ Θ0')) by (clear - Hu; solve_uniq).
+        assert (HαΞ : α `notin` dom Ξ)
+          by (clear - Hu; destruct_uniq; unfold disjoint in *;
+              simpl in *; fsetdec).
+        assert (HαΘ : α `notin` dom Θ0')
+          by (clear - Hu; destruct_uniq; simpl in *; fsetdec).
+        (* the two invented names dodge the whole context, and each other *)
+        assert (Ha1Ξ : supply_fresh S0 `notin` dom Ξ)
+          by (clear - Ha1 HdΞ HΞS; fsetdec).
+        assert (Ha1Θ : supply_fresh S0 `notin` dom Θ0')
+          by (clear - Ha1 HdΘ HΘS; fsetdec).
+        assert (Hb1Ξ : supply_fresh (add (supply_fresh S0) S0)
+                       `notin` dom Ξ)
+          by (clear - Hb1 HdΞ HΞS; fsetdec).
+        assert (Hb1Θ : supply_fresh (add (supply_fresh S0) S0)
+                       `notin` dom Θ0')
+          by (clear - Hb1 HdΘ HΘS; fsetdec).
+        assert (Hu2 : uniq (Ξ ++ (supply_fresh S0 ~ abind_flex_mono) ++ Θ0'))
+          by (apply uniq_insert_mid; assumption).
+        assert (Hu3 : uniq (Ξ ++ (supply_fresh (add (supply_fresh S0) S0)
+                                    ~ abind_flex_mono)
+                               ++ (supply_fresh S0 ~ abind_flex_mono) ++ Θ0')).
+        { apply uniq_insert_mid; [ exact Hu2 | exact Hb1Ξ | ].
+          clear - Hb1 Hb1Θ. simpl. fsetdec. }
+        assert (Hu0 : uniq (Ξ ++ (α ~ abind_flex_mono_def
+                         (ptyp_arrow (ptyp_var_f (supply_fresh S0))
+                            (ptyp_var_f (supply_fresh (add (supply_fresh S0) S0)))))
+                       ++ (supply_fresh (add (supply_fresh S0) S0)
+                             ~ abind_flex_mono)
+                       ++ (supply_fresh S0 ~ abind_flex_mono) ++ Θ0')).
+        { apply uniq_insert_mid; [ exact Hu3 | exact HαΞ | ].
+          clear - HαΘ HαS Ha1 Hb1. simpl. fsetdec. }
+        assert (Hcov0 : ftvar_in_aenv (Ξ ++ (α ~ abind_flex_mono_def
+                         (ptyp_arrow (ptyp_var_f (supply_fresh S0))
+                            (ptyp_var_f (supply_fresh (add (supply_fresh S0) S0)))))
+                       ++ (supply_fresh (add (supply_fresh S0) S0)
+                             ~ abind_flex_mono)
+                       ++ (supply_fresh S0 ~ abind_flex_mono) ++ Θ0')
+                      ∪ ftvar_in_pskl P0
+                      ∪ ftvar_in_pskl (pskl_arrow
+                           (pskl_var_f (supply_fresh S0))
+                           (pskl_var_f (supply_fresh (add (supply_fresh S0) S0))))
+                      [<=] add (supply_fresh (add (supply_fresh S0) S0))
+                             (add (supply_fresh S0) S0))
+          by (clear - Hcov1; repeat rewrite ftvar_in_aenv_app in *;
+              simpl in *; fsetdec).
+        kill_scall (Hsl Θ0' eq_refl) Hu0 Hcov0 Ds0 r Hr ps Hav HS HT HQ.
+        exists r, (ps0 ++ ps).
+        split; [ reflexivity | ].
+        repeat apply conj.
+        -- intros a0 b0 Hin. apply in_app_or in Hin.
+          destruct Hin as [Hin | Hin]; [ exact (Hav0 _ _ Hin) | ].
+          destruct (Hav _ _ Hin) as [Ha0 Hb0]. split; fsetdec.
+        -- rewrite swaps_atoms_app. rewrite <- HS.
+          apply swaps_atoms_cong. symmetry. exact HS0.
+        -- rewrite swaps_aenv_app. exact HT.
+        -- rewrite swaps_pskl_app. exact HQ.
+      * cbv beta iota.
+        destruct (e_sub_flex_inv_other_flex (not_eq_sym Hne) Hd)
+          as [[Hin Dd] | [Hni [Θd' [-> Ds]]]].
+        -- (* SI-Flex-Depend — the head occurs in the subject *)
+          destruct (sumbool_of_bool (mem γ (ftvar_in_pskl P0))) as [Hm | Hm];
+            [ | exfalso; apply mem_false_notin in Hm; contradiction ].
+          cbv beta iota.
+          assert (Hu0 : uniq ((Ξ ++ (γ ~ abind_flex_mono)) ++ Θ0'))
+            by (clear - Hu; solve_uniq).
+          assert (Hcov0 : ftvar_in_aenv ((Ξ ++ (γ ~ abind_flex_mono)) ++ Θ0')
+                          ∪ ftvar_in_pskl P0 ∪ singleton α [<=] S0)
+            by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
+                simpl in *; fsetdec).
+          kill_scall (Hdep γ Θ0' eq_refl) Hu0 Hcov0 Dd
+            r Hr ps Hav HS HT HQ.
+          exists r, ps. split; [ reflexivity | ].
+          repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
+        -- (* SI-Flex-Skip — the head is re-wrapped *)
+          destruct (sumbool_of_bool (mem γ (ftvar_in_pskl P0))) as [Hm | Hm];
+            [ exfalso; apply mem_true_in in Hm; contradiction | ].
+          cbv beta iota.
+          assert (Hu0 : uniq (Ξ ++ Θ0')) by (clear - Hu; solve_uniq).
+          assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0') ∪ ftvar_in_pskl P0
+                          ∪ singleton α [<=] S0)
+            by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
+                simpl in *; fsetdec).
+          kill_scall (Hskip γ Θ0' eq_refl) Hu0 Hcov0 Ds
+            r Hr ps Hav HS HT HQ.
+          exists (mk_sub_result (sb_supply r)
+                    ((γ ~ abind_flex_mono) ++ sb_ctx r) (sb_out r)), ps.
+          split; [ reflexivity | ].
+          repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
+                  | | cbn [sb_out proj1_sig]; exact HQ ].
+          cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+          head_fresh Hav Hcov.
+    + (* defined flexible head — SI-Flex-Assign *)
+      rewrite e_sub_call_impl_equation_7. cbv beta iota.
+      destruct (e_sub_flex_inv_def Hd) as [Θd' [-> Dc]].
+      assert (Hu0 : uniq (Ξ ++ Θ0')) by (clear - Hu; solve_uniq).
+      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P0
+                    (ptyp_to_pskl τ) γ) as Hsu1.
+      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper (pskl_var_f α)
+                    (ptyp_to_pskl τ) γ) as Hsu2.
+      pose proof (ftvar_ptyp_to_pskl τ) as Hftτ.
+      assert (HΞΘ : ftvar_in_aenv (Ξ ++ Θ0') [<=] S0)
+        by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
+            simpl in *; fsetdec).
+      assert (HαS : α `in` S0) by (clear - Hcov; fsetdec).
+      assert (Hτ : ftvar_in_pskl (ptyp_to_pskl τ) [<=] S0)
+        by (rewrite Hftτ; clear - Hcov;
+            repeat rewrite ftvar_in_aenv_app in *; simpl in *; fsetdec).
+      assert (HP0S : ftvar_in_pskl P0 [<=] S0) by (clear - Hcov; fsetdec).
+      assert (Hb1 : ftvar_in_pskl
+                (subst_pskl_in_pskl (ptyp_to_pskl τ) γ P0) [<=] S0).
+      { clear - Hsu1 Hτ HP0S.
+        assert (Hrm : remove γ (ftvar_in_pskl P0) [<=] ftvar_in_pskl P0)
+          by (clear; fsetdec).
+        fsetdec. }
+      assert (Hb2 : ftvar_in_pskl
+                (subst_pskl_in_pskl (ptyp_to_pskl τ) γ (pskl_var_f α))
+                [<=] S0).
+      { clear - Hsu2 Hτ HαS. simpl in Hsu2.
+        assert (Hrm : remove γ (singleton α) [<=] singleton α)
+          by (clear; fsetdec).
+        fsetdec. }
+      assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0')
+                      ∪ ftvar_in_pskl (subst_pskl_in_pskl (ptyp_to_pskl τ) γ P0)
+                      ∪ ftvar_in_pskl (subst_pskl_in_pskl (ptyp_to_pskl τ) γ
+                            (pskl_var_f α)) [<=] S0)
+        by (clear - HΞΘ Hb1 Hb2; fsetdec).
+      kill_scall (Hag γ τ Θ0' eq_refl) Hu0 Hcov0 Dc r Hr ps Hav HS HT HQ.
+      exists (mk_sub_result (sb_supply r)
+                ((γ ~ abind_flex_mono_def τ) ++ sb_ctx r) (sb_out r)), ps.
+      split; [ reflexivity | ].
+      repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
+              | | cbn [sb_out proj1_sig]; exact HQ ].
+      cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
+      head_fresh Hav Hcov.
 Qed.
 
 (* ===================================================================== *)

@@ -202,10 +202,10 @@ Definition sub_call_defs_mono (Θ0 : aenv) (c : sub_call) : Prop :=
   | sub_call_flex Ξ _ => aenv_defs_mono (Ξ ++ Θ0)
   end.
 
-(** def_order.v §6's mutual pair as ONE inductive over the tag — premise
-    for premise the same, with [e_sub_order X] read [… (sub_call_sub X)]
-    and [e_sub_flex_order … Ξ α] read [… (sub_call_flex Ξ α)].  The
-    mutual pair stays the canonical order (totality lives on it);
+(** def_order.v §6's mutual pair as ONE inductive over the tag, with
+    recursive calls as separate premises so generated induction provides
+    every recursive hypothesis.  The mutual pair stays canonical
+    (totality lives on it);
     [e_sub_order_to_call] below injects. *)
 Inductive e_sub_call_order : supply -> a_sub_mode -> mode -> pskl -> aenv
                              -> sub_call -> Prop :=
@@ -225,23 +225,28 @@ Inductive e_sub_call_order : supply -> a_sub_mode -> mode -> pskl -> aenv
     (* Arrow — the domain goes to consistency, the codomain stays *)
     (forall M' P0a P0b P1 P2,
        M = mode_fn M' -> P0 = pskl_arrow P0a P0b -> P = pskl_arrow P1 P2 ->
-       e_consis_order empty empty S0 Θ0 P0a P1
-       /\ (forall S1 Θ1 Q1,
-             {{ S0 ↝ S1 ⊨ Θ0 ⊢[ empty | empty | P0a ] P1 ∼ Q1 ⊣ Θ1 }}e ->
-             e_sub_call_order S1 NM M' P0b Θ1 (sub_call_sub P2))) ->
+       e_consis_order empty empty S0 Θ0 P0a P1) ->
+    (forall M' P0a P0b P1 P2,
+       M = mode_fn M' -> P0 = pskl_arrow P0a P0b -> P = pskl_arrow P1 P2 ->
+       forall S1 Θ1 Q1,
+         {{ S0 ↝ S1 ⊨ Θ0 ⊢[ empty | empty | P0a ] P1 ∼ Q1 ⊣ Θ1 }}e ->
+         e_sub_call_order S1 NM M' P0b Θ1 (sub_call_sub P2)) ->
     (* ForallL — extract an instantiation, then recurse on the opened body *)
     (forall Q,
        P = pskl_all_syn Q -> M <> mode_ti ->
        (guarded_pskl P0 \/ P0 = pskl_ghost) ->
        e_extract_order (add (supply_fresh S0) S0) Θ0 NM (supply_fresh S0) M
-         (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0))) P0
-       /\ (forall S1 Ξ P1,
-             {{ (add (supply_fresh S0) S0) ↝ S1 ⊨ Θ0
-                ⊢ (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
-                ⊳[ NM , (supply_fresh S0) , M ] P0 ⤳ Ξ ↪ P1 }}e ->
-             {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P1 }}a ->
-             e_sub_call_order S1 NM M P0 (Ξ ++ Θ0)
-               (sub_call_sub (open_pskl_wrt_pskl Q P1)))) ->
+         (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0))) P0) ->
+    (forall Q,
+       P = pskl_all_syn Q -> M <> mode_ti ->
+       (guarded_pskl P0 \/ P0 = pskl_ghost) ->
+       forall S1 Ξ P1,
+         {{ (add (supply_fresh S0) S0) ↝ S1 ⊨ Θ0
+            ⊢ (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
+            ⊳[ NM , (supply_fresh S0) , M ] P0 ⤳ Ξ ↪ P1 }}e ->
+         {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P1 }}a ->
+         e_sub_call_order S1 NM M P0 (Ξ ++ Θ0)
+           (sub_call_sub (open_pskl_wrt_pskl Q P1))) ->
     (* UnivGhostL — strip the subject's ⫯ *)
     (forall Q,
        P = pskl_univ_ghost Q -> M <> mode_ti ->
@@ -276,8 +281,10 @@ Inductive e_sub_call_order : supply -> a_sub_mode -> mode -> pskl -> aenv
     (forall β Θ0',
        Θ0 = (β ~ abind_flex_mono) ++ Θ0' ->
        e_sub_call_order S0 NM M P0 Θ0'
-         (sub_call_flex (Ξ ++ (β ~ abind_flex_mono)) α)
-       /\ e_sub_call_order S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
+         (sub_call_flex (Ξ ++ (β ~ abind_flex_mono)) α)) ->
+    (forall β Θ0',
+       Θ0 = (β ~ abind_flex_mono) ++ Θ0' ->
+       e_sub_call_order S0 NM M P0 Θ0' (sub_call_flex Ξ α)) ->
     (* Flex-SkipRigid *)
     (forall β Θ0',
        Θ0 = (β ~ abind_tvar) ++ Θ0' ->
@@ -308,18 +315,15 @@ Fixpoint e_sub_order_to_call S0 NM M P0 Θ0 P
         (fun α M' E1 E2 =>
            e_sub_flex_order_to_call _ _ _ _ _ _ _ (Hfm α M' E1 E2))
         (fun M' P0a P0b P1 P2 E1 E2 E3 =>
+           proj1 (Har M' P0a P0b P1 P2 E1 E2 E3))
+        (fun M' P0a P0b P1 P2 E1 E2 E3 S1 Θ1 Q1 Hrun =>
            match Har M' P0a P0b P1 P2 E1 E2 E3 with
-           | conj Hc Hrec =>
-               conj Hc (fun S1 Θ1 Q1 Hrun =>
-                          e_sub_order_to_call _ _ _ _ _ _
-                            (Hrec S1 Θ1 Q1 Hrun))
+           | conj _ Hrec => e_sub_order_to_call _ _ _ _ _ _ (Hrec S1 Θ1 Q1 Hrun)
            end)
-        (fun Q E1 E2 Hg =>
+        (fun Q E1 E2 Hg => proj1 (Hfl Q E1 E2 Hg))
+        (fun Q E1 E2 Hg S1 Ξ' P1 Hrun Hwf =>
            match Hfl Q E1 E2 Hg with
-           | conj Hx Hrec =>
-               conj Hx (fun S1 Ξ' P1 Hrun Hwf =>
-                          e_sub_order_to_call _ _ _ _ _ _
-                            (Hrec S1 Ξ' P1 Hrun Hwf))
+           | conj _ Hrec => e_sub_order_to_call _ _ _ _ _ _ (Hrec S1 Ξ' P1 Hrun Hwf)
            end)
         (fun Q E1 E2 =>
            e_sub_order_to_call _ _ _ _ _ _ (Hug Q E1 E2))
@@ -335,11 +339,9 @@ with e_sub_flex_order_to_call S0 NM M P0 Θ0 Ξ α
         (fun β τ Θ0' E =>
            e_sub_order_to_call _ _ _ _ _ _ (Has β τ Θ0' E))
         (fun β Θ0' E =>
-           match Hds β Θ0' E with
-           | conj h1 h2 =>
-               conj (e_sub_flex_order_to_call _ _ _ _ _ _ _ h1)
-                    (e_sub_flex_order_to_call _ _ _ _ _ _ _ h2)
-           end)
+           match Hds β Θ0' E with conj h1 _ => e_sub_flex_order_to_call _ _ _ _ _ _ _ h1 end)
+        (fun β Θ0' E =>
+           match Hds β Θ0' E with conj _ h2 => e_sub_flex_order_to_call _ _ _ _ _ _ _ h2 end)
         (fun β Θ0' E =>
            e_sub_flex_order_to_call _ _ _ _ _ _ _ (Hrg β Θ0' E))
         (fun x A Θ0' E =>

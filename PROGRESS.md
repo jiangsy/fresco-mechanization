@@ -181,6 +181,31 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Direct induction for subtyping/flexible-walk completeness
+
+Exposed the combined subtyping order's arrow tail, ForallL continuation,
+and Depend/Skip calls as separate premises.  Their head-derivation and
+well-formedness guards are retained; the canonical mutual orders and the
+runner's computational branches are unchanged.
+
+Replaced the last hand-written strong induction principle and its two
+parameterized step theorems (`sub_call_complete_sub` and
+`sub_call_complete_flex`) with ordinary induction in
+`e_sub_call_impl_complete`.  Those step theorems had no independent
+consumer: their large premise lists merely repeated the custom induction
+principle.  The subtyping and flexible-walk cases now receive their
+recursive hypotheses directly and share the same initial setup.
+
+The logical completeness proof's combined bodies shrink **422 → 420**
+nonblank, noncomment lines.  Removing the repeated declarations and custom
+principle yields a net **305 fewer Coq code lines**, including changes to
+the order constructors and injections.  All retained theorem statements
+are unchanged; all six custom order-induction principles in these runner
+completeness modules are now removed.
+
+Validation: full `make coq`; all 34 headline assumption reports remain
+`Closed under the global context`.
+
 ## 2026-10-11 — Generated induction for assign/unify/consistency completeness
 
 Exposed the combined consistency order's Depend/Skip calls and its arrow
