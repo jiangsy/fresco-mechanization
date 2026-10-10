@@ -1177,14 +1177,3 @@ Proof.
   intros M P0 Θ0 P Q Θ1 H Hg.
   exact (proj1 a_sub_ty_ghost_free_output_bundle _ _ _ _ _ _ _ H eq_refl Hg).
 Qed.
-
-(* ===================================================================== *)
-(*  T4-K2 — two coercion composites                                       *)
-(* ===================================================================== *)
-
-(** The inherited painting of an embedded type is the [bskl] of its
-    all-inh colouring. *)
-Lemma pskl_to_bskl_inh_ptyp : forall A,
-  pskl_to_bskl_inh (ptyp_to_pskl A) = btyp_to_bskl (ptyp_to_btyp_inh A).
-Proof. induction A; simpl; f_equal; auto. Qed.
-

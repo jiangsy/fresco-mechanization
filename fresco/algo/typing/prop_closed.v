@@ -272,7 +272,7 @@ Proof.
   replace (btyp_to_bskl B)
     with (btyp_to_bskl (ptyp_to_btyp_inh (btyp_to_ptyp B)))
     by (rewrite <- HB; reflexivity).
-  rewrite <- pskl_to_bskl_inh_ptyp.
+  rewrite btyp_to_bskl_ptyp_to_btyp_inh.
   apply ad_refine_syn_refl_inh. apply a_wf_ptyp_to_wf_pskl. exact HwfB.
 Qed.
 

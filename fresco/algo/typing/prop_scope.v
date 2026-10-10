@@ -1733,27 +1733,6 @@ Qed.
 (*  ⭐ THE TYPING-LEVEL SCOPE WALK, and the two discharge corollaries.     *)
 (* ===================================================================== *)
 
-(** Opening a well-formed [∀] at ONE fresh atom — the exists-fresh form the
-    check [_step] rows need (the rule binds a single [α], not a cofinite
-    family, so the wf premise has to be re-instantiated by renaming). *)
-Lemma a_wf_ptyp_all_open_at : forall Θ A0 α,
-  a_wf_ptyp Θ (ptyp_all A0) ->
-  α `notin` dom Θ ->
-  a_wf_ptyp ((α ~ abind_tvar) ++ Θ) (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)).
-Proof.
-  intros Θ A0 α Hwf Hα.
-  inversion Hwf as [ | | | L0 Θx A0x Hbody Heq1 Heq2 ]; subst.
-  destruct (atom_fresh (L0 `union` ftvar_in_ptyp A0 `union` singleton α))
-    as [β0 Hβ0].
-  pose proof (@a_wf_ptyp_rename_tvar _ _
-                (Hbody β0 ltac:(clear - Hβ0; solve_notin_auto)) nil β0 Θ α eq_refl)
-    as Hr.
-  simpl in Hr.
-  rewrite <- (subst_ptyp_in_ptyp_intro β0 A0 (ptyp_var_f α)
-                ltac:(clear - Hβ0; solve_notin_auto)) in Hr.
-  exact Hr.
-Qed.
-
 (** ⚠️ AT THE TYPING LEVEL THE CONCLUSION IS SCOPE PROPAGATION, NOT CORE
     PRESERVATION — see the counterexample recorded with [a_split_scope]. *)
 Definition typing_scope_concl (M : mode) (Θ0 : aenv) (P0 : pskl)
@@ -1910,7 +1889,7 @@ Proof.
   - (* AT-AbsAnno : as AT-Abs, with the consistency run in place of the
        guess block *)
     destruct (a_split_ty_shape H0 Hmod H) as [HeqΘ Hshape]; subst Θ1.
-    destruct (a_wf_exp_abs_anno_inv Hexp) as [HwfA _].
+    pose proof (a_wf_exp_abs_anno_inv Hexp) as HwfA.
     assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
                    a_ty_mode_compat (decr_mode m) Q).
     { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
@@ -1982,8 +1961,7 @@ Proof.
       by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]).
     assert (HwfA0α : a_wf_ptyp ((α ~ abind_tvar) ++ Θ0)
                        (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
-      by (apply a_wf_ptyp_all_open_at;
-            [ exact HwfA0 | clear - Hα; fsetdec ]).
+      by (apply a_wf_ptyp_all_open_at; exact HwfA0).
     destruct (IHa_typing Hwfα
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA0α)
                 (a_ty_mode_compat__tc _)
@@ -2106,8 +2084,7 @@ Proof.
       by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]).
     assert (HwfA0α : a_wf_ptyp ((α ~ abind_tvar) ++ Θ0)
                        (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
-      by (apply a_wf_ptyp_all_open_at;
-            [ exact HwfA0 | clear - Hα; fsetdec ]).
+      by (apply a_wf_ptyp_all_open_at; exact HwfA0).
     destruct (IHa_typing Hwfα
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA0α)
                 (a_ty_mode_compat__tc _)
@@ -2157,7 +2134,7 @@ Proof.
       by (apply a_wf_ptyp_of_wf_pskl_empty; exact HwfPA).
     assert (HwfBs : a_wf_ptyp Θ1 B)
       by (apply a_wf_ptyp_of_wf_pskl_empty; exact HwfPB).
-    destruct (a_wf_exp_abs_anno_inv Hexp) as [HwfAan _].
+    pose proof (a_wf_exp_abs_anno_inv Hexp) as HwfAan.
     assert (HwfAan1 : a_wf_ptyp Θ1 A)
       by (eapply a_wf_ptyp_isub; [ exact HwfAan | exact Hles ]).
     destruct H0 as [Qc Hc].

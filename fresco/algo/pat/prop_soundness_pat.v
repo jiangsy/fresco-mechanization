@@ -110,37 +110,32 @@ Inductive a_wf_exp : aenv -> exp -> Prop :=
 where "{{ Θ ⊢ᵉ e }}a" := (a_wf_exp Θ e) : fresco_a_scope.
 
 (** Only type-level entries are read (through [a_wf_ptyp]), so the term
-    judgement transports along the term-blind relation — weakening by any
-    entry and dropping term entries are both instances. *)
+    judgement transports along any relation [a_wf_ptyp] does. *)
+Lemma a_wf_exp_transport : forall (R : aenv -> aenv -> Prop),
+  (forall Θ Θ' A, R Θ Θ' -> a_wf_ptyp Θ A -> a_wf_ptyp Θ' A) ->
+  forall Θ e, {{ Θ ⊢ᵉ e }}a -> forall Θ', R Θ Θ' -> {{ Θ' ⊢ᵉ e }}a.
+Proof.
+  intros R HR Θ e H; induction H; intros Θ' Hle.
+  - apply a_wf_exp__unit.
+  - apply a_wf_exp__var.
+  - apply a_wf_exp__anno; eauto.
+  - apply a_wf_exp__freeze; auto.
+  - apply a_wf_exp__abs with (L := L). intros x Hx. eauto.
+  - apply a_wf_exp__abs_anno with (L := L); eauto.
+  - apply a_wf_exp__app; eauto.
+Qed.
+
+(** Weakening by any entry and dropping term entries are both instances
+    (the term-blind relation). *)
 Lemma a_wf_exp_mono : forall Θ e,
   {{ Θ ⊢ᵉ e }}a ->
   forall Θ', aenv_tbinds_le Θ Θ' -> {{ Θ' ⊢ᵉ e }}a.
-Proof.
-  intros Θ e H; induction H; intros Θ' Hle.
-  - apply a_wf_exp__unit.
-  - apply a_wf_exp__var.
-  - apply a_wf_exp__anno; [ eapply a_wf_ptyp_mono; eauto | auto ].
-  - apply a_wf_exp__freeze; auto.
-  - apply a_wf_exp__abs with (L := L). intros x Hx. auto.
-  - apply a_wf_exp__abs_anno with (L := L);
-      [ eapply a_wf_ptyp_mono; eauto | intros x Hx; auto ].
-  - apply a_wf_exp__app; auto.
-Qed.
+Proof. apply a_wf_exp_transport. intros; eapply a_wf_ptyp_mono; eauto. Qed.
 
 Lemma a_wf_exp_isub : forall Θ e,
   {{ Θ ⊢ᵉ e }}a ->
   forall Θ', Θ ⊴ Θ' -> {{ Θ' ⊢ᵉ e }}a.
-Proof.
-  intros Θ e H; induction H; intros Θ' Hle.
-  - apply a_wf_exp__unit.
-  - apply a_wf_exp__var.
-  - apply a_wf_exp__anno; [ eapply a_wf_ptyp_isub; eauto | auto ].
-  - apply a_wf_exp__freeze; auto.
-  - apply a_wf_exp__abs with (L := L). intros x Hx. auto.
-  - apply a_wf_exp__abs_anno with (L := L);
-      [ eapply a_wf_ptyp_isub; eauto | intros x Hx; auto ].
-  - apply a_wf_exp__app; auto.
-Qed.
+Proof. apply a_wf_exp_transport. intros; eapply a_wf_ptyp_isub; eauto. Qed.
 
 (* ===================================================================== *)
 (*  §2  Stability of [ad_pat] under the algorithm's increases             *)
@@ -150,8 +145,6 @@ Qed.
 (*  equivalence-slack machinery is needed.                                 *)
 (* ===================================================================== *)
 
-(** [⊴] extended by the SAME term entry on both sides (mirrors
-    [a_isub_cons_tvar]; the [≡]-premise of [a_inc__var] is reflexivity). *)
 (** A term entry looked up through [abind_to_pskl] is a term entry. *)
 Lemma abind_to_pskl_is_tm : forall (b : abind) P,
   abind_to_pskl b = Some P -> abind_is_tm b.
@@ -223,14 +216,6 @@ Qed.
 (*     the term entries of input and output are the SAME — which is what   *)
 (*     lets a context invariant about term entries survive a run.          *)
 
-Lemma binds_app_mid : forall (y : atom) (b : abind) Ξ (mid : aenv) Θ,
-  binds y b (Ξ ++ Θ) -> binds y b (Ξ ++ mid ++ Θ).
-Proof.
-  intros * H. apply binds_app_1 in H as [H | H];
-    [ apply binds_app_2; exact H
-    | apply binds_app_3; apply binds_app_3; exact H ].
-Qed.
-
 (** [binds_tm_cons_inv] with the binds premise BEFORE the negation, so a
     forward [eapply] resolves the head entry before the negation goal runs. *)
 Lemma binds_tm_cons_inv' : forall x (b : abind) y (c : abind) Θ,
@@ -239,7 +224,7 @@ Proof. intros; eapply binds_tm_cons_inv; eauto. Qed.
 
 Lemma aenv_tm_le_mid_intro : forall Ξ (mid : aenv) Θ,
   aenv_tm_le (Ξ ++ Θ) (Ξ ++ mid ++ Θ).
-Proof. intros Ξ mid Θ y b _ H. apply binds_app_mid; exact H. Qed.
+Proof. intros Ξ mid Θ y b _ H. apply binds_weaken; exact H. Qed.
 
 Lemma aenv_tm_le_src_strip_suffix : forall Ξs Θ Θ',
   a_suffix Ξs ->
@@ -423,14 +408,14 @@ Qed.
 (** The mirror of [aenv_tm_le_via_binder] (prop_stability.v): crossing a
     binder row in the OUTPUT-to-INPUT direction.  No [a_suffix] premise is
     needed here — the pending suffix is crossed on the SOURCE side, where a
-    lookup only has to be weakened ([binds_app_mid]). *)
+    lookup only has to be weakened ([binds_weaken]). *)
 Lemma aenv_tm_le_via_binder_ge : forall Ξ x (bx : abind) Θ Θ',
   aenv_tm_le (Ξ ++ (x ~ bx) ++ Θ') ((x ~ bx) ++ Θ) ->
   forall y b, abind_is_tm b -> y <> x -> binds y b (Ξ ++ Θ') -> binds y b Θ.
 Proof.
   intros * Hle y b Htm Hne Hb.
   assert (Hb1 : binds y b ((x ~ bx) ++ Θ))
-    by (apply Hle; [ exact Htm | apply binds_app_mid; exact Hb ]).
+    by (apply Hle; [ exact Htm | apply binds_weaken; exact Hb ]).
   destruct (binds_cons_1 _ _ _ _ _ _ Hb1) as [[Heq _] | Hb2];
     [ subst; contradiction | exact Hb2 ].
 Qed.
@@ -517,7 +502,7 @@ Proof.
   - inversion Hm.
 Qed.
 
-(** The TY analogue of [a_split_sk_shape] (prop_soundness_pat.v): AWAY FROM
+(** The TY analogue of [a_split_sk_shape]: AWAY FROM
     CHECK MODE the split is arrow-or-ghost, so [a_split__flex] — and with it
     [a_split_refines] — is out of reach at [AT-Abs] / [AT-AbsAnno].  At TC
     the row IS reachable, because [a_ty_mode_compat]'s TC row admits any
@@ -580,7 +565,7 @@ Lemma aenv_tbinds_le_rename_tm : forall Θa x y (b : abind) Θ0,
   aenv_tbinds_le (Θa ++ (x ~ b) ++ Θ0) (Θa ++ (y ~ b) ++ Θ0).
 Proof.
   intros * Hb α c Hc H.
-  apply binds_app_mid.
+  apply binds_weaken.
   eapply aenv_tbinds_le_strip_tm; eauto.
 Qed.
 
@@ -597,15 +582,15 @@ Lemma ad_pat_subst_tm : forall M Θ' e Q,
   {{ (Θa ++ (y ~ b) ++ Θ0) ⊢ˢ[ M ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ Q }}ad.
 Proof.
   intros M Θ' e Q H; induction H;
-    intros Θa x0 b0 Θb y Heq Htm Hx0; subst; simpl.
+    intros Θa x0 b0 Θb y Heq Htm Hx0; subst; simpl;
+  assert (Hren : aenv_tbinds_le (Θa ++ (x0 ~ b0) ++ Θb) (Θa ++ (y ~ b0) ++ Θb))
+    by (apply aenv_tbinds_le_rename_tm; apply abind_is_tm_not_ty; exact Htm).
   - (* unit *)
     apply ad_pat__unit;
       [ eapply a_wf_pskl_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ]
+          [ eassumption | exact Hren ]
       | eapply ad_pat_sub_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ] ].
+          [ eassumption | exact Hren ] ].
   - (* var *)
     destruct_if as [Heq | Hne].
     + (* the renamed variable itself: its entry is exactly [b0] *)
@@ -621,20 +606,16 @@ Proof.
         [ apply binds_app_3; unfold binds; simpl; left; reflexivity
         | eassumption
         | eapply a_wf_pskl_mono;
-            [ eassumption | apply aenv_tbinds_le_rename_tm;
-                            apply abind_is_tm_not_ty; exact Htm ]
+            [ eassumption | exact Hren ]
         | eapply ad_pat_sub_mono;
-            [ eassumption | apply aenv_tbinds_le_rename_tm;
-                            apply abind_is_tm_not_ty; exact Htm ] ].
+            [ eassumption | exact Hren ] ].
     + (* any other variable: its entry is untouched *)
       eapply ad_pat__var with (b := b);
         [ | eassumption
         | eapply a_wf_pskl_mono;
-            [ eassumption | apply aenv_tbinds_le_rename_tm;
-                            apply abind_is_tm_not_ty; exact Htm ]
+            [ eassumption | exact Hren ]
         | eapply ad_pat_sub_mono;
-            [ eassumption | apply aenv_tbinds_le_rename_tm;
-                            apply abind_is_tm_not_ty; exact Htm ] ].
+            [ eassumption | exact Hren ] ].
       apply binds_app_1 in H as [H | H];
         [ apply binds_app_2; exact H | ].
       apply binds_app_1 in H as [H | H];
@@ -643,22 +624,18 @@ Proof.
   - (* anno *)
     apply ad_pat__anno;
       [ eapply a_wf_ptyp_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ]
+          [ eassumption | exact Hren ]
       | eapply a_wf_pskl_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ]
+          [ eassumption | exact Hren ]
       | eapply ad_pat_sub_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ] ].
+          [ eassumption | exact Hren ] ].
   - (* freeze *)
     apply ad_pat__freeze. apply IHad_pat; auto.
   - (* abs *)
     apply ad_pat__abs with (L := L `union` singleton x0 `union` singleton y);
       [ assumption
       | eapply a_wf_pskl_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ]
+          [ eassumption | exact Hren ]
       | assumption | ].
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
@@ -672,8 +649,7 @@ Proof.
       with (L := L `union` singleton x0 `union` singleton y) (B := B);
       [ assumption
       | eapply a_wf_ptyp_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ]
+          [ eassumption | exact Hren ]
       | reflexivity | assumption | ].
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
@@ -686,8 +662,7 @@ Proof.
     eapply ad_pat__app;
       [ apply IHad_pat1; auto
       | eapply ad_refine_syn_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ]
+          [ eassumption | exact Hren ]
       | apply IHad_pat2; auto ].
   - (* abs_check *)
     apply ad_pat__abs_check
@@ -703,8 +678,7 @@ Proof.
     apply ad_pat__abs_anno_check
       with (L := L `union` singleton x0 `union` singleton y);
       [ eapply a_wf_ptyp_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ] | ].
+          [ eassumption | exact Hren ] | ].
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
       [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
@@ -860,51 +834,52 @@ Qed.
     tails, which then re-grows the suffix; and a DEFINITION can never be
     the peeled entry, so the definition-preservation component just drops
     the middle by payload shape — no freshness needed. *)
-Lemma a_isub_peel_var_skl_mid : forall x P Θ1 Ξ Θ2,
+Lemma a_isub_peel_tm_mid : forall x b Θ1 Ξ Θ2,
+  abind_is_tm b ->
   a_suffix Ξ ->
-  uniq (Ξ ++ (x ~ abind_var_skl P) ++ Θ2) ->
+  uniq (Ξ ++ (x ~ b) ++ Θ2) ->
   lc_aenv Θ2 ->
-  ((x ~ abind_var_skl P) ++ Θ1) ⊴ (Ξ ++ (x ~ abind_var_skl P) ++ Θ2) ->
+  ((x ~ b) ++ Θ1) ⊴ (Ξ ++ (x ~ b) ++ Θ2) ->
   Θ1 ⊴ (Ξ ++ Θ2).
 Proof.
-  intros * HΞ Hu Hlc [[κ [Hid Hinc]] Hd].
-  destruct (a_inc_var_skl_inv Hinc) as [Ξ0 [P' [Θ0 [Heq [_ [_ Hinc']]]]]].
-  destruct (uniq_mid_eq Heq Hu) as [-> [Heqb ->]]. inversion Heqb; subst.
+  intros x b Θ1 Ξ Θ2 Htm HΞ Hu Hlc [[κ [Hid Hinc]] Hd].
+  assert (Hinc' : exists κ', κ' ∷ Θ1 ⊑ Θ2 /\ is_id_msubst κ').
+  { destruct b; try contradiction Htm;
+      [ destruct (a_inc_var_inv Hinc) as [Ξ0 [b' [Θ0 [Heq [_ [_ Hinc']]]]]]
+      | destruct (a_inc_var_skl_inv Hinc) as [Ξ0 [b' [Θ0 [Heq [_ [_ Hinc']]]]]] ];
+      destruct (uniq_mid_eq Heq Hu) as [-> [_ ->]]; eauto. }
+  destruct Hinc' as [κ' [Hinc' Hid']].
   split.
   - eapply a_inc_weaken_suffix_target; eassumption.
   - intros α τ Hb.
-    assert (Hb1 : binds α (abind_flex_mono_def τ)
-                    (Ξ0 ++ (x ~ abind_var_skl P') ++ Θ0))
+    assert (Hb1 : binds α (abind_flex_mono_def τ) (Ξ ++ (x ~ b) ++ Θ2))
       by (apply Hd; apply binds_app_3; exact Hb).
     apply binds_app_1 in Hb1 as [Hb1 | Hb1];
       [ apply binds_app_2; exact Hb1 | ].
     apply binds_app_3.
     destruct (binds_cons_1 _ _ _ _ _ _ Hb1) as [[_ Heqd] | Hb2];
-      [ discriminate | exact Hb2 ].
+      [ subst b; contradiction Htm | exact Hb2 ].
 Qed.
 
-Lemma a_isub_peel_var_typ_mid : forall x A Θ1 Ξ Θ2,
+(** The binder rows' output, with the walked term entry peeled off: the
+    input (below the binder) still increases into it, and it stays wf. *)
+Lemma a_isub_wf_peel_tm_mid : forall x b Θ1 Ξ Θ2,
   a_suffix Ξ ->
-  uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θ2) ->
-  lc_aenv Θ2 ->
-  ((x ~ abind_var_typ A) ++ Θ1) ⊴ (Ξ ++ (x ~ abind_var_typ A) ++ Θ2) ->
-  Θ1 ⊴ (Ξ ++ Θ2).
+  ((x ~ b) ++ Θ1) ⊴ (Ξ ++ (x ~ b) ++ Θ2) ->
+  {{ ⊢ (Ξ ++ (x ~ b) ++ Θ2) }}a ->
+  abind_is_tm b ->
+  Θ1 ⊴ (Ξ ++ Θ2) /\ {{ ⊢ (Ξ ++ Θ2) }}a.
 Proof.
-  intros * HΞ Hu Hlc [[κ [Hid Hinc]] Hd].
-  destruct (a_inc_var_inv Hinc) as [Ξ0 [A' [Θ0 [Heq [_ [_ Hinc']]]]]].
-  destruct (uniq_mid_eq Heq Hu) as [-> [Heqb ->]]. inversion Heqb; subst.
-  split.
-  - eapply a_inc_weaken_suffix_target; eassumption.
-  - intros α τ Hb.
-    assert (Hb1 : binds α (abind_flex_mono_def τ)
-                    (Ξ0 ++ (x ~ abind_var_typ A') ++ Θ0))
-      by (apply Hd; apply binds_app_3; exact Hb).
-    apply binds_app_1 in Hb1 as [Hb1 | Hb1];
-      [ apply binds_app_2; exact Hb1 | ].
-    apply binds_app_3.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb1) as [[_ Heqd] | Hb2];
-      [ discriminate | exact Hb2 ].
+  intros x b Θ1 Ξ Θ2 Hsuf Hle Hwf Htm. split.
+  - eapply a_isub_peel_tm_mid;
+      [ exact Htm | exact Hsuf | apply a_wf_aenv_uniq; exact Hwf | | exact Hle ].
+    apply a_wf_aenv_lc_aenv in Hwf.
+    apply lc_aenv_app_inv in Hwf as [_ Hwf].
+    apply lc_aenv_app_inv in Hwf as [_ Hwf]. exact Hwf.
+  - eapply a_wf_aenv_strip_tm_mid;
+      [ apply abind_is_tm_not_ty; exact Htm | exact Hwf ].
 Qed.
+
 
 (** The exists-fresh → cofinite bridge the Abs cases need: one fresh
     witness generates the whole family. *)
@@ -979,11 +954,8 @@ Proof. intros * H; inversion H; subst; auto. Qed.
    so there is no family and nothing to pick. *)
 
 Lemma a_wf_exp_abs_anno_inv : forall Θ A e,
-  {{ Θ ⊢ᵉ (exp_abs_anno A e) }}a ->
-  a_wf_ptyp Θ A /\
-  exists L, forall x, x `notin` L ->
-    {{ Θ ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a.
-Proof. intros * H; inversion H; subst; eauto. Qed.
+  {{ Θ ⊢ᵉ (exp_abs_anno A e) }}a -> a_wf_ptyp Θ A.
+Proof. intros * H; inversion H; subst; assumption. Qed.
 
 (** The binder rows are EXISTS-FRESH on the algorithm side (2026-08-08), so
     soundness receives ONE binder name and must open the [a_wf_exp] families
@@ -1014,36 +986,31 @@ Proof.
   - apply a_wf_exp__app; auto.
 Qed.
 
-Lemma a_wf_exp_abs_pick : forall Θ e x,
-  {{ Θ ⊢ᵉ (exp_abs e) }}a ->
+(** Open a cofinite [a_wf_exp] family at ANY name. *)
+Lemma a_wf_exp_family_pick : forall Θ L e x,
+  (forall y, y `notin` L -> {{ Θ ⊢ᵉ (open_exp_wrt_exp e (exp_var_f y)) }}a) ->
   {{ Θ ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a.
 Proof.
-  intros Θ e x H; inversion H; subst.
+  intros Θ L e x Hf.
   destruct (atom_fresh (L `union` fvar_in_exp e `union` singleton x))
     as [z Hz].
   rewrite (subst_exp_in_exp_intro z e (exp_var_f x));
     [ | clear - Hz; fsetdec ].
-  apply a_wf_exp_subst_var.
-  match goal with
-  | Hf : forall y, y `notin` L -> {{ _ ⊢ᵉ _ }}a |- _ => apply Hf
-  end.
-  clear - Hz; fsetdec.
+  apply a_wf_exp_subst_var, Hf. clear - Hz; fsetdec.
+Qed.
+
+Lemma a_wf_exp_abs_pick : forall Θ e x,
+  {{ Θ ⊢ᵉ (exp_abs e) }}a ->
+  {{ Θ ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a.
+Proof.
+  intros Θ e x H; inversion H; subst; eapply a_wf_exp_family_pick; eassumption.
 Qed.
 
 Lemma a_wf_exp_abs_anno_pick : forall Θ A e x,
   {{ Θ ⊢ᵉ (exp_abs_anno A e) }}a ->
   {{ Θ ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a.
 Proof.
-  intros Θ A e x H; inversion H; subst.
-  destruct (atom_fresh (L `union` fvar_in_exp e `union` singleton x))
-    as [z Hz].
-  rewrite (subst_exp_in_exp_intro z e (exp_var_f x));
-    [ | clear - Hz; fsetdec ].
-  apply a_wf_exp_subst_var.
-  match goal with
-  | Hf : forall y, y `notin` L -> {{ _ ⊢ᵉ _ }}a |- _ => apply Hf
-  end.
-  clear - Hz; fsetdec.
+  intros Θ A e x H; inversion H; subst; eapply a_wf_exp_family_pick; eassumption.
 Qed.
 
 (** ⭐ The paper's (commented-out) "refinement preserves correspondence",
@@ -1088,16 +1055,9 @@ Corollary a_consis_chk_sound : forall Θ0 P P0 Θ1,
              {{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ Qt }}ad.
 Proof.
   intros * [Q Hc] Hwf HwfP0 HwfP.
-  destruct (a_consis_sound_aux Hc Hwf HwfP0 HwfP
-              ltac:(intros α Hα; clear - Hα; solve_notin_auto)
-              ltac:(intros β τ Hb; apply inter_empty_pointwise;
-                    intros α Hα; clear - Hα; solve_notin_auto)
-              ltac:(intros Θa β b Θb Heq Hne;
-                    apply inter_empty_pointwise;
-                    intros α Hα; clear - Hα; solve_notin_auto))
-    as [Hle [Hwf1 [_ [_ [[Qt [_ [Hcons Hrs]]] _]]]]].
-  split; [ exact Hle | ]. split; [ exact Hwf1 | ].
-  exists Qt. split; [ exact Hcons | ]. exact Hrs.
+  destruct (a_consis_isub_wf_nil Hc Hwf HwfP0 HwfP) as [Hle Hwf1].
+  destruct (a_consis_sound Hc Hwf HwfP0 HwfP) as [_ [[Qt [_ [Hcons Hrs]]] _]].
+  eauto 6.
 Qed.
 
 Lemma ad_refine_syn_arrow_inv : forall Θ Δ Q1 Q2 P1 P2,
@@ -1115,9 +1075,9 @@ Proof. intros * H; inversion H; subst; auto. Qed.
 (*  in the paper, [Θ2 ⊢ A' ≡ A]; the mechanized [a_consis_sound] hands    *)
 (*  back that colouring plus its CONSISTENCY with the subject painting,   *)
 (*  so what has to be supplied is a TARGET TRANSPORT: the refinement's    *)
-(*  target must be re-coloured into a painting of the ANNOTATION.  §4a–4e *)
-(*  are its kit, §4f the transport, and the lemma itself closes at the    *)
-(*  end of this section.                                                  *)
+(*  target must be re-coloured into a painting of the ANNOTATION.  §4a / *)
+(*  §4b are its kit, §4c the transport, and the lemma itself closes at    *)
+(*  the end of this section.                                              *)
 (* ===================================================================== *)
 
 (* --- §4a  the transport's kit (1): coercion identities ------------------ *)
@@ -1173,9 +1133,7 @@ Proof.
   f_equal; auto.
 Qed.
 
-(* --- §4b  the transport's kit (2): a Δ-variable moved into the context -- *)
-
-(* --- §4d  the transport's kit (4): the OCCURRENCE lemma ---------------- *)
+(* --- §4b  the transport's kit (2): the OCCURRENCE lemma ---------------- *)
 
 Lemma ptyp_to_uskl_syn_open : forall A α,
   ptyp_to_uskl_syn (open_ptyp_wrt_ptyp A (ptyp_var_f α))
@@ -1185,6 +1143,42 @@ Proof.
   rewrite ptyp_to_pskl_open, pskl_to_bskl_syn_open, bskl_to_uskl_open.
   reflexivity.
 Qed.
+
+(** [ad_pat_consis_subject_ftv]'s two untagged ∀ rows: open at a fresh β,
+    recurse through the family IH [H0], and strip β back off the three
+    disjuncts. *)
+Local Ltac subject_ftv_forall_row L Q A0 H0 γ Hγ Θ HeqA :=
+  inversion HeqA; subst;
+  let β := fresh "β" in let Hβ := fresh "Hβ" in
+  let Hopen := fresh "Hopen" in let Hlow := fresh "Hlow" in
+  let Hl := fresh "Hl" in let Hm := fresh "Hm" in let Hr := fresh "Hr" in
+  destruct (atom_fresh (L `union` singleton γ `union` dom Θ
+                          `union` ftvar_in_ptyp A0 `union` ftvar_in_bskl Q))
+    as [β Hβ];
+  assert (Hopen : γ `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A0 (ptyp_var_f β)))
+    by (pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A0 (ptyp_var_f β))
+          as Hlow; clear - Hγ Hlow; fsetdec);
+  destruct (H0 β ltac:(clear - Hβ; solve_notin_auto)
+              (open_ptyp_wrt_ptyp A0 (ptyp_var_f β))
+              ltac:(rewrite ptyp_to_uskl_syn_open; reflexivity)
+              γ Hopen) as [Hl | [Hm | Hr]];
+  [ left; simpl;
+    let Hup := fresh "Hup" in
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β)) as Hup;
+    simpl in Hup; clear - Hl Hup Hβ; fsetdec
+  | right; left;
+    let Hb := fresh "Hb" in let τ := fresh "τ" in
+    let Hc := fresh "Hc" in let Hb' := fresh "Hb'" in
+    destruct Hm as [Hb | [τ Hb]]; [ left | right; exists τ ];
+      (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+       [ discriminate | exact Hb' ])
+  | right; right;
+    let β' := fresh "β'" in let τ := fresh "τ" in let Hb := fresh "Hb" in
+    let Hin := fresh "Hin" in let Hc := fresh "Hc" in let Hb' := fresh "Hb'" in
+    destruct Hr as [β' [τ [Hb Hin]]]; exists β', τ;
+    split; [ | exact Hin ];
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+      [ discriminate | exact Hb' ] ].
 
 (** ⭐ A free variable of a TYPE-PAINTING subject either survives into the
     consistency's target or escapes through a DEFINITION (as the defined
@@ -1227,56 +1221,14 @@ Proof.
   - (* forall_inh_untagged *)
     destruct A as [ | n | α1 | A1 A2 | A0 ]; simpl in HeqA, Hγ;
       try discriminate; try solve [ clear - Hγ; fsetdec ].
-    inversion HeqA; subst.
-    destruct (atom_fresh (L `union` singleton γ `union` dom Θ
-                            `union` ftvar_in_ptyp A0 `union` ftvar_in_bskl Q))
-      as [β Hβ].
-    assert (Hopen : γ `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A0 (ptyp_var_f β))).
-    { pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A0 (ptyp_var_f β)) as Hlow.
-      clear - Hγ Hlow. fsetdec. }
-    destruct (H0 β ltac:(clear - Hβ; solve_notin_auto)
-                (open_ptyp_wrt_ptyp A0 (ptyp_var_f β))
-                ltac:(rewrite ptyp_to_uskl_syn_open; reflexivity)
-                γ Hopen) as [Hl | [Hm | Hr]].
-    + left. simpl.
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β)) as Hup.
-      simpl in Hup. clear - Hl Hup Hβ. fsetdec.
-    + right; left.
-      destruct Hm as [Hb | [τ Hb]]; [ left | right; exists τ ];
-        (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
-         [ discriminate | exact Hb' ]).
-    + right; right. destruct Hr as [β' [τ [Hb Hin]]]. exists β', τ.
-      split; [ | exact Hin ].
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
-        [ discriminate | exact Hb' ].
+    subject_ftv_forall_row L Q A0 H0 γ Hγ Θ HeqA.
   - (* forall_syn_tagged *)
     destruct A; simpl in HeqA, Hγ; try discriminate;
       try solve [ clear - Hγ; fsetdec ].
   - (* forall_syn *)
     destruct A as [ | n | α1 | A1 A2 | A0 ]; simpl in HeqA, Hγ;
       try discriminate; try solve [ clear - Hγ; fsetdec ].
-    inversion HeqA; subst.
-    destruct (atom_fresh (L `union` singleton γ `union` dom Θ
-                            `union` ftvar_in_ptyp A0 `union` ftvar_in_bskl Q))
-      as [β Hβ].
-    assert (Hopen : γ `in` ftvar_in_ptyp (open_ptyp_wrt_ptyp A0 (ptyp_var_f β))).
-    { pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A0 (ptyp_var_f β)) as Hlow.
-      clear - Hγ Hlow. fsetdec. }
-    destruct (H0 β ltac:(clear - Hβ; solve_notin_auto)
-                (open_ptyp_wrt_ptyp A0 (ptyp_var_f β))
-                ltac:(rewrite ptyp_to_uskl_syn_open; reflexivity)
-                γ Hopen) as [Hl | [Hm | Hr]].
-    + left. simpl.
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β)) as Hup.
-      simpl in Hup. clear - Hl Hup Hβ. fsetdec.
-    + right; left.
-      destruct Hm as [Hb | [τ Hb]]; [ left | right; exists τ ];
-        (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
-         [ discriminate | exact Hb' ]).
-    + right; right. destruct Hr as [β' [τ [Hb Hin]]]. exists β', τ.
-      split; [ | exact Hin ].
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
-        [ discriminate | exact Hb' ].
+    subject_ftv_forall_row L Q A0 H0 γ Hγ Θ HeqA.
   - (* ghostg *)
     destruct A; simpl in HeqA, Hγ; try discriminate; clear - Hγ; fsetdec.
   - (* dot_univ_ghost *)
@@ -1303,222 +1255,12 @@ Proof.
     + right; right; exact Hr.
 Qed.
 
-(* --- §4e  the transport's kit (5): renaming a rigid Θ-variable (and Δ) - *)
-
-(** The block of plain rigid variables the [__univ_ghost_fill] rows stack on
-    top of the context.  Only ever inspected to know that no DEFINITION
-    sits above the renamed variable. *)
-Inductive a_tvar_block : aenv -> Prop :=
-| a_tvar_block__nil : a_tvar_block nil
-| a_tvar_block__cons : forall α Θ,
-    a_tvar_block Θ -> a_tvar_block ((α ~ abind_tvar) ++ Θ).
-
-Lemma a_tvar_block_binds_def_inv : forall Θa α τ Θ,
-  a_tvar_block Θa ->
-  binds α (abind_flex_mono_def τ) (Θa ++ Θ) ->
-  binds α (abind_flex_mono_def τ) Θ.
-Proof.
-  intros Θa α τ Θ Hb; induction Hb; intros Hbind; simpl_env in Hbind.
-  - exact Hbind.
-  - apply IHHb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hbind) as [[_ Hc] | Hb'];
-      [ discriminate | exact Hb' ].
-Qed.
-
-(** ⭐ Renaming a rigid variable of the CONTEXT, and with it its Δ copy.
-    This is what turns the ONE fresh witness of the transport's two ∀ rows
-    into the cofinite family the rule demands: [__univ_ghost_fill] puts its
-    binder into Θ only ([Δ = Δ0]), [__all] into Θ AND Δ
-    ([Δ0 = α,Δx], [Δ = β,Δx]).  [Δ] is only ever read by [__ghost]'s
-    Δ-freeness premise, so it may shrink: [HΔ] says it holds nothing but
-    [Δ0]'s atoms and [β], and [HβΔ] that [β] enters it only in place of
-    [α] — which keeps a fill that mentions [α] (so [α ∉ Δ0]) Δ-free once
-    [α] reads [β].  [β] fresh for the TARGET keeps every fill Δ-free.
-    [a_tvar_block Θa] says no DEFINITION sits above the renamed slot,
-    which is how the two flexible rows keep their payload untouched: a
-    definition then lives BELOW [α], so [α] cannot occur in it. *)
-Lemma ad_refine_syn_rename_tvar : forall Θ0 Δ0 Q P,
-  {{ Θ0 ⨟ Δ0 ⊢ᵣ Q ⊳ P }}ad ->
-  forall Θa α Θ β Δ,
-  Θ0 = Θa ++ (α ~ abind_tvar) ++ Θ ->
-  a_tvar_block Θa ->
-  {{ ⊢ Θ0 }}a ->
-  β `notin` dom Θ0 `union` ftvar_in_bskl P ->
-  (forall γ, γ `in` Δ -> γ `in` Δ0 \/ γ = β) ->
-  (β `in` Δ -> α `in` Δ0) ->
-  {{ (Θa ++ (β ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ᵣ
-    (subst_bskl_in_bskl (bskl_var_f β) α Q)
-    ⊳ (subst_bskl_in_bskl (bskl_var_f β) α P) }}ad.
-Proof.
-  intros Θ0 Δ0 Q P H; induction H;
-    intros Θa α0 Θ' β Δ' Heq Hblk Hwf Hβ HΔ HβΔ; subst; simpl;
-    simpl ftvar_in_bskl in Hβ.
-  - (* unit *) apply ad_refine_syn__unit.
-  - (* var *) destruct_if; apply ad_refine_syn__var.
-  - (* arrow *)
-    apply ad_refine_syn_arrow_intro;
-      [ apply IHad_refine_syn1 | apply IHad_refine_syn2 ];
-      solve [ reflexivity | exact Hblk | exact Hwf | exact HΔ | exact HβΔ
-            | clear - Hβ; solve_notin_auto ].
-  - (* all : the binder goes into Θ AND Δ, on top of the block *)
-    apply ad_refine_syn_all_intro
-      with (L := L `union` singleton α0 `union` singleton β
-                   `union` dom (Θa ++ (α0 ~ abind_tvar) ++ Θ')).
-    intros γ Hγ.
-    rewrite !subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
-      try solve [ clear - Hγ; fsetdec | apply lc_bskl_var_f ].
-    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q' (bskl_var_f γ)) as Hup.
-    simpl in Hup. simpl_env.
-    apply (H1 γ ltac:(clear - Hγ; solve_notin_auto)
-             ((γ ~ abind_tvar) ++ Θa) α0 Θ' β (add γ Δ'));
-      [ simpl_env; reflexivity
-      | apply a_tvar_block__cons; exact Hblk
-      | apply a_wf_aenv__tvar;
-          [ clear - Hγ; simpl_env in *; solve_notin_auto | exact Hwf ]
-      | clear - Hβ Hγ Hup; simpl_env in *; fsetdec
-      | intros x Hx; destruct (x == γ) as [-> | Hne];
-          [ left; clear; fsetdec
-          | destruct (HΔ x ltac:(clear - Hx Hne; fsetdec)) as [Hx0 | ->];
-            [ left; clear - Hx0; fsetdec | right; reflexivity ] ]
-      | intros Hb; assert (Hb' : β `in` Δ') by (clear - Hb Hγ; fsetdec);
-          specialize (HβΔ Hb'); clear - HβΔ; fsetdec ].
-  - (* ghost : the fill is Δ-free; [α0] reads [β] only when [α0 ∉ Δ] *)
-    rewrite subst_var_bskl_syn.
-    apply ad_refine_syn__ghost.
-    rewrite ftvar_in_bskl_syn in Hβ.
-    pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (pskl_var_f β) α0)
-      as Hup. simpl in Hup.
-    assert (Hfree : forall x, x `in` Δ' ->
-              x `notin` ftvar_in_pskl (subst_pskl_in_pskl (pskl_var_f β) α0 P)).
-    { intros x Hx Hin.
-      destruct (AtomSetProperties.In_dec α0 (ftvar_in_pskl P)) as [Hα | Hα].
-      - (* [α0] occurs, so it is not in Δ, so [β] is not in Δ' *)
-        assert (Hβn : β `notin` Δ').
-        { intros Hb. specialize (HβΔ Hb). clear - H HβΔ Hα.
-          assert (Hc : α0 `in` Δ ∩ ftvar_in_pskl P) by fsetdec.
-          rewrite H in Hc. fsetdec. }
-        destruct (HΔ x Hx) as [Hx0 | ->]; [ | contradiction ].
-        assert (Hc : x `in` Δ ∩ ftvar_in_pskl P)
-          by (clear - Hx0 Hin Hup Hx Hβn; fsetdec).
-        rewrite H in Hc. clear - Hc; fsetdec.
-      - rewrite subst_pskl_in_pskl_fresh_eq in Hin; [ | exact Hα ].
-        destruct (HΔ x Hx) as [Hx0 | ->];
-          [ | clear - Hβ Hin; fsetdec ].
-        assert (Hc : x `in` Δ ∩ ftvar_in_pskl P)
-          by (clear - Hx0 Hin; fsetdec).
-        rewrite H in Hc. clear - Hc; fsetdec. }
-    intros x; split; intros Hx; [ | clear - Hx; fsetdec ].
-    exfalso. apply (Hfree x); clear - Hx; fsetdec.
-  - (* univ_ghost_remove *)
-    apply ad_refine_syn_univ_ghost_remove_intro.
-    apply IHad_refine_syn;
-      solve [ reflexivity | exact Hblk | exact Hwf | exact Hβ | exact HΔ
-            | exact HβΔ ].
-  - (* univ_ghost_fill : the binder goes into Θ, on top of the block *)
-    apply ad_refine_syn_univ_ghost_fill_intro
-      with (L := L `union` singleton α0 `union` singleton β
-                   `union` dom (Θa ++ (α0 ~ abind_tvar) ++ Θ')).
-    intros γ Hγ.
-    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
-      try solve [ clear - Hγ; fsetdec | apply lc_bskl_var_f ].
-    change (bskl_univ_ghost (subst_bskl_in_bskl (bskl_var_f β) α0 Q))
-      with (subst_bskl_in_bskl (bskl_var_f β) α0 (bskl_univ_ghost Q)).
-    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q' (bskl_var_f γ)) as Hup.
-    simpl in Hup. simpl_env.
-    apply (H1 γ ltac:(clear - Hγ; solve_notin_auto)
-             ((γ ~ abind_tvar) ++ Θa) α0 Θ' β Δ');
-      [ simpl_env; reflexivity
-      | apply a_tvar_block__cons; exact Hblk
-      | apply a_wf_aenv__tvar;
-          [ clear - Hγ; simpl_env in *; solve_notin_auto | exact Hwf ]
-      | clear - Hβ Hγ Hup; simpl_env in *; fsetdec
-      | exact HΔ
-      | exact HβΔ ].
-  - (* univ_ghost_keep *)
-    apply ad_refine_syn_univ_ghost_keep_intro.
-    apply IHad_refine_syn;
-      solve [ reflexivity | exact Hblk | exact Hwf | exact Hβ | exact HΔ
-            | exact HβΔ ].
-  - (* flex_l : the definition lives BELOW the renamed slot *)
-    assert (Hbτ : binds α (abind_flex_mono_def τ) Θ')
-      by (eapply a_tvar_block_binds_def_inv;
-          [ exact Hblk
-          | eapply binds_remove_mid;
-              [ exact H
-              | intros ->; apply binds_mid_eq in H;
-                [ discriminate | eapply a_wf_aenv_uniq; exact Hwf ] ] ]).
-    assert (Hne : α <> α0)
-      by (intros ->; apply binds_mid_eq in H;
-          [ discriminate | eapply a_wf_aenv_uniq; exact Hwf ]).
-    assert (Hfr : α0 `notin` ftvar_in_ptyp τ).
-    { intros Hin.
-      assert (Hwf' : {{ ⊢ Θ' }}a)
-        by (eapply a_wf_aenv_strip_prefix;
-            eapply a_wf_aenv_strip_prefix with (Ξ := Θa); simpl_env; exact Hwf).
-      assert (Hwfτ : a_wf_ptyp Θ' τ)
-        by (eapply a_wf_aenv_binds_def_wf; eassumption).
-      assert (Ht : a_binds_tvar α0 Θ')
-        by (eapply a_wf_ptyp_ftv_tvarish; eassumption).
-      assert (Huq : uniq (Θa ++ (α0 ~ abind_tvar) ++ Θ'))
-        by (eapply a_wf_aenv_uniq; exact Hwf).
-      destruct Ht as [Hb | [Hb | [t Hb]]]; apply binds_In in Hb;
-        clear - Hb Huq; solve_uniq. }
-    destruct_if as [Heqα | Hne2]; [ contradiction | ].
-    eapply ad_refine_syn__flex_l;
-      [ apply binds_app_3; unfold binds; simpl; right; exact Hbτ | ].
-    pose proof (IHad_refine_syn Θa α0 Θ' β Δ' eq_refl Hblk Hwf Hβ HΔ HβΔ)
-      as IH2.
-    rewrite (subst_bskl_in_bskl_fresh_eq (ptyp_to_bskl_syn τ)
-               (bskl_var_f β) α0) in IH2;
-      [ exact IH2 | rewrite ftvar_ptyp_to_bskl_syn; exact Hfr ].
-  - (* flex_r : as flex_l; [β], fresh for the context, misses the definition *)
-    assert (Hbτ : binds α (abind_flex_mono_def τ) Θ')
-      by (eapply a_tvar_block_binds_def_inv;
-          [ exact Hblk
-          | eapply binds_remove_mid;
-              [ exact H
-              | intros ->; apply binds_mid_eq in H;
-                [ discriminate | eapply a_wf_aenv_uniq; exact Hwf ] ] ]).
-    assert (Hne : α <> α0)
-      by (intros ->; apply binds_mid_eq in H;
-          [ discriminate | eapply a_wf_aenv_uniq; exact Hwf ]).
-    assert (Hwf' : {{ ⊢ Θ' }}a)
-      by (eapply a_wf_aenv_strip_prefix;
-          eapply a_wf_aenv_strip_prefix with (Ξ := Θa); simpl_env; exact Hwf).
-    assert (Hwfτ : a_wf_ptyp Θ' τ)
-      by (eapply a_wf_aenv_binds_def_wf; eassumption).
-    assert (Huq : uniq (Θa ++ (α0 ~ abind_tvar) ++ Θ'))
-      by (eapply a_wf_aenv_uniq; exact Hwf).
-    assert (Hfr : α0 `notin` ftvar_in_ptyp τ).
-    { intros Hin.
-      assert (Ht : a_binds_tvar α0 Θ')
-        by (eapply a_wf_ptyp_ftv_tvarish; eassumption).
-      destruct Ht as [Hb | [Hb | [t Hb]]]; apply binds_In in Hb;
-        clear - Hb Huq; solve_uniq. }
-    assert (Hfrβ : β `notin` ftvar_in_ptyp τ).
-    { intros Hin.
-      assert (Ht : a_binds_tvar β Θ')
-        by (eapply a_wf_ptyp_ftv_tvarish; eassumption).
-      destruct Ht as [Hb | [Hb | [t Hb]]]; apply binds_In in Hb;
-        simpl_env in Hβ; clear - Hb Hβ; fsetdec. }
-    destruct_if as [Heqα | Hne2]; [ contradiction | ].
-    eapply ad_refine_syn__flex_r;
-      [ apply binds_app_3; unfold binds; simpl; right; exact Hbτ | ].
-    pose proof (IHad_refine_syn Θa α0 Θ' β Δ' eq_refl Hblk Hwf
-                  ltac:(rewrite ftvar_ptyp_to_bskl_syn;
-                        clear - Hβ Hfrβ; solve_notin_auto)
-                  HΔ HβΔ) as IH2.
-    rewrite (subst_bskl_in_bskl_fresh_eq (ptyp_to_bskl_syn τ)
-               (bskl_var_f β) α0) in IH2;
-      [ exact IH2 | rewrite ftvar_ptyp_to_bskl_syn; exact Hfr ].
-Qed.
-
-(* --- §4f  the TARGET TRANSPORT ----------------------------------------- *)
+(* --- §4c  the TARGET TRANSPORT ----------------------------------------- *)
 
 (** The [__ghost] answer, which every row of the transport shares: a ghost
     source is always answered by the ALL-SYNTHESISED painting of the
     annotation.  The rule wants it Δ-FREE, which is what the occurrence
-    lemma (§4d) supplies: the target's own fill is Δ-free by the
+    lemma (§4b) supplies: the target's own fill is Δ-free by the
     refinement's [__ghost] premise, and [HnfΔ] / [HdfΔ] keep Δ off the
     consistency context's flexibles and definition bodies. *)
 Lemma transport_ghost_answer : forall Ψ Θc A Qt Θr Δ P,
@@ -1725,16 +1467,22 @@ Proof.
                        `union` singleton α `union` ftvar_in_bskl Qs
                        `union` ftvar_in_bskl (btyp_to_bskl B0)).
         intros β Hβ.
-        pose proof (@ad_refine_syn_rename_tvar _ _ _ _ Href0
-                      (nil : aenv) α Θx β (add β Δx)
-                      ltac:(simpl_env; reflexivity)
-                      a_tvar_block__nil Hwfr'
-                      ltac:(simpl_env; clear - Hβ Hα; solve_notin_auto)
-                      ltac:(intros x Hx; destruct (x == β) as [-> | Hne];
-                            [ right; reflexivity
-                            | left; clear - Hx Hne; fsetdec ])
-                      ltac:(intros _; clear; fsetdec)) as Hren.
-        simpl_env in Hren.
+        pose proof (@ad_refine_syn_rename_gen _ _ _ _ Href0
+                      ((β ~ abind_tvar) ++ Θx) α β
+                      ltac:(clear; fsetdec)
+                      ltac:(clear - Hβ; solve_notin_auto)
+                      ltac:(intros β0 τ Hbd;
+                            destruct (binds_cons_1 _ _ _ _ _ _ Hbd)
+                              as [[_ Hcx] | Hb']; [ discriminate | ];
+                            pose proof (@a_wf_aenv_def_ftv_dom _ _ _ Hwfr Hb') as Hsc;
+                            pose proof (binds_In _ _ _ _ Hb') as Hin;
+                            split; [ apply binds_cons_3; exact Hb' | ];
+                            split; [ intros ->; clear - Hin Hα; fsetdec | ];
+                            split; intro Hc0; apply Hsc in Hc0;
+                              [ clear - Hc0 Hα; fsetdec
+                              | clear - Hc0 Hβ; fsetdec ])) as Hren.
+        apply ad_refine_syn_delta_mono with (Δ := add β Δx) in Hren;
+          [ | clear; fsetdec ].
         rewrite <- subst_bskl_in_bskl_intro in Hren;
           [ | clear - Hα; fsetdec ].
         rewrite subst_bskl_in_bskl_spec in Hren.
@@ -1841,15 +1589,12 @@ Proof.
                        `union` singleton α `union` ftvar_in_bskl Qs
                        `union` ftvar_in_bskl (btyp_to_bskl B0)).
         intros β Hβ.
-        pose proof (@ad_refine_syn_rename_tvar _ _ _ _ Href0
-                      (nil : aenv) α Θx β Δx
-                      ltac:(simpl_env; reflexivity)
-                      a_tvar_block__nil
-                      ltac:(apply a_wf_aenv__tvar;
-                            [ clear - Hα; solve_notin_auto | exact Hwfr ])
-                      ltac:(simpl_env; clear - Hβ Hα; solve_notin_auto)
-                      ltac:(intros x Hx; left; exact Hx)
-                      ltac:(intros Hb; exfalso; clear - Hb Hβ; fsetdec)) as Hren.
+        pose proof (@ad_refine_syn_rename_ctx_gen nil α Θx _ _ _ β Href0
+                      ltac:(simpl_env; clear - Hα; solve_notin_auto)
+                      ltac:(intros β0 τ Hbd; simpl_env in Hbd;
+                            pose proof (@a_wf_aenv_def_ftv_dom _ _ _ Hwfr Hbd) as Hsc;
+                            intro Hc0; apply Hsc in Hc0; clear - Hc0 Hα; fsetdec)
+                      ltac:(clear - Hβ; solve_notin_auto)) as Hren.
         simpl_env in Hren. simpl in Hren.
         rewrite subst_bskl_in_bskl_fresh_eq in Hren;
           [ | clear - Hα; simpl; fsetdec ].
@@ -1951,7 +1696,7 @@ Proof.
       exists B. split; [ exact HeqB | exact Href' ].
 Qed.
 
-(** ⭐ WHY THE TWO CONTEXTS ARE DECOUPLED (§4f), and what each hypothesis
+(** ⭐ WHY THE TWO CONTEXTS ARE DECOUPLED (§4c), and what each hypothesis
     buys.  [Θc] is the consistency's context and [Θr ⨟ Δ] the
     refinement's, tied by [Hdefs] and [Hflex]; each ∀ row then recurses
     exactly where its own rule puts the binder and NO context move is
@@ -1962,7 +1707,7 @@ Qed.
     The loads the hypotheses carry:
     - [Hvis] ("every free variable of A is in Δ or a tvar of Θr") is what
       the ∀ rows maintain.  The [__ghost] row needs A Δ-FREE, which the
-      occurrence lemma (§4d) gives: the target's fill is Δ-free by the
+      occurrence lemma (§4b) gives: the target's fill is Δ-free by the
       refinement's own [__ghost] premise, and the two Δ invariants keep Δ
       off [Θc]'s flexibles and definition bodies (an [__all] witness
       enters Δ fresh for [Θc]).
@@ -1971,8 +1716,9 @@ Qed.
       ([a_wf_aenv__flex_def]), so the recursive answer is forced to be the
       synthesised painting the rules demand — [btyp_to_bskl_mono_syn] (§4a).
     - The cofinite families of the two ∀ rows come from ONE fresh witness by
-      the renaming of §4e (a rigid Θ-variable, for [__univ_ghost_fill];
-      renamed together with its Δ copy, for [__all]).
+      renaming a rigid Θ-variable ([ad_refine_syn_rename_ctx_gen], for
+      [__univ_ghost_fill]; [ad_refine_syn_rename_gen] renames it together
+      with its Δ copy, for [__all]).
 
     ⚙ Read as consis-to-[≡ᵗ] the same fact is what
     thm:sound-type-inference's Freeze case needs (the paper's "which further
@@ -2214,16 +1960,8 @@ Proof.
                 (a_wf_exp_weaken_cons x (abind_var_skl P)
                    (@a_wf_exp_abs_pick _ _ x Hexp)))
       as [Hle [Hwfout [Qt [HeQt [Hpat Href]]]]].
-    assert (Huniq : uniq (Ξ ++ (x ~ abind_var_skl P) ++ Θ2))
-      by (apply a_wf_aenv_uniq; exact Hwfout).
-    assert (Hlc2 : lc_aenv Θ2).
-    { apply a_wf_aenv_lc_aenv in Hwfout.
-      apply lc_aenv_app_inv in Hwfout as [_ Hwfout].
-      apply lc_aenv_app_inv in Hwfout as [_ Hwfout]. exact Hwfout. }
-    assert (Hisub : Θ0 ⊴ (Ξ ++ Θ2))
-      by (eapply a_isub_peel_var_skl_mid; eassumption).
-    assert (Hwf2 : {{ ⊢ (Ξ ++ Θ2) }}a)
-      by (eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []).
+    destruct (@a_isub_wf_peel_tm_mid _ _ _ _ _ ltac:(eassumption) Hle Hwfout I)
+      as [Hisub Hwf2].
     assert (Hmc : mod_comp_sk (bskl_arrow (pskl_to_bskl_inh P) Qt) m).
     { pose proof (ad_pat_mod_comp_sk Hpat) as Hmq.
       destruct Hshape as [[HP0 [HP HQ0]] | HP0]; subst; simpl.
@@ -2263,7 +2001,7 @@ Proof.
       | clear - H2; simpl_env in *; fsetdec ].
   - (* AP-AbsAnno *)
     destruct (a_split_sk_shape H0 Hmod) as [HeqΘ Hshape]; subst Θ1.
-    destruct (a_wf_exp_abs_anno_inv Hexp) as [HwfA _].
+    pose proof (a_wf_exp_abs_anno_inv Hexp) as HwfA.
     assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q0 }}a /\
                    a_sk_mode_compat (decr_mode m) Q0).
     { destruct Hshape as [[HP0 [HP HQ0]] | HP0]; subst.
@@ -2288,16 +2026,8 @@ Proof.
                 (a_wf_exp_weaken_cons x (abind_var_typ A)
                    (a_wf_exp_isub (@a_wf_exp_abs_anno_pick _ _ _ x Hexp) Hlec)))
       as [Hle [Hwfout [Qt [HeQt [Hpat Href]]]]].
-    assert (Huniq : uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θ3))
-      by (apply a_wf_aenv_uniq; exact Hwfout).
-    assert (Hlc3 : lc_aenv Θ3).
-    { apply a_wf_aenv_lc_aenv in Hwfout.
-      apply lc_aenv_app_inv in Hwfout as [_ Hwfout].
-      apply lc_aenv_app_inv in Hwfout as [_ Hwfout]. exact Hwfout. }
-    assert (Hisub : Θ2 ⊴ (Ξ ++ Θ3))
-      by (eapply a_isub_peel_var_typ_mid; eassumption).
-    assert (Hwf3 : {{ ⊢ (Ξ ++ Θ3) }}a)
-      by (eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []).
+    destruct (@a_isub_wf_peel_tm_mid _ _ _ _ _ ltac:(eassumption) Hle Hwfout I)
+      as [Hisub Hwf3].
     assert (Hisub0 : Θ0 ⊴ (Ξ ++ Θ3)) by (eapply a_isub_trans; eassumption).
     assert (Hbody : forall y,
               {{ ((y ~ abind_var_typ A) ++ (Ξ ++ Θ3)) ⊢ˢ[ decr_mode m ]
@@ -2372,16 +2102,8 @@ Proof.
       as [Hle [Hwfout [Qt [HeQt [Hpat Href]]]]].
     destruct (ad_refine_syn_syn_l Href pskl_ghost eq_refl) as [P' HQt].
     subst Qt.
-    assert (Huniq : uniq (Ξ ++ (x ~ abind_var_skl pskl_ghost) ++ Θ1))
-      by (apply a_wf_aenv_uniq; exact Hwfout).
-    assert (Hlc1 : lc_aenv Θ1).
-    { apply a_wf_aenv_lc_aenv in Hwfout.
-      apply lc_aenv_app_inv in Hwfout as [_ Hwfout].
-      apply lc_aenv_app_inv in Hwfout as [_ Hwfout]. exact Hwfout. }
-    assert (Hisub : Θ0 ⊴ (Ξ ++ Θ1))
-      by (eapply a_isub_peel_var_skl_mid; eassumption).
-    assert (Hwf1 : {{ ⊢ (Ξ ++ Θ1) }}a)
-      by (eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []).
+    destruct (@a_isub_wf_peel_tm_mid _ _ _ _ _ ltac:(eassumption) Hle Hwfout I)
+      as [Hisub Hwf1].
     split; [ exact Hisub | ]. split; [ exact Hwf1 | ].
     exists (bskl_univ_ghost (bskl_arrow bskl_ghost (pskl_to_bskl_syn P'))).
     split.
@@ -2400,7 +2122,7 @@ Proof.
         with (pskl_to_bskl_syn (pskl_univ_ghost (pskl_arrow pskl_ghost P'))).
       apply ad_refine_syn__ghost. clear; fsetdec.
   - (* AP-AbsAnnoCheck *)
-    destruct (a_wf_exp_abs_anno_inv Hexp) as [HwfA _].
+    pose proof (a_wf_exp_abs_anno_inv Hexp) as HwfA.
     assert (Hxd : x `notin` dom Θ0) by (clear - H0; simpl_env in *; fsetdec).
     assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ0) }}a)
       by (apply a_wf_aenv__var_typ;
@@ -2412,16 +2134,8 @@ Proof.
       as [Hle [Hwfout [Qt [HeQt [Hpat Href]]]]].
     destruct (ad_refine_syn_syn_l Href pskl_ghost eq_refl) as [P' HQt].
     subst Qt.
-    assert (Huniq : uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θ1))
-      by (apply a_wf_aenv_uniq; exact Hwfout).
-    assert (Hlc1 : lc_aenv Θ1).
-    { apply a_wf_aenv_lc_aenv in Hwfout.
-      apply lc_aenv_app_inv in Hwfout as [_ Hwfout].
-      apply lc_aenv_app_inv in Hwfout as [_ Hwfout]. exact Hwfout. }
-    assert (Hisub : Θ0 ⊴ (Ξ ++ Θ1))
-      by (eapply a_isub_peel_var_typ_mid; eassumption).
-    assert (Hwf1 : {{ ⊢ (Ξ ++ Θ1) }}a)
-      by (eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []).
+    destruct (@a_isub_wf_peel_tm_mid _ _ _ _ _ ltac:(eassumption) Hle Hwfout I)
+      as [Hisub Hwf1].
     assert (HwfA1 : a_wf_ptyp (Ξ ++ Θ1) A)
       by (eapply a_wf_ptyp_isub; [ exact HwfA | exact Hisub ]).
     split; [ exact Hisub | ]. split; [ exact Hwf1 | ].
