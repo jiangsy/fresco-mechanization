@@ -488,11 +488,14 @@ Other UNCERTAIN items: G-50 and G-51 (implementation) and G-54 (SolS-ForallR sor
 
 ## F. Mechanization to-dos (ours, not the paper's)
 
-### G-53 Restore the deleted paper lemma `a_looksub_lookeq_subst_stable` / `_rev`
-- **Kind**: Mechanization to-do · **Status**: LIVE
-- **What**: both directions of lemma:constraint-collection-stable-substitution (see G-05) were deleted as "unused" in efc8707 (2026-10-07). They still have "kept on purpose" banners at fresco/algo/sub/prop_looksub.v:680-745. The keep rule in CLAUDE.md (a paper lemma with no consumer) applies.
-- **Dangling citations**: fresco/algo/sub/look/prop_sub_cstr.v:137 and :2299 (`a_looksub_subst_stable_rev`, "Qed"); fresco/deco_algo/prop_decorate_sub.v:2287 and :2463. The ForallL rows now use `a_looksub_lookeq_subst_gen_size` (prop_decorate_sub.v:2596).
-- **Do**: restore both lemmas from efc8707^, with the Barendregt premise, then `make coq`.
+### G-53 E.8 (stability of constraint collection): restore a fixed-output lemma, or accept the up-to-renaming one?
+- **Kind**: Mechanization to-do · **Status**: OPEN — owner's decision (parked 2026-10-10)
+- **Paper**: Lemma E.8, lemma:constraint-collection-stable-substitution (paper:appendices/subtyping-proofs.tex:506-522): if β ≠ α and α ∉ ftv(Q), collecting for α from P gives the SAME `Ξ ; 𝒞` as from P[Q/β], in both directions ("iff"). The paper uses the forward direction in the ForallL case of decorated-subtyping soundness and the reverse once, at subtyping-proofs.tex:2632 (ForallL case of P6-Ss).
+- **History**: the fixed-output forms `a_looksub_lookeq_subst_stable` / `_rev` (forward and reverse, both needing the Barendregt premise `ftv Q ⊆ {α} ∪ ftv(Θ)` — without it the statement is false, G-05) were Qed with no consumer and were deleted as unused in efc8707 (2026-10-07).
+- **What exists now**: `a_looksub_lookeq_subst_gen_size` / `a_looksub_subst_gen` (fresco/deco_algo/prop_decorate_sub.v §14). FORWARD direction only; no Barendregt premise; outputs are existential — `Ξ' ; 𝒞'` whose fresh binders may be chosen away from any set L, and whose constraints solve to the same decorated result (`𝒞' ⊩ ψa ⤳ Ψa`). That is "the same up to renaming of the fresh binders", which is what the decorated ForallL case needs. The reverse direction is not mechanized; the mechanization proves P6-Ss by the ρ-route, which never needs to undo a substitution.
+- **Option A — accept up to renaming**: map E.8 to the existing lemma, noting "forward direction, outputs up to renaming of fresh binders". Then fix the stale texts: the "kept on purpose" banner at fresco/algo/sub/prop_looksub.v (§4/§4b, ≈:667-720), the citations of the deleted lemmas at fresco/algo/sub/look/prop_sub_cstr.v (≈:137, ≈:2299) and fresco/deco_algo/prop_decorate_sub.v (≈:2287, ≈:2463), and the PROGRESS.md Part 1 row. (A draft of exactly these comment edits was made and reverted on 2026-10-10 pending this decision.)
+- **Option B — restore a paper-faithful lemma**: bring back both directions from efc8707^ (adjusted to current names), with the Barendregt premise; still no consumer. Optionally state a two-directional "up to renaming" version instead, closer to the paper's "iff".
+- **Either way**: the paper's statement needs the Barendregt condition or an up-to-renaming reading (G-05).
 
 ### G-54 SolS-ForallR's left-hand `A`: a slip, or a real restriction?
 - **Kind**: Mechanization to-do (ambiguity) · **Status**: UNCERTAIN
