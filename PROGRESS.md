@@ -181,6 +181,28 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Use caller orders at inference entry points
+
+The skeleton- and type-inference completeness entry points now invoke
+induction on the caller's existing order proof. Removed the detour through
+`e_pat_order_total` / `e_typing_order_total` and the extra local motive.
+The answer equality also identifies the raw result directly, replacing a
+separate congruence assertion. Both retained entry-point proof bodies
+shrink from 13 to 10 nonblank, noncomment lines.
+
+Removed four further unused internal entry points:
+`e_sub_flex_impl_complete`, `e_sub_run_complete`,
+`e_extract_run_complete`, and `e_pat_run_complete`.
+Updated the remaining headers. Type inference's live runner entry point
+and every existing theorem statement remain unchanged.
+
+**Reduction:** 89 nonblank, noncomment Coq lines. No new helpers or
+computational changes.
+
+**Validation:** full `make coq`; all 34 headline assumption checks closed
+under the global context. Extracted OCaml unchanged.
+
+
 ## 2026-10-11 — Shared substitution coverage without remove-set detours
 
 Added `subst_pskl_preserves_cover` in `ext_algo/prop_consis.v`: substituting

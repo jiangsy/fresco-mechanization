@@ -1379,7 +1379,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §8  THE THREE HEADLINES                                               *)
+(*  §8  The subtyping implementation entry point                           *)
 (*                                                                        *)
 (*  prop_consis_complete.v §8's shape, for the SUBTYPING runner — and      *)
 (*  UNRESTRICTED: level 5's ghost-free rung was lifted (§8c.17), so         *)
@@ -1411,59 +1411,6 @@ Proof.
     try rewrite Hcl in Heq; cbn [sub_call_answer proj1_sig] in Heq;
     [ inversion Heq; subst | discriminate ].
   eexists; exists ps.
-  split; [ reflexivity | ].
-  split; [ exact Hav | ]. split; [ exact HS | ].
-  split; [ exact HT | exact HQ ].
-Qed.
-
-Corollary e_sub_flex_impl_complete : forall S0 NM M P0 Θ0 Ξ α
-    (HP0 : lc_pskl P0) (HD : aenv_defs_mono (Ξ ++ Θ0))
-    (H : e_sub_flex_order S0 NM M P0 Θ0 Ξ α) Sd Θd Qd,
-  e_sub_flex S0 NM M P0 Θ0 Ξ α Qd Sd Θd ->
-  uniq (Ξ ++ Θ0) ->
-  ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P0 ∪ singleton α [<=] S0 ->
-  exists r ps,
-    e_sub_flex_impl S0 NM M P0 Θ0 Ξ α HP0 HD H = Some r
-    /\ (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
-    /\ swaps_atoms ps Sd [=] sb_supply (proj1_sig r)
-    /\ swaps_aenv ps Θd = sb_ctx (proj1_sig r)
-    /\ swaps_pskl ps Qd = sb_out (proj1_sig r).
-Proof.
-  intros * Hd Hu Hcov.
-  set (Ho := e_sub_flex_order_to_call _ _ _ _ _ _ _ H).
-  destruct (e_sub_call_impl_complete Ho I HP0 HD Ho Hu Hcov Sd Θd Qd Hd)
-    as [r0 [ps [Heq [Hav [HS [HT HQ]]]]]].
-  unfold e_sub_flex_impl. fold Ho.
-  destruct (e_sub_call_impl (sub_call_flex Ξ α) S0 NM M P0 Θ0 I HP0 HD Ho)
-    as [ [rr Hrr] | ] eqn:Hcl;
-    try rewrite Hcl in Heq; cbn [sub_call_answer proj1_sig] in Heq;
-    [ inversion Heq; subst | discriminate ].
-  eexists; exists ps.
-  split; [ reflexivity | ].
-  split; [ exact Hav | ]. split; [ exact HS | ].
-  split; [ exact HT | exact HQ ].
-Qed.
-
-(** ⭐ The subtyping headline, over the argument-free runner of
-    def_sub_impl.v §4 — the twin of [e_sub_run_sound]. *)
-Theorem e_sub_run_complete : forall S0 NM M P0 Θ0 P
-    (HP : lc_pskl P) (HP0 : lc_pskl P0) (HD : aenv_defs_mono Θ0) Sd Θd Qd,
-  {{ S0 ↝ Sd ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Qd ⊣ Θd }}e ->
-  uniq Θ0 ->
-  ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P [<=] S0 ->
-  exists r ps,
-    e_sub_run S0 NM M P0 Θ0 P HP HP0 HD = Some r
-    /\ (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
-    /\ swaps_atoms ps Sd [=] sb_supply r
-    /\ swaps_aenv ps Θd = sb_ctx r
-    /\ swaps_pskl ps Qd = sb_out r.
-Proof.
-  intros * Hd Hu Hcov. unfold e_sub_run.
-  destruct (e_sub_impl_complete HP HP0 HD
-              (@e_sub_order_total S0 NM M P0 Θ0 P HP HP0 HD)
-              Hd Hu Hcov) as [r [ps [Heq [Hav [HS [HT HQ]]]]]].
-  rewrite Heq.
-  exists (proj1_sig r), ps.
   split; [ reflexivity | ].
   split; [ exact Hav | ]. split; [ exact HS | ].
   split; [ exact HT | exact HQ ].

@@ -2456,14 +2456,11 @@ Corollary e_typing_impl_complete : forall S0 m Θ0 P0 e
     /\ swaps_ptyp ps Bd = ty_out (proj1_sig r).
 Proof.
   intros * Hd HP0 He HΘ HD Hu Hcov.
-  pose proof (e_typing_impl_complete_ind
-                (e_typing_order_total S0 m Θ0 P0 e)) as Hmot.
-  destruct (Hmot H HP0 He HΘ HD Hu Hcov Sd Θd Bd Hd)
+  destruct (e_typing_impl_complete_ind H H HP0 He HΘ HD Hu Hcov Hd)
     as [r0 [ps [Hx [Hav [HS [HT HQ]]]]]].
   destruct (e_typing_impl S0 m Θ0 P0 e H) as [ [rr Hrr] | ] eqn:Hcl;
     try rewrite Hcl in Hx; cbn [typing_answer proj1_sig] in Hx;
-    [ | discriminate ].
-  assert (Heqr : r0 = rr) by congruence. subst r0.
+    [ inversion Hx; subst r0 | discriminate ].
   eexists; exists ps.
   split; [ reflexivity | ].
   split; [ exact Hav | ]. split; [ exact HS | ].

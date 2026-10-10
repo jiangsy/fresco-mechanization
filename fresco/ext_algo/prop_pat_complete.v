@@ -10,7 +10,7 @@
         the level's first half is a three-row case analysis
     §5  THE MOTIVE for [e_pat]
     §6  THE MAIN INDUCTION — one bullet per clause of the runner
-    §7  the headlines, over [e_pat_impl] and the argument-free [e_pat_run]
+    §7  the skeleton-inference implementation entry point
 
     ⭐ THE RUNNERS ABOVE SUBTYPING ARE INDEPENDENT.  [e_pat_impl] calls
     [e_sub_impl], [e_split_impl] and itself; [e_typing_impl] calls those
@@ -465,7 +465,6 @@ Arguments e_split_flex_realign {S0 Θ0 α Qd Sd Θd ad bd} _ _ _ _.
 (*  the runner performs is [defs_mono_ck], the two skeletons it hands the  *)
 (*  consistency call being variables.                                     *)
 (* ===================================================================== *)
-
 
 Lemma e_split_impl_complete : forall S0 Θ0 P0 Sd Θd Pd Qd,
   {{ S0 ↝ Sd ⊨ Θ0 ⊲ P0 ▹ Pd ⇢ Qd ⊣ Θd }}e ->
@@ -1545,7 +1544,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §7  THE HEADLINES                                                     *)
+(*  §7  The skeleton-inference implementation entry point                  *)
 (*                                                                        *)
 (*  prop_sub_complete.v §8's shape.  ⚙ [e_split] has no argument-free      *)
 (*  runner to state a second headline over — [e_split_impl] already takes  *)
@@ -1571,39 +1570,12 @@ Corollary e_pat_impl_complete : forall S0 m Θ0 P0 e
     /\ swaps_pskl ps Qd = pt_skel (proj1_sig r).
 Proof.
   intros * Hd HP0 He HΘ HD Hu Hcov.
-  pose proof (e_pat_impl_complete_ind (e_pat_order_total S0 m Θ0 P0 e))
-    as Hmot.
-  destruct (Hmot H HP0 He HΘ HD Hu Hcov Sd Θd Qd Hd)
+  destruct (e_pat_impl_complete_ind H H HP0 He HΘ HD Hu Hcov Hd)
     as [r0 [ps [Hx [Hav [HS [HT HQ]]]]]].
   destruct (e_pat_impl S0 m Θ0 P0 e H) as [ [rr Hrr] | ] eqn:Hcl;
     try rewrite Hcl in Hx; cbn [pat_answer proj1_sig] in Hx;
-    [ | discriminate ].
-  assert (Heqr : r0 = rr) by congruence. subst r0.
+    [ inversion Hx; subst r0 | discriminate ].
   eexists; exists ps.
-  split; [ reflexivity | ].
-  split; [ exact Hav | ]. split; [ exact HS | ].
-  split; [ exact HT | exact HQ ].
-Qed.
-
-(** ⭐ The skeleton-inference headline, over the argument-free runner of
-    def_pat_impl.v §7 — the twin of [e_pat_run_sound]. *)
-Theorem e_pat_run_complete : forall S0 m Θ0 P0 e Sd Θd Qd,
-  {{ S0 ↝ Sd ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Qd ⊣ Θd }}e ->
-  lc_pskl P0 -> lc_exp e -> lc_aenv Θ0 -> aenv_defs_mono Θ0 -> uniq Θ0 ->
-  ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ fvar_in_exp e ∪ ftvar_in_exp e
-    [<=] S0 ->
-  exists r ps,
-    e_pat_run S0 m Θ0 P0 e = Some r
-    /\ (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
-    /\ swaps_atoms ps Sd [=] pt_supply r
-    /\ swaps_aenv ps Θd = pt_ctx r
-    /\ swaps_pskl ps Qd = pt_skel r.
-Proof.
-  intros * Hd HP0 He HΘ HD Hu Hcov. unfold e_pat_run.
-  destruct (e_pat_impl_complete (e_pat_order_total S0 m Θ0 P0 e)
-              Hd HP0 He HΘ HD Hu Hcov) as [r [ps [Heq [Hav [HS [HT HQ]]]]]].
-  rewrite Heq.
-  exists (proj1_sig r), ps.
   split; [ reflexivity | ].
   split; [ exact Hav | ]. split; [ exact HS | ].
   split; [ exact HT | exact HQ ].

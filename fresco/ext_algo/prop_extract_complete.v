@@ -233,18 +233,3 @@ Proof.
   end.
   discriminate.
 Qed.
-
-Lemma e_extract_run_complete : forall S0 Θ0 NM α m P P' HP HP' S1 Ξ Q,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}e ->
-  add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
-  e_extract_run S0 Θ0 NM α m P P' HP HP' <> None.
-Proof.
-  intros * Hd Hcov. unfold e_extract_run.
-  pose proof (e_extract_impl_complete HP HP'
-    (@e_extract_order_total S0 Θ0 NM α m P P' HP HP') Hd Hcov) as Hne.
-  revert Hne.
-  destruct (e_extract_impl S0 Θ0 NM α m P P' HP HP'
-    (@e_extract_order_total S0 Θ0 NM α m P P' HP HP')) as [[r Hr] | ];
-    intros Hne; [ discriminate | exact (False_ind _ (Hne eq_refl)) ].
-Qed.
-
