@@ -181,6 +181,25 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Derivation induction for equality collection determinism
+
+Replaced `lookeq_rel_stmt`, its size-bounded proof `e_lookeq_rel_n`, and
+the wrapper with a direct proof of `e_lookeq_rel`. Induction on the second
+derivation fixes each recursive input supply; the existing renamings move
+the first derivation onto that supply. Removed numeric bounds, size
+arithmetic, and redundant inversions of the second derivation. Retain that
+derivation in the induction motive for the absence-first collapse, which
+handles overlapping rules uniformly.
+
+**Reduction:** 73 nonblank, noncomment Coq lines, with no new helpers.
+The combined logical proof bodies shrink from 288 to 230 lines. The
+mathematical statement of `e_lookeq_rel` and all other retained declarations
+are unchanged. No computational definitions changed.
+
+**Validation:** full `make coq`; all 34 headline assumption checks closed
+under the global context. Extracted OCaml unchanged.
+
+
 ## 2026-10-11 — Derivation induction for guess determinism
 
 Replaced the size-bounded `e_guess_mono_rel_n` proof plus its corollary with

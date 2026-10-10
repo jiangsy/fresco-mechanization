@@ -33,12 +33,10 @@
     proved by induction on the second derivation: each renaming aligns the
     first derivation with the second's fixed input supply before recursion.
 
-    ⚙ TWO CONVENTIONS THIS FILE KEEPS THROUGHOUT.  (1) Every [_rel_stmt]
+    ⚙ The remaining size-bounded [_rel_stmt] predicates each
     puts the DERIVATION before its size and coverage premises, so that
     [IH _ … _ D ltac:(lia) …] elaborates the [ltac:] AFTER [D] has fixed
     every underscore — in front of [D] the same [ltac:] runs against evars.
-    (2) Names are taken off [match type of D1], never off [inversion]'s
-    generated ones.
 
     ⛔ WHAT IT TOOK.  The headline was refuted THREE TIMES on the way, each
     time by a missing DISPATCH GUARD one layer further down, and each
@@ -431,76 +429,60 @@ Qed.
 (*  §3  ⭐ THE COLLECTION'S EQ LAYER IS DETERMINISTIC UP TO A FRESH       *)
 (*      RENAMING                                                          *)
 (*                                                                        *)
-(*  ⚙ THE DERIVATION COMES FIRST in the statement, before the size and    *)
-(*  coverage premises.  That is deliberate: an [IH _ … _ D ltac:(lia) …]   *)
-(*  elaborates the [ltac:] AFTER [D] has fixed every underscore, where     *)
-(*  the same [ltac:] in front of [D] would run against evars.             *)
-(*                                                                        *)
-(*  ⚙ SIZE induction, not induction on either derivation — [LE-Arrow]      *)
-(*  threads, so its second halves sit at DIFFERENT input supplies and a    *)
-(*  derivation-indexed IH would be pinned to one (prop_consis_complete.v   *)
-(*  §3b's reason, verbatim).                                              *)
+(*  Induct on the second derivation.  Its intermediate supplies stay fixed; *)
+(*  transport the first derivation onto them before applying each IH.      *)
+(*  Retain a copy of the second derivation for the absence-first collapse. *)
 (* ===================================================================== *)
 
-Definition lookeq_rel_stmt (n : nat) : Prop :=
-  forall S0 Θ α P P' S1 Ξ C,
-    {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-    size_pskl P + size_pskl P' <= n ->
-    add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
-    forall S1' Ξ' C',
-      {{ S0 ↝ S1' ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ' ⨾ C' }}e ->
-      exists ps,
-        (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0) /\
-        swaps_atoms ps S1 [=] S1' /\
-        swaps_aenv ps Ξ = Ξ' /\
-        swaps_cstrs ps C = C'.
-
-Lemma e_lookeq_rel_n : forall n, lookeq_rel_stmt n.
+Lemma e_lookeq_rel : forall S0 Θ α P P' S1 Ξ C S1' Ξ' C',
+  {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
+  {{ S0 ↝ S1' ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ' ⨾ C' }}e ->
+  add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
+  exists ps,
+    (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0) /\
+    swaps_atoms ps S1 [=] S1' /\
+    swaps_aenv ps Ξ = Ξ' /\
+    swaps_cstrs ps C = C'.
 Proof.
-  induction n as [ | n IH ]; unfold lookeq_rel_stmt in *.
-  { intros S0 Θ α P P' S1 Ξ C D1 Hsz; exfalso;
-      destruct P; simpl in Hsz; lia. }
-  intros S0 Θ α P P' S1 Ξ C D1 Hsz Hcov S1' Ξ' C' D2.
-  destruct (sumbool_of_bool (mem α (ftvar_in_pskl P))) as [Hmem | Hmem].
-  2:{ (* ---- the α-FREE collapse: both sides emit and spend nothing ---- *)
-      apply mem_false_notin in Hmem.
-      destruct (e_lookeq_absent_pins D1 Hmem) as [-> [-> HS]].
-      destruct (e_lookeq_absent_pins D2 Hmem) as [-> [-> HS']].
-      exists nil. repeat apply conj; simpl; try reflexivity.
-      - intros ? ? [].
-      - clear - HS HS'. fsetdec. }
-  apply mem_true_in in Hmem. rename Hmem into HαP.
-  inversion D1; subst.
-
+  intros S0 Θ α P P' S1 Ξ C S1' Ξ' C' D1 D2.
+  revert S1 Ξ C D1. generalize D2.
+  induction D2 as
+    [S0 Θ α P'
+    |S0 Θ α P P' Habs
+    |S0 Θ α P Hnev
+    |S0 Θ α P β γ2 Hγ2 Hflx Hnev Hocc
+    |S0 Sm' S1' Θ α Pa Pb Pa' Pb' X1' X2' Cc1' Cc2' D2a IH1 D2b IH2
+    |S0 S1' Θ α Qs Qt Ξ' C' β2 Hβ2 Hocc Dp' IH
+    |S0 S1' Θ α Qs Qt Ξ' C' β2 Hβ2 Hocc Dp' IH
+    |S0 S1' Θ α Qs Qt Ξ' C' Dp' IH
+    |S0 S1' Θ α Qs Qt Ξ' C' β2 Hβ2 Hocc Dp' IH
+    |S0 S1' Θ α Qs P' Ξ' C' Hgd Hoff Dp' IH
+    |S0 S1' Θ α P Qt Ξ' C' Hnev Hgd Dp' IH];
+    intros D2 S1 Ξ C D1 Hcov;
+    match type of D1 with
+    | e_lookeq _ _ _ ?P _ _ _ _ =>
+        destruct (sumbool_of_bool (mem α (ftvar_in_pskl P))) as [Hmem | Hmem]
+    end.
+  all: try (apply mem_false_notin in Hmem;
+    destruct (e_lookeq_absent_pins D1 Hmem) as [HX [HC HS]];
+    destruct (e_lookeq_absent_pins D2 Hmem) as [HX' [HC' HS']];
+    exists nil; repeat apply conj; simpl;
+    [intros ? ? [] | clear - HS HS'; fsetdec | congruence | congruence]).
+  all: apply mem_true_in in Hmem; rename Hmem into HαP.
   - (* LE-Var — the subject IS the marker *)
-    destruct (e_lookeq_inv_var D2) as [-> [-> ->]].
+    destruct (e_lookeq_inv_var D1) as [-> [-> ->]].
     exists nil. repeat apply conj; simpl; try reflexivity. intros ? ? [].
 
   - (* LE-Absent — excluded by the occurrence split *)
-    exfalso.
-    match goal with
-    | Hn : ?a `notin` ftvar_in_pskl _ |- _ => clear - Hn HαP; fsetdec
-    end.
+    exfalso. clear - Habs HαP; fsetdec.
 
   - (* LE-Vacuous — counterpart ◇ *)
-    match goal with
-    | Hne : _ <> pskl_var_f α |- _ => rename Hne into Hnev
-    end.
-    destruct (e_lookeq_inv_ghost D2 Hnev HαP) as [-> [-> ->]].
+    destruct (e_lookeq_inv_ghost D1 Hnev HαP) as [-> [-> ->]].
     exists nil. repeat apply conj; simpl; try reflexivity. intros ? ? [].
 
   - (* LE-FlexR — the GENERATING row: one fresh flexible on each side *)
-    match goal with
-    | Hne : _ <> pskl_var_f α |- _ => rename Hne into Hnev
-    end.
-    match goal with
-    | Hf : a_flex_tvar Θ ?b |- _ => rename Hf into Hflx
-    end.
-    match goal with
-    | Hfr : ?a1 `notin` S0 |- _ => rename Hfr into Hα1; rename a1 into γ1
-    end.
-    destruct (e_lookeq_inv_flex_r D2 Hnev Hflx HαP)
-      as (γ2 & Hγ2 & -> & -> & ->).
+    destruct (e_lookeq_inv_flex_r D1 Hnev Hflx HαP)
+      as (γ1 & Hα1 & -> & -> & ->).
     exists ((γ1, γ2) :: nil). repeat apply conj.
     + intros ? ? [Heqp | []]. inversion Heqp; subst. split; assumption.
     + cbn [swaps_atoms]. rewrite swap_atoms_add.
@@ -519,19 +501,12 @@ Proof.
       reflexivity.
 
   - (* LE-Arrow — the THREADING row *)
-    match type of D1 with
-    | e_lookeq _ _ _ (pskl_arrow ?p1 ?p2) (pskl_arrow ?q1 ?q2) _ _ _ =>
-        rename p1 into Pa; rename p2 into Pb;
-        rename q1 into Pa'; rename q2 into Pb'
-    end.
     destruct (e_lookeq_inv_arrow D1 HαP)
       as (Sm & X1 & X2 & Cc1 & Cc2 & -> & -> & D1a & D1b).
-    destruct (e_lookeq_inv_arrow D2 HαP)
-      as (Sm' & X1' & X2' & Cc1' & Cc2' & -> & -> & D2a & D2b).
-    simpl in Hsz, Hcov, HαP.
+    simpl in Hcov, HαP.
     (* --- the FIRST halves, at the common input supply --- *)
-    destruct (IH _ _ _ _ _ _ _ _ D1a ltac:(lia)
-                 ltac:(clear - Hcov; fsetdec) _ _ _ D2a)
+    destruct (IH1 D2a _ _ _ D1a
+                 ltac:(clear - Hcov; fsetdec))
       as [ps1 [Hav1 [HS1 [HX1 HC1]]]].
     (* --- move side 1's SECOND half onto side 2's rails --- *)
     assert (HΘ1 : swaps_aenv ps1 Θ = Θ)
@@ -555,8 +530,8 @@ Proof.
     rewrite HΘ1, Hα1, HPb, HPb' in D1bt.
     (* --- the SECOND halves, now at the SAME input supply --- *)
     pose proof (e_lookeq_supply_grows D2a) as Hgr1'.
-    destruct (IH _ _ _ _ _ _ _ _ D1bt ltac:(lia)
-                 ltac:(clear - Hcov Hgr1'; fsetdec) _ _ _ D2b)
+    destruct (IH2 D2b _ _ _ D1bt
+                 ltac:(clear - Hcov Hgr1'; fsetdec))
       as [ps2 [Hav2 [HS2 [HX2 HC2]]]].
     (* --- what the SECOND renaming must leave alone: side 2's first yield --- *)
     pose proof (e_lookeq_generated_in_supply D2a) as Hdom1'.
@@ -584,13 +559,8 @@ Proof.
       reflexivity.
 
   - (* LE-ForallInh — (∀,∀): both sides open, one transposition pairs them *)
-    match type of D1 with
-    | e_lookeq _ _ _ (pskl_all_syn ?q) (pskl_all_syn ?q') _ _ _ =>
-        rename q into Qs; rename q' into Qt
-    end.
     destruct (e_lookeq_inv_forall_inh D1 HαP) as (β1 & Hβ1 & Dp).
-    destruct (e_lookeq_inv_forall_inh D2 HαP) as (β2 & Hβ2 & Dp').
-    simpl in Hsz, Hcov, HαP.
+    simpl in Hcov, HαP.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
     { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
       unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
@@ -611,11 +581,10 @@ Proof.
       as Hup1.
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Qt (pskl_var_f β2))
       as Hup2.
-    destruct (IH _ _ _ _ _ _ _ _ Dpt
-                 ltac:(rewrite ! size_pskl_open_pskl_wrt_pskl_var; lia)
+    destruct (IH Dp' _ _ _ Dpt
                  ltac:(rewrite ftvar_in_aenv_cons_tvar;
                        clear - Hcov Hup1 Hup2; simpl in *; fsetdec)
-                 _ _ _ Dp')
+)
       as [ps' [Hav' [HS' [HX' HC']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
@@ -628,13 +597,8 @@ Proof.
     + cbn [swaps_cstrs]. exact HC'.
 
   - (* LE-ForallSyn — (∀,⫯): the SUBJECT opens, the counterpart is fixed *)
-    match type of D1 with
-    | e_lookeq _ _ _ (pskl_all_syn ?q) (pskl_univ_ghost ?q') _ _ _ =>
-        rename q into Qs; rename q' into Qt
-    end.
     destruct (e_lookeq_inv_forall_syn D1 HαP) as (β1 & Hβ1 & Dp).
-    destruct (e_lookeq_inv_forall_syn D2 HαP) as (β2 & Hβ2 & Dp').
-    simpl in Hsz, Hcov, HαP.
+    simpl in Hcov, HαP.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
     { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
       unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
@@ -653,12 +617,10 @@ Proof.
       by (unfold swap_atom; destruct (β1 == β1); congruence).
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Qs (pskl_var_f β2))
       as Hup1.
-    destruct (IH _ _ _ _ _ _ _ _ Dpt
-                 ltac:(rewrite ! size_pskl_open_pskl_wrt_pskl_var;
-                       simpl; lia)
+    destruct (IH Dp' _ _ _ Dpt
                  ltac:(rewrite ftvar_in_aenv_cons_tvar;
                        clear - Hcov Hup1; simpl in *; fsetdec)
-                 _ _ _ Dp')
+)
       as [ps' [Hav' [HS' [HX' HC']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
@@ -671,26 +633,16 @@ Proof.
     + cbn [swaps_cstrs]. exact HC'.
 
   - (* LE-UnivGhost — (⫯,⫯): both ⫯s vanish *)
-    match type of D1 with
-    | e_lookeq _ _ _ (pskl_univ_ghost ?q) (pskl_univ_ghost ?q') _ _ _ =>
-        rename q into Qs; rename q' into Qt
-    end.
     assert (Hα' : α `in` ftvar_in_pskl Qs) by (simpl in HαP; exact HαP).
     pose proof (e_lookeq_inv_ug D1 Hα') as Dp.
-    pose proof (e_lookeq_inv_ug D2 Hα') as Dp'.
-    simpl in Hsz, Hcov.
-    exact (IH _ _ _ _ _ _ _ _ Dp ltac:(lia)
-              ltac:(clear - Hcov; simpl in *; fsetdec) _ _ _ Dp').
+    simpl in Hcov.
+    exact (IH Dp' _ _ _ Dp
+              ltac:(clear - Hcov; simpl in *; fsetdec)).
 
   - (* LE-UnivGhost1 — (⫯,∀): the COUNTERPART opens *)
-    match type of D1 with
-    | e_lookeq _ _ _ (pskl_univ_ghost ?q) (pskl_all_syn ?q') _ _ _ =>
-        rename q into Qs; rename q' into Qt
-    end.
     assert (Hα' : α `in` ftvar_in_pskl Qs) by (simpl in HαP; exact HαP).
     destruct (e_lookeq_inv_ug1 D1 Hα') as (β1 & Hβ1 & Dp).
-    destruct (e_lookeq_inv_ug1 D2 Hα') as (β2 & Hβ2 & Dp').
-    simpl in Hsz, Hcov, HαP.
+    simpl in Hcov, HαP.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
     { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
       unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
@@ -709,12 +661,10 @@ Proof.
       by (unfold swap_atom; destruct (β1 == β1); congruence).
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper Qt (pskl_var_f β2))
       as Hup2.
-    destruct (IH _ _ _ _ _ _ _ _ Dpt
-                 ltac:(rewrite ! size_pskl_open_pskl_wrt_pskl_var;
-                       simpl; lia)
+    destruct (IH Dp' _ _ _ Dpt
                  ltac:(rewrite ftvar_in_aenv_cons_tvar;
                        clear - Hcov Hup2; simpl in *; fsetdec)
-                 _ _ _ Dp')
+)
       as [ps' [Hav' [HS' [HX' HC']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
@@ -727,51 +677,17 @@ Proof.
     + cbn [swaps_cstrs]. exact HC'.
 
   - (* LE-UnivGhost2 — ⭐ THE GUARDED ROW: the subject's ⫯ is stripped *)
-    match type of D1 with
-    | e_lookeq _ _ _ (pskl_univ_ghost ?q) _ _ _ _ => rename q into Qs
-    end.
-    match goal with
-    | Hg : guarded_pskl _ |- _ => rename Hg into Hgd
-    end.
-    match goal with
-    | Ho : flex_r_off _ _ |- _ => rename Ho into Hoff
-    end.
     assert (Hα' : α `in` ftvar_in_pskl Qs) by (simpl in HαP; exact HαP).
     pose proof (e_lookeq_inv_ug2 D1 Hgd Hoff Hα') as Dp.
-    pose proof (e_lookeq_inv_ug2 D2 Hgd Hoff Hα') as Dp'.
-    simpl in Hsz, Hcov.
-    exact (IH _ _ _ _ _ _ _ _ Dp ltac:(lia)
-              ltac:(clear - Hcov; simpl in *; fsetdec) _ _ _ Dp').
+    simpl in Hcov.
+    exact (IH Dp' _ _ _ Dp
+              ltac:(clear - Hcov; simpl in *; fsetdec)).
 
   - (* LE-UnivGhostR — the COUNTERPART's ⫯ is stripped *)
-    match type of D1 with
-    | e_lookeq _ _ _ _ (pskl_univ_ghost ?q') _ _ _ => rename q' into Qt
-    end.
-    match goal with
-    | Hne : _ <> pskl_var_f α |- _ => rename Hne into Hnev
-    end.
-    match goal with
-    | Hg : guarded_pskl _ |- _ => rename Hg into Hgd
-    end.
     pose proof (e_lookeq_inv_ug_r D1 Hnev Hgd HαP) as Dp.
-    pose proof (e_lookeq_inv_ug_r D2 Hnev Hgd HαP) as Dp'.
-    simpl in Hsz, Hcov.
-    exact (IH _ _ _ _ _ _ _ _ Dp ltac:(lia)
-              ltac:(clear - Hcov; simpl in *; fsetdec) _ _ _ Dp').
-Qed.
-
-Corollary e_lookeq_rel : forall S0 Θ α P P' S1 Ξ C S1' Ξ' C',
-  {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-  {{ S0 ↝ S1' ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ' ⨾ C' }}e ->
-  add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
-  exists ps,
-    (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0) /\
-    swaps_atoms ps S1 [=] S1' /\
-    swaps_aenv ps Ξ = Ξ' /\
-    swaps_cstrs ps C = C'.
-Proof.
-  intros * D1 D2 Hcov.
-  exact (e_lookeq_rel_n D1 (le_n _) Hcov D2).
+    simpl in Hcov.
+    exact (IH Dp' _ _ _ Dp
+              ltac:(clear - Hcov; simpl in *; fsetdec)).
 Qed.
 
 (* ===================================================================== *)
