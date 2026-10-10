@@ -411,7 +411,7 @@ proof_fresco/   (this repository)
 │       │   ├── prop_completeness_sub_gen.v (P7a+b, the GENERALIZED statement)
 │       │   ├── prop_completeness_sub.v     (P7c, the paper's a_sub_complete)
 │       │   └── look/    (P6 — the look judgment's completeness, a strict
-│       │                 linear chain over a THREE-file shared substrate:
+│       │                 linear chain over a TWO-file shared substrate:
 │       │                   prop_rsubst.v        the ρ relation + inversions
 │       │                                        (⚙ named prop_rho_relation.v
 │       │                                        until 2026-08-12; ρ stays as
@@ -422,10 +422,6 @@ proof_fresco/   (this repository)
 │       │                                        `msubst_*` and `subst_*`)
 │       │                   prop_solve_ext.v     solve_ext / solve_sub_ext /
 │       │                                        solve_eq_mono_concl packages
-│       │                   prop_flex_apart.v    mono-paint / precision /
-│       │                                        refinement kit (the name is
-│       │                                        historical: the flex_apart
-│       │                                        premise is gone, 2026-10-10)
 │       │                 then prop_eq_var (Cv) -> prop_eq_cstr (Cs) ->
 │       │                 prop_sub_var (Sv) -> prop_sub_cstr (Ss) ->
 │       │                 prop_extract (L).  ⚙ The substrate was ONE 6952-line

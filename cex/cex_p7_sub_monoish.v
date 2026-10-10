@@ -34,7 +34,6 @@ Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_subtyping.
 Require Import src.fresco.algo.sub.look.prop_rsubst.
 Require Import src.fresco.algo.sub.look.prop_solve_ext.
-Require Import src.fresco.algo.sub.look.prop_flex_apart.   (* bskl_monoish *)
 
 Set Implicit Arguments.
 

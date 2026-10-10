@@ -43,9 +43,46 @@ Require Import src.fresco.algo.prop_metasubst.
 Require Import src.fresco.algo.prop_compose.   (* a_inc_lookup_mono, a_inc_dom_flex *)
 Require Import src.fresco.algo.sub.look.prop_rsubst.
 Require Import src.fresco.algo.sub.look.prop_solve_ext.
-Require Import src.fresco.algo.sub.look.prop_flex_apart.
 
 Set Implicit Arguments.
+
+(** A replaced rigid variable is solved by SE-Var. *)
+Lemma a_solve_eq_complete_rsubst_var :
+  forall NM Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa ψsub ψa Pi P0,
+  {{ ⊢ Θ }}a ->
+  a_tags_sort NM Ψ' ψa ->
+  Ψi `union` Ψa [<=] Ψ' ->
+  rsubst_fresh Δρ Θ κ ->
+  Δρ [<=] Δ ->
+  (forall α, α `in` Δρ -> α `notin` pskl_shielded_ftv (msubst_pskl κ Pi)) ->
+  {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad ->
+  rsubst_leaf NM Θ Δρ Ψρ ψsub ψa ->
+  (* closes by SE-Var, so the block is [nil] and no κ-extension arises *)
+  exists Pa, {{ Θ0 ⊢ₑ Pi ∼ P0 ⤳ nil ⨾ Pa }}a /\
+    forall Δ', Δ [<=] Δ' ->
+    {{ Θ ⨟ Δ' ⊢ˢ (msubst_pskl κ Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad.
+Proof.
+  intros NM Θ0 Θ κ Δ Δρ Ψρ Ψ' Ψi Ψa ψsub ψa Pi P0
+    HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf.
+  destruct Hleaf as (α & Ψ'' & Heqψa & HαΔρ & Htagsub & Hwfsub & HΨρ).
+  subst ψa.
+  pose proof (Hfresh α HαΔρ) as (HXb & Hκav & Hdef).
+  assert (HαΔ : α `in` Δ) by (clear - Hdelta HαΔρ; fsetdec).
+  pose proof (Hapart α HαΔρ) as Hsh.
+  destruct (ad_ppre_delta_var_inv Hpre eq_refl HwfΘ HαΔ HXb Hdef Hsh)
+    as (Heqm & HΨie).
+  assert (HeqPi : Pi = pskl_var_f α)
+    by (eapply msubst_pskl_var_inv; eassumption).
+  assert (HΨ'e : Ψ' [=] empty)
+    by (exact (d_tags_skl_var_inv (a_tags_sort_d_tags Htags))).
+  assert (HΨae : Ψa [=] empty) by (clear - Hsub HΨ'e; fsetdec).
+  exists Pi. split.
+  - rewrite HeqPi. apply a_solve_eq__var.
+  - intros Δ' Hsub'.
+    rewrite Heqm.
+    apply ad_ppre__var. clear - HΨie HΨae; fsetdec.
+Qed.
+
 
 (* Most P6-Cv leaf/absurd helpers live in sub/look/prop_rsubst.v; this file
    adds the ForallSyn-specific kit and the main induction over the whole
@@ -71,24 +108,7 @@ Proof.
   destruct Hk; split; eauto.
 Qed.
 
-(** a_inc images are Θ-scoped (the prose wf side-condition, pointwise). *)
-Lemma a_inc_image_ftv_dom : forall Θ0 κ Θ,
-  κ ∷ Θ0 ⊑ Θ ->
-  forall p, In p κ -> ftvar_in_ptyp (snd p) [<=] dom Θ.
-Proof.
-  intros Θ0 κ Θ H; induction H; intros p Hp; simpl in Hp.
-  - contradiction.
-  - destruct Hp as [<- | Hp];
-      [ simpl; apply a_wf_ptyp_ftv_dom; assumption | eauto ].
-  - destruct Hp as [<- | Hp];
-      [ simpl; apply a_wf_ptyp_ftv_dom; assumption | eauto ].
-  - pose proof (IHa_inc p Hp) as Hb.
-    repeat rewrite dom_app. clear - Hb; fsetdec.
-  - pose proof (IHa_inc p Hp) as Hb.
-    repeat rewrite dom_app. clear - Hb; fsetdec.
-  - pose proof (IHa_inc p Hp) as Hb.
-    repeat rewrite dom_app. clear - Hb; fsetdec.
-Qed.
+
 
 (* The paper-form statement is now the COROLLARY of the generalized
    theorem below (Θtv := [], Δr := ∅, R := ∅); the paper mapping is
@@ -660,7 +680,7 @@ Proof.
         assert (HnhPa : pskl_no_ghost Pa)
           by (eapply a_solve_eq_no_ghost_p0; [ exact Hsolve | exact HnhP0d ]).
         eapply ad_partial_precise_psi_cong;
-          [ eapply ad_ppre_no_ghost_subject_delta_mono;
+          [ eapply ad_partial_precise_no_ghost_subject_delta_mono;
               [ exact Hprec | apply msubst_pskl_no_ghost; exact HnhPa
               | clear; fsetdec ]
           | clear - HΨae; fsetdec ].
@@ -878,7 +898,7 @@ Proof.
         - (* Pi = var_b *) inversion HwfPi0.
         - (* Pi = var β: SE-Var; a mono-paint subject forces Ψ' = ∅ *)
           assert (HΨ'e : Ψ' [=] empty).
-          { eapply ad_ppre_mono_subject_target_tags_empty
+          { eapply ad_partial_precise_mono_subject_target_tags_empty
               with (τ := msubst_lookup κ β);
               [ exact HwfΘ | exact Hpre1 | reflexivity
               | eapply a_inc_lookup_mono; eauto
@@ -887,7 +907,7 @@ Proof.
           eapply solve_ext_nil with (Pa := (pskl_var_f β)); [ apply a_solve_eq__var | ].
           intros Δ' HS1 HS2 HS3.
           eapply ad_partial_precise_psi_cong;
-            [ eapply ad_ppre_no_ghost_subject_delta_mono;
+            [ eapply ad_partial_precise_no_ghost_subject_delta_mono;
                 [ exact Hpre1
                 | apply msubst_pskl_no_ghost; simpl; exact I
                 | clear; fsetdec ]
@@ -982,7 +1002,7 @@ Proof.
                  Δ-MONOTONE.  This is the same reason the repair leaves
                  [a_solve_eq_no_ghost_p0] true. *)
               eapply ad_partial_precise_psi_cong;
-                [ eapply ad_ppre_no_ghost_subject_delta_mono;
+                [ eapply ad_partial_precise_no_ghost_subject_delta_mono;
                     [ exact Hqg
                     | apply msubst_pskl_no_ghost; apply ptyp_to_pskl_no_ghost
                     | clear; fsetdec ]
@@ -995,7 +1015,7 @@ Proof.
             simpl in Hrefine1.
             destruct (ad_refine_arrow_arrow_inv Hrefine1) as [Hrb1 Hrb2].
             simpl in Hpre1.
-            destruct (ad_ppre_arrow_arrow_inv Hpre1)
+            destruct (ad_partial_precise_arrow_arrow_inv Hpre1)
               as (Ψib1 & Ψib2 & Hpb1 & Hpb2 & HΨis).
             assert (Hsubk1 : Ψib1 `union` (Ψ1 ∩ Ψ'1)
                                [<=] Ψ'1).
@@ -1203,7 +1223,7 @@ Proof.
               { simpl. rewrite Heq1, Heq2.
                 change (uskl_arrow (ptyp_to_uskl_syn τa1) (ptyp_to_uskl_syn τa2))
                   with (ptyp_to_uskl_syn (ptyp_arrow τa1 τa2)).
-                eapply mono_paint_paint_refine_consis_ppre with (Δr := empty);
+                eapply mono_paint_paint_refine_consis_partial_precise with (Δr := empty);
                   [ exact Hcons' | exact HwfΘ | rewrite Heq1, Heq2; reflexivity
                   | apply mono_ptyp__arrow; assumption
                   | clear; fsetdec | exact Hml | exact Hrefβ ]. }
@@ -1732,7 +1752,7 @@ Proof.
         + (* var: a mono-paint subject vs the ε-tagged target *)
           exfalso.
           assert (HΨ'e : Ψ' [=] empty).
-          { eapply ad_ppre_mono_subject_target_tags_empty
+          { eapply ad_partial_precise_mono_subject_target_tags_empty
               with (τ := msubst_lookup κ β);
               [ exact HwfΘ | exact Hpre0 | reflexivity
               | eapply a_inc_lookup_mono; eauto
@@ -1976,7 +1996,7 @@ Proof.
             inversion HgPi'; subst.
             -- simpl in Hrem. inversion Hrem.
             -- assert (HΨ'e : Ψ' [=] empty).
-               { eapply ad_ppre_mono_subject_target_tags_empty
+               { eapply ad_partial_precise_mono_subject_target_tags_empty
                    with (τ := msubst_lookup κ α);
                    [ exact HwfΘ | exact Hrem | reflexivity
                    | eapply a_inc_lookup_mono; eauto
@@ -2525,7 +2545,7 @@ Proof.
         + (* var β: mono-paint subject vs ε-tagged target — Ψ' = ∅ absurd *)
           exfalso.
           assert (HΨ'e : Ψ' [=] empty).
-          { eapply ad_ppre_mono_subject_target_tags_empty
+          { eapply ad_partial_precise_mono_subject_target_tags_empty
               with (τ := msubst_lookup κ β);
               [ exact HwfΘ | exact Hpre0 | reflexivity
               | eapply a_inc_lookup_mono; eauto
@@ -2777,7 +2797,7 @@ Proof.
             exfalso. inversion HgPi'; subst.
             -- simpl in Hrem. inversion Hrem.
             -- assert (HΨ'e : Ψ' [=] empty).
-               { eapply ad_ppre_mono_subject_target_tags_empty
+               { eapply ad_partial_precise_mono_subject_target_tags_empty
                    with (τ := msubst_lookup κ α);
                    [ exact HwfΘ | exact Hrem | reflexivity
                    | eapply a_inc_lookup_mono; eauto

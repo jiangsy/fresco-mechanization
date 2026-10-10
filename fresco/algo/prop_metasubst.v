@@ -1816,3 +1816,78 @@ Proof.
   intro Hc. apply (Hdisj α Hc). exact Hα.
 Qed.
 
+Lemma msubst_lookup_ftv_avoid : forall κ α β,
+  (forall p, In p κ -> α `notin` ftvar_in_ptyp (snd p)) ->
+  α `in` ftvar_in_ptyp (msubst_lookup κ β) ->
+  β = α.
+Proof.
+  induction κ as [ | [α2 τ] κ' IH ]; intros α β Hav Hα; simpl in Hα.
+  - clear - Hα; fsetdec.
+  - destruct (β == α2) as [Heq | Hne].
+    + exfalso. apply (Hav (α2, τ) (or_introl eq_refl)). exact Hα.
+    + apply IH; [ intros p Hp; apply Hav; right; exact Hp | exact Hα ].
+Qed.
+
+(** Ghost-freeness, renaming commutation and scoped substitution images. *)
+
+Lemma msubst_pskl_no_ghost : forall κ P,
+  pskl_no_ghost P -> pskl_no_ghost (msubst_pskl κ P).
+Proof.
+  intros κ; induction P; intros H; simpl in *; auto.
+  - apply ptyp_to_pskl_no_ghost.
+  - destruct H; split; auto.
+Qed.
+
+Lemma msubst_pskl_no_ghost_inv : forall κ P,
+  pskl_no_ghost (msubst_pskl κ P) -> pskl_no_ghost P.
+Proof.
+  intros κ; induction P; intros H; simpl in *; auto.
+  destruct H; split; auto.
+Qed.
+
+Lemma msubst_pskl_subst_var_paired : forall κ P' α' β,
+  α' `notin` dom κ -> β `notin` dom κ ->
+  (forall p, In p κ -> α' `notin` ftvar_in_ptyp (snd p)) ->
+  subst_pskl_in_pskl (pskl_var_f β) α' (msubst_pskl κ P')
+  = msubst_pskl κ (subst_pskl_in_pskl (pskl_var_f β) α' P').
+Proof.
+  intros κ P' α' β Hα Hβ Hav; induction P'; simpl;
+    try (f_equal; auto; fail).
+  (* var_f *)
+  destruct (α == α') as [-> | Hne].
+    + rewrite (msubst_lookup_notin _ Hα).
+      simpl.
+      rewrite (msubst_lookup_notin _ Hβ).
+      default_simp.
+    + assert (Hfr : α' `notin`
+                ftvar_in_pskl (ptyp_to_pskl (msubst_lookup κ α))).
+      { rewrite ftvar_ptyp_to_pskl.
+        intros Hc.
+        assert (Heq : α = α')
+          by (eapply msubst_lookup_ftv_avoid; [ exact Hav | exact Hc ]).
+        auto. }
+      rewrite (subst_pskl_in_pskl_fresh_eq _ _ _ Hfr).
+      reflexivity.
+Qed.
+
+Lemma forall_wf_mono_images_dom : forall (Θ : aenv) (κ' : metasubst),
+  Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κ' ->
+  forall p, In p κ' -> ftvar_in_ptyp (snd p) [<=] dom Θ.
+Proof.
+  intros Θ κ' HF p Hp.
+  rewrite Forall_forall in HF.
+  destruct (HF p Hp) as [Hw _].
+  eapply a_wf_ptyp_ftv_dom; exact Hw.
+Qed.
+
+Lemma msubst_lc_app_wf : forall Θ κa κb,
+  Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κa ->
+  msubst_lc κb ->
+  msubst_lc (κa ++ κb).
+Proof.
+  intros Θ κa κb Hall Hlc; unfold msubst_lc in *; intros α.
+  induction κa as [ | [α1 τ1] κa' IH ]; cbn; [ apply Hlc | ].
+  inversion Hall as [ | ph pt [Hwf1 Hm1] Hall' ]; subst; cbn in Hwf1.
+  destruct (α == α1) as [-> | Hne];
+    [ eapply a_wf_ptyp_lc; exact Hwf1 | apply IH; exact Hall' ].
+Qed.

@@ -1272,3 +1272,269 @@ Proof.
     apply Hgf. eapply a_extract_ty_ghost_free; eauto.
   - apply a_tags_sort__sk; [ exact Htskl | exact Hdtags ].
 Qed.
+
+(** Partial precision: inversion, rigid scope changes and renaming. *)
+
+Lemma ad_partial_precise_arrow_arrow_inv : forall Θ Δ Ψ P1 P2 ψ1 ψ2,
+  {{ Θ ⨟ Δ ⊢ˢ (pskl_arrow P1 P2) ⊑ᵖ[ Ψ ] (uskl_arrow ψ1 ψ2) }}ad ->
+  exists Ψ1 Ψ2, ({{ Θ ⨟ Δ ⊢ˢ P1 ⊑ᵖ[ Ψ1 ] ψ1 }}ad) /\ ({{ Θ ⨟ Δ ⊢ˢ P2 ⊑ᵖ[ Ψ2 ] ψ2 }}ad)
+    /\ Ψ [=] Ψ1 `union` Ψ2.
+Proof.
+  intros Θ Δ Ψ P1 P2 ψ1 ψ2 H; inversion H; subst.
+  match goal with
+  | Hp1 : {{ Θ ⨟ Δ ⊢ˢ P1 ⊑ᵖ[ ?A ] ψ1 }}ad, Hp2 : {{ Θ ⨟ Δ ⊢ˢ P2 ⊑ᵖ[ ?B ] ψ2 }}ad |- _ =>
+    exists A, B; split; [ exact Hp1 | split; [ exact Hp2 | assumption ] ]
+  end.
+Qed.
+
+Lemma ad_partial_precise_delta_shrink : forall Θ Δf Ψ P ψ,
+  {{ Θ ⨟ Δf ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
+  forall Δ, Δ [<=] Δf ->
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
+Proof.
+  intros Θ Δf Ψ P ψ H; induction H; intros Δ0 Hsub.
+  - apply ad_ppre__unit; assumption.
+  - apply ad_ppre__var; assumption.
+  - eapply ad_ppre__arrow;
+      [ exact (IHad_partial_precise1 Δ0 Hsub)
+      | exact (IHad_partial_precise2 Δ0 Hsub)
+      | assumption ].
+  - eapply ad_ppre__forall with (L := L); [ | eassumption ].
+    intros α0 Hα0.
+    apply (H0 α0 Hα0 (add α0 Δ0)). clear - Hsub; fsetdec.
+  - (* ghost : the side condition is antitone in Δ *)
+    apply ad_ppre__ghost; [ assumption | ].
+    match goal with Hint : _ ∩ _ [=] empty |- _ =>
+      clear - Hint Hsub; fsetdec end.
+  - apply ad_ppre__univ_ghost_remove. exact (IHad_partial_precise Δ0 Hsub).
+  - eapply ad_ppre__univ_ghost_fill with (L := L).
+    intros α0 Hα0. exact (H0 α0 Hα0 Δ0 Hsub).
+  - apply ad_ppre__univ_ghost_keep. exact (IHad_partial_precise Δ0 Hsub).
+  - eapply ad_ppre__flex_l; [ eassumption | ].
+    exact (IHad_partial_precise Δ0 Hsub).
+  - eapply ad_ppre__flex_r; [ eassumption | ].
+    exact (IHad_partial_precise Δ0 Hsub).
+Qed.
+
+Lemma ad_partial_precise_delta_cong : forall Θ Δ Ψ P ψ,
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
+  forall Δ', Δ [=] Δ' ->
+  {{ Θ ⨟ Δ' ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
+Proof.
+  intros Θ Δ Ψ P ψ H Δ' Heq.
+  apply (ad_partial_precise_delta_shrink H). clear - Heq; fsetdec.
+Qed.
+
+Lemma ad_partial_precise_delta_weaken_fresh : forall Θ Δ Ψ P ψ,
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
+  forall Δ',
+  Δ' ∩ ftvar_in_uskl ψ [=] empty ->
+  delta_def_fresh Δ' Θ ->
+  {{ Θ ⨟ (Δ `union` Δ') ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
+Proof.
+  intros Θ Δ Ψ P ψ H; induction H; intros Δ' HΔ' Hdf.
+  - apply ad_ppre__unit; assumption.
+  - apply ad_ppre__var; assumption.
+  - simpl in HΔ'.
+    eapply ad_ppre__arrow;
+      [ apply IHad_partial_precise1; [ clear - HΔ'; fsetdec | exact Hdf ]
+      | apply IHad_partial_precise2; [ clear - HΔ'; fsetdec | exact Hdf ]
+      | assumption ].
+  - (* forall *)
+    simpl in HΔ'.
+    eapply ad_ppre__forall with (L := L `union` Δ'); [ | eassumption ].
+    intros α0 Hα0.
+    assert (HSX : Δ' ∩
+              (ftvar_in_uskl (open_uskl_wrt_uskl ψ (uskl_var_f α0)))
+              [=] empty).
+    { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α0))
+        as Hup.
+      simpl in Hup. clear - HΔ' Hα0 Hup. fsetdec. }
+    assert (Hdf' : delta_def_fresh Δ' ((α0 ~ abind_tvar) ++ Θ))
+      by (apply delta_def_fresh_weaken_tvar; exact Hdf).
+    eapply ad_partial_precise_delta_cong;
+      [ apply (H0 α0 ltac:(clear - Hα0; solve_notin_auto) Δ' HSX Hdf')
+      | clear; fsetdec ].
+  - (* ghost *)
+    apply ad_ppre__ghost; [ assumption | ].
+    match goal with Hint : _ ∩ _ [=] empty |- _ =>
+      clear - Hint HΔ'; fsetdec end.
+  - apply ad_ppre__univ_ghost_remove; auto.
+  - (* univ_ghost_fill *)
+    eapply ad_ppre__univ_ghost_fill with (L := L `union` Δ').
+    intros α0 Hα0.
+    assert (HSX : Δ' ∩
+              (ftvar_in_uskl (open_uskl_wrt_uskl ψ (uskl_var_f α0)))
+              [=] empty).
+    { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ (uskl_var_f α0))
+        as Hup.
+      simpl in Hup. clear - HΔ' Hα0 Hup. fsetdec. }
+    assert (Hdf' : delta_def_fresh Δ' ((α0 ~ abind_tvar) ++ Θ))
+      by (apply delta_def_fresh_weaken_tvar; exact Hdf).
+    apply (H0 α0 ltac:(clear - Hα0; solve_notin_auto) Δ' HSX Hdf').
+  - (* univ_ghost_keep *)
+    simpl in HΔ'.
+    apply ad_ppre__univ_ghost_keep; apply IHad_partial_precise; auto.
+  - eapply ad_ppre__flex_l; [ eassumption | ].
+    apply IHad_partial_precise; auto.
+  - (* flex_r: the target hops to the definition's paint *)
+    eapply ad_ppre__flex_r; [ eassumption | ].
+    apply IHad_partial_precise; [ | exact Hdf ].
+    rewrite ftvar_ptyp_to_uskl_syn.
+    apply inter_empty_pointwise.
+    intros y Hy. eapply Hdf; [ exact Hy | eassumption ].
+Qed.
+
+Lemma ad_partial_precise_open_tvar_fresh : forall Θ Δ Ψ P ψ β,
+  {{ ⊢ Θ }}a -> β `notin` dom Θ -> β `notin` ftvar_in_uskl ψ ->
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
+  {{ ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ) ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
+Proof.
+  intros * Hwf Hβ Hψ Hp.
+  eapply ad_partial_precise_delta_cong with (Δ := Δ `union` singleton β).
+  - eapply ad_partial_precise_delta_weaken_fresh with (Δ' := singleton β).
+    + apply ad_partial_precise_weaken_tvar; exact Hp.
+    + clear - Hψ; fsetdec.
+    + intros γ α τ Hγ Hb.
+      eapply (delta_def_fresh_open_tvar Hwf Hβ (delta_def_fresh_empty Θ));
+        [ clear - Hγ; fsetdec | exact Hb ].
+  - clear; fsetdec.
+Qed.
+
+Lemma ad_partial_precise_no_ghost_subject_delta_mono : forall Θ Δ Ψ P ψ,
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
+  pskl_no_ghost P ->
+  forall Δ', Δ [<=] Δ' ->
+  {{ Θ ⨟ Δ' ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
+Proof.
+  intros Θ Δ Ψ P ψ H; induction H; intros Hnh Δ' Hsub.
+  - apply ad_ppre__unit; assumption.
+  - apply ad_ppre__var; assumption.
+  - simpl in Hnh; destruct Hnh.
+    eapply ad_ppre__arrow; eauto.
+  - simpl in Hnh.
+    eapply ad_ppre__forall with (L := L); [ | eassumption ].
+    intros α Hα.
+    apply (H0 α Hα); [ apply pskl_no_ghost_open; exact Hnh | ].
+    clear - Hsub; fsetdec.
+  - simpl in Hnh; contradiction.
+  - simpl in Hnh.
+    apply ad_ppre__univ_ghost_remove; auto.
+  - simpl in Hnh.
+    eapply ad_ppre__univ_ghost_fill with (L := L); eauto.
+  - simpl in Hnh.
+    apply ad_ppre__univ_ghost_keep; auto.
+  - eapply ad_ppre__flex_l; [ eassumption | ].
+    apply IHad_partial_precise;
+      [ apply ptyp_to_pskl_no_ghost | exact Hsub ].
+  - eapply ad_ppre__flex_r; [ eassumption | ]. auto.
+Qed.
+
+Lemma ad_partial_precise_rename : forall Θ Δ Ψ P ψ,
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
+  forall αr βr,
+  αr `in` Δ ->
+  αr `notin` dom Θ ->
+  βr `notin` dom Θ -> βr `notin` Δ ->
+  βr `notin` ftvar_in_pskl P -> βr `notin` ftvar_in_uskl ψ ->
+  (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
+     αr `notin` ftvar_in_ptyp τ /\ βr `notin` ftvar_in_ptyp τ) ->
+  {{ Θ ⨟ (add βr (remove αr Δ)) ⊢ˢ
+    (subst_pskl_in_pskl (pskl_var_f βr) αr P)
+    ⊑ᵖ[ Ψ ] (subst_uskl_in_uskl (uskl_var_f βr) αr ψ) }}ad.
+Proof.
+  intros Θ Δ Ψ P ψ H; induction H;
+    intros αr βr HαΔ HαΘ HβΘ HβΔ HYP Hβψ Hdefs; simpl in *.
+  - (* unit *) apply ad_ppre__unit; assumption.
+  - (* var *)
+    destruct (eq_var α αr); apply ad_ppre__var; assumption.
+  - (* arrow *)
+    eapply ad_ppre__arrow;
+      [ apply IHad_partial_precise1; auto
+      | apply IHad_partial_precise2; auto
+      | assumption ].
+  - (* forall *)
+    eapply ad_ppre__forall
+      with (L := L `union` singleton αr `union` singleton βr
+                   `union` Δ `union` dom Θ); [ | eassumption ].
+    intros α2 Hα2.
+    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+      [ | clear - Hα2; fsetdec | apply lc_pskl_var_f ].
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
+      [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
+    eapply ad_partial_precise_delta_cong;
+      [ apply (H0 α2 ltac:(clear - Hα2; solve_notin_auto) αr βr);
+        [ clear - HαΔ; fsetdec
+        | simpl; clear - HαΘ Hα2; fsetdec
+        | simpl; clear - HβΘ Hα2; fsetdec
+        | clear - HβΔ Hα2; fsetdec
+        | pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P
+                        (pskl_var_f α2)) as Hup;
+          simpl in Hup; clear - HYP Hα2 Hup; fsetdec
+        | pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ
+                        (uskl_var_f α2)) as Hup;
+          simpl in Hup; clear - Hβψ Hα2 Hup; fsetdec
+        | intros α τ Hb;
+          destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+          [ discriminate Hc | exact (Hdefs _ _ Hb') ] ]
+      | clear - Hα2; fsetdec ].
+  - (* ghost: α is already out of the local target *)
+    match goal with Hint : _ ∩ _ [=] empty |- _ =>
+      assert (Hαψ : αr `notin` ftvar_in_uskl ψ)
+        by (clear - Hint HαΔ; fsetdec);
+      rewrite (subst_uskl_in_uskl_fresh_eq _ _ _ Hαψ);
+      apply ad_ppre__ghost; [ assumption | clear - Hint Hβψ; fsetdec ]
+    end.
+  - (* univ_ghost_remove *)
+    apply ad_ppre__univ_ghost_remove.
+    apply IHad_partial_precise; auto.
+  - (* univ_ghost_fill *)
+    eapply ad_ppre__univ_ghost_fill
+      with (L := L `union` singleton αr `union` singleton βr
+                   `union` Δ `union` dom Θ).
+    intros α2 Hα2.
+    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
+      [ | clear - Hα2; fsetdec | apply lc_uskl_var_f ].
+    replace (pskl_univ_ghost (subst_pskl_in_pskl (pskl_var_f βr) αr P))
+      with (subst_pskl_in_pskl (pskl_var_f βr) αr (pskl_univ_ghost P))
+      by reflexivity.
+    apply (H0 α2 ltac:(clear - Hα2; solve_notin_auto) αr βr).
+    + exact HαΔ.
+    + simpl. clear - HαΘ Hα2; fsetdec.
+    + simpl. clear - HβΘ Hα2; fsetdec.
+    + exact HβΔ.
+    + simpl. simpl in HYP. exact HYP.
+    + pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψ
+                    (uskl_var_f α2)) as Hup;
+      simpl in Hup; clear - Hβψ Hα2 Hup; fsetdec.
+    + intros α τ Hb.
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+        [ discriminate Hc | exact (Hdefs _ _ Hb') ].
+  - (* univ_ghost_keep *)
+    apply ad_ppre__univ_ghost_keep.
+    apply IHad_partial_precise; auto.
+  - (* flex_l *)
+    assert (Hne : α <> αr).
+    { intros ->. apply HαΘ. eapply binds_In; eassumption. }
+    destruct_if as [Hc | _]; [ exfalso; auto | ].
+    destruct (Hdefs _ _ H) as [Hατ Hβτ].
+    eapply ad_ppre__flex_l; [ eassumption | ].
+    assert (Hfr : αr `notin` ftvar_in_pskl (ptyp_to_pskl τ))
+      by (rewrite ftvar_ptyp_to_pskl; exact Hατ).
+    rewrite <- (subst_pskl_in_pskl_fresh_eq
+                  (ptyp_to_pskl τ) (pskl_var_f βr) αr Hfr).
+    apply IHad_partial_precise; auto.
+    rewrite ftvar_ptyp_to_pskl. exact Hβτ.
+  - (* flex_r *)
+    assert (Hne : α <> αr).
+    { intros ->. apply HαΘ. eapply binds_In; eassumption. }
+    destruct_if as [Hc | _]; [ exfalso; auto | ].
+    destruct (Hdefs _ _ H) as [Hατ Hβτ].
+    eapply ad_ppre__flex_r; [ eassumption | ].
+    assert (Hfr : αr `notin` ftvar_in_uskl (ptyp_to_uskl_syn τ))
+      by (rewrite ftvar_ptyp_to_uskl_syn; exact Hατ).
+    rewrite <- (subst_uskl_in_uskl_fresh_eq
+                  (ptyp_to_uskl_syn τ) (uskl_var_f βr) αr Hfr).
+    apply IHad_partial_precise; auto.
+    rewrite ftvar_ptyp_to_uskl_syn. exact Hβτ.
+Qed.

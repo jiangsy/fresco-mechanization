@@ -50,7 +50,6 @@ Require Import src.fresco.algo.consis.prop_completeness_consis.  (* a_wf_pskl_ft
 Require Import src.fresco.algo.sub.prop_completeness_sub_precise.
 Require Import src.fresco.algo.sub.look.prop_rsubst.
 Require Import src.fresco.algo.sub.look.prop_solve_ext.
-Require Import src.fresco.algo.sub.look.prop_flex_apart.
 Require Import src.fresco.algo.sub.look.prop_eq_var.
 Require Import src.fresco.algo.sub.look.prop_eq_cstr.  (* the ∀-binder kit,
     [mono_ptyp_to_uskl_syn_is_dskl], [ftag_in_uskl_msubst_uskl_syn], …
@@ -681,7 +680,7 @@ Qed.
     freshness pack forces [Pi] to be that very variable, SolS-Var solves
     with [Pa := Pi], and the conclusion's precision is the var rule.  This
     is the subtyping twin of [a_solve_eq_complete_rsubst_var]
-    (sub/look/prop_flex_apart.v):
+    (sub/look/prop_eq_var.v):
     same argument, [a_solve_sub__var] in place of [a_solve_eq__var].
     Its leaf source is the [ursubst__leaf] disjunct of the [uskl_rsubst]
     inversions. *)
@@ -775,7 +774,7 @@ Proof.
   destruct Hg as [ | α | P1 P2 Hlc1 Hlc2 ]; cbn [msubst_pskl] in Hpre.
   - inversion Hpre.
   - assert (HΨde : Ψd [=] empty)
-      by (eapply ad_ppre_mono_subject_target_tags_empty;
+      by (eapply ad_partial_precise_mono_subject_target_tags_empty;
             [ exact HwfΘ | exact Hpre | reflexivity
             | eapply a_inc_lookup_mono; exact Hκ | exact Hd ]).
     destruct (d_tags_skl_all_tag_inv Hd) as (Ld & Ψ0 & _ & _ & Heq).
@@ -849,7 +848,7 @@ Proof.
     assert (Hml : mono_ptyp (msubst_lookup κ β))
       by (eapply a_inc_lookup_mono; exact Hκ).
     assert (HΨte : Ψt [=] empty)
-      by (eapply ad_ppre_mono_subject_target_tags_empty;
+      by (eapply ad_partial_precise_mono_subject_target_tags_empty;
             [ exact HwfΘ | exact Hpre | reflexivity | exact Hml
             | exact (a_tags_sort_d_tags Htags) ]).
     eapply solve_sub_ext_nil with (Pa := pskl_var_f β);
@@ -1706,17 +1705,10 @@ Proof.
         by (eapply a_wf_pskl_weaken; [ exact Hweak | exact HwfPi ]).
       assert (Hκβ : κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
         by (apply a_inc_cons_tvar; exact Hκ).
-      assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ)).
-      { intros β0 α0 τ0 Hβ0 Hb. eapply Hdfresh; [ exact Hβ0 | ].
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-          [ discriminate Habs | exact Hb' ]. }
-      assert (Hrhofβ : rsubst_fresh Δρ ((β ~ abind_tvar) ++ Θ) κ).
-      { intros α0 Hα0. destruct (Hrhof α0 Hα0) as (Hb & Him & Hdf).
-        repeat split;
-          [ apply binds_app_3; exact Hb | exact Him | ].
-        intros α1 τ1 Hb1. eapply Hdf.
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb1) as [[_ Habs] | Hb'];
-          [ discriminate Habs | exact Hb' ]. }
+      assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ))
+        by (eapply delta_def_fresh_weaken_tvar; eassumption).
+      assert (Hrhofβ : rsubst_fresh Δρ ((β ~ abind_tvar) ++ Θ) κ)
+        by (eapply rsubst_fresh_weaken_tvar; eassumption).
       assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ Δ
                 ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad)
         by (eapply ad_partial_precise_weaken;
@@ -2150,7 +2142,7 @@ Proof.
       - (* a variable : its κ-image is a MONOTYPE, whose target is tag-free *)
         exfalso.
         assert (HΨte : Ψt [=] empty)
-          by (eapply ad_ppre_mono_subject_target_tags_empty;
+          by (eapply ad_partial_precise_mono_subject_target_tags_empty;
                 [ exact HwfΘ | exact Hpre0 | reflexivity
                 | eapply a_inc_lookup_mono; exact Hκ
                 | exact (a_tags_sort_d_tags Htags0) ]).
@@ -2262,27 +2254,8 @@ Proof.
         assert (Hinterβ : Ψρ' ∩ Ψt0 [=] empty).
         { cbn [ftag_in_uskl] in Hgfresh.
           clear - HΨρ'sub Hinter HΨteq HΨt0eq HftagR Hgfresh; fsetdec. }
-        assert (Hrhofβ : rsubst_fresh (add β Δρ) ((β ~ abind_tvar) ++ Θ) κ).
-        { intros α0 Hα0.
-          destruct (AtomSetProperties.In_dec α0 Δρ) as [Hin | Hni].
-          - destruct (Hrhof α0 Hin) as (Hb & Him & Hdf).
-            repeat split; [ apply binds_app_3; exact Hb | exact Him | ].
-            intros α3 τ3 Hb3. eapply Hdf.
-            destruct (binds_cons_1 _ _ _ _ _ _ Hb3) as [[_ Habs] | Hb'];
-              [ discriminate Habs | exact Hb' ].
-          - assert (Heqβ : α0 = β) by (clear - Hα0 Hni; fsetdec); subst α0.
-            repeat split.
-            + unfold binds; left; reflexivity.
-            + intros pp Hpp.
-              pose proof (a_inc_image_ftv_dom Hκ pp Hpp) as Hb.
-              clear - Hb HβΘ; fsetdec.
-            + intros α3 τ3 Hb3.
-              assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
-                by (destruct (binds_cons_1 _ _ _ _ _ _ Hb3)
-                      as [[_ Habs] | Hb']; [ discriminate Habs | exact Hb' ]).
-              pose proof (a_wf_ptyp_ftv_dom
-                            (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
-              clear - Hd HβΘ; fsetdec. }
+        assert (Hrhofβ : rsubst_fresh (add β Δρ) ((β ~ abind_tvar) ++ Θ) κ)
+          by (eapply rsubst_fresh_open_tvar; eassumption).
         assert (Hdeltaβ : add β Δρ [<=] add β Δ)
           by (clear - Hdelta; fsetdec).
         assert (Hapartβ : forall α0, α0 `in` (add β Δρ) ->
@@ -2309,17 +2282,8 @@ Proof.
             + apply (a_wf_pskl_shielded_delta
                        (Hwbody β ltac:(clear - Fr; solve_notin)));
               clear; fsetdec. }
-        assert (Hdfreshβ : delta_def_fresh (add β Δ) ((β ~ abind_tvar) ++ Θ)).
-        { intros β0 α3 τ3 Hβ0 Hb.
-          assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
-            by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-                  [ discriminate Habs | exact Hb' ]).
-          destruct (AtomSetProperties.In_dec β0 Δ) as [Hin | Hni];
-            [ eapply Hdfresh; [ exact Hin | exact Hb' ] | ].
-          assert (Heqβ : β0 = β) by (clear - Hβ0 Hni; fsetdec); subst β0.
-          pose proof (a_wf_ptyp_ftv_dom
-                        (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
-          clear - Hd HβΘ; fsetdec. }
+        assert (Hdfreshβ : delta_def_fresh (add β Δ) ((β ~ abind_tvar) ++ Θ))
+          by (eapply delta_def_fresh_open_tvar; eassumption).
         assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
                   ⊢ˢ (msubst_pskl κ (open_pskl_wrt_pskl Pi0 (pskl_var_f β)))
                   ⊑ᵖ[ Ψi0 ] (open_uskl_wrt_uskl ψsrc (uskl_var_f β)) }}ad).

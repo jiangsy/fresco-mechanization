@@ -1794,3 +1794,14 @@ Proof.
   intros P α β H.
   exact (@guarded_pskl_subst_mono P (ptyp_var_f β) α H (mono_ptyp__var β)).
 Qed.
+
+(** Binding inclusion implies domain inclusion. *)
+
+Lemma aenv_binds_dom_sub : forall (Θ Θ' : aenv),
+  (forall x b, binds x b Θ -> binds x b Θ') ->
+  dom Θ [<=] dom Θ'.
+Proof.
+  intros Θ Θ' Hmon x Hx.
+  apply binds_In_inv in Hx; destruct Hx as [b Hb].
+  eapply binds_In; apply Hmon; exact Hb.
+Qed.

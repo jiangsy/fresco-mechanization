@@ -322,6 +322,44 @@ Proof.
   - intros α τ Hbd. analyze_binds Hbd. eapply Hdef; eassumption.
 Qed.
 
+(** a_inc images are Θ-scoped (the prose wf side-condition, pointwise). *)
+Lemma a_inc_image_ftv_dom : forall Θ0 κ Θ,
+  κ ∷ Θ0 ⊑ Θ ->
+  forall p, In p κ -> ftvar_in_ptyp (snd p) [<=] dom Θ.
+Proof.
+  intros Θ0 κ Θ H; induction H; intros p Hp; simpl in Hp.
+  - contradiction.
+  - destruct Hp as [<- | Hp];
+      [ simpl; apply a_wf_ptyp_ftv_dom; assumption | eauto ].
+  - destruct Hp as [<- | Hp];
+      [ simpl; apply a_wf_ptyp_ftv_dom; assumption | eauto ].
+  - pose proof (IHa_inc p Hp) as Hb.
+    repeat rewrite dom_app. clear - Hb; fsetdec.
+  - pose proof (IHa_inc p Hp) as Hb.
+    repeat rewrite dom_app. clear - Hb; fsetdec.
+  - pose proof (IHa_inc p Hp) as Hb.
+    repeat rewrite dom_app. clear - Hb; fsetdec.
+Qed.
+
+(** Add a rigid replacement variable fresh for the context and its images. *)
+Lemma rsubst_fresh_open_tvar : forall Δρ Θ0 Θ κ β,
+  {{ ⊢ Θ }}a -> κ ∷ Θ0 ⊑ Θ -> β `notin` dom Θ ->
+  rsubst_fresh Δρ Θ κ ->
+  rsubst_fresh (add β Δρ) ((β ~ abind_tvar) ++ Θ) κ.
+Proof.
+  intros * Hwf Hκ Hβ Hfr γ Hγ.
+  destruct (γ == β) as [-> | Hne].
+  - repeat split.
+    + unfold binds; left; reflexivity.
+    + intros p Hp; pose proof (a_inc_image_ftv_dom Hκ p Hp) as Hd.
+      clear - Hd Hβ; fsetdec.
+    + intros α τ Hb. apply binds_flex_def_cons_tvar_inv in Hb.
+      pose proof (a_wf_ptyp_ftv_dom (@a_wf_aenv_binds_def_wf Θ α τ Hwf Hb)) as Hd.
+      clear - Hd Hβ; fsetdec.
+  - apply (rsubst_fresh_weaken_tvar β Hfr).
+    clear - Hγ Hne; fsetdec.
+Qed.
+
 (* ===================================================================== *)
 (*  Leaf inversion: partial precision at a rigid replaced-variable target  *)
 (*  forces the subject to be EXACTLY that variable.                        *)
@@ -756,17 +794,6 @@ Proof. intros; apply pskl_shielded_ftv_open_rec_upper. Qed.
 (*  msubst-avoidance: a variable fresh from κ's images survives msubst.    *)
 (* ===================================================================== *)
 
-Lemma msubst_lookup_ftv_avoid : forall κ α β,
-  (forall p, In p κ -> α `notin` ftvar_in_ptyp (snd p)) ->
-  α `in` ftvar_in_ptyp (msubst_lookup κ β) ->
-  β = α.
-Proof.
-  induction κ as [ | [α2 τ] κ' IH ]; intros α β Hav Hα; simpl in Hα.
-  - clear - Hα; fsetdec.
-  - destruct (β == α2) as [Heq | Hne].
-    + exfalso. apply (Hav (α2, τ) (or_introl eq_refl)). exact Hα.
-    + apply IH; [ intros p Hp; apply Hav; right; exact Hp | exact Hα ].
-Qed.
 
 Lemma msubst_pskl_ftv_avoid : forall κ P α',
   (forall p, In p κ -> α' `notin` ftvar_in_ptyp (snd p)) ->
@@ -1685,75 +1712,19 @@ Qed.
 
 (* ---- mono-paint shape inversions (uskl side) ---- *)
 
-Lemma ptyp_to_uskl_syn_unit_inv : forall τ,
-  ptyp_to_uskl_syn τ = uskl_unit -> τ = ptyp_unit.
-Proof. intros τ H; destruct τ; simpl in H; try discriminate; reflexivity. Qed.
 
-Lemma ptyp_to_uskl_syn_var_inv : forall τ α,
-  ptyp_to_uskl_syn τ = uskl_var_f α -> τ = ptyp_var_f α.
-Proof.
-  intros τ α H; destruct τ; simpl in H; try discriminate.
-  inversion H; reflexivity.
-Qed.
 
-Lemma ptyp_to_uskl_syn_arrow_inv : forall τ ψ1 ψ2,
-  ptyp_to_uskl_syn τ = uskl_arrow ψ1 ψ2 ->
-  exists τ1 τ2, τ = ptyp_arrow τ1 τ2 /\
-    ψ1 = ptyp_to_uskl_syn τ1 /\ ψ2 = ptyp_to_uskl_syn τ2.
-Proof.
-  intros τ ψ1 ψ2 H; destruct τ; simpl in H; try discriminate.
-  inversion H; subst. exists τ1, τ2; repeat split; reflexivity.
-Qed.
 
-Lemma ptyp_to_uskl_syn_all_tag_absurd : forall τ ε ψ,
-  ptyp_to_uskl_syn τ = uskl_all_tag ε ψ -> False.
-Proof. intros τ ε ψ H; destruct τ; simpl in H; discriminate. Qed.
 
-Lemma ptyp_to_uskl_syn_dot_univ_ghost_absurd : forall τ ψ,
-  ptyp_to_uskl_syn τ = uskl_dot_univ_ghost ψ -> False.
-Proof. intros τ ψ H; destruct τ; simpl in H; discriminate. Qed.
 
 (* ---- mono-paint shape inversions (bskl side) ---- *)
 
-Lemma ptyp_to_bskl_syn_unit_inv : forall τ,
-  ptyp_to_bskl_syn τ = bskl_unit -> τ = ptyp_unit.
-Proof. intros τ H; destruct τ; simpl in H; try discriminate; reflexivity. Qed.
 
-Lemma ptyp_to_bskl_syn_var_inv : forall τ α,
-  ptyp_to_bskl_syn τ = bskl_var_f α -> τ = ptyp_var_f α.
-Proof.
-  intros τ α H; destruct τ; simpl in H; try discriminate.
-  inversion H; reflexivity.
-Qed.
 
-Lemma ptyp_to_bskl_syn_arrow_inv : forall τ Q1 Q2,
-  ptyp_to_bskl_syn τ = bskl_arrow Q1 Q2 ->
-  exists τ1 τ2, τ = ptyp_arrow τ1 τ2 /\
-    Q1 = ptyp_to_bskl_syn τ1 /\ Q2 = ptyp_to_bskl_syn τ2.
-Proof.
-  intros τ Q1 Q2 H; destruct τ; simpl in H; try discriminate.
-  inversion H; subst. exists τ1, τ2; repeat split; reflexivity.
-Qed.
 
-Lemma ptyp_to_bskl_syn_all_inh_absurd : forall τ Q,
-  ptyp_to_bskl_syn τ = bskl_all_inh Q -> False.
-Proof. intros τ Q H; destruct τ; simpl in H; discriminate. Qed.
 
-Lemma ptyp_to_bskl_syn_all_syn_mono_absurd : forall τ Q,
-  mono_ptyp τ ->
-  ptyp_to_bskl_syn τ = bskl_all_syn Q -> False.
-Proof.
-  intros τ Q Hm H; destruct τ; simpl in H; try discriminate.
-  inversion Hm.
-Qed.
 
-Lemma ptyp_to_bskl_syn_univ_ghost_absurd : forall τ Q,
-  ptyp_to_bskl_syn τ = bskl_univ_ghost Q -> False.
-Proof. intros τ Q H; destruct τ; simpl in H; discriminate. Qed.
 
-Lemma ptyp_to_bskl_syn_ghost_absurd : forall τ,
-  ptyp_to_bskl_syn τ = bskl_ghost -> False.
-Proof. intros τ H; destruct τ; simpl in H; discriminate. Qed.
 
 (* ---- κ-image monotypes ---- *)
 
@@ -1815,14 +1786,6 @@ Qed.
 (* ---- the Δ-vs-definitions freshness side condition (the paper's
    implicit wf of the Δ-extended context: Δ's binders postdate every
    definition image in Θ).  See DESIGN §6(h)/WF-SIDE-CONDITIONS. ---- *)
-
-Definition delta_def_fresh (Δ : atoms) (Θ : aenv) : Prop :=
-  forall β α τ, β `in` Δ ->
-    binds α (abind_flex_mono_def τ) Θ ->
-    β `notin` ftvar_in_ptyp τ.
-
-Lemma delta_def_fresh_empty : forall Θ, delta_def_fresh empty Θ.
-Proof. intros Θ β α τ Hin; clear - Hin; fsetdec. Qed.
 
 (* ---- definition chains (target-side flex unfolding) ---- *)
 
@@ -2171,62 +2134,6 @@ Qed.
 (*  ghost leaves reuse the □-precision, def-chain hops use Δ-def-freshness.*)
 (* ===================================================================== *)
 
-Lemma ad_refine_mono_paint_lhs_ppre : forall Θ Δr Q' Q,
-  {{ ⊢ Θ }}a ->
-  Δr [=] empty ->
-  {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
-  forall τb τ, Q' = ptyp_to_bskl_syn τb -> Q = ptyp_to_bskl_syn τ ->
-  mono_ptyp τb -> mono_ptyp τ ->
-  a_wf_ptyp Θ τ ->
-  forall Δ, {{ Θ ⨟ Δ ⊢ˢ (ptyp_to_pskl τb) ⊑ᵖ[ empty ] (ptyp_to_uskl_syn τ) }}ad.
-Proof.
-  intros Θ Δr Q' Q HwfΘ HΔr H; induction H;
-    intros τb τu HeqL HeqQ Hmb Hmu Hwτ Δo;
-    try solve [ exfalso; symmetry in HeqL;
-                solve [ eapply ptyp_to_bskl_syn_all_inh_absurd; exact HeqL
-                      | eapply ptyp_to_bskl_syn_ghost_absurd; exact HeqL
-                      | eapply ptyp_to_bskl_syn_univ_ghost_absurd; exact HeqL ] ].
-  - (* unit *)
-    symmetry in HeqL; apply ptyp_to_bskl_syn_unit_inv in HeqL; subst.
-    symmetry in HeqQ; apply ptyp_to_bskl_syn_unit_inv in HeqQ; subst.
-    simpl. apply ad_ppre__unit. clear; fsetdec.
-  - (* var *)
-    symmetry in HeqL; apply ptyp_to_bskl_syn_var_inv in HeqL; subst.
-    symmetry in HeqQ; apply ptyp_to_bskl_syn_var_inv in HeqQ.
-    inversion HeqQ; subst.
-    simpl. apply ad_ppre__var. clear; fsetdec.
-  - (* arrow *)
-    symmetry in HeqL.
-    destruct (ptyp_to_bskl_syn_arrow_inv _ HeqL)
-      as (τb1 & τb2 & -> & Heqb1 & Heqb2).
-    symmetry in HeqQ.
-    destruct (ptyp_to_bskl_syn_arrow_inv _ HeqQ)
-      as (τ1 & τ2 & -> & Heq1 & Heq2).
-    assert (Hmb1 : mono_ptyp τb1) by (inversion Hmb; assumption).
-    assert (Hmb2 : mono_ptyp τb2) by (inversion Hmb; assumption).
-    assert (Hm1 : mono_ptyp τ1) by (inversion Hmu; assumption).
-    assert (Hm2 : mono_ptyp τ2) by (inversion Hmu; assumption).
-    assert (Hw1 : a_wf_ptyp Θ τ1) by (inversion Hwτ; assumption).
-    assert (Hw2 : a_wf_ptyp Θ τ2) by (inversion Hwτ; assumption).
-    simpl.
-    apply ad_ppre__arrow with (Ψ1 := empty) (Ψ2 := empty);
-      [ apply IHad_refine_syn1; auto
-      | apply IHad_refine_syn2; auto
-      | clear; fsetdec ].
-  - (* flex_l *)
-    symmetry in HeqL; apply ptyp_to_bskl_syn_var_inv in HeqL; subst.
-    simpl.
-    eapply ad_ppre__flex_l; [ eassumption | ].
-    apply IHad_refine_syn; auto;
-      [ eapply a_wf_aenv_binds_def_mono; eauto ].
-  - (* flex_r *)
-    symmetry in HeqQ; apply ptyp_to_bskl_syn_var_inv in HeqQ; subst.
-    simpl.
-    eapply ad_ppre__flex_r; [ eassumption | ].
-    apply IHad_refine_syn; auto;
-      [ eapply a_wf_aenv_binds_def_mono; eauto
-      | eapply a_wf_aenv_binds_def_wf; eauto ].
-Qed.
 
 Lemma ad_refine_inh_ghost_ppre : forall Θ Δr Q' Q,
   {{ ⊢ Θ }}a ->
@@ -2851,3 +2758,100 @@ Proof.
 Qed.
 
 Arguments a_solve_sub_ctx_exchange {β1 β2 Θ m P Q Ξ P'}.
+
+(** Rigid substitution: clean targets, monotype images and free-variable bounds. *)
+
+Lemma uskl_rsubst_clean_eq : forall NM Θ Δρ Ψρ R' R,
+  uskl_rsubst NM Θ Δρ Ψρ R' R ->
+  (ftvar_in_uskl R) ∩ Δρ [=] empty ->
+  R' = R /\ Ψρ [=] empty.
+Proof.
+  intros NM Θ Δρ Ψρ R' R H; induction H; intros Hclean.
+  - split; [ reflexivity | assumption ].
+  - (* leaf: the target variable is IN Δρ — contradiction with cleanliness *)
+    exfalso. simpl in Hclean.
+    match goal with Hα : α `in` Δρ |- _ => clear - Hα Hclean; fsetdec end.
+  - (* arrow *)
+    simpl in Hclean.
+    destruct IHuskl_rsubst1 as [-> HΨ1]; [ clear - Hclean; fsetdec | ].
+    destruct IHuskl_rsubst2 as [-> HΨ2]; [ clear - Hclean; fsetdec | ].
+    split; [ reflexivity | ].
+    match goal with HΨ : Ψρ [=] union _ _ |- _ =>
+      clear - HΨ HΨ1 HΨ2; fsetdec end.
+  - (* all_syn *)
+    simpl in Hclean.
+    pick fresh α for
+      (L `union` Δρ `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
+    destruct (H0 α ltac:(solve_notin_auto)) as [Heq HΨ].
+    { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f α)).
+      simpl in *. clear - Hclean H1 Fr. fsetdec. }
+    split; [ | exact HΨ ].
+    f_equal.
+    apply open_uskl_wrt_uskl_inj with (α1 := α);
+      [ clear - Fr; fsetdec | clear - Fr; fsetdec | exact Heq ].
+  - (* all_tag *)
+    simpl in Hclean.
+    pick fresh α for
+      (L `union` Δρ `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
+    destruct (H0 α ltac:(solve_notin_auto)) as [Heq HΨ].
+    { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f α)).
+      simpl in *. clear - Hclean H1 Fr. fsetdec. }
+    split; [ | exact HΨ ].
+    f_equal.
+    apply open_uskl_wrt_uskl_inj with (α1 := α);
+      [ clear - Fr; fsetdec | clear - Fr; fsetdec | exact Heq ].
+  - (* univ_ghost *)
+    simpl in Hclean.
+    destruct IHuskl_rsubst as [-> HΨ]; [ exact Hclean | ].
+    split; [ reflexivity | exact HΨ ].
+  - (* dot_univ_ghost *)
+    simpl in Hclean.
+    destruct IHuskl_rsubst as [-> HΨ]; [ exact Hclean | ].
+    split; [ reflexivity | exact HΨ ].
+Qed.
+
+Lemma uskl_rsubst_mono_target : forall NM Θ Δρ Ψρ ψsub ψa τ,
+  uskl_rsubst NM Θ Δρ Ψρ ψsub ψa ->
+  ψsub = ptyp_to_uskl_syn τ -> mono_ptyp τ ->
+  exists τa, ψa = ptyp_to_uskl_syn τa /\ mono_ptyp τa.
+Proof.
+  intros NM Θ Δρ Ψρ ψsub ψa τ H. revert τ.
+  induction H; intros τ Heq Hm.
+  - (* refl *) exists τ; split; [ exact Heq | exact Hm ].
+  - (* leaf: the guess IS a bare variable, hence a monotype *)
+    exists (ptyp_var_f α); split; [ reflexivity | apply mono_ptyp__var ].
+  - (* arrow *)
+    destruct τ; simpl in Heq; try discriminate Heq.
+    inversion Heq; subst.
+    inversion Hm; subst.
+    destruct (IHuskl_rsubst1 _ eq_refl ltac:(assumption)) as (τa1 & -> & Hm1).
+    destruct (IHuskl_rsubst2 _ eq_refl ltac:(assumption)) as (τa2 & -> & Hm2).
+    exists (ptyp_arrow τa1 τa2); split;
+      [ reflexivity | apply mono_ptyp__arrow; assumption ].
+  - (* all_syn : a mono paint is never a ∀ *)
+    exfalso. destruct τ; simpl in Heq; try discriminate Heq. inversion Hm.
+  - (* all_tag *) exfalso. destruct τ; simpl in Heq; discriminate Heq.
+  - (* univ_ghost *)  exfalso. destruct τ; simpl in Heq; discriminate Heq.
+  - (* dot_univ_ghost *) exfalso. destruct τ; simpl in Heq; discriminate Heq.
+Qed.
+
+Lemma uskl_rsubst_ftv_target_bound : forall NM Θ Δρ Ψρ R' R,
+  uskl_rsubst NM Θ Δρ Ψρ R' R ->
+  ftvar_in_uskl R [<=] ftvar_in_uskl R' `union` Δρ.
+Proof.
+  intros NM Θ Δρ Ψρ R' R H; induction H; simpl; try fsetdec.
+  - (* all_syn *)
+    pick fresh α for
+      (L `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
+    pose proof (H0 α ltac:(clear - Fr; solve_notin_auto)) as Hα.
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f α)).
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R' (uskl_var_f α)).
+    simpl in *. clear - Hα H1 H2 Fr. fsetdec.
+  - (* all_tag *)
+    pick fresh α for
+      (L `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
+    pose proof (H0 α ltac:(clear - Fr; solve_notin_auto)) as Hα.
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f α)).
+    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R' (uskl_var_f α)).
+    simpl in *. clear - Hα H1 H2 Fr. fsetdec.
+Qed.

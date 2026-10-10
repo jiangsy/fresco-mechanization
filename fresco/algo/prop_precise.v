@@ -611,3 +611,33 @@ Proof. intros * H; inversion H; subst; eauto. Qed.
 (*  skeleton vs a Δ-free synthesised painting).                            *)
 (* ===================================================================== *)
 
+(** Freshness of rigid precision variables for context definitions. *)
+
+Definition delta_def_fresh (Δ : atoms) (Θ : aenv) : Prop :=
+  forall β α τ, β `in` Δ ->
+    binds α (abind_flex_mono_def τ) Θ ->
+    β `notin` ftvar_in_ptyp τ.
+
+Lemma delta_def_fresh_empty : forall Θ, delta_def_fresh empty Θ.
+Proof. intros Θ β α τ Hin; clear - Hin; fsetdec. Qed.
+
+Lemma delta_def_fresh_weaken_tvar : forall Δ Θ β,
+  delta_def_fresh Δ Θ ->
+  delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ).
+Proof.
+  intros * Hfr γ α τ Hγ Hb.
+  eapply Hfr; [ exact Hγ | eapply binds_flex_def_cons_tvar_inv; exact Hb ].
+Qed.
+
+(** The opened rigid also postdates every flexible definition. *)
+Lemma delta_def_fresh_open_tvar : forall Δ Θ β,
+  {{ ⊢ Θ }}a -> β `notin` dom Θ -> delta_def_fresh Δ Θ ->
+  delta_def_fresh (add β Δ) ((β ~ abind_tvar) ++ Θ).
+Proof.
+  intros * Hwf Hβ Hfr γ α τ Hγ Hb.
+  apply binds_flex_def_cons_tvar_inv in Hb.
+  destruct (γ == β) as [-> | Hne].
+  - pose proof (a_wf_ptyp_ftv_dom (@a_wf_aenv_binds_def_wf Θ α τ Hwf Hb)) as Hd.
+    clear - Hd Hβ; fsetdec.
+  - eapply Hfr; [ clear - Hγ Hne; fsetdec | exact Hb ].
+Qed.

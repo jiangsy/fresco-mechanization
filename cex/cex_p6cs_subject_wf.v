@@ -33,7 +33,7 @@ Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_subtyping.
 Require Import src.fresco.algo.prop_refine.
-Require Import src.fresco.algo.sub.look.prop_rsubst.  (* [delta_def_fresh] *)
+Require Import src.fresco.algo.prop_precise.  (* [delta_def_fresh] *)
 Require Import src.fresco.algo.sub.look.prop_eq_cstr.  (* P6-Cs + [msubst_uskl_syn] *)
 
 (* ===================================================================== *)

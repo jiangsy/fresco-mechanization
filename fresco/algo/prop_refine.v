@@ -18,6 +18,7 @@ Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.algo_decl.prop_ctx_mono.
 Require Import src.fresco.algo.prop_basic.
+Require Import src.fresco.algo.prop_mono_bridge.
 
 Set Implicit Arguments.
 
@@ -396,4 +397,135 @@ Proof.
     apply ad_pat_consis__ghostg. fsetdec.
   - (* dot_univ_ghost ↦ ∀◈ *)
     apply ad_pat_consis__dot_univ_ghost. auto.
+Qed.
+
+(** Monotype paintings under refinement: shapes, ghosts and free variables. *)
+
+
+
+Lemma bskl_monoish_paint : forall τ,
+  mono_ptyp τ -> bskl_monoish (ptyp_to_bskl_syn τ).
+Proof. intros τ Hm; induction Hm; simpl; constructor; auto. Qed.
+
+Lemma ad_refine_mono_paint_rhs_monoish : forall Θ Δr Q' Q,
+  {{ ⊢ Θ }}a ->
+  {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
+  forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
+  bskl_monoish Q.
+Proof.
+  intros * Hwf Hr τ Heq Hm.
+  destruct (refine_mono_join Hr Hwf Heq Hm) as (C & Hmono & -> & _).
+  apply bskl_monoish_paint; exact Hmono.
+Qed.
+
+Lemma ad_refine_arrow_arrow_inv : forall Θ Δr Q1' Q2' Q1 Q2,
+  {{ Θ ⨟ Δr ⊢ᵣ (bskl_arrow Q1' Q2') ⊳ (bskl_arrow Q1 Q2) }}ad ->
+  ({{ Θ ⨟ Δr ⊢ᵣ Q1' ⊳ Q1 }}ad) /\ ({{ Θ ⨟ Δr ⊢ᵣ Q2' ⊳ Q2 }}ad).
+Proof.
+  intros Θ Δr Q1' Q2' Q1 Q2 H; inversion H; subst; split; assumption.
+Qed.
+
+Lemma ad_refine_inh_deltar_var_rhs_no_ghost : forall Θr Δr Q' Q,
+  {{ Θr ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
+  forall α0 P', Q = bskl_var_f α0 -> Q' = pskl_to_bskl_inh P' ->
+  α0 `notin` dom Θr ->
+  α0 `in` Δr ->
+  pskl_no_ghost P'.
+Proof.
+  intros Θr Δr Q' Q H; induction H; intros α0 P' HeqQ HeqL HX0 HΔ0;
+    try discriminate HeqQ.
+  - (* var *)
+    destruct P'; simpl in HeqL; try discriminate HeqL.
+    simpl; exact I.
+  - (* ghost: the fill would be the binder variable — not Δr-disjoint *)
+    exfalso.
+    destruct P; simpl in HeqQ; try discriminate HeqQ.
+    inversion HeqQ; subst.
+    match goal with Hint : _ ∩ _ [=] empty |- _ =>
+      simpl in Hint; clear - Hint HΔ0; fsetdec end.
+  - (* univ_ghost_remove *)
+    destruct P'; simpl in HeqL; try discriminate HeqL.
+    inversion HeqL; subst.
+    simpl. eapply IHad_refine_syn; eauto.
+  - (* flex_l: the source is a bare variable *)
+    destruct P'; simpl in HeqL; try discriminate HeqL.
+    simpl; exact I.
+  - (* flex_r: the target variable would be Θr-defined *)
+    inversion HeqQ; subst.
+    exfalso. apply HX0.
+    match goal with Hb : binds _ (abind_flex_mono_def _) _ |- _ =>
+      eapply binds_In; exact Hb end.
+Qed.
+
+Lemma ad_refine_mono_paint_ftv_bound : forall Θ Δr Q' Q,
+  {{ ⊢ Θ }}a ->
+  {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
+  forall τb S, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
+  ftvar_in_ptyp τb [<=] S ->
+  (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
+     α `in` S /\ ftvar_in_ptyp τ0 [<=] S) ->
+  ftvar_in_bskl Q [<=] S.
+Proof.
+  intros Θ Δr Q' Q HwfΘ H; induction H; intros τb S HeqL Hmb Hsub Hdefs.
+  - (* unit *) simpl. clear; fsetdec.
+  - (* var: the paint IS that variable *)
+    symmetry in HeqL. apply ptyp_to_bskl_syn_var_inv in HeqL; subst τb.
+    simpl in *. clear - Hsub; fsetdec.
+  - (* arrow *)
+    symmetry in HeqL.
+    destruct (ptyp_to_bskl_syn_arrow_inv _ HeqL)
+      as (τ1 & τ2 & -> & Heq1 & Heq2).
+    simpl in Hsub.
+    assert (Hm1 : mono_ptyp τ1) by (inversion Hmb; assumption).
+    assert (Hm2 : mono_ptyp τ2) by (inversion Hmb; assumption).
+    assert (Hb1 : ftvar_in_bskl Q3 [<=] S)
+      by (eapply IHad_refine_syn1;
+            [ exact HwfΘ | exact Heq1 | exact Hm1
+            | clear - Hsub; fsetdec | exact Hdefs ]).
+    assert (Hb2 : ftvar_in_bskl Q4 [<=] S)
+      by (eapply IHad_refine_syn2;
+            [ exact HwfΘ | exact Heq2 | exact Hm2
+            | clear - Hsub; fsetdec | exact Hdefs ]).
+    simpl. clear - Hb1 Hb2; fsetdec.
+  - (* all: LHS all_inh, never a paint *)
+    destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* ghost: LHS □, never a paint — THIS is the case the bound needs shut *)
+    destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* univ_ghost_remove *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* univ_ghost_fill *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* univ_ghost_keep *) destruct τb; simpl in HeqL; discriminate HeqL.
+  - (* flex_l: the source variable's DEFINITION becomes the new paint *)
+    destruct τb; simpl in HeqL; try discriminate HeqL.
+    inversion HeqL; subst.
+    destruct (Hdefs _ _ H) as [_ Hτ].
+    eapply IHad_refine_syn;
+      [ exact HwfΘ | reflexivity
+      | eapply a_wf_aenv_binds_def_mono; [ exact HwfΘ | exact H ]
+      | exact Hτ | exact Hdefs ].
+  - (* flex_r: the target IS a DEFINED variable *)
+    destruct (Hdefs _ _ H) as [Hα _]. simpl. clear - Hα; fsetdec.
+Qed.
+
+Lemma ad_refine_mono_paint_allinh_rhs_absurd : forall Θ Δr Q' Q,
+  {{ ⊢ Θ }}a ->
+  {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
+  forall Q0, Q = bskl_all_inh Q0 ->
+  forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
+  False.
+Proof.
+  intros * Hwf Hr Q0 -> τ -> Hm.
+  pose proof (ad_refine_mono_paint_rhs_monoish Hwf Hr eq_refl Hm) as Hshape.
+  inversion Hshape.
+Qed.
+
+Lemma ad_refine_mono_paint_allsyn_rhs_absurd : forall Θ Δr Q' Q,
+  {{ ⊢ Θ }}a ->
+  {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
+  forall Q0, Q = bskl_all_syn Q0 ->
+  forall τb, Q' = ptyp_to_bskl_syn τb -> mono_ptyp τb ->
+  False.
+Proof.
+  intros * Hwf Hr Q0 -> τ -> Hm.
+  pose proof (ad_refine_mono_paint_rhs_monoish Hwf Hr eq_refl Hm) as Hshape.
+  inversion Hshape.
 Qed.

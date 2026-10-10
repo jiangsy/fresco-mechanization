@@ -1,7 +1,7 @@
 (** P6 — THE SOLVE-EXTENSION PACKAGES.
 
-    Second of the three shared-substrate files under [algo/sub/look/]
-    ([prop_rsubst.v] is first, [prop_flex_apart.v] third).
+    Second of the two shared-substrate files under [algo/sub/look/]
+    ([prop_rsubst.v] carries rigid substitution).
 
     What the SolE-FlexR repair costs the completeness proofs.  The repaired
     row returns [guess^TY(P_i)] rather than the target flexible, and
@@ -52,7 +52,7 @@ Require Import src.fresco.algo.prop_metasubst.
 Require Import src.fresco.algo.prop_compose.   (* a_inc_dom_flex, a_inc_lookup_mono *)
 Require Import src.fresco.algo.sub.look.prop_rsubst.
 
-(* ⚠️ Per-FILE flag — see prop_flex_apart.v's note. *)
+(* Leading context arguments are implicit in the package helpers. *)
 Set Implicit Arguments.
 
 (** The fixed scope of non-rigid entries and substitution images.  Recursive
@@ -102,6 +102,43 @@ Proof.
 Qed.
 Arguments solve_scope_flex_prefix [Θ0 Θ Θw κ Ξ κa] _ _ _.
 
+
+(** Open both contexts while preserving their increase, input scoping and
+    the collection variable's freshness. *)
+Lemma solve_context_open_tvar : forall Θ0 Θ κ α β P0 Pi,
+  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a ->
+  κ ∷ Θ0 ⊑ Θ ->
+  α `notin` dom Θ -> α `notin` dom Θ0 ->
+  β <> α -> β `notin` dom Θ -> β `notin` dom Θ0 ->
+  (forall (x : atom) (b : abind),
+     binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
+  /\ (forall (x : atom) (b : abind),
+        binds x b Θ -> binds x b ((β ~ abind_tvar) ++ Θ))
+  /\ {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a
+  /\ {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a
+  /\ α `notin` dom ((β ~ abind_tvar) ++ Θ)
+  /\ α `notin` dom ((β ~ abind_tvar) ++ Θ0)
+  /\ κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ)
+  /\ {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a
+  /\ {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a.
+Proof.
+  intros Θ0 Θ κ α β P0 Pi HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 Hβα HβΘ HβΘ0.
+  assert (Hweak0 : forall (x : atom) (b : abind),
+            binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
+    by (intros x b Hb; apply binds_app_3; exact Hb).
+  assert (Hweak : forall (x : atom) (b : abind),
+            binds x b Θ -> binds x b ((β ~ abind_tvar) ++ Θ))
+    by (intros x b Hb; apply binds_app_3; exact Hb).
+  repeat split; try assumption.
+  - apply a_wf_aenv__tvar; assumption.
+  - apply a_wf_aenv__tvar; assumption.
+  - simpl; clear - HαΘ Hβα; fsetdec.
+  - simpl; clear - HαΘ0 Hβα; fsetdec.
+  - apply a_inc_cons_tvar; exact Hκ.
+  - eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfP0 ].
+  - eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfPi ].
+Qed.
 
 (* ===================================================================== *)
 (*  THE FLEX-BLOCK EXTENSION KIT — moved up from                          *)
@@ -794,34 +831,7 @@ Qed.
    [var] row carries [a_binds_tvar α Θ].  (The [flex_l] row does too, via the
    definition it looks up: a defined flexible is tvar-ish.)  No new external
    side condition — the fact was already in the derivation. *)
-Lemma ad_pat_consis_mono_subject_wf : forall Ψ Θ R Q,
-  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
-  forall τ, R = ptyp_to_uskl_syn τ -> mono_ptyp τ ->
-  a_wf_ptyp Θ τ.
-Proof.
-  (* every GHOST-headed and ∀-headed row dies: a ghost is never a paint, and
-     a ∀ paint is not a monotype (that is what [Hm] rules out) *)
-  intros Ψ Θ R Q H; induction H; intros τ0 Heq Hm;
-    try solve [ destruct τ0; simpl in Heq;
-                solve [ discriminate Heq | inversion Hm ] ].
-  - (* unit *) destruct τ0; simpl in Heq; try discriminate Heq.
-    apply a_wf_ptyp__unit.
-  - (* var: the rule's OWN premise *)
-    destruct τ0; simpl in Heq; try discriminate Heq.
-    inversion Heq; subst. apply a_wf_ptyp__var; assumption.
-  - (* arrow *)
-    destruct τ0; simpl in Heq; try discriminate Heq.
-    inversion Heq; subst. inversion Hm; subst.
-    apply a_wf_ptyp__arrow;
-      [ eapply IHad_pat_consis1 | eapply IHad_pat_consis2 ];
-      solve [ reflexivity | assumption ].
-  - (* flex_l: the subject IS a variable, and the definition it looks up
-       makes that variable tvar-ish *)
-    destruct τ0; simpl in Heq; try discriminate Heq.
-    inversion Heq; subst. apply a_wf_ptyp__var. right; right; eauto.
-  - (* flex_r: the subject passes through *)
-    eapply IHad_pat_consis; [ exact Heq | exact Hm ].
-Qed.
+(* [ad_pat_consis_mono_subject_wf] lives in consis/prop_consis_precise.v. *)
 
 (* ===================================================================== *)
 (*  ⭐ THE κ-EXTENSION PACKAGE, ONCE.                                      *)
@@ -1073,7 +1083,7 @@ Proof.
            guess and the extension is the one [a_guess_ty_witness_mono]
            builds alongside it.  The old proof went the other way: its
            witness was [β̂] and the obligation needed the whole
-           [ad_refine_mono_paint_lhs_ppre] bridge through the refinement.
+           [ad_refine_mono_paint_lhs_partial_precise] bridge through the refinement.
            Here the precision obligation IS the witness's own output. *)
         assert (Hszg : size_pskl (pskl_arrow Pi1 Pi2) <= S n)
           by (cbn in Hn |- *; lia).

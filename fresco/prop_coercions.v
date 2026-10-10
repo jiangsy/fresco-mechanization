@@ -1453,3 +1453,75 @@ Lemma lc_uskl_dot_univ_ghost_inv : forall R,
 Proof. intros R H; inversion H; auto. Qed.
 
 Unset Implicit Arguments.
+
+(** Constructor inversions for synthesised type paintings. *)
+Set Implicit Arguments.
+
+Lemma ptyp_to_uskl_syn_unit_inv : forall τ,
+  ptyp_to_uskl_syn τ = uskl_unit -> τ = ptyp_unit.
+Proof. intros τ H; destruct τ; simpl in H; try discriminate; reflexivity. Qed.
+
+Lemma ptyp_to_uskl_syn_var_inv : forall τ α,
+  ptyp_to_uskl_syn τ = uskl_var_f α -> τ = ptyp_var_f α.
+Proof.
+  intros τ α H; destruct τ; simpl in H; try discriminate.
+  inversion H; reflexivity.
+Qed.
+
+Lemma ptyp_to_uskl_syn_arrow_inv : forall τ ψ1 ψ2,
+  ptyp_to_uskl_syn τ = uskl_arrow ψ1 ψ2 ->
+  exists τ1 τ2, τ = ptyp_arrow τ1 τ2 /\
+    ψ1 = ptyp_to_uskl_syn τ1 /\ ψ2 = ptyp_to_uskl_syn τ2.
+Proof.
+  intros τ ψ1 ψ2 H; destruct τ; simpl in H; try discriminate.
+  inversion H; subst. exists τ1, τ2; repeat split; reflexivity.
+Qed.
+
+Lemma ptyp_to_uskl_syn_all_tag_absurd : forall τ ε ψ,
+  ptyp_to_uskl_syn τ = uskl_all_tag ε ψ -> False.
+Proof. intros τ ε ψ H; destruct τ; simpl in H; discriminate. Qed.
+
+Lemma ptyp_to_uskl_syn_dot_univ_ghost_absurd : forall τ ψ,
+  ptyp_to_uskl_syn τ = uskl_dot_univ_ghost ψ -> False.
+Proof. intros τ ψ H; destruct τ; simpl in H; discriminate. Qed.
+
+Lemma ptyp_to_bskl_syn_unit_inv : forall τ,
+  ptyp_to_bskl_syn τ = bskl_unit -> τ = ptyp_unit.
+Proof. intros τ H; destruct τ; simpl in H; try discriminate; reflexivity. Qed.
+
+Lemma ptyp_to_bskl_syn_var_inv : forall τ α,
+  ptyp_to_bskl_syn τ = bskl_var_f α -> τ = ptyp_var_f α.
+Proof.
+  intros τ α H; destruct τ; simpl in H; try discriminate.
+  inversion H; reflexivity.
+Qed.
+
+Lemma ptyp_to_bskl_syn_arrow_inv : forall τ Q1 Q2,
+  ptyp_to_bskl_syn τ = bskl_arrow Q1 Q2 ->
+  exists τ1 τ2, τ = ptyp_arrow τ1 τ2 /\
+    Q1 = ptyp_to_bskl_syn τ1 /\ Q2 = ptyp_to_bskl_syn τ2.
+Proof.
+  intros τ Q1 Q2 H; destruct τ; simpl in H; try discriminate.
+  inversion H; subst. exists τ1, τ2; repeat split; reflexivity.
+Qed.
+
+Lemma ptyp_to_bskl_syn_all_inh_absurd : forall τ Q,
+  ptyp_to_bskl_syn τ = bskl_all_inh Q -> False.
+Proof. intros τ Q H; destruct τ; simpl in H; discriminate. Qed.
+
+Lemma ptyp_to_bskl_syn_all_syn_mono_absurd : forall τ Q,
+  mono_ptyp τ ->
+  ptyp_to_bskl_syn τ = bskl_all_syn Q -> False.
+Proof.
+  intros τ Q Hm H; destruct τ; simpl in H; try discriminate.
+  inversion Hm.
+Qed.
+
+Lemma ptyp_to_bskl_syn_univ_ghost_absurd : forall τ Q,
+  ptyp_to_bskl_syn τ = bskl_univ_ghost Q -> False.
+Proof. intros τ Q H; destruct τ; simpl in H; discriminate. Qed.
+
+Lemma ptyp_to_bskl_syn_ghost_absurd : forall τ,
+  ptyp_to_bskl_syn τ = bskl_ghost -> False.
+Proof. intros τ H; destruct τ; simpl in H; discriminate. Qed.
+Unset Implicit Arguments.

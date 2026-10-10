@@ -63,7 +63,6 @@ Require Import src.fresco.algo.prop_normal.
 Require Import src.fresco.algo.sub.prop_completeness_sub_precise.
 Require Import src.fresco.algo.sub.look.prop_rsubst.
 Require Import src.fresco.algo.sub.look.prop_solve_ext.
-Require Import src.fresco.algo.sub.look.prop_flex_apart.
 Require Import src.fresco.algo.sub.look.prop_eq_var.
 Require Import src.fresco.algo.sub.look.prop_eq_cstr.
 Require Import src.fresco.algo.sub.look.prop_sub_cstr.
@@ -545,7 +544,7 @@ Qed.
 
 (** Both properties survive prefixing a block of wf monotype images — which
     is what the ∀ / arrow cases hand back up.  [msubst_lc_app_wf] MOVED UP to
-    sub/look/prop_rsubst.v (2026-08-04): under the SolE-FlexR repair every P6 ∀
+    algo/prop_metasubst.v (2026-10-11): under the SolE-FlexR repair every P6 ∀
     row prefixes such a block, not only P6-L. *)
 
 Lemma msubst_ftv_app_wf : forall Θ κa κb,

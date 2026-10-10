@@ -497,3 +497,29 @@ Proof.
 Qed.
 
 Unset Implicit Arguments.
+
+(** Ghost-freeness under closing, and decorated-quantifier inversion. *)
+Set Implicit Arguments.
+
+Lemma pskl_no_ghost_close_rec : forall P β k,
+  pskl_no_ghost P -> pskl_no_ghost (close_pskl_wrt_pskl_rec k β P).
+Proof.
+  induction P; intros β k H; simpl in *; auto.
+  - (* var_b *) destruct (lt_ge_dec n k); simpl; auto.
+  - (* var_f *) destruct (β == α); simpl; auto.
+  - (* arrow *) destruct H; split; auto.
+Qed.
+
+Lemma pskl_no_ghost_close : forall P β,
+  pskl_no_ghost P -> pskl_no_ghost (close_pskl_wrt_pskl β P).
+Proof.
+  intros P β H; unfold close_pskl_wrt_pskl;
+    apply pskl_no_ghost_close_rec; exact H.
+Qed.
+
+Lemma is_dskl_all_tag_inv : forall ε ψ,
+  is_dskl (uskl_all_tag ε ψ) ->
+  exists L, forall α, α `notin` L ->
+    is_dskl (open_uskl_wrt_uskl ψ (uskl_var_f α)).
+Proof. intros ε ψ H; inversion H; subst. eexists; eassumption. Qed.
+Unset Implicit Arguments.

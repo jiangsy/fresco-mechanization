@@ -946,3 +946,25 @@ Proof.
         by (solve [ apply app_assoc | symmetry; apply app_assoc ]).
       exact Hpost.
 Qed.
+
+(** Solving preserves ghost-freeness of the counterpart. *)
+
+Lemma a_solve_eq_no_ghost_p0 : forall Θ Pi P0 Ξ Pa,
+  {{ Θ ⊢ₑ Pi ∼ P0 ⤳ Ξ ⨾ Pa }}a ->
+  pskl_no_ghost P0 ->
+  pskl_no_ghost Pa.
+Proof.
+  intros Θ Pi P0 Ξ Pa H; induction H; intros Hnh; simpl in *; auto.
+  - (* flex_r: guess^TY's output is a paint *) apply ptyp_to_pskl_no_ghost.
+  - (* ghost_r: the counterpart is □ — excluded *) contradiction.
+  - (* arrow *) destruct Hnh; split; auto.
+  - (* forall *)
+    apply pskl_no_ghost_close.
+    apply IHa_solve_eq. apply pskl_no_ghost_open_rec; simpl; auto.
+  - (* univ_ghost_l_all (GhostForall) *)
+    apply pskl_no_ghost_close.
+    apply IHa_solve_eq. apply pskl_no_ghost_open_rec; simpl; auto.
+  - (* all_l_univ_ghost (ForallGhost) *)
+    apply pskl_no_ghost_close.
+    apply IHa_solve_eq; exact Hnh.
+Qed.

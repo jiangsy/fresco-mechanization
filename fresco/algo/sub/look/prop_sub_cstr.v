@@ -47,7 +47,6 @@ Require Import src.fresco.algo.prop_compose.
 Require Import src.fresco.algo.prop_metasubst.
 Require Import src.fresco.algo.sub.look.prop_rsubst.
 Require Import src.fresco.algo.sub.look.prop_solve_ext.
-Require Import src.fresco.algo.sub.look.prop_flex_apart.
 Require Import src.fresco.algo.sub.look.prop_eq_var.
 
 Set Implicit Arguments.
@@ -537,46 +536,7 @@ Qed.
       · P6-Cs's [Θs] (the ρ-images' fixed scope, for its ftv-𝒞 conclusion) is
         NOT taken here: this statement has no ftv-𝒞 conjunct.  That is Phase B,
         and it is what Sub-ForallR needs. *)
-(* ⭐ THE PACK SURVIVES OPENING A FRESH RIGID BINDER (2026-08-23).  Every ∀
-   row of the induction below — LS-ForallR, and LS-ForallL at BOTH tags —
-   reopens the CONTEXT-RELATIVE half of the invariant at [(β ~ tvar) ++ ·].
-   That is ONE fact about the pack, and it stood written out three times.
-   Naming it is what makes a binder row read as "the invariant is stable
-   under opening a binder" instead of nine reproved side conditions. *)
-Lemma looksub_gen_open_tvar : forall Θ0 Θ κ α β P0 Pi,
-  {{ ⊢ Θ }}a -> {{ ⊢ Θ0 }}a ->
-  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a ->
-  κ ∷ Θ0 ⊑ Θ ->
-  α `notin` dom Θ -> α `notin` dom Θ0 ->
-  β <> α -> β `notin` dom Θ -> β `notin` dom Θ0 ->
-  (forall (x : atom) (b : abind),
-     binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
-  /\ (forall (x : atom) (b : abind),
-        binds x b Θ -> binds x b ((β ~ abind_tvar) ++ Θ))
-  /\ {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a
-  /\ {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a
-  /\ α `notin` dom ((β ~ abind_tvar) ++ Θ)
-  /\ α `notin` dom ((β ~ abind_tvar) ++ Θ0)
-  /\ κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ)
-  /\ {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a
-  /\ {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a.
-Proof.
-  intros Θ0 Θ κ α β P0 Pi HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 Hβα HβΘ HβΘ0.
-  assert (Hweak0 : forall (x : atom) (b : abind),
-            binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
-    by (intros x b Hb; apply binds_app_3; exact Hb).
-  assert (Hweak : forall (x : atom) (b : abind),
-            binds x b Θ -> binds x b ((β ~ abind_tvar) ++ Θ))
-    by (intros x b Hb; apply binds_app_3; exact Hb).
-  repeat split; try assumption.
-  - apply a_wf_aenv__tvar; assumption.
-  - apply a_wf_aenv__tvar; assumption.
-  - simpl; clear - HαΘ Hβα; fsetdec.
-  - simpl; clear - HαΘ0 Hβα; fsetdec.
-  - apply a_inc_cons_tvar; exact Hκ.
-  - eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfP0 ].
-  - eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfPi ].
-Qed.
+
 
 (** The output package shared by collection-and-solving completeness and
     its binder step.  The public theorem below retains its explicit statement. *)
@@ -1266,7 +1226,7 @@ Proof.
       (* ⭐ the context-relative pack, in one move.  ⚠️ [HwfP0β] is DROPPED
          here — Sub-ForallR descends the TARGET, so its own is about
          [open (ptyp_to_pskl A0) β] and is proved just below. *)
-      destruct (looksub_gen_open_tvar
+      destruct (solve_context_open_tvar
                   HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 Hβα HβΘ HβΘ0)
         as (Hweak0 & Hweak & Hwfβ & Hwfβ0 & HαΘβ & HαΘ0β & Hκβ & _ & HwfPiβ).
       (* --- the target descends; the subject R' does not --- *)
@@ -1275,10 +1235,8 @@ Proof.
       { eapply a_wf_pskl_delta_mono;
           [ apply (Hw0body β ltac:(clear - Fr; solve_notin))
           | intros ? _ Hine; clear - Hine; fsetdec ]. }
-      assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ)).
-      { intros β0 α0 τ0 Hβ0 Hb. eapply Hdfresh; [ exact Hβ0 | ].
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-          [ discriminate Habs | exact Hb' ]. }
+      assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ))
+        by (eapply delta_def_fresh_weaken_tvar; eassumption).
       assert (Hrfrβ : rsubst_fresh Δρ ((β ~ abind_tvar) ++ Θ) κ)
         by (apply rsubst_fresh_weaken_tvar; exact Hrfr).
       assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ Δ
@@ -2405,7 +2363,7 @@ Proof.
       in Hrho'.
     (* --- the recursive call's premises at Θ0,β / Θ,β / add β Δ / add β Δρ --- *)
     (* ⭐ the whole context-relative pack, in one move *)
-    destruct (looksub_gen_open_tvar
+    destruct (solve_context_open_tvar
                 HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 Hβα HβΘ HβΘ0)
       as (Hweak0 & Hweak & Hwfβ & Hwfβ0 & HαΘβ & HαΘ0β & Hκβ
           & HwfP0β & HwfPiβ).
@@ -2445,38 +2403,13 @@ Proof.
       cbn [ftag_in_uskl] in HΨs1, Hdisj.
       clear - Hs Hr Hb Hm Hop HΨs1 Hdisj Hψatag HΨgfresh HΨρ'mono; fsetdec. }
     assert (HΨs2β : Ψa [<=] Ψ `union` Ψ'0) by (clear - HΨs2; fsetdec).
-    assert (Hdfreshβ : delta_def_fresh (add β Δ) ((β ~ abind_tvar) ++ Θ)).
-    { intros β0 α3 τ3 Hβ0 Hb.
-      assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
-        by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-              [ discriminate Habs | exact Hb' ]).
-      destruct (AtomSetProperties.In_dec β0 Δ) as [Hin1 | Hni1];
-        [ eapply Hdfresh; [ exact Hin1 | exact Hb' ] | ].
-      assert (Heqβ : β0 = β) by (clear - Hβ0 Hni1; fsetdec); subst β0.
-      pose proof (a_wf_ptyp_ftv_dom
-                    (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
-      clear - Hd HβΘ; fsetdec. }
+    assert (Hdfreshβ : delta_def_fresh (add β Δ) ((β ~ abind_tvar) ++ Θ))
+      by (eapply delta_def_fresh_open_tvar; eassumption).
     (* Sub-ForallL steps the SUBJECT only, so P0 does NOT move — only Δρ grows, by a rigid β fresh for the guess,
        and the context gains it too *)
     assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
-              ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad).
-    { (* the Δ-congruence's set argument is PINNED by a named [assert] —
-         inline, its Δ is an evar when the [=] side goal runs and [fsetdec]
-         does not terminate *)
-      assert (Hp0 : {{ ((β ~ abind_tvar) ++ Θ) ⨟ (Δ `union` singleton β)
-                ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad).
-      { eapply ad_partial_precise_delta_weaken_fresh;
-          [ eapply ad_partial_precise_weaken; [ exact Hpre | exact Hweak ]
-          | clear - Hβψa; fsetdec
-          | intros β0 α3 τ3 Hβ0 Hb;
-            assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
-              by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-                    [ discriminate Habs | exact Hb' ]);
-            assert (Heqβ : β0 = β) by (clear - Hβ0; fsetdec); subst β0;
-            pose proof (a_wf_ptyp_ftv_dom
-                          (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd;
-            clear - Hd HβΘ; fsetdec ]. }
-      eapply ad_partial_precise_delta_cong; [ exact Hp0 | clear; fsetdec ]. }
+              ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad)
+      by (eapply ad_partial_precise_open_tvar_fresh; eassumption).
     assert (Hrefβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣ
               (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad)
       by (eapply ad_refine_syn_weaken; [ exact Hrefine | exact Hweak ]).
@@ -2487,27 +2420,8 @@ Proof.
       by (eapply uskl_rsubst_weaken; [ exact Hrho' | exact Hweak ]).
     assert (HΨρβ : Ψρ' ∩ Ψ' [=] empty)
       by (clear - HΨρ'sub HΨρ HΨgfresh; fsetdec).
-    assert (Hrfrβ : rsubst_fresh (add β Δρ) ((β ~ abind_tvar) ++ Θ) κ).
-    { intros α0 Hα0.
-      destruct (AtomSetProperties.In_dec α0 Δρ) as [Hin1 | Hni1].
-      - destruct (Hrfr α0 Hin1) as (Hb & Him & Hdf).
-        repeat split; [ apply binds_app_3; exact Hb | exact Him | ].
-        intros α3 τ3 Hb3. eapply Hdf.
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb3) as [[_ Habs] | Hb'];
-          [ discriminate Habs | exact Hb' ].
-      - assert (Heqβ : α0 = β) by (clear - Hα0 Hni1; fsetdec); subst α0.
-        repeat split.
-        + unfold binds; left; reflexivity.
-        + intros pp Hpp.
-          pose proof (a_inc_image_ftv_dom Hκ pp Hpp) as Hb.
-          clear - Hb HβΘ; fsetdec.
-        + intros α3 τ3 Hb3.
-          assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
-            by (destruct (binds_cons_1 _ _ _ _ _ _ Hb3) as [[_ Habs] | Hb'];
-                  [ discriminate Habs | exact Hb' ]).
-          pose proof (a_wf_ptyp_ftv_dom
-                        (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
-          clear - Hd HβΘ; fsetdec. }
+    assert (Hrfrβ : rsubst_fresh (add β Δρ) ((β ~ abind_tvar) ++ Θ) κ)
+      by (eapply rsubst_fresh_open_tvar; eassumption).
     assert (HΔρΔβ : add β Δρ [<=] add β Δ) by (clear - HΔρΔ; fsetdec).
     assert (HΔρftvβ : forall α0, α0 `in` (add β Δρ) ->
               α0 `notin` ftvar_in_pskl P0 `union` ftvar_in_pskl Pi).
@@ -2677,7 +2591,7 @@ Proof.
       in Hrho'.
     (* --- the recursive call's premises at Θ0,β / Θ,β / add β Δ / add β Δρ --- *)
     (* ⭐ the whole context-relative pack, in one move *)
-    destruct (looksub_gen_open_tvar
+    destruct (solve_context_open_tvar
                 HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 Hβα HβΘ HβΘ0)
       as (Hweak0 & Hweak & Hwfβ & Hwfβ0 & HαΘβ & HαΘ0β & Hκβ
           & HwfP0β & HwfPiβ).
@@ -2716,38 +2630,13 @@ Proof.
       cbn [ftag_in_uskl] in HΨs1, Hdisj.
       clear - Hs Hr Hb Hm Hop HΨs1 Hdisj Hψatag HΨgfresh HΨρ'mono; fsetdec. }
     assert (HΨs2β : Ψa [<=] Ψ `union` Ψ'0) by (clear - HΨs2; fsetdec).
-    assert (Hdfreshβ : delta_def_fresh (add β Δ) ((β ~ abind_tvar) ++ Θ)).
-    { intros β0 α3 τ3 Hβ0 Hb.
-      assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
-        by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-              [ discriminate Habs | exact Hb' ]).
-      destruct (AtomSetProperties.In_dec β0 Δ) as [Hin1 | Hni1];
-        [ eapply Hdfresh; [ exact Hin1 | exact Hb' ] | ].
-      assert (Heqβ : β0 = β) by (clear - Hβ0 Hni1; fsetdec); subst β0.
-      pose proof (a_wf_ptyp_ftv_dom
-                    (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
-      clear - Hd HβΘ; fsetdec. }
+    assert (Hdfreshβ : delta_def_fresh (add β Δ) ((β ~ abind_tvar) ++ Θ))
+      by (eapply delta_def_fresh_open_tvar; eassumption).
     (* Sub-ForallL steps the SUBJECT only, so P0 does NOT move — only Δρ grows, by a rigid β fresh for the guess,
        and the context gains it too *)
     assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
-              ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad).
-    { (* the Δ-congruence's set argument is PINNED by a named [assert] —
-         inline, its Δ is an evar when the [=] side goal runs and [fsetdec]
-         does not terminate *)
-      assert (Hp0 : {{ ((β ~ abind_tvar) ++ Θ) ⨟ (Δ `union` singleton β)
-                ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad).
-      { eapply ad_partial_precise_delta_weaken_fresh;
-          [ eapply ad_partial_precise_weaken; [ exact Hpre | exact Hweak ]
-          | clear - Hβψa; fsetdec
-          | intros β0 α3 τ3 Hβ0 Hb;
-            assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
-              by (destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-                    [ discriminate Habs | exact Hb' ]);
-            assert (Heqβ : β0 = β) by (clear - Hβ0; fsetdec); subst β0;
-            pose proof (a_wf_ptyp_ftv_dom
-                          (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd;
-            clear - Hd HβΘ; fsetdec ]. }
-      eapply ad_partial_precise_delta_cong; [ exact Hp0 | clear; fsetdec ]. }
+              ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad)
+      by (eapply ad_partial_precise_open_tvar_fresh; eassumption).
     assert (Hrefβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ empty ⊢ᵣ
               (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad)
       by (eapply ad_refine_syn_weaken; [ exact Hrefine | exact Hweak ]).
@@ -2758,27 +2647,8 @@ Proof.
       by (eapply uskl_rsubst_weaken; [ exact Hrho' | exact Hweak ]).
     assert (HΨρβ : Ψρ' ∩ Ψ' [=] empty)
       by (clear - HΨρ'sub HΨρ HΨgfresh; fsetdec).
-    assert (Hrfrβ : rsubst_fresh (add β Δρ) ((β ~ abind_tvar) ++ Θ) κ).
-    { intros α0 Hα0.
-      destruct (AtomSetProperties.In_dec α0 Δρ) as [Hin1 | Hni1].
-      - destruct (Hrfr α0 Hin1) as (Hb & Him & Hdf).
-        repeat split; [ apply binds_app_3; exact Hb | exact Him | ].
-        intros α3 τ3 Hb3. eapply Hdf.
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb3) as [[_ Habs] | Hb'];
-          [ discriminate Habs | exact Hb' ].
-      - assert (Heqβ : α0 = β) by (clear - Hα0 Hni1; fsetdec); subst α0.
-        repeat split.
-        + unfold binds; left; reflexivity.
-        + intros pp Hpp.
-          pose proof (a_inc_image_ftv_dom Hκ pp Hpp) as Hb.
-          clear - Hb HβΘ; fsetdec.
-        + intros α3 τ3 Hb3.
-          assert (Hb' : binds α3 (abind_flex_mono_def τ3) Θ)
-            by (destruct (binds_cons_1 _ _ _ _ _ _ Hb3) as [[_ Habs] | Hb'];
-                  [ discriminate Habs | exact Hb' ]).
-          pose proof (a_wf_ptyp_ftv_dom
-                        (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
-          clear - Hd HβΘ; fsetdec. }
+    assert (Hrfrβ : rsubst_fresh (add β Δρ) ((β ~ abind_tvar) ++ Θ) κ)
+      by (eapply rsubst_fresh_open_tvar; eassumption).
     assert (HΔρΔβ : add β Δρ [<=] add β Δ) by (clear - HΔρΔ; fsetdec).
     assert (HΔρftvβ : forall α0, α0 `in` (add β Δρ) ->
               α0 `notin` ftvar_in_pskl P0 `union` ftvar_in_pskl Pi).

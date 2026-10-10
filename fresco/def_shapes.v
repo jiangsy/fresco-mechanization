@@ -459,3 +459,14 @@ Proof. split; [ intros; discriminate | apply peel_l_off_ghost ]. Qed.
 #[export] Hint Constructors mono_ptyp is_dtyp is_dskl is_styp is_ityp is_sskl
   is_iskl guarded_pskl guarded_btyp guarded_utyp guarded_bskl
   guarded_uskl mod_comp_ty mod_comp_sk : fresco.
+
+(** Monotype counterpart shapes: units, variables and arrows. *)
+Set Implicit Arguments.
+
+Inductive bskl_monoish : bskl -> Prop :=
+| bmi_unit : bskl_monoish bskl_unit
+| bmi_var : forall α, bskl_monoish (bskl_var_f α)
+| bmi_arrow : forall Q1 Q2,
+    bskl_monoish Q1 -> bskl_monoish Q2 ->
+    bskl_monoish (bskl_arrow Q1 Q2).
+Unset Implicit Arguments.

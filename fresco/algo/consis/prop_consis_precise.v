@@ -46,6 +46,7 @@ Require Import src.fresco.decl.prop_skeleton.
 Require Import src.fresco.algo.def_rules.
 Require Import src.fresco.algo.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
+Require Import src.fresco.algo_decl.def_subtyping.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo.prop_inc.
 Require Import src.fresco.algo.prop_swap.          (* a_wf_ptyp_ftv_tvarish *)
@@ -56,6 +57,7 @@ Require Import src.fresco.algo.consis.prop_soundness_consis.
 Require Import src.fresco.algo.consis.prop_completeness_consis.
 Require Import src.fresco.algo.prop_mono_bridge.
 Require Import src.fresco.algo.prop_precise.
+Require Import src.fresco.algo.prop_precise_recover.
 Require Import src.fresco.algo.prop_pat_sub.
 
 Set Implicit Arguments.
@@ -1936,4 +1938,342 @@ Proof.
   intros α Hα Hin. apply (Hdisj α Hα).
   apply binds_In_inv in Hin as [b Hb].
   eapply binds_In. apply Hmon. exact Hb.
+Qed.
+
+(** A refinement between monotype paintings yields partial precision. *)
+
+Lemma ad_refine_mono_paint_lhs_partial_precise : forall Θ Δr Q' Q,
+  {{ ⊢ Θ }}a ->
+  Δr [=] empty ->
+  {{ Θ ⨟ Δr ⊢ᵣ Q' ⊳ Q }}ad ->
+  forall τb τ, Q' = ptyp_to_bskl_syn τb -> Q = ptyp_to_bskl_syn τ ->
+  mono_ptyp τb -> mono_ptyp τ ->
+  a_wf_ptyp Θ τ ->
+  forall Δ, {{ Θ ⨟ Δ ⊢ˢ (ptyp_to_pskl τb) ⊑ᵖ[ empty ] (ptyp_to_uskl_syn τ) }}ad.
+Proof.
+  intros Θ Δr Q' Q HwfΘ HΔr H; induction H;
+    intros τb τu HeqL HeqQ Hmb Hmu Hwτ Δo;
+    try solve [ exfalso; symmetry in HeqL;
+                solve [ eapply ptyp_to_bskl_syn_all_inh_absurd; exact HeqL
+                      | eapply ptyp_to_bskl_syn_ghost_absurd; exact HeqL
+                      | eapply ptyp_to_bskl_syn_univ_ghost_absurd; exact HeqL ] ].
+  - (* unit *)
+    symmetry in HeqL; apply ptyp_to_bskl_syn_unit_inv in HeqL; subst.
+    symmetry in HeqQ; apply ptyp_to_bskl_syn_unit_inv in HeqQ; subst.
+    simpl. apply ad_ppre__unit. clear; fsetdec.
+  - (* var *)
+    symmetry in HeqL; apply ptyp_to_bskl_syn_var_inv in HeqL; subst.
+    symmetry in HeqQ; apply ptyp_to_bskl_syn_var_inv in HeqQ.
+    inversion HeqQ; subst.
+    simpl. apply ad_ppre__var. clear; fsetdec.
+  - (* arrow *)
+    symmetry in HeqL.
+    destruct (ptyp_to_bskl_syn_arrow_inv _ HeqL)
+      as (τb1 & τb2 & -> & Heqb1 & Heqb2).
+    symmetry in HeqQ.
+    destruct (ptyp_to_bskl_syn_arrow_inv _ HeqQ)
+      as (τ1 & τ2 & -> & Heq1 & Heq2).
+    assert (Hmb1 : mono_ptyp τb1) by (inversion Hmb; assumption).
+    assert (Hmb2 : mono_ptyp τb2) by (inversion Hmb; assumption).
+    assert (Hm1 : mono_ptyp τ1) by (inversion Hmu; assumption).
+    assert (Hm2 : mono_ptyp τ2) by (inversion Hmu; assumption).
+    assert (Hw1 : a_wf_ptyp Θ τ1) by (inversion Hwτ; assumption).
+    assert (Hw2 : a_wf_ptyp Θ τ2) by (inversion Hwτ; assumption).
+    simpl.
+    apply ad_ppre__arrow with (Ψ1 := empty) (Ψ2 := empty);
+      [ apply IHad_refine_syn1; auto
+      | apply IHad_refine_syn2; auto
+      | clear; fsetdec ].
+  - (* flex_l *)
+    symmetry in HeqL; apply ptyp_to_bskl_syn_var_inv in HeqL; subst.
+    simpl.
+    eapply ad_ppre__flex_l; [ eassumption | ].
+    apply IHad_refine_syn; auto;
+      [ eapply a_wf_aenv_binds_def_mono; eauto ].
+  - (* flex_r *)
+    symmetry in HeqQ; apply ptyp_to_bskl_syn_var_inv in HeqQ; subst.
+    simpl.
+    eapply ad_ppre__flex_r; [ eassumption | ].
+    apply IHad_refine_syn; auto;
+      [ eapply a_wf_aenv_binds_def_mono; eauto
+      | eapply a_wf_aenv_binds_def_wf; eauto ].
+Qed.
+
+(** Monotype counterparts, the refinement-to-partial-precision bridge, and free-variable bounds. *)
+
+Lemma ad_pat_consis_monoish_counterpart : forall Ψs Θ ψa Q,
+  {{ Ψs ⨟ Θ ⊢ˢ ψa ∼ Q }}ad ->
+  {{ ⊢ Θ }}a ->
+  is_dskl ψa ->
+  bskl_monoish Q ->
+  Ψs [=] empty /\
+  exists τa, mono_ptyp τa /\ ψa = ptyp_to_uskl_syn τa.
+Proof.
+  intros Ψs Θ ψa Q H; induction H; intros HwfΘ Htsk Hmi.
+  - (* unit *)
+    split; [ assumption | exists ptyp_unit; split;
+      [ apply mono_ptyp__unit | reflexivity ] ].
+  - (* var *)
+    split; [ assumption | exists (ptyp_var_f α); split;
+      [ apply mono_ptyp__var | reflexivity ] ].
+  - (* arrow *)
+    inversion Hmi; subst.
+    assert (Ht1 : is_dskl R1) by (inversion Htsk; assumption).
+    assert (Ht2 : is_dskl R2) by (inversion Htsk; assumption).
+    destruct (IHad_pat_consis1 HwfΘ Ht1 ltac:(assumption))
+      as (HΨ1 & τ1 & Hm1 & ->).
+    destruct (IHad_pat_consis2 HwfΘ Ht2 ltac:(assumption))
+      as (HΨ2 & τ2 & Hm2 & ->).
+    split.
+    + match goal with HΨ : Ψ [=] union _ _ |- _ =>
+        clear - HΨ HΨ1 HΨ2; fsetdec end.
+    + exists (ptyp_arrow τ1 τ2); split;
+        [ apply mono_ptyp__arrow; assumption | reflexivity ].
+  - (* forall_inh_tagged: Q = all_inh, not mono-ish *) inversion Hmi.
+  - (* forall_inh_untagged *) inversion Hmi.
+  - (* forall_syn_tagged *) inversion Hmi.
+  - (* forall_syn *) inversion Hmi.
+  - (* ghostg: Q = ghost *) inversion Hmi.
+  - (* dot_univ_ghost: Q = univ_ghost *) inversion Hmi.
+  - (* ghost: subject not a dskl *) inversion Htsk.
+  - (* univ_ghost *) inversion Htsk.
+  - (* univ_ghost_inh *) inversion Htsk.
+  - (* univ_ghost_drop *) inversion Htsk.
+  - (* flex_l: subject var α (defined) — itself a mono paint *)
+    assert (Hmd : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact HwfΘ | eassumption ]).
+    destruct (IHad_pat_consis HwfΘ
+                ltac:(apply mono_ptyp_to_uskl_syn_is_dskl; exact Hmd) Hmi)
+      as (HΨ & _).
+    split; [ exact HΨ | ].
+    exists (ptyp_var_f α); split; [ apply mono_ptyp__var | reflexivity ].
+  - (* flex_r: unfold the counterpart definition — still mono-ish *)
+    assert (Hmd : mono_ptyp τ)
+      by (eapply a_wf_aenv_binds_def_mono; [ exact HwfΘ | eassumption ]).
+    apply IHad_pat_consis;
+      [ exact HwfΘ | exact Htsk | apply bskl_monoish_paint; exact Hmd ].
+Qed.
+
+
+
+(** A consistency monotype subject is scoped by its derivation. *)
+Lemma ad_pat_consis_mono_subject_wf : forall Ψ Θ R Q,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+  forall τ, R = ptyp_to_uskl_syn τ -> mono_ptyp τ ->
+  a_wf_ptyp Θ τ.
+Proof.
+  (* every GHOST-headed and ∀-headed row dies: a ghost is never a paint, and
+     a ∀ paint is not a monotype (that is what [Hm] rules out) *)
+  intros Ψ Θ R Q H; induction H; intros τ0 Heq Hm;
+    try solve [ destruct τ0; simpl in Heq;
+                solve [ discriminate Heq | inversion Hm ] ].
+  - (* unit *) destruct τ0; simpl in Heq; try discriminate Heq.
+    apply a_wf_ptyp__unit.
+  - (* var: the rule's OWN premise *)
+    destruct τ0; simpl in Heq; try discriminate Heq.
+    inversion Heq; subst. apply a_wf_ptyp__var; assumption.
+  - (* arrow *)
+    destruct τ0; simpl in Heq; try discriminate Heq.
+    inversion Heq; subst. inversion Hm; subst.
+    apply a_wf_ptyp__arrow;
+      [ eapply IHad_pat_consis1 | eapply IHad_pat_consis2 ];
+      solve [ reflexivity | assumption ].
+  - (* flex_l: the subject IS a variable, and the definition it looks up
+       makes that variable tvar-ish *)
+    destruct τ0; simpl in Heq; try discriminate Heq.
+    inversion Heq; subst. apply a_wf_ptyp__var. right; right; eauto.
+  - (* flex_r: the subject passes through *)
+    eapply IHad_pat_consis; [ exact Heq | exact Hm ].
+Qed.
+
+Lemma mono_paint_paint_refine_consis_partial_precise : forall Ψs Θ R Q,
+  {{ Ψs ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+  {{ ⊢ Θ }}a ->
+  forall τa, R = ptyp_to_uskl_syn τa -> mono_ptyp τa ->
+  forall Δr τb, Δr [=] empty -> mono_ptyp τb ->
+  {{ Θ ⨟ Δr ⊢ᵣ (ptyp_to_bskl_syn τb) ⊳ Q }}ad ->
+  forall Δ, {{ Θ ⨟ Δ ⊢ˢ (ptyp_to_pskl τb) ⊑ᵖ[ empty ] (ptyp_to_uskl_syn τa) }}ad.
+Proof.
+  intros Ψ Θ R Q Hc Hwf τa Heqa Hma Δr τb HΔr Hmb Hr Δ.
+  destruct (consis_mono_join Hc Hwf Heqa Hma) as (Ca & HmCa & HQa & Ha).
+  destruct (refine_mono_join Hr Hwf eq_refl Hmb) as (Cb & HmCb & HQb & Hb).
+  assert (Hsame : Ca = Cb).
+  { apply ptyp_to_bskl_syn_inj; auto. rewrite <- HQa, <- HQb; reflexivity. }
+  subst Cb.
+  assert (Heq : {{ Θ ⊢ τb ≡ᵗ τa }}a)
+    by (eapply a_tyequiv__trans; [ exact Hb | apply a_tyequiv__sym; exact Ha ]).
+  pose proof (ad_pat_consis_mono_subject_wf Hc Heqa Hma) as Hwa.
+  assert (Hva : forall α, α `in` ftvar_in_ptyp τa -> a_binds_tvar α Θ)
+    by (intros; eapply a_wf_ptyp_ftv_tvarish; eassumption).
+  destruct ((proj2 (a_tyequiv_mono_vis Heq Hwf)) (conj Hma Hva)) as [_ Hvb].
+  eapply ad_refine_mono_paint_lhs_partial_precise with (Δr := empty) (Q' := ptyp_to_bskl_syn τb)
+      (Q := ptyp_to_bskl_syn τa);
+    [ exact Hwf | clear; fsetdec
+    | apply tyequiv_mono_refine_syn; assumption
+    | reflexivity | reflexivity | exact Hmb | exact Hma | exact Hwa ].
+Qed.
+
+Lemma ad_partial_precise_mono_subject_target_tags_empty : forall Θ Δ Ψ P ψ,
+  {{ ⊢ Θ }}a ->
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
+  forall τ, P = ptyp_to_pskl τ -> mono_ptyp τ ->
+  forall Ψt, d_tags_skl Ψt ψ -> Ψt [=] empty.
+Proof.
+  intros Θ Δ Ψ P ψ HwfΘ H; induction H; intros τ0 HeqP Hm Ψt Hdt.
+  - (* unit *) exact (d_tags_skl_unit_inv Hdt).
+  - (* var *) exact (d_tags_skl_var_inv Hdt).
+  - (* arrow *)
+    destruct τ0; simpl in HeqP; try discriminate HeqP.
+    inversion HeqP; subst.
+    destruct (d_tags_skl_arrow_inv Hdt)
+      as (Ψt1 & Ψt2 & Hd1 & Hd2 & _ & HeqΨt).
+    assert (Hm1 : mono_ptyp τ0_1) by (inversion Hm; assumption).
+    assert (Hm2 : mono_ptyp τ0_2) by (inversion Hm; assumption).
+    pose proof (IHad_partial_precise1 HwfΘ _ eq_refl Hm1 _ Hd1) as He1.
+    pose proof (IHad_partial_precise2 HwfΘ _ eq_refl Hm2 _ Hd2) as He2.
+    clear - HeqΨt He1 He2; fsetdec.
+  - (* forall: subject all_syn is never a mono paint *)
+    destruct τ0; simpl in HeqP; try discriminate HeqP.
+    inversion Hm.
+  - (* ghost: never a paint *)
+    destruct τ0; simpl in HeqP; discriminate HeqP.
+  - (* univ_ghost_remove *)
+    destruct τ0; simpl in HeqP; discriminate HeqP.
+  - (* univ_ghost_fill *)
+    destruct τ0; simpl in HeqP; discriminate HeqP.
+  - (* univ_ghost_keep *)
+    destruct τ0; simpl in HeqP; discriminate HeqP.
+  - (* flex_l: chase the definition (still a mono paint) *)
+    destruct τ0; simpl in HeqP; try discriminate HeqP.
+    inversion HeqP; subst.
+    eapply IHad_partial_precise;
+      [ exact HwfΘ | reflexivity
+      | eapply a_wf_aenv_binds_def_mono; eauto | exact Hdt ].
+  - (* flex_r: target var carries no tags *)
+    exact (d_tags_skl_var_inv Hdt).
+Qed.
+
+Lemma ad_pat_consis_ftv_bound : forall Ψ Θ R' Q,
+  {{ Ψ ⨟ Θ ⊢ˢ R' ∼ Q }}ad ->
+  forall α', α' `in` ftvar_in_uskl R' ->
+  α' `in` ftvar_in_bskl Q \/
+  (exists α τ, binds α (abind_flex_mono_def τ) Θ /\
+     (α' = α \/ α' `in` ftvar_in_ptyp τ)).
+Proof.
+  intros Ψ Θ R' Q H; induction H; intros α0 HX0; simpl in HX0.
+  - (* unit *) exfalso; clear - HX0; fsetdec.
+  - (* var *) left; simpl; clear - HX0; fsetdec.
+  - (* arrow *)
+    apply union_iff in HX0; destruct HX0 as [HX0 | HX0];
+      [ destruct (IHad_pat_consis1 α0 HX0) as [Hin | Hdef]
+      | destruct (IHad_pat_consis2 α0 HX0) as [Hin | Hdef] ];
+      solve [ left; simpl; clear - Hin; fsetdec | right; exact Hdef ].
+  - (* forall_inh_tagged *)
+    pick fresh β for
+      (L `union` singleton α0 `union` ftvar_in_bskl Q).
+    assert (HX0' : α0 `in`
+              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β)))
+      by (pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
+                        (uskl_var_f β)) as Hlow; clear - HX0 Hlow; fsetdec).
+    destruct (H0 β ltac:(clear - Fr; solve_notin_auto) α0 HX0')
+      as [Hin | (α & τ & Hb & Hor)].
+    + left.
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
+                    (bskl_var_f β)) as Hup.
+      simpl in *. clear - Hin Hup Fr. fsetdec.
+    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+        [ discriminate Hc | right; exists α, τ; auto ].
+  - (* forall_inh_untagged *)
+    pick fresh β for
+      (L `union` singleton α0 `union` ftvar_in_bskl Q).
+    assert (HX0' : α0 `in`
+              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β)))
+      by (pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
+                        (uskl_var_f β)) as Hlow; clear - HX0 Hlow; fsetdec).
+    destruct (H0 β ltac:(clear - Fr; solve_notin_auto) α0 HX0')
+      as [Hin | (α & τ & Hb & Hor)].
+    + left.
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
+                    (bskl_var_f β)) as Hup.
+      simpl in *. clear - Hin Hup Fr. fsetdec.
+    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+        [ discriminate Hc | right; exists α, τ; auto ].
+  - (* forall_syn_tagged *)
+    pick fresh β for
+      (L `union` singleton α0 `union` ftvar_in_bskl Q).
+    assert (HX0' : α0 `in`
+              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β)))
+      by (pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
+                        (uskl_var_f β)) as Hlow; clear - HX0 Hlow; fsetdec).
+    destruct (H0 β ltac:(clear - Fr; solve_notin_auto) α0 HX0')
+      as [Hin | (α & τ & Hb & Hor)].
+    + left.
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
+                    (bskl_var_f β)) as Hup.
+      simpl in *. clear - Hin Hup Fr. fsetdec.
+    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+        [ discriminate Hc | right; exists α, τ; auto ].
+  - (* forall_syn *)
+    pick fresh β for
+      (L `union` singleton α0 `union` ftvar_in_bskl Q).
+    assert (HX0' : α0 `in`
+              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β)))
+      by (pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
+                        (uskl_var_f β)) as Hlow; clear - HX0 Hlow; fsetdec).
+    destruct (H0 β ltac:(clear - Fr; solve_notin_auto) α0 HX0')
+      as [Hin | (α & τ & Hb & Hor)].
+    + left.
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
+                    (bskl_var_f β)) as Hup.
+      simpl in *. clear - Hin Hup Fr. fsetdec.
+    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+        [ discriminate Hc | right; exists α, τ; auto ].
+  - (* ghostg *) exfalso; clear - HX0; fsetdec.
+  - (* dot_univ_ghost *)
+    destruct (IHad_pat_consis α0 HX0) as [Hin | Hdef];
+      [ left; simpl; clear - Hin; fsetdec | right; exact Hdef ].
+  - (* ghost *) exfalso; clear - HX0; fsetdec.
+  - (* univ_ghost *)
+    destruct (IHad_pat_consis α0 HX0) as [Hin | Hdef];
+      [ left; simpl; clear - Hin; fsetdec | right; exact Hdef ].
+  - (* univ_ghost_inh: subject fixed under the counterpart binder *)
+    pick fresh β for
+      (L `union` singleton α0 `union` ftvar_in_bskl Q).
+    destruct (H0 β ltac:(clear - Fr; solve_notin_auto) α0 ltac:(simpl; exact HX0))
+      as [Hin | (α & τ & Hb & Hor)].
+    + left.
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
+                    (bskl_var_f β)) as Hup.
+      simpl in *. clear - Hin Hup Fr. fsetdec.
+    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+        [ discriminate Hc | right; exists α, τ; auto ].
+  - (* univ_ghost_drop *)
+    destruct (IHad_pat_consis α0 HX0) as [Hin | Hdef];
+      [ left; exact Hin | right; exact Hdef ].
+  - (* flex_l: the subject variable is itself a defined flexible *)
+    right; exists α, τ; split; [ assumption | left; clear - HX0; fsetdec ].
+  - (* flex_r: unfolding the counterpart definition *)
+    destruct (IHad_pat_consis α0 HX0) as [Hin | Hdef];
+      [ | right; exact Hdef ].
+    unfold ptyp_to_bskl_syn in Hin.
+    rewrite ftvar_pskl_to_bskl_syn in Hin.
+    right; exists α, τ; split;
+      [ assumption
+      | right;
+        pose proof (ftvar_ptyp_to_pskl τ) as Hp;
+        clear - Hin Hp; fsetdec ].
+Qed.
+
+Lemma consis_subject_ftv_defs_bound : forall Ψ Θ R Q S,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+  (forall α τ0, binds α (abind_flex_mono_def τ0) Θ ->
+     α `in` S /\ ftvar_in_ptyp τ0 [<=] S) ->
+  ftvar_in_uskl R [<=] ftvar_in_bskl Q `union` S.
+Proof.
+  intros Ψ Θ R Q S H Hdefs x Hx.
+  destruct (ad_pat_consis_ftv_bound H Hx) as [Hin | (α & τ & Hb & Hor)].
+  - clear - Hin; fsetdec.
+  - destruct (Hdefs _ _ Hb) as [Hα Hτ].
+    destruct Hor as [-> | Hxτ];
+      [ clear - Hα; fsetdec | clear - Hxτ Hτ; fsetdec ].
 Qed.

@@ -63,7 +63,6 @@ Require Import src.fresco.algo.prop_compose.
 Require Import src.fresco.algo.prop_metasubst.
 Require Import src.fresco.algo.sub.look.prop_rsubst.
 Require Import src.fresco.algo.sub.look.prop_solve_ext.
-Require Import src.fresco.algo.sub.look.prop_flex_apart.
 Require Import src.fresco.algo.sub.look.prop_eq_var.
 
 Set Implicit Arguments.
@@ -419,25 +418,6 @@ Qed.
 
 (* A mono-paint consistency subject is well-formed as a monotype: every
    variable leaf is [a_binds_tvar] (from [__var] / [__flex_l]). *)
-Lemma ad_pat_consis_mono_paint_subj_wf : forall Ψs Θ ψ Q,
-  {{ Ψs ⨟ Θ ⊢ˢ ψ ∼ Q }}ad ->
-  {{ ⊢ Θ }}a ->
-  forall τm, mono_ptyp τm -> ψ = ptyp_to_uskl_syn τm -> a_wf_ptyp Θ τm.
-Proof.
-  intros Ψs Θ ψ Q H HwfΘ; induction H; intros τm Hmono Heq;
-    try (destruct τm; try (solve [ inversion Hmono ]); simpl in Heq; discriminate).
-  - (* unit *) symmetry in Heq; apply ptyp_to_uskl_syn_unit_inv in Heq as ->; constructor.
-  - (* var *) symmetry in Heq; apply ptyp_to_uskl_syn_var_inv in Heq as ->; constructor; assumption.
-  - (* arrow *)
-    symmetry in Heq;
-      destruct (ptyp_to_uskl_syn_arrow_inv _ Heq) as (τ1 & τ2 & -> & Heq1 & Heq2).
-    inversion Hmono; subst.
-    constructor; [ eapply IHad_pat_consis1; eauto | eapply IHad_pat_consis2; eauto ].
-  - (* flex_l: subject var α0 *)
-    symmetry in Heq; apply ptyp_to_uskl_syn_var_inv in Heq as ->.
-    constructor; right; right; eexists; eassumption.
-  - (* flex_r *) eapply IHad_pat_consis; eauto.
-Qed.
 
 (* closes an α-leaf: the whole subject IS ψa, faced with mono-ish Q. *)
 Ltac psia_leaf Hrec :=
@@ -448,8 +428,8 @@ Ltac psia_leaf Hrec :=
         as (_ & τψ & Hmn & Heqψ);
       exists τψ; repeat split;
         [ exact Hmn | exact Heqψ
-        | eapply ad_pat_consis_mono_paint_subj_wf;
-            [ exact Hrec | exact HwfΘ | exact Hmn | exact Heqψ ] ]
+        | eapply ad_pat_consis_mono_subject_wf;
+            [ exact Hrec | exact Heqψ | exact Hmn ] ]
   end.
 
 (* THE ψa-MONO EXTRACTION (the flex-P0 crux).  When the whole consistency
@@ -596,8 +576,8 @@ Proof.
     as (_ & τψ & Hmn & Heqψ).
   exists τψ; repeat split;
     [ exact Hmn | exact Heqψ
-    | eapply ad_pat_consis_mono_paint_subj_wf;
-        [ exact Hcons | exact HwfΘ | exact Hmn | exact Heqψ ] ].
+    | eapply ad_pat_consis_mono_subject_wf;
+        [ exact Hcons | exact Heqψ | exact Hmn ] ].
 Qed.
 
 (** The [ursubst__leaf] disjunct never fires on an αs-carrying ideal. *)
@@ -3605,25 +3585,13 @@ Proof.
         assert (HβΘ0 : β `notin` dom Θ0) by auto.
         assert (Hβα : β <> α) by auto.
         assert (Hβκ : β `notin` dom κ) by auto.
-        assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-          by (apply a_wf_aenv__tvar; assumption).
-        assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
-          by (apply a_wf_aenv__tvar; assumption).
-        assert (Hweak : forall (x : atom) (b : abind),
-                  binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
-          by (intros x b Hb; apply binds_app_3; exact Hb).
+        destruct (solve_context_open_tvar
+                    HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 Hβα HβΘ HβΘ0)
+          as (Hweak & _ & Hwfβ & Hwfβ0 & HαΘβ & HαΘ0β & Hκβ & _ & HwfPiβ).
         assert (HwfP0β : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty
                   ⊢ₚₛ (open_pskl_wrt_pskl P0' (pskl_var_f β)) }}a).
         { eapply a_wf_pskl_delta_mono;
             [ apply (Hw0body β ltac:(auto)) | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
-        assert (HwfPiβ : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a)
-          by (eapply a_wf_pskl_weaken; [ exact Hweak | exact HwfPi ]).
-        assert (Hκβ : κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
-          by (apply a_inc_cons_tvar; exact Hκ).
-        assert (HαΘβ : α `notin` dom ((β ~ abind_tvar) ++ Θ))
-          by (simpl; clear - HαΘ Hβα; fsetdec).
-        assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
-          by (simpl; clear - HαΘ0 Hβα; fsetdec).
         assert (HscopeSβ : ftvar_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))
                   [<=] add α (dom ((β ~ abind_tvar) ++ Θ0) `union` dom ((β ~ abind_tvar) ++ Θ))).
         { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R0 (uskl_var_f β)) as Hup.
@@ -3633,10 +3601,8 @@ Proof.
         assert (HΨs1β : Ψsub [<=] union
                   (ftag_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))) (union Ψρ Ψa)).
         { rewrite ftag_in_uskl_open_var. simpl in HΨs1. exact HΨs1. }
-        assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ)).
-        { intros β0 α0 τ0 Hβ0 Hb. eapply Hdfresh; [ exact Hβ0 | ].
-          destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-            [ discriminate Habs | exact Hb' ]. }
+        assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ))
+          by (eapply delta_def_fresh_weaken_tvar; eassumption).
         assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ Δ
                   ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad)
           by (eapply ad_partial_precise_weaken;
@@ -3879,23 +3845,9 @@ Proof.
            assert (HβΘ0 : β `notin` dom Θ0) by auto.
            assert (Hβα : β <> α) by auto.
            assert (Hβκ : β `notin` dom κ) by auto.
-           assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-             by (apply a_wf_aenv__tvar; assumption).
-           assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
-             by (apply a_wf_aenv__tvar; assumption).
-           assert (Hweak : forall (x : atom) (b : abind),
-                     binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
-             by (intros x b Hb; apply binds_app_3; exact Hb).
-           assert (HwfP0β : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_univ_ghost P0s) }}a)
-             by (eapply a_wf_pskl_weaken; [ exact Hweak | exact HwfP0 ]).
-           assert (HwfPiβ : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a)
-             by (eapply a_wf_pskl_weaken; [ exact Hweak | exact HwfPi ]).
-           assert (Hκβ : κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
-             by (apply a_inc_cons_tvar; exact Hκ).
-           assert (HαΘβ : α `notin` dom ((β ~ abind_tvar) ++ Θ))
-             by (simpl; clear - HαΘ Hβα; fsetdec).
-           assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
-             by (simpl; clear - HαΘ0 Hβα; fsetdec).
+           destruct (solve_context_open_tvar
+                       HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 Hβα HβΘ HβΘ0)
+             as (Hweak & _ & Hwfβ & Hwfβ0 & HαΘβ & HαΘ0β & Hκβ & HwfP0β & HwfPiβ).
            assert (HscopeSβ : ftvar_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))
                      [<=] add α (dom ((β ~ abind_tvar) ++ Θ0) `union` dom ((β ~ abind_tvar) ++ Θ))).
            { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R0 (uskl_var_f β)) as Hup.
@@ -3905,10 +3857,8 @@ Proof.
            assert (HΨs1β : Ψsub [<=] union
                      (ftag_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))) (union Ψρ Ψa)).
            { rewrite ftag_in_uskl_open_var. simpl in HΨs1. exact HΨs1. }
-           assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ)).
-           { intros β0 α0 τ0 Hβ0 Hb. eapply Hdfresh; [ exact Hβ0 | ].
-             destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-               [ discriminate Habs | exact Hb' ]. }
+           assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ))
+             by (eapply delta_def_fresh_weaken_tvar; eassumption).
            assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ Δ
                      ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad)
              by (eapply ad_partial_precise_weaken;
@@ -4109,25 +4059,13 @@ Proof.
         assert (HβΘ0 : β `notin` dom Θ0) by auto.
         assert (Hβα : β <> α) by auto.
         assert (Hβκ : β `notin` dom κ) by auto.
-        assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-          by (apply a_wf_aenv__tvar; assumption).
-        assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
-          by (apply a_wf_aenv__tvar; assumption).
-        assert (Hweak : forall (x : atom) (b : abind),
-                  binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
-          by (intros x b Hb; apply binds_app_3; exact Hb).
+        destruct (solve_context_open_tvar
+                    HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 Hβα HβΘ HβΘ0)
+          as (Hweak & _ & Hwfβ & Hwfβ0 & HαΘβ & HαΘ0β & Hκβ & _ & HwfPiβ).
         assert (HwfP0β : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty
                   ⊢ₚₛ (open_pskl_wrt_pskl P0' (pskl_var_f β)) }}a).
         { eapply a_wf_pskl_delta_mono;
             [ apply (Hw0body β ltac:(auto)) | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
-        assert (HwfPiβ : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a)
-          by (eapply a_wf_pskl_weaken; [ exact Hweak | exact HwfPi ]).
-        assert (Hκβ : κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
-          by (apply a_inc_cons_tvar; exact Hκ).
-        assert (HαΘβ : α `notin` dom ((β ~ abind_tvar) ++ Θ))
-          by (simpl; clear - HαΘ Hβα; fsetdec).
-        assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
-          by (simpl; clear - HαΘ0 Hβα; fsetdec).
         assert (HscopeSβ : ftvar_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))
                   [<=] add α (dom ((β ~ abind_tvar) ++ Θ0) `union` dom ((β ~ abind_tvar) ++ Θ))).
         { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R0 (uskl_var_f β)) as Hup.
@@ -4176,10 +4114,8 @@ Proof.
           { apply inter_3; [ clear; fsetdec | ].
             clear - Hx Hsub HΨs2; fsetdec. }
           rewrite Hdisj in Hinx; clear - Hinx; fsetdec. }
-        assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ)).
-        { intros β0 α0 τ0 Hβ0 Hb. eapply Hdfresh; [ exact Hβ0 | ].
-          destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-            [ discriminate Habs | exact Hb' ]. }
+        assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ))
+          by (eapply delta_def_fresh_weaken_tvar; eassumption).
         assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ Δ
                   ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad)
           by (eapply ad_partial_precise_weaken;
@@ -4422,23 +4358,9 @@ Proof.
            assert (HβΘ0 : β `notin` dom Θ0) by auto.
            assert (Hβα : β <> α) by auto.
            assert (Hβκ : β `notin` dom κ) by auto.
-           assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-             by (apply a_wf_aenv__tvar; assumption).
-           assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
-             by (apply a_wf_aenv__tvar; assumption).
-           assert (Hweak : forall (x : atom) (b : abind),
-                     binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
-             by (intros x b Hb; apply binds_app_3; exact Hb).
-           assert (HwfP0β : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_univ_ghost P0s) }}a)
-             by (eapply a_wf_pskl_weaken; [ exact Hweak | exact HwfP0 ]).
-           assert (HwfPiβ : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a)
-             by (eapply a_wf_pskl_weaken; [ exact Hweak | exact HwfPi ]).
-           assert (Hκβ : κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
-             by (apply a_inc_cons_tvar; exact Hκ).
-           assert (HαΘβ : α `notin` dom ((β ~ abind_tvar) ++ Θ))
-             by (simpl; clear - HαΘ Hβα; fsetdec).
-           assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
-             by (simpl; clear - HαΘ0 Hβα; fsetdec).
+           destruct (solve_context_open_tvar
+                       HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 Hβα HβΘ HβΘ0)
+             as (Hweak & _ & Hwfβ & Hwfβ0 & HαΘβ & HαΘ0β & Hκβ & HwfP0β & HwfPiβ).
            assert (HscopeSβ : ftvar_in_uskl (open_uskl_wrt_uskl R0 (uskl_var_f β))
                      [<=] add α (dom ((β ~ abind_tvar) ++ Θ0) `union` dom ((β ~ abind_tvar) ++ Θ))).
            { pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R0 (uskl_var_f β)) as Hup.
@@ -4478,10 +4400,8 @@ Proof.
                  rewrite Hdisj in Hinx; clear - Hinx; fsetdec
                | clear - Hx3; fsetdec ]. }
            assert (HΨs2β : Ψa [<=] Ψ0) by (clear - HΨs2 HΨeq; fsetdec).
-           assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ)).
-           { intros β0 α0 τ0 Hβ0 Hb. eapply Hdfresh; [ exact Hβ0 | ].
-             destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-               [ discriminate Habs | exact Hb' ]. }
+           assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ))
+             by (eapply delta_def_fresh_weaken_tvar; eassumption).
            assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ Δ
                      ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad)
              by (eapply ad_partial_precise_weaken;
@@ -4773,32 +4693,18 @@ Proof.
            assert (Hβκ : β `notin` dom κ) by auto.
            assert (Hβψa : β `notin` ftvar_in_uskl ψa) by auto.
            assert (Hβdef : β `notin` def_ftv Θ) by auto.
-           assert (Hwfβ : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-             by (apply a_wf_aenv__tvar; assumption).
-           assert (Hwfβ0 : {{ ⊢ ((β ~ abind_tvar) ++ Θ0) }}a)
-             by (apply a_wf_aenv__tvar; assumption).
-           assert (Hweak : forall (x : atom) (b : abind),
-                     binds x b Θ0 -> binds x b ((β ~ abind_tvar) ++ Θ0))
-             by (intros x b Hb; apply binds_app_3; exact Hb).
+           destruct (solve_context_open_tvar
+                       HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 Hβα HβΘ HβΘ0)
+             as (Hweak & _ & Hwfβ & Hwfβ0 & HαΘβ & HαΘ0β & Hκβ & _ & HwfPiβ).
            assert (HwfP0β : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty
                      ⊢ₚₛ (open_pskl_wrt_pskl P0s (pskl_var_f β)) }}a).
            { eapply a_wf_pskl_delta_mono;
                [ apply (Hw0body β ltac:(auto)) | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
-           assert (HwfPiβ : {{ ((β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pi }}a)
-             by (eapply a_wf_pskl_weaken; [ exact Hweak | exact HwfPi ]).
-           assert (Hκβ : κ ∷ ((β ~ abind_tvar) ++ Θ0) ⊑ ((β ~ abind_tvar) ++ Θ))
-             by (apply a_inc_cons_tvar; exact Hκ).
-           assert (HαΘβ : α `notin` dom ((β ~ abind_tvar) ++ Θ))
-             by (simpl; clear - HαΘ Hβα; fsetdec).
-           assert (HαΘ0β : α `notin` dom ((β ~ abind_tvar) ++ Θ0))
-             by (simpl; clear - HαΘ0 Hβα; fsetdec).
            assert (HscopeSβ : ftvar_in_uskl (uskl_univ_ghost R0)
                      [<=] add α (dom ((β ~ abind_tvar) ++ Θ0) `union` dom ((β ~ abind_tvar) ++ Θ))).
            { simpl in HscopeS |- *. clear - HscopeS; fsetdec. }
-           assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ)).
-           { intros β0 α0 τ0 Hβ0 Hb. eapply Hdfresh; [ exact Hβ0 | ].
-             destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Habs] | Hb'];
-               [ discriminate Habs | exact Hb' ]. }
+           assert (Hdfreshβ : delta_def_fresh Δ ((β ~ abind_tvar) ++ Θ))
+             by (eapply delta_def_fresh_weaken_tvar; eassumption).
            assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ Δ
                      ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad)
              by (eapply ad_partial_precise_weaken;

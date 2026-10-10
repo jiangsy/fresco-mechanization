@@ -181,6 +181,56 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Shared binder extension for freshness and context invariants
+
+- Prove rigid-binder extension once for definition freshness, replacement
+  freshness and precision with an unchanged target. Reuse these operations in
+  P6-Cs, P6-Sv and P6-Ss, including the induction proving precision Δ-weakening.
+  Move `a_inc_image_ftv_dom` into the shared substrate needed by the new
+  replacement-freshness lemma (−85 nonblank code lines including all helpers).
+- Move `looksub_gen_open_tvar` into `prop_solve_ext.v` as
+  `solve_context_open_tvar`; reuse it in five consistency-completeness binder
+  cases as well as the three existing subtyping cases (−64).
+- Net: −149 nonblank code lines. Retained theorem statements are unchanged;
+  the renamed context-opening lemma has the same statement. No new Ltac.
+
+- Remove `prop_flex_apart.v` by distributing all 36 declarations by topic:
+  refinement in `algo/prop_refine.v`, structural partial precision in
+  `algo/prop_pat_sub.v`, consistency bridges in
+  `algo/consis/prop_consis_precise.v`, substitution facts in
+  `algo/prop_metasubst.v` and `sub/look/prop_rsubst.v`, solve facts in
+  `sub/prop_solve_sub.v` and `sub/look/prop_eq_var.v`, and syntax/context
+  facts in the existing shape/basic modules. Lower `delta_def_fresh` into
+  `algo/prop_precise.v` so the structural precision lemmas need no import
+  from look completeness. No replacement umbrella module or compatibility
+  wrapper. Removing duplicate imports, including the local implicit-argument
+  flags and the required partial-precision import, saves 36 code lines.
+  Spell out `partial_precise` in the retained moved helper names.
+- Move twelve painting inversions into `prop_coercions.v` and the monotype
+  refinement-to-partial-precision bridge into `prop_consis_precise.v`; neither
+  depends on rigid substitution. Reuse `ad_refine_mono_paint_rhs_monoish` in
+  the two quantifier-impossibility lemmas instead of two separate inductions
+  (−17). Derive that shape result itself from the already stronger
+  `refine_mono_join`, removing another induction (−21 including its import).
+  Retained moved declarations keep their statements. Apart from the three
+  proofs above and the monotype bridge below, moved proof bodies are
+  token-identical modulo helper renames.
+- Replace the monotype consistency/refinement-to-partial-precision induction
+  by composition of `consis_mono_join`, `refine_mono_join`,
+  `a_tyequiv_mono_vis`, `tyequiv_mono_refine_syn` and the existing monotype
+  refinement-to-precision bridge. Remove both one-use arrow/flexible chase
+  lemmas. Move `ad_pat_consis_mono_subject_wf` to the consistency module;
+  remove its weaker duplicate `ad_pat_consis_mono_paint_subj_wf` and redirect
+  both callers. This pass saves 166 code lines including its import (147 from
+  the bridge and its two chase lemmas; 19 from the duplicated wf proof).
+- Combined net: −389 nonblank code lines (353 from proof reuse, 36 from
+  module/import cleanup). Historical audit references to the removed file
+  describe their original snapshots.
+- Validation: full `make coq` passed, including extraction and all 34
+  headline assumption reports closed under the global context. All 872
+  retained lemma/theorem statements in modified files compare unchanged;
+  three redundant helpers were removed. `git diff --check` passed.
+
 ## 2026-10-11 — Shared scope invariant for completeness recursion
 
 - Name the fixed scope of non-rigid context entries and substitution images
@@ -286,8 +336,8 @@ new `ext_algo/prop_lift_kit.v`).
    implies it; its one consumer's second arm was unreachable.  Removed with it:
    `flex_apart`, `pskl_flex_free`, `p0_walk`, the derivable
    `Forall (ftv ∩ Δρ = ∅) κc` conclusion conjunct of P6-Cs / P6-Ss, and
-   P6-Cv's discarded FLEX block.  `prop_flex_apart.v` keeps its name (a cex
-   imports it).  P7b's two ForallL rows are one proof over the head
+   P6-Cv's discarded FLEX block.  The remaining lemmas of
+   `prop_flex_apart.v` were redistributed by topic on 2026-10-11.  P7b's two ForallL rows are one proof over the head
    (`a_sub_complete_forall_l_hd`); P6-L is stated at Δ = ∅, its only use.
 3. **Declarative context changes have one design** (decl, −1100 net):
    `denv_binds_le` / `denv_tbinds_le` and one `_tvar_mono` / `_mono` lemma per

@@ -1,17 +1,16 @@
 (** * P6 — completeness of the LOOK judgment, the interface module.
 
     The look judgment [look[N][M]{α}{P}{P'}{Q}[Ξ]] (fig:poly-info-extraction)
-    is proved complete by five lemmas over a three-file shared substrate, and
+    is proved complete by five lemmas over a two-file shared substrate, and
     they form a strict linear chain: each one consumes the previous.  They live in
     [algo/sub/look/] and this file is their single import point —
     consumers [Require Import src.fresco.algo.sub.prop_completeness_look] and get
-    all eight.
+    all seven.
 
     | file | paper | what it proves |
     |---|---|---|
     | [sub/look/prop_rsubst.v] | — | the ρ relation [uskl_rsubst], its inversions by subject and by target, shielded ftv / ρ-freshness, and the solve-context transports |
     | [sub/look/prop_solve_ext.v] | — | the flex-block extension algebra and the three packages P6 is stated over: [solve_ext], [solve_sub_ext], [solve_eq_mono_concl] |
-    | [sub/look/prop_flex_apart.v] | — | the mono-paint / precision / refinement kit of the Arrow and ∀ rows (name historical) |
     | [sub/look/prop_eq_var.v] | P6-Cv (consistency-proofs.tex:1180) | [a_solve_eq_complete_var] — the EQ collection at a variable |
     | [sub/look/prop_eq_cstr.v] | P6-Cs (consistency-proofs.tex:920) | [a_lookeq_solve_complete] — EQ collection AND solving |
     | [sub/look/prop_sub_var.v] | P6-Sv (subtyping-proofs.tex) | [a_solve_sub_complete_var] — the SUB collection at a variable |
@@ -20,7 +19,7 @@
 
     ⚠️ The chain is linear, so the directory buys no build parallelism — it
     is organisational.  Each file still rebuilds on its own, which is why the
-    eight were NOT concatenated: editing P6-L costs 43 s here rather than the
+    seven were NOT concatenated: editing P6-L costs 43 s here rather than the
     ~174 s a single fused file would.  (NB [decl/] was deliberately FLATTENED
     out of subdirectories earlier; this cluster is the one place where the
     chain is long enough that a directory + facade reads better.)
@@ -42,13 +41,12 @@
        transitive for name visibility, so only the files the facade adds
        matter.)  Adding one import has silently rerouted four call sites of
        [a_wf_aenv_def_ftv_dom] and broken the build before.
-    2. **Cycles.**  The facade pulls in all six.  It is safe for a consumer of
+    2. **Cycles.**  The facade pulls in all seven.  It is safe for a consumer of
        the LATE chain (the extra files are earlier, hence already required),
        and dangerous for one the cluster itself imports. *)
 
 Require Export src.fresco.algo.sub.look.prop_rsubst.
 Require Export src.fresco.algo.sub.look.prop_solve_ext.
-Require Export src.fresco.algo.sub.look.prop_flex_apart.
 Require Export src.fresco.algo.sub.look.prop_eq_var.
 Require Export src.fresco.algo.sub.look.prop_eq_cstr.
 Require Export src.fresco.algo.sub.look.prop_sub_var.

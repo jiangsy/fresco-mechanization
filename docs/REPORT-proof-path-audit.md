@@ -715,7 +715,8 @@ before anything in Part II.
 
 ## 7  ✅ Landed 2026-08-23 — the binder-opening fact, named
 
-`looksub_gen_open_tvar` (`prop_sub_cstr.v`, just above the theorem): *the
+`solve_context_open_tvar` (`prop_solve_ext.v`; originally
+`looksub_gen_open_tvar` in `prop_sub_cstr.v`): *the
 context-relative half of the invariant survives opening a fresh rigid binder.*
 Nine facts — the two `binds` weakenings, `⊢ Θ` and `⊢ Θ0`, `α ∉ dom` on both,
 `κ ∷ Θ0 ⊑ Θ`, and `a_wf_pskl` on `P0` and `Pi` — all at `(β ~ abind_tvar) ++ ·`.
