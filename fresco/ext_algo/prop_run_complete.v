@@ -16,7 +16,7 @@
     rules state freshness against the supply, so the runner's own fresh
     draws need nothing, and coverage is consumed exactly at the
     transposition steps (and re-established trivially at every recursive
-    call).  §2's structure — hand strong induction on the order, the
+    call).  §2's structure — ordinary induction on the order, the
     runner-dispatch case bash through [simp], one swap per binder row —
     is the template every level above copies (§8c.6).
 
@@ -72,13 +72,8 @@ Open Scope fresco_e_scope.
 (* ===================================================================== *)
 (*  §2  The LOOK block — completeness of both runners (§8c.3, level 1)    *)
 (*                                                                        *)
-(*  §2a  Hand STRONG-INDUCTION principles for the two orders.  ⚠️ The     *)
-(*       auto [_ind] is unusable: the Arrow premise nests its recursive    *)
-(*       order under a conjunction, and Coq generates no IH through [/\].  *)
-(*       So each order gets ONE hand [fix] with an abstract motive, every  *)
-(*       premise doubled with its motive companion — the [Acc_inv]         *)
-(*       pattern of the §8c.4 injections ([e_sub_order_to_call]), and the  *)
-(*       reusable idiom for EVERY order of this campaign.                  *)
+(*  Recursive calls are separate order premises, so Coq's generated      *)
+(*  induction principles provide every recursive hypothesis directly.    *)
 (*  §2b  The transposition kit: a binder-row premise, opened at the        *)
 (*       rule's own witness, MOVES to the runner's committed name by ONE   *)
 (*       swap ([a_looksub_lookeq_swap]); the outputs are requantified      *)
@@ -99,193 +94,6 @@ Open Scope fresco_e_scope.
 (* ===================================================================== *)
 
 Set Implicit Arguments.
-
-(* --------------------------------------------------------------------- *)
-(*  §2a  Strong induction for [e_lookeq_order] / [e_looksub_order]        *)
-(* --------------------------------------------------------------------- *)
-
-Section e_lookeq_order_sind.
-
-Variable Qe : supply -> aenv -> atom -> pskl -> pskl -> Prop.
-
-Hypothesis Hstep : forall S0 Θ α P P',
-    (* LE-Arrow — order premise, then its motive companion *)
-    (forall P1 P2 P1' P2',
-       P = pskl_arrow P1 P2 -> P' = pskl_arrow P1' P2' ->
-       e_lookeq_order S0 Θ α P1 P1'
-       /\ (forall S1 Ξ1 C1,
-             {{ S0 ↝ S1 ⊨ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}e ->
-             e_lookeq_order S1 Θ α P2 P2')) ->
-    (forall P1 P2 P1' P2',
-       P = pskl_arrow P1 P2 -> P' = pskl_arrow P1' P2' ->
-       Qe S0 Θ α P1 P1'
-       /\ (forall S1 Ξ1 C1,
-             {{ S0 ↝ S1 ⊨ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}e ->
-             Qe S1 Θ α P2 P2')) ->
-    (* LE-ForallInh *)
-    (forall Q Q',
-       P = pskl_all_syn Q -> P' = pskl_all_syn Q' ->
-       e_lookeq_order (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ) α
-         (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
-         (open_pskl_wrt_pskl Q' (pskl_var_f (supply_fresh S0)))) ->
-    (forall Q Q',
-       P = pskl_all_syn Q -> P' = pskl_all_syn Q' ->
-       Qe (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ) α
-         (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
-         (open_pskl_wrt_pskl Q' (pskl_var_f (supply_fresh S0)))) ->
-    (* LE-ForallSyn *)
-    (forall Q Q',
-       P = pskl_all_syn Q -> P' = pskl_univ_ghost Q' ->
-       e_lookeq_order (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ) α
-         (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
-         (pskl_univ_ghost Q')) ->
-    (forall Q Q',
-       P = pskl_all_syn Q -> P' = pskl_univ_ghost Q' ->
-       Qe (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ) α
-         (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0)))
-         (pskl_univ_ghost Q')) ->
-    (* LE-UnivGhost *)
-    (forall Q Q',
-       P = pskl_univ_ghost Q -> P' = pskl_univ_ghost Q' ->
-       e_lookeq_order S0 Θ α Q Q') ->
-    (forall Q Q',
-       P = pskl_univ_ghost Q -> P' = pskl_univ_ghost Q' ->
-       Qe S0 Θ α Q Q') ->
-    (* LE-UnivGhost1 *)
-    (forall Q Q',
-       P = pskl_univ_ghost Q -> P' = pskl_all_syn Q' ->
-       e_lookeq_order (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ) α
-         (pskl_univ_ghost Q)
-         (open_pskl_wrt_pskl Q' (pskl_var_f (supply_fresh S0)))) ->
-    (forall Q Q',
-       P = pskl_univ_ghost Q -> P' = pskl_all_syn Q' ->
-       Qe (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ) α
-         (pskl_univ_ghost Q)
-         (open_pskl_wrt_pskl Q' (pskl_var_f (supply_fresh S0)))) ->
-    (* LE-UnivGhost2 *)
-    (forall Q,
-       P = pskl_univ_ghost Q ->
-       e_lookeq_order S0 Θ α Q P') ->
-    (forall Q,
-       P = pskl_univ_ghost Q ->
-       Qe S0 Θ α Q P') ->
-    (* LE-UnivGhostR *)
-    (forall Q',
-       P' = pskl_univ_ghost Q' ->
-       e_lookeq_order S0 Θ α P Q') ->
-    (forall Q',
-       P' = pskl_univ_ghost Q' ->
-       Qe S0 Θ α P Q') ->
-    Qe S0 Θ α P P'.
-
-Fixpoint e_lookeq_order_sind S0 Θ α P P'
-    (H : e_lookeq_order S0 Θ α P P') {struct H} : Qe S0 Θ α P P' :=
-  match H in e_lookeq_order S0' Θ' α' Pa Pb return Qe S0' Θ' α' Pa Pb with
-  | e_lookeq_order__intro _ _ _ _ _ p1 p2 p3 p4 p5 p6 p7 =>
-      Hstep
-        p1
-        (fun P1 P2 P1' P2' e1 e2 =>
-           match p1 P1 P2 P1' P2' e1 e2 with
-           | conj Ha Hb =>
-               conj (e_lookeq_order_sind Ha)
-                    (fun S1 Ξ1 C1 Hrun =>
-                       e_lookeq_order_sind (Hb S1 Ξ1 C1 Hrun))
-           end)
-        p2
-        (fun Q Q' e1 e2 => e_lookeq_order_sind (p2 Q Q' e1 e2))
-        p3
-        (fun Q Q' e1 e2 => e_lookeq_order_sind (p3 Q Q' e1 e2))
-        p4
-        (fun Q Q' e1 e2 => e_lookeq_order_sind (p4 Q Q' e1 e2))
-        p5
-        (fun Q Q' e1 e2 => e_lookeq_order_sind (p5 Q Q' e1 e2))
-        p6
-        (fun Q e1 => e_lookeq_order_sind (p6 Q e1))
-        p7
-        (fun Q' e1 => e_lookeq_order_sind (p7 Q' e1))
-  end.
-
-End e_lookeq_order_sind.
-
-Section e_looksub_order_sind.
-
-Variable Qs : supply -> aenv -> atom -> mode -> pskl -> pskl -> Prop.
-
-Hypothesis Hstep : forall S0 Θ α m P P',
-    (* LS-Check — the drop into the (already-closed) eq layer *)
-    (m = mode_tc -> e_lookeq_order S0 Θ α P P') ->
-    (* LS-ForallR *)
-    (forall B,
-       m = mode_tc -> P' = pskl_all_syn B ->
-       e_looksub_order (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ) α mode_tc P
-         (open_pskl_wrt_pskl B (pskl_var_f (supply_fresh S0)))) ->
-    (forall B,
-       m = mode_tc -> P' = pskl_all_syn B ->
-       Qs (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ) α mode_tc P
-         (open_pskl_wrt_pskl B (pskl_var_f (supply_fresh S0)))) ->
-    (* LS-Arrow — the eq-order sibling stays as-is; only the recursive
-       looksub half gets a companion *)
-    (forall m' P1 P2 P1' P2',
-       m = mode_fn m' -> P = pskl_arrow P1 P2 -> P' = pskl_arrow P1' P2' ->
-       e_lookeq_order S0 Θ α P1 P1'
-       /\ (forall S1 Ξ1 C1,
-             {{ S0 ↝ S1 ⊨ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}e ->
-             e_looksub_order S1 Θ α m' P2 P2')) ->
-    (forall m' P1 P2 P1' P2',
-       m = mode_fn m' -> P = pskl_arrow P1 P2 -> P' = pskl_arrow P1' P2' ->
-       forall S1 Ξ1 C1,
-         {{ S0 ↝ S1 ⊨ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}e ->
-         Qs S1 Θ α m' P2 P2') ->
-    (* LS-ForallL *)
-    (forall Q,
-       P = pskl_all_syn Q ->
-       e_looksub_order (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ) α m
-         (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0))) P') ->
-    (forall Q,
-       P = pskl_all_syn Q ->
-       Qs (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ) α m
-         (open_pskl_wrt_pskl Q (pskl_var_f (supply_fresh S0))) P') ->
-    (* LS-UnivGhostL *)
-    (forall Q,
-       P = pskl_univ_ghost Q ->
-       e_looksub_order S0 Θ α m Q P') ->
-    (forall Q,
-       P = pskl_univ_ghost Q ->
-       Qs S0 Θ α m Q P') ->
-    Qs S0 Θ α m P P'.
-
-Fixpoint e_looksub_order_sind S0 Θ α m P P'
-    (H : e_looksub_order S0 Θ α m P P') {struct H} : Qs S0 Θ α m P P' :=
-  match H in e_looksub_order S0' Θ' α' m' Pa Pb
-        return Qs S0' Θ' α' m' Pa Pb with
-  | e_looksub_order__intro _ _ _ _ _ _ pck pfr par pfl pug =>
-      Hstep
-        pck
-        pfr
-        (fun B e1 e2 => e_looksub_order_sind (pfr B e1 e2))
-        par
-        (fun m' P1 P2 P1' P2' e1 e2 e3 S1 Ξ1 C1 Hrun =>
-           e_looksub_order_sind
-             (match par m' P1 P2 P1' P2' e1 e2 e3 with
-              | conj _ Hb => Hb
-              end S1 Ξ1 C1 Hrun))
-        pfl
-        (fun Q e1 => e_looksub_order_sind (pfl Q e1))
-        pug
-        (fun Q e1 => e_looksub_order_sind (pug Q e1))
-  end.
-
-End e_looksub_order_sind.
 
 (* --------------------------------------------------------------------- *)
 (*  §2b  The transposition kit: ONE swap moves a binder-row premise from  *)
@@ -591,19 +399,11 @@ Lemma e_lookeq_impl_complete : forall S0 Θ α P P'
   ftvar_in_aenv Θ ∪ {{ α }} ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P' [<=] S0 ->
   e_lookeq_impl S0 Θ α P P' HP HP' H <> None.
 Proof.
-  intros S0 Θ α P P'.
-  apply (e_lookeq_order_sind
-           (fun S0 Θ α P P' =>
-              forall (HP : lc_pskl P) (HP' : lc_pskl P')
-                     (H : e_lookeq_order S0 Θ α P P') Ξ C,
-                {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a ->
-                ftvar_in_aenv Θ ∪ {{ α }} ∪ ftvar_in_pskl P
-                  ∪ ftvar_in_pskl P' [<=] S0 ->
-                e_lookeq_impl S0 Θ α P P' HP HP' H <> None));
-    [ | apply e_lookeq_order_total ].
-  clear S0 Θ α P P'.
-  intros S0 Θ α P P' p1 q1 p2 q2 p3 q3 p4 q4 p5 q5 p6 q6 p7 q7
-         HP HP' H Ξ C Hd Hcov.
+  intros S0 Θ α P P' HP HP' H.
+  generalize H. revert HP HP'.
+  induction H as [S0 Θ α P P' p1 IHhead p1t IHtail
+    p2 q2 p3 q3 p4 q4 p5 q5 p6 q6 p7 q7].
+  intros HP HP' H Ξ C Hd Hcov.
   destruct P as [ | n | β | P1 P2 | Q | | Q ].
   - (* unit — LE-Absent *)
     simp e_lookeq_impl. discriminate.
@@ -626,7 +426,7 @@ Proof.
     + (* arrow — LE-Arrow *)
       simp e_lookeq_impl. case_test; [ | discriminate ].
       inversion Hd; subst; try look_absurd.
-      destruct (q1 P1 P2 P1' P2' eq_refl eq_refl) as [IH1 IH2].
+      pose proof (IHhead P1 P2 P1' P2' eq_refl eq_refl) as IH1.
       match goal with
       | Hda : a_lookeq Θ α P1 P1' _ _ |- _ => rename Hda into HD1
       end.
@@ -639,7 +439,7 @@ Proof.
       kill_eq_call IH1 HD1 Hcv1 r1 Hr1.
       unfold lookeq_spec in Hr1.
       pose proof (e_lookeq_supply_grows Hr1) as Hgrow.
-      specialize (IH2 _ _ _ Hr1).
+      pose proof (IHtail P1 P2 P1' P2' _ _ _ eq_refl eq_refl Hr1) as IH2.
       assert (Hcv2 : ftvar_in_aenv Θ ∪ {{ α }} ∪ ftvar_in_pskl P2
                        ∪ ftvar_in_pskl P2' [<=] lk_supply r1)
         by (clear - Hcov Hgrow; simpl in *; fsetdec).
@@ -871,19 +671,10 @@ Lemma e_looksub_impl_complete : forall S0 Θ α m P P'
   ftvar_in_aenv Θ ∪ {{ α }} ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P' [<=] S0 ->
   e_looksub_impl S0 Θ α m P P' HP HP' H <> None.
 Proof.
-  intros S0 Θ α m P P'.
-  apply (e_looksub_order_sind
-           (fun S0 Θ α m P P' =>
-              forall (HP : lc_pskl P) (HP' : lc_pskl P')
-                     (H : e_looksub_order S0 Θ α m P P') Ξ C,
-                {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
-                ftvar_in_aenv Θ ∪ {{ α }} ∪ ftvar_in_pskl P
-                  ∪ ftvar_in_pskl P' [<=] S0 ->
-                e_looksub_impl S0 Θ α m P P' HP HP' H <> None));
-    [ | apply e_looksub_order_total ].
-  clear S0 Θ α m P P'.
-  intros S0 Θ α m P P' pck pfr qfr par qar pfl qfl pug qug
-         HP HP' H Ξ C Hd Hcov.
+  intros S0 Θ α m P P' HP HP' H.
+  generalize H. revert HP HP'.
+  induction H as [S0 Θ α m P P' pck pfr qfr par part qar pfl qfl pug qug].
+  intros HP HP' H Ξ C Hd Hcov.
   destruct P as [ | n | β | P1 P2 | Q | | Q ].
   - (* unit — LS-Absent *)
     simp e_looksub_impl. discriminate.
@@ -965,8 +756,8 @@ Proof.
         kill_eq_call_g HD1 Hcv1 r1 Hr1.
         unfold lookeq_spec in Hr1.
         pose proof (e_lookeq_supply_grows Hr1) as Hgrow.
-        pose proof (qar m' P1 P2 P1' P2' eq_refl eq_refl eq_refl
-                      _ _ _ Hr1) as IH2.
+        pose proof (qar m' P1 P2 P1' P2' _ _ _
+                      eq_refl eq_refl eq_refl Hr1) as IH2.
         assert (Hcv2 : ftvar_in_aenv Θ ∪ {{ α }} ∪ ftvar_in_pskl P2
                          ∪ ftvar_in_pskl P2' [<=] lk_supply r1)
           by (clear - Hcov Hgrow; simpl in *; fsetdec).
@@ -1367,7 +1158,6 @@ Lemma flex_agree_weaken : forall V V' Θ1 Θ2,
   flex_agree V Θ1 Θ2 -> V' [<=] V -> flex_agree V' Θ1 Θ2.
 Proof. intros * H Hsub α Hα. apply H. fsetdec. Qed.
 
-
 Lemma a_flex_tvar_swap_other : forall a b (Θ : aenv) α,
   α <> a -> α <> b ->
   a_flex_tvar (swap_aenv a b Θ) α <-> a_flex_tvar Θ α.
@@ -1528,125 +1318,6 @@ Qed.
 Arguments a_solve_eq_rebind_r {Θ Ps Q Ξ P' b β}.
 
 (* --------------------------------------------------------------------- *)
-(*  §3c  Strong induction for [e_solve_eq_order]                          *)
-(*                                                                        *)
-(*  §2a's idiom.  The FlexR premise is the GUESS layer's order and stays  *)
-(*  undoubled — the guess runner is total, so the branch owes nothing.    *)
-(* --------------------------------------------------------------------- *)
-
-Section e_solve_eq_order_sind.
-
-Variable Qe : supply -> aenv -> pskl -> pskl -> Prop.
-
-Hypothesis Hstep : forall S0 Θ P Q,
-    (* SE-FlexR — the guess layer's order, as-is *)
-    (forall β, Q = pskl_var_f β -> e_guess_mono_order S0 P) ->
-    (* SE-Arrow — order premise + motive companion *)
-    (forall P1 P2 Q1 Q2,
-       P = pskl_arrow P1 P2 -> Q = pskl_arrow Q1 Q2 ->
-       e_solve_eq_order S0 Θ P1 Q1
-       /\ (forall S1 Ξ1 P1',
-             {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
-             e_solve_eq_order S1 (Ξ1 ++ Θ) P2 Q2)) ->
-    (forall P1 P2 Q1 Q2,
-       P = pskl_arrow P1 P2 -> Q = pskl_arrow Q1 Q2 ->
-       Qe S0 Θ P1 Q1
-       /\ (forall S1 Ξ1 P1',
-             {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
-             Qe S1 (Ξ1 ++ Θ) P2 Q2)) ->
-    (* SE-Forall *)
-    (forall P1 Q1,
-       P = pskl_all_syn P1 -> Q = pskl_all_syn Q1 ->
-       e_solve_eq_order (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ)
-         (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0)))
-         (open_pskl_wrt_pskl Q1 (pskl_var_f (supply_fresh S0)))) ->
-    (forall P1 Q1,
-       P = pskl_all_syn P1 -> Q = pskl_all_syn Q1 ->
-       Qe (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ)
-         (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0)))
-         (open_pskl_wrt_pskl Q1 (pskl_var_f (supply_fresh S0)))) ->
-    (* SE-UnivGhost *)
-    (forall P1 Q1,
-       P = pskl_univ_ghost P1 -> Q = pskl_univ_ghost Q1 ->
-       e_solve_eq_order S0 Θ P1 Q1) ->
-    (forall P1 Q1,
-       P = pskl_univ_ghost P1 -> Q = pskl_univ_ghost Q1 ->
-       Qe S0 Θ P1 Q1) ->
-    (* SE-GhostForall *)
-    (forall P1 Q1,
-       P = pskl_univ_ghost P1 -> Q = pskl_all_syn Q1 ->
-       e_solve_eq_order (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ)
-         (pskl_univ_ghost P1)
-         (open_pskl_wrt_pskl Q1 (pskl_var_f (supply_fresh S0)))) ->
-    (forall P1 Q1,
-       P = pskl_univ_ghost P1 -> Q = pskl_all_syn Q1 ->
-       Qe (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ)
-         (pskl_univ_ghost P1)
-         (open_pskl_wrt_pskl Q1 (pskl_var_f (supply_fresh S0)))) ->
-    (* SE-GhostGuarded *)
-    (forall P1,
-       P = pskl_univ_ghost P1 ->
-       e_solve_eq_order S0 Θ P1 Q) ->
-    (forall P1,
-       P = pskl_univ_ghost P1 ->
-       Qe S0 Θ P1 Q) ->
-    (* SE-ForallGhost *)
-    (forall P1 Q1,
-       P = pskl_all_syn P1 -> Q = pskl_univ_ghost Q1 ->
-       e_solve_eq_order (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ)
-         (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0)))
-         (pskl_univ_ghost Q1)) ->
-    (forall P1 Q1,
-       P = pskl_all_syn P1 -> Q = pskl_univ_ghost Q1 ->
-       Qe (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ)
-         (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0)))
-         (pskl_univ_ghost Q1)) ->
-    (* SE-GuardedGhost *)
-    (forall Q1,
-       Q = pskl_univ_ghost Q1 ->
-       e_solve_eq_order S0 Θ P Q1) ->
-    (forall Q1,
-       Q = pskl_univ_ghost Q1 ->
-       Qe S0 Θ P Q1) ->
-    Qe S0 Θ P Q.
-
-Fixpoint e_solve_eq_order_sind S0 Θ P Q
-    (H : e_solve_eq_order S0 Θ P Q) {struct H} : Qe S0 Θ P Q :=
-  match H in e_solve_eq_order S0' Θ' Pa Qa return Qe S0' Θ' Pa Qa with
-  | e_solve_eq_order__intro _ _ _ _ p1 p2 p3 p4 p5 p6 p7 p8 =>
-      Hstep
-        p1
-        p2
-        (fun P1 P2 Q1 Q2 e1 e2 =>
-           match p2 P1 P2 Q1 Q2 e1 e2 with
-           | conj Ha Hb =>
-               conj (e_solve_eq_order_sind Ha)
-                    (fun S1 Ξ1 P1' Hrun =>
-                       e_solve_eq_order_sind (Hb S1 Ξ1 P1' Hrun))
-           end)
-        p3
-        (fun P1 Q1 e1 e2 => e_solve_eq_order_sind (p3 P1 Q1 e1 e2))
-        p4
-        (fun P1 Q1 e1 e2 => e_solve_eq_order_sind (p4 P1 Q1 e1 e2))
-        p5
-        (fun P1 Q1 e1 e2 => e_solve_eq_order_sind (p5 P1 Q1 e1 e2))
-        p6
-        (fun P1 e1 => e_solve_eq_order_sind (p6 P1 e1))
-        p7
-        (fun P1 Q1 e1 e2 => e_solve_eq_order_sind (p7 P1 Q1 e1 e2))
-        p8
-        (fun Q1 e1 => e_solve_eq_order_sind (p8 Q1 e1))
-  end.
-
-End e_solve_eq_order_sind.
-
-(* --------------------------------------------------------------------- *)
 (*  §3d  Completeness of the eq-solve runner                              *)
 (* --------------------------------------------------------------------- *)
 
@@ -1686,22 +1357,11 @@ Lemma e_solve_eq_impl_complete : forall S0 Θ P Q
   ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
   e_solve_eq_impl S0 Θ P Q HP HQ H <> None.
 Proof.
-  intros S0 Θ P Q HP HQ H Θd Ξd P'd Hd Hagr Hscp Hcov.
-  pose proof H as Hind.
-  revert HP HQ H Θd Ξd P'd Hd Hagr Hscp Hcov.
-  apply (e_solve_eq_order_sind
-           (fun S0 Θ P Q =>
-              forall (HP : lc_pskl P) (HQ : lc_pskl Q)
-                     (H : e_solve_eq_order S0 Θ P Q) Θd Ξd P'd,
-                {{ Θd ⊢ₑ P ∼ Q ⤳ Ξd ⨾ P'd }}a ->
-                flex_agree (ftvar_in_pskl P ∪ ftvar_in_pskl Q) Θd Θ ->
-                ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] ftvar_in_aenv Θd ->
-                ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
-                e_solve_eq_impl S0 Θ P Q HP HQ H <> None));
-    [ | exact Hind ].
-  clear.
-  intros S0 Θ P Q p1 p2 q2 p3 q3 p4 q4 p5 q5 p6 q6 p7 q7 p8 q8
-         HP HQ H Θd Ξd P'd Hd Hagr Hscp Hcov.
+  intros S0 Θ P Q HP HQ H.
+  generalize H. revert HP HQ.
+  induction H as [S0 Θ P Q p1 p2 IHhead p2t IHtail
+    p3 q3 p4 q4 p5 q5 p6 q6 p7 q7 p8 q8].
+  intros HP HQ H Θd Ξd P'd Hd Hagr Hscp Hcov.
   destruct P as [ | n | βs | P1 P2 | P1 | | P1 ].
   - (* subject unit *)
     destruct Q as [ | n' | β' | Q1 Q2 | Q1 | | Q1 ].
@@ -1772,7 +1432,7 @@ Proof.
     + (* arrow — SE-Arrow: the context-threading case *)
       simp e_solve_eq_impl.
       inversion Hd; subst; try look_absurd.
-      destruct (q2 P1 P2 Q1 Q2 eq_refl eq_refl) as [IH1 IH2].
+      pose proof (IHhead P1 P2 Q1 Q2 eq_refl eq_refl) as IH1.
       match goal with
       | Hda : a_solve_eq Θd P1 Q1 _ _ |- _ => rename Hda into HD1
       end.
@@ -1794,7 +1454,7 @@ Proof.
       pose proof (e_solve_eq_supply_grows Hr1) as Hgrow.
       pose proof ((proj2 e_solve_sub_eq_block) _ _ _ _ _ _ _ Hr1)
         as [Hb1 [Hb2 [Hb3 Hb4]]].
-      specialize (IH2 _ _ _ Hr1).
+      pose proof (IHtail P1 P2 Q1 Q2 _ _ _ eq_refl eq_refl Hr1) as IH2.
       match goal with
       | HD2' : a_solve_eq (?X ++ Θd) P2 Q2 _ _ |- _ =>
           assert (Hagr2 : flex_agree
@@ -2431,105 +2091,6 @@ Qed.
 Arguments a_solve_sub_forall_l_first {Θd Θr m P0 Q Ξ P' β}.
 
 (* --------------------------------------------------------------------- *)
-(*  §4c  Strong induction for [e_solve_sub_order]                         *)
-(*                                                                        *)
-(*  §2a/§3c's idiom.  The Check premise and the Arrow/GhostLF eq halves   *)
-(*  stay UNDOUBLED — the eq layer is a finished lemma, ∀-quantified over  *)
-(*  its domain proof.                                                     *)
-(* --------------------------------------------------------------------- *)
-
-Section e_solve_sub_order_sind.
-
-Variable Qs : supply -> aenv -> mode -> pskl -> pskl -> Prop.
-
-Hypothesis Hstep : forall S0 Θ m P Q,
-    (* SS-ForallL *)
-    (forall P1,
-       P = pskl_all_syn P1 ->
-       e_solve_sub_order (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ) m
-         (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0))) Q) ->
-    (forall P1,
-       P = pskl_all_syn P1 ->
-       Qs (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ) m
-         (open_pskl_wrt_pskl P1 (pskl_var_f (supply_fresh S0))) Q) ->
-    (* SS-UnivGhostL *)
-    (forall P1,
-       P = pskl_univ_ghost P1 ->
-       e_solve_sub_order S0 Θ m P1 Q) ->
-    (forall P1,
-       P = pskl_univ_ghost P1 ->
-       Qs S0 Θ m P1 Q) ->
-    (* SS-Check — the drop into the (already-closed) eq layer *)
-    (m = mode_tc -> e_solve_eq_order S0 Θ P Q) ->
-    (* SS-ForallR *)
-    (forall B,
-       m = mode_tc -> Q = pskl_all_syn B ->
-       e_solve_sub_order (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ) mode_tc P
-         (open_pskl_wrt_pskl B (pskl_var_f (supply_fresh S0)))) ->
-    (forall B,
-       m = mode_tc -> Q = pskl_all_syn B ->
-       Qs (add (supply_fresh S0) S0)
-         ((supply_fresh S0 ~ abind_tvar) ++ Θ) mode_tc P
-         (open_pskl_wrt_pskl B (pskl_var_f (supply_fresh S0)))) ->
-    (* SS-Arrow — the eq half stays as-is; only the sub half gets a
-       companion *)
-    (forall m' P1 P2 Q1 Q2,
-       m = mode_fn m' -> P = pskl_arrow P1 P2 -> Q = pskl_arrow Q1 Q2 ->
-       e_solve_eq_order S0 Θ P1 Q1
-       /\ (forall S1 Ξ1 P1',
-             {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
-             e_solve_sub_order S1 (Ξ1 ++ Θ) m' P2 Q2)) ->
-    (forall m' P1 P2 Q1 Q2,
-       m = mode_fn m' -> P = pskl_arrow P1 P2 -> Q = pskl_arrow Q1 Q2 ->
-       forall S1 Ξ1 P1',
-         {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
-         Qs S1 (Ξ1 ++ Θ) m' P2 Q2) ->
-    (* SS-GhostLF — same conj shape, ◇ halves *)
-    (forall m' Q1 Q2,
-       m = mode_fn m' -> P = pskl_ghost -> Q = pskl_arrow Q1 Q2 ->
-       e_solve_eq_order S0 Θ pskl_ghost Q1
-       /\ (forall S1 Ξ1 P1',
-             {{ S0 ↝ S1 ⊨ Θ ⊢ₑ pskl_ghost ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
-             e_solve_sub_order S1 (Ξ1 ++ Θ) m' pskl_ghost Q2)) ->
-    (forall m' Q1 Q2,
-       m = mode_fn m' -> P = pskl_ghost -> Q = pskl_arrow Q1 Q2 ->
-       forall S1 Ξ1 P1',
-         {{ S0 ↝ S1 ⊨ Θ ⊢ₑ pskl_ghost ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
-         Qs S1 (Ξ1 ++ Θ) m' pskl_ghost Q2) ->
-    Qs S0 Θ m P Q.
-
-Fixpoint e_solve_sub_order_sind S0 Θ m P Q
-    (H : e_solve_sub_order S0 Θ m P Q) {struct H} : Qs S0 Θ m P Q :=
-  match H in e_solve_sub_order S0' Θ' m' Pa Qa return Qs S0' Θ' m' Pa Qa with
-  | e_solve_sub_order__intro _ _ _ _ _ p1 p2 p3 p4 p5 p6 =>
-      Hstep
-        p1
-        (fun P1 e1 => e_solve_sub_order_sind (p1 P1 e1))
-        p2
-        (fun P1 e1 => e_solve_sub_order_sind (p2 P1 e1))
-        p3
-        p4
-        (fun B e1 e2 => e_solve_sub_order_sind (p4 B e1 e2))
-        p5
-        (fun m' P1 P2 Q1 Q2 e1 e2 e3 S1 Ξ1 P1' Hrun =>
-           e_solve_sub_order_sind
-             (match p5 m' P1 P2 Q1 Q2 e1 e2 e3 with
-              | conj _ Hb => Hb
-              end S1 Ξ1 P1' Hrun))
-        p6
-        (fun m' Q1 Q2 e1 e2 e3 S1 Ξ1 P1' Hrun =>
-           e_solve_sub_order_sind
-             (match p6 m' Q1 Q2 e1 e2 e3 with
-              | conj _ Hb => Hb
-              end S1 Ξ1 P1' Hrun))
-  end.
-
-End e_solve_sub_order_sind.
-
-(* --------------------------------------------------------------------- *)
 (*  §4d  Completeness of the sub-solve runner                             *)
 (* --------------------------------------------------------------------- *)
 
@@ -2566,23 +2127,10 @@ Lemma e_solve_sub_impl_complete : forall S0 Θ m P Q
   ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
   e_solve_sub_impl S0 Θ m P Q HP HQ H <> None.
 Proof.
-  intros S0 Θ m P Q HP HQ H Θd Ξd P'd Hd Hagr Hscp Hcov.
-  pose proof H as Hind.
-  revert HP HQ H Θd Ξd P'd Hd Hagr Hscp Hcov.
-  apply (e_solve_sub_order_sind
-           (fun S0 Θ m P Q =>
-              forall (HP : lc_pskl P) (HQ : lc_pskl Q)
-                     (H : e_solve_sub_order S0 Θ m P Q) Θd Ξd P'd,
-                {{ Θd ⊢ₛ P ≼[ m ] Q ⤳ Ξd ⨾ P'd }}a ->
-                flex_agree (ftvar_in_pskl P ∪ ftvar_in_pskl Q) Θd Θ ->
-                ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] ftvar_in_aenv Θd ->
-                ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q
-                  [<=] S0 ->
-                e_solve_sub_impl S0 Θ m P Q HP HQ H <> None));
-    [ | exact Hind ].
-  clear.
-  intros S0 Θ m P Q p1 q1 p2 q2 p3 p4 q4 p5 q5 p6 q6
-         HP HQ H Θd Ξd P'd Hd Hagr Hscp Hcov.
+  intros S0 Θ m P Q HP HQ H.
+  generalize H. revert HP HQ.
+  induction H as [S0 Θ m P Q p1 q1 p2 q2 p3 p4 q4 p5 p5t q5 p6 p6t q6].
+  intros HP HQ H Θd Ξd P'd Hd Hagr Hscp Hcov.
   destruct P as [ | n | βv | P1 P2 | P1 | | P1 ].
   - (* subject unit *)
     destruct Q as [ | n' | β' | Q1 Q2 | B | | Q1 ].
@@ -2796,8 +2344,8 @@ Proof.
         pose proof (e_solve_eq_supply_grows Hr1) as Hgrow.
         pose proof ((proj2 e_solve_sub_eq_block) _ _ _ _ _ _ _ Hr1)
           as [Hb1 [Hb2 [Hb3 Hb4]]].
-        pose proof (q5 m'2 P1 P2 Q1 Q2 eq_refl eq_refl eq_refl
-                      _ _ _ Hr1) as IH2.
+        pose proof (q5 m'2 P1 P2 Q1 Q2 _ _ _
+                      eq_refl eq_refl eq_refl Hr1) as IH2.
         match goal with
         | HD2' : a_solve_sub (?X ++ Θd) _ P2 Q2 _ _ |- _ =>
             assert (Hagr2 : flex_agree
@@ -3017,7 +2565,7 @@ Proof.
         pose proof (e_solve_eq_supply_grows Hr1) as Hgrow.
         pose proof ((proj2 e_solve_sub_eq_block) _ _ _ _ _ _ _ Hr1)
           as [Hb1 [Hb2 [Hb3 Hb4]]].
-        pose proof (q6 m'2 Q1 Q2 eq_refl eq_refl eq_refl _ _ _ Hr1)
+        pose proof (q6 m'2 Q1 Q2 _ _ _ eq_refl eq_refl eq_refl Hr1)
           as IH2.
         match goal with
         | HD2' : a_solve_sub (?X ++ Θd) _ pskl_ghost Q2 _ _ |- _ =>

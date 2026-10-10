@@ -33,6 +33,11 @@
       structural subterm of [H] — the [Acc_inv] pattern, already exercised by
       [ego_arrow]'s higher-order premise.
 
+    Recursive calls are separate constructor premises.  In particular,
+    a head call and the tail call guarded by its result are not bundled
+    under a conjunction: Coq's generated induction principle then includes
+    both recursive hypotheses without a hand-written companion principle.
+
     ⚙ RULE GUARDS ARE DROPPED, SHAPES ARE KEPT.  A premise is conditioned on
     what determines the RECURSION (the input shapes, the mode's shape), not
     on the rule's side conditions ([β ∉ ftv P], [guarded_pskl Q], …): the
@@ -94,10 +99,12 @@ Inductive e_lookeq_order : supply -> aenv -> atom -> pskl -> pskl -> Prop :=
     (* LE-Arrow — the sibling threads the supply *)
     (forall P1 P2 P1' P2',
        P = pskl_arrow P1 P2 -> P' = pskl_arrow P1' P2' ->
-       e_lookeq_order S0 Θ α P1 P1'
-       /\ (forall S1 Ξ1 C1,
-             {{ S0 ↝ S1 ⊨ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}e ->
-             e_lookeq_order S1 Θ α P2 P2')) ->
+       e_lookeq_order S0 Θ α P1 P1') ->
+    (forall P1 P2 P1' P2' S1 Ξ1 C1,
+       P = pskl_arrow P1 P2 -> P' = pskl_arrow P1' P2' ->
+       {{ S0 ↝ S1 ⊨ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}e ->
+       e_lookeq_order S1 Θ α P2 P2') ->
+
     (* LE-ForallInh *)
     (forall Q Q',
        P = pskl_all_syn Q -> P' = pskl_all_syn Q' ->
@@ -147,10 +154,12 @@ Inductive e_looksub_order : supply -> aenv -> atom -> mode -> pskl -> pskl
     (* LS-Arrow *)
     (forall m' P1 P2 P1' P2',
        m = mode_fn m' -> P = pskl_arrow P1 P2 -> P' = pskl_arrow P1' P2' ->
-       e_lookeq_order S0 Θ α P1 P1'
-       /\ (forall S1 Ξ1 C1,
-             {{ S0 ↝ S1 ⊨ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}e ->
-             e_looksub_order S1 Θ α m' P2 P2')) ->
+       e_lookeq_order S0 Θ α P1 P1') ->
+    (forall m' P1 P2 P1' P2' S1 Ξ1 C1,
+       m = mode_fn m' -> P = pskl_arrow P1 P2 -> P' = pskl_arrow P1' P2' ->
+       {{ S0 ↝ S1 ⊨ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}e ->
+       e_looksub_order S1 Θ α m' P2 P2') ->
+
     (* LS-ForallL *)
     (forall Q,
        P = pskl_all_syn Q ->
@@ -177,10 +186,12 @@ Inductive e_solve_eq_order : supply -> aenv -> pskl -> pskl -> Prop :=
     (* SE-Arrow — the sibling ALSO threads the context (def_solve.v header) *)
     (forall P1 P2 Q1 Q2,
        P = pskl_arrow P1 P2 -> Q = pskl_arrow Q1 Q2 ->
-       e_solve_eq_order S0 Θ P1 Q1
-       /\ (forall S1 Ξ1 P1',
-             {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
-             e_solve_eq_order S1 (Ξ1 ++ Θ) P2 Q2)) ->
+       e_solve_eq_order S0 Θ P1 Q1) ->
+    (forall P1 P2 Q1 Q2 S1 Ξ1 P1',
+       P = pskl_arrow P1 P2 -> Q = pskl_arrow Q1 Q2 ->
+       {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
+       e_solve_eq_order S1 (Ξ1 ++ Θ) P2 Q2) ->
+
     (* SE-Forall *)
     (forall P1 Q1,
        P = pskl_all_syn P1 -> Q = pskl_all_syn Q1 ->
@@ -239,17 +250,21 @@ Inductive e_solve_sub_order : supply -> aenv -> mode -> pskl -> pskl -> Prop :=
     (* SS-Arrow *)
     (forall m' P1 P2 Q1 Q2,
        m = mode_fn m' -> P = pskl_arrow P1 P2 -> Q = pskl_arrow Q1 Q2 ->
-       e_solve_eq_order S0 Θ P1 Q1
-       /\ (forall S1 Ξ1 P1',
-             {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
-             e_solve_sub_order S1 (Ξ1 ++ Θ) m' P2 Q2)) ->
+       e_solve_eq_order S0 Θ P1 Q1) ->
+    (forall m' P1 P2 Q1 Q2 S1 Ξ1 P1',
+       m = mode_fn m' -> P = pskl_arrow P1 P2 -> Q = pskl_arrow Q1 Q2 ->
+       {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
+       e_solve_sub_order S1 (Ξ1 ++ Θ) m' P2 Q2) ->
+
     (* SS-GhostLF — the ◇ expands along the counterpart's arrow *)
     (forall m' Q1 Q2,
        m = mode_fn m' -> P = pskl_ghost -> Q = pskl_arrow Q1 Q2 ->
-       e_solve_eq_order S0 Θ pskl_ghost Q1
-       /\ (forall S1 Ξ1 P1',
-             {{ S0 ↝ S1 ⊨ Θ ⊢ₑ pskl_ghost ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
-             e_solve_sub_order S1 (Ξ1 ++ Θ) m' pskl_ghost Q2)) ->
+       e_solve_eq_order S0 Θ pskl_ghost Q1) ->
+    (forall m' Q1 Q2 S1 Ξ1 P1',
+       m = mode_fn m' -> P = pskl_ghost -> Q = pskl_arrow Q1 Q2 ->
+       {{ S0 ↝ S1 ⊨ Θ ⊢ₑ pskl_ghost ∼ Q1 ⤳ Ξ1 ⨾ P1' }}e ->
+       e_solve_sub_order S1 (Ξ1 ++ Θ) m' pskl_ghost Q2) ->
+
     e_solve_sub_order S0 Θ m P Q.
 
 (** The constraint fold — structural on the list, with the context and the

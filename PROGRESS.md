@@ -181,6 +181,31 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Use generated induction for collection and solver completeness
+
+The collection and primitive solver orders bundled sibling recursive
+calls under conjunctions.  Coq's generated induction principles therefore
+omitted those recursive hypotheses, prompting four hand-written strong
+induction principles which repeated the order definitions and their
+recursive mapping code.
+
+Made each recursive call a separate constructor premise, retaining its
+shape guards and the head-derivation guard for the tail.  These are the
+same recursion obligations distributed over the conjunction.  The four
+completeness proofs now use ordinary `induction H`, infer their motives,
+and obtain the head and tail hypotheses directly.  Removed all four
+custom principles and the obsolete explanatory comments.
+
+Every affected completeness proof is shorter: lookeq **224 → 216**,
+looksub **435 → 426**, solve-eq **464 → 453**, solve-sub **576 → 563**
+(nonblank, noncomment proof lines).  Net **374 fewer Coq code lines**,
+including the five added lines in the order constructors.  The runner
+source and all retained theorem statements are unchanged.
+
+Validation: full `make coq`; all 34 headline assumption reports remain
+`Closed under the global context`.  Regenerated OCaml is byte-for-byte
+identical to the preceding build.
+
 ## 2026-10-11 — Direct threaded constraint-fold completeness
 
 Replaced the fold's `a_*` determinism route with ordinary induction on
