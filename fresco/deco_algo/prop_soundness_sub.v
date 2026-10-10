@@ -3394,17 +3394,8 @@ Proof.
     (* a TERM entry is never [a_binds_tvar], so [P0] cannot mention it — that
        is what supplies [a_wf_pskl_strip_mid]'s freshness, which the rule does
        not carry (nor does the twin walk's [Assign-SkipTmVar]). *)
-    assert (Hxfr : x `notin` ftvar_in_pskl P0).
-    { intro Hin.
-      assert (Huq : uniq (Ξw ++ (x ~ abind_var_typ Q) ++ Θ0))
-        by (apply a_wf_aenv_uniq; exact HwfΞ).
-      assert (Hbx : binds x (abind_var_typ Q) (Ξw ++ (x ~ abind_var_typ Q) ++ Θ0))
-        by (apply binds_app_3; apply binds_app_2;
-            unfold binds; simpl; left; reflexivity).
-      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
-      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hc;
-        discriminate Hc. }
+    assert (Hxfr : x `notin` ftvar_in_pskl P0)
+      by (eapply a_wf_pskl_tm_entry_fresh; [ exact HwfΞ | exact I | exact HwfP0 ]).
     apply a_subtag_flex__skip_tm_var.
     { exact Hnin. }
     apply IH.
@@ -3423,17 +3414,8 @@ Proof.
     (* a TERM entry is never [a_binds_tvar], so [P0] cannot mention it — that
        is what supplies [a_wf_pskl_strip_mid]'s freshness, which the rule does
        not carry (nor does the twin walk's [Assign-SkipTmVar]). *)
-    assert (Hxfr : x `notin` ftvar_in_pskl P0).
-    { intro Hin.
-      assert (Huq : uniq (Ξw ++ (x ~ abind_var_skl Q) ++ Θ0))
-        by (apply a_wf_aenv_uniq; exact HwfΞ).
-      assert (Hbx : binds x (abind_var_skl Q) (Ξw ++ (x ~ abind_var_skl Q) ++ Θ0))
-        by (apply binds_app_3; apply binds_app_2;
-            unfold binds; simpl; left; reflexivity).
-      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
-      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hc;
-        discriminate Hc. }
+    assert (Hxfr : x `notin` ftvar_in_pskl P0)
+      by (eapply a_wf_pskl_tm_entry_fresh; [ exact HwfΞ | exact I | exact HwfP0 ]).
     apply a_subtag_flex__skip_tm_skl.
     { exact Hnin. }
     apply IH.

@@ -1642,18 +1642,8 @@ Proof.
        side condition is a constructor mismatch *)
     intros NM M P0 Θ0 Θ1 Ξ α x Apay Q Hxout Hs IH Heq Hwf Hdecls HwfP0 Hbα
            C Hcore.
-    assert (Huq : uniq (Ξ ++ (x ~ abind_var_typ Apay) ++ Θ0))
-      by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (Hbx : binds x (abind_var_typ Apay)
-                    (Ξ ++ (x ~ abind_var_typ Apay) ++ Θ0))
-      by (apply binds_app_3; apply binds_app_2;
-          unfold binds; simpl; left; reflexivity).
-    assert (Hxfr : x `notin` ftvar_in_pskl P0).
-    { intro Hin.
-      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
-      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hcx;
-        discriminate Hcx. }
+    assert (Hxfr : x `notin` ftvar_in_pskl P0)
+      by (eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact I | exact HwfP0 ]).
     assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
@@ -1685,18 +1675,8 @@ Proof.
   - (* Flex-SkipTmVar (skeleton entry) : verbatim the previous row *)
     intros NM M P0 Θ0 Θ1 Ξ α x Qpay Q Hxout Hs IH Heq Hwf Hdecls HwfP0 Hbα
            C Hcore.
-    assert (Huq : uniq (Ξ ++ (x ~ abind_var_skl Qpay) ++ Θ0))
-      by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (Hbx : binds x (abind_var_skl Qpay)
-                    (Ξ ++ (x ~ abind_var_skl Qpay) ++ Θ0))
-      by (apply binds_app_3; apply binds_app_2;
-          unfold binds; simpl; left; reflexivity).
-    assert (Hxfr : x `notin` ftvar_in_pskl P0).
-    { intro Hin.
-      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
-      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hcx;
-        discriminate Hcx. }
+    assert (Hxfr : x `notin` ftvar_in_pskl P0)
+      by (eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact I | exact HwfP0 ]).
     assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)

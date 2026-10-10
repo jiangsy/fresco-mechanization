@@ -1151,6 +1151,25 @@ Proof.
   intros Θ H; induction H; solve_uniq.
 Qed.
 
+(** A TERM entry is never [a_binds_tvar], so a skeleton well-formed in the
+    context cannot mention it — the freshness [a_wf_pskl_strip_mid] needs
+    at every Flex-SkipTmVar / Assign-SkipTmVar row, which the rules do not
+    carry. *)
+Lemma a_wf_pskl_tm_entry_fresh : forall Ξ x bd Θ0 Δ P,
+  {{ ⊢ (Ξ ++ (x ~ bd) ++ Θ0) }}a ->
+  abind_is_tm bd ->
+  {{ (Ξ ++ (x ~ bd) ++ Θ0) ⨟ Δ ⊢ₚₛ P }}a ->
+  x `notin` ftvar_in_pskl P.
+Proof.
+  intros * Hwf Htm HwfP Hin.
+  assert (Huq : uniq (Ξ ++ (x ~ bd) ++ Θ0)) by (apply a_wf_aenv_uniq; exact Hwf).
+  assert (Hbx : binds x bd (Ξ ++ (x ~ bd) ++ Θ0))
+    by (apply binds_app_3; apply binds_app_2; unfold binds; simpl; left; reflexivity).
+  destruct (a_wf_pskl_ftv_binds HwfP Hin) as [Hb | [Hb | [τ0 Hb]]];
+    pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq); subst; exact Htm.
+Qed.
+
+
 (* ===================================================================== *)
 (*  a_wf_ptyp / a_guess_mono / a_decls plumbing                           *)
 (* ===================================================================== *)

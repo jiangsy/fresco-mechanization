@@ -2494,16 +2494,11 @@ Proof.
   - exact (Hd a b Hat').
 Qed.
 
-(* ⚠️ PERF: the ∀ rows' [flex_above_free] obligation is
-   [(add α Δ1 ∪ add α Δ2) ∩ (add γ (dom Θb)) [=] empty] — six set atoms, and
-   a direct [fsetdec] there costs 40 s PER ROW.  Split at the [add]. *)
-Lemma inter_empty_add : forall D X (a : atom),
-  D ∩ X [=] empty -> a `notin` X -> (add a D) ∩ X [=] empty.
-Proof. intros D X a H Ha. fsetdec. Qed.
-
-Lemma inter_empty_cong_l : forall D D' X,
-  D [=] D' -> D ∩ X [=] empty -> D' ∩ X [=] empty.
-Proof. intros D D' X Heq H. fsetdec. Qed.
+(* ⚙ [inter_empty_add] / [inter_empty_cong_l], the split that kept the ∀
+   rows' [flex_above_free] obligation off a 40 s [fsetdec], were deleted
+   2026-10-10 with their only consumers: prop_lift.v's ∀ rows now take all
+   three Δ-invariants from [delta_inv_open_tvar] (consis/
+   prop_soundness_consis.v), whose [fsetdec]s run over an abstract Δ'. *)
 
 (* --------------------------------------------------------------------- *)
 (*  ⭐⭐ §13b  THE LEFT-SET RESTRICTION — what `a_sub__forall_r` needs and    *)

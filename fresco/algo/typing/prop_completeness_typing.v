@@ -134,12 +134,6 @@ Proof.
     | intros; clear; fsetdec ].
 Qed.
 
-(** [ad_refine_syn__ghost] at [Δ = empty]: the disjointness premise is
-    vacuous. *)
-Lemma ad_refine_syn_ghost_empty : forall Θ P,
-  {{ Θ ⨟ empty ⊢ᵣ bskl_ghost ⊳ (pskl_to_bskl_syn P) }}ad.
-Proof. intros; apply ad_refine_syn__ghost; clear; fsetdec. Qed.
-
 (* ===================================================================== *)
 (*  The two tails every base row shares                                   *)
 (* ===================================================================== *)

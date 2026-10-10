@@ -201,20 +201,10 @@ Proof.
                       (open_pskl_wrt_pskl P (pskl_var_f α)) }}a)
       by (apply a_wf_pskl_all_syn_open_tvar;
             [ exact HwfP | clear - HαΘ0 HαP; fsetdec ]).
-    assert (Hcovx : forall α0, α0 `in` (add α Δ1 `union` add α Δ2) ->
-                    binds α0 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-    { intros α0 Hα0. destruct (α0 == α) as [->|Hne];
-        [ unfold binds; left; reflexivity
-        | unfold binds; right; apply Hcov; clear - Hα0 Hne; fsetdec ]. }
-    assert (Hnfdx : no_flex_dep (add α Δ1 `union` add α Δ2)
-                      ((α ~ abind_tvar) ++ Θ0))
-      by (apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
-            [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ]).
-    assert (Hfafx : flex_above_free (add α Δ1 `union` add α Δ2)
-                      ((α ~ abind_tvar) ++ Θ0))
-      by (apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
-            [ clear; fsetdec
-            | apply faf_open_tvar; auto; clear - HαΔ; fsetdec ]).
+    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (add α Δ1 `union` add α Δ2) α Θ0
+                ltac:(auto) ltac:(auto) ltac:(clear; fsetdec) Hcov
+                ltac:(auto) ltac:(auto))
+      as (Hcovx & Hnfdx & Hfafx).
     assert (Hsh0x : (add α Δ1 `union` add α Δ2) ∩
                     pskl_shielded_ftv (open_pskl_wrt_pskl P0 (pskl_var_f α))
                     [=] empty).
@@ -309,20 +299,10 @@ Proof.
                       (open_pskl_wrt_pskl P (pskl_var_f α)) }}a)
       by (apply a_wf_pskl_all_syn_open_tvar;
             [ exact HwfP | clear - HαΘ0 HαP; fsetdec ]).
-    assert (Hcovx : forall α0, α0 `in` (Δ1 `union` add α Δ2) ->
-                    binds α0 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-    { intros α0 Hα0. destruct (α0 == α) as [->|Hne];
-        [ unfold binds; left; reflexivity
-        | unfold binds; right; apply Hcov; clear - Hα0 Hne; fsetdec ]. }
-    assert (Hnfdx : no_flex_dep (Δ1 `union` add α Δ2)
-                      ((α ~ abind_tvar) ++ Θ0))
-      by (apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
-            [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ]).
-    assert (Hfafx : flex_above_free (Δ1 `union` add α Δ2)
-                      ((α ~ abind_tvar) ++ Θ0))
-      by (apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
-            [ clear; fsetdec
-            | apply faf_open_tvar; auto; clear - HαΔ; fsetdec ]).
+    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (Δ1 `union` add α Δ2) α Θ0
+                ltac:(auto) ltac:(auto) ltac:(clear; fsetdec) Hcov
+                ltac:(auto) ltac:(auto))
+      as (Hcovx & Hnfdx & Hfafx).
     assert (Hsh0x : (Δ1 `union` add α Δ2) ∩
                     pskl_shielded_ftv (pskl_univ_ghost P0) [=] empty)
       by (simpl; clear - Hsh0 HαP0; fsetdec).
@@ -417,20 +397,10 @@ Proof.
     assert (HwfPx : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_univ_ghost P) }}a).
     { eapply a_wf_pskl_delta_mono;
         [ apply (a_wf_pskl_reassoc HwfP α) | clear; fsetdec ]. }
-    assert (Hcovx : forall α0, α0 `in` (add α Δ1 `union` Δ2) ->
-                    binds α0 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-    { intros α0 Hα0. destruct (α0 == α) as [->|Hne];
-        [ unfold binds; left; reflexivity
-        | unfold binds; right; apply Hcov; clear - Hα0 Hne; fsetdec ]. }
-    assert (Hnfdx : no_flex_dep (add α Δ1 `union` Δ2)
-                      ((α ~ abind_tvar) ++ Θ0))
-      by (apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
-            [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ]).
-    assert (Hfafx : flex_above_free (add α Δ1 `union` Δ2)
-                      ((α ~ abind_tvar) ++ Θ0))
-      by (apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
-            [ clear; fsetdec
-            | apply faf_open_tvar; auto; clear - HαΔ; fsetdec ]).
+    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (add α Δ1 `union` Δ2) α Θ0
+                ltac:(auto) ltac:(auto) ltac:(clear; fsetdec) Hcov
+                ltac:(auto) ltac:(auto))
+      as (Hcovx & Hnfdx & Hfafx).
     assert (Hsh0x : (add α Δ1 `union` Δ2) ∩
                     pskl_shielded_ftv (open_pskl_wrt_pskl P0 (pskl_var_f α))
                     [=] empty).
@@ -906,18 +876,8 @@ Proof.
       [ intros y b0 Hb; unfold binds; right; exact Hb | exact HwfQ ].
   - (* Flex-SkipTmVar (type entry) *)
     intros NM M P0 Θ0 Θ1 Ξ α x Apay Q Hxout Hprem IH Hwf Hdecl HwfP0 Hαb.
-    assert (Huq : uniq (Ξ ++ (x ~ abind_var_typ Apay) ++ Θ0))
-      by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (Hbx : binds x (abind_var_typ Apay)
-                    (Ξ ++ (x ~ abind_var_typ Apay) ++ Θ0))
-      by (apply binds_app_3; apply binds_app_2;
-          unfold binds; simpl; left; reflexivity).
-    assert (Hxfr : x `notin` ftvar_in_pskl P0).
-    { intro Hin.
-      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
-      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hcx;
-        discriminate Hcx. }
+    assert (Hxfr : x `notin` ftvar_in_pskl P0)
+      by (eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact I | exact HwfP0 ]).
     assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfT : {{ ⊢ ((x ~ abind_var_typ Apay) ++ Θ0) }}a)
@@ -951,18 +911,8 @@ Proof.
       [ intros y b0 Hb; unfold binds; right; exact Hb | exact HwfQ ].
   - (* Flex-SkipTmVar (skeleton entry) *)
     intros NM M P0 Θ0 Θ1 Ξ α x Qpay Q Hxout Hprem IH Hwf Hdecl HwfP0 Hαb.
-    assert (Huq : uniq (Ξ ++ (x ~ abind_var_skl Qpay) ++ Θ0))
-      by (apply a_wf_aenv_uniq; exact Hwf).
-    assert (Hbx : binds x (abind_var_skl Qpay)
-                    (Ξ ++ (x ~ abind_var_skl Qpay) ++ Θ0))
-      by (apply binds_app_3; apply binds_app_2;
-          unfold binds; simpl; left; reflexivity).
-    assert (Hxfr : x `notin` ftvar_in_pskl P0).
-    { intro Hin.
-      pose proof (a_wf_pskl_ftv_binds HwfP0 Hin) as Hbt.
-      destruct Hbt as [Hb | [Hb | [τ0 Hb]]];
-        pose proof (binds_unique _ _ _ _ _ Hbx Hb Huq) as Hcx;
-        discriminate Hcx. }
+    assert (Hxfr : x `notin` ftvar_in_pskl P0)
+      by (eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact I | exact HwfP0 ]).
     assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfT : {{ ⊢ ((x ~ abind_var_skl Qpay) ++ Θ0) }}a)

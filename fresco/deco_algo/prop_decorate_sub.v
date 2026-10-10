@@ -492,25 +492,20 @@ Qed.
 
 (** Discharge one of the three Δ-invariants ([rigid] / [no_flex_dep] /
     [flex_above_free]) after a ∀ row has extended Δ and Θ by the fresh rigid
-    β; [Hβ] implies [β ∉ dom Θ0]. *)
+    β — the matching projection of [delta_inv_open_tvar]
+    (consis/prop_soundness_consis.v); [Hβ] implies [β ∉ dom Θ0]. *)
 Local Ltac delta_open_goal β Hβ Hrig Δ1 Δ2 :=
-  lazymatch goal with
-  | |- forall _, _ `in` _ -> binds _ abind_tvar _ =>
-      let α0 := fresh "α0" in let Hα0 := fresh "Hα0" in
-      let Hne := fresh "Hne" in
-      intros α0 Hα0; destruct (α0 == β) as [ -> | Hne ];
-        [ unfold binds; left; reflexivity
-        | unfold binds; right; apply Hrig; clear - Hα0 Hne; fsetdec ]
-  | |- no_flex_dep _ _ =>
-      apply no_flex_dep_cong with (Δ := add β (Δ1 `union` Δ2));
-        [ clear; fsetdec
-        | apply no_flex_dep_open_tvar;
-            [ assumption | assumption | clear - Hβ; fsetdec ] ]
-  | |- flex_above_free _ _ =>
-      apply faf_cong with (Δ := add β (Δ1 `union` Δ2));
-        [ clear; fsetdec
-        | apply faf_open_tvar; [ assumption | clear - Hβ; fsetdec ] ]
-  end.
+  let Θ := lazymatch goal with |- context [ (β ~ abind_tvar) ++ ?Θ ] => Θ end in
+  let D := lazymatch goal with
+           | |- forall _, _ `in` ?D -> _ => D
+           | |- no_flex_dep ?D _ => D
+           | |- flex_above_free ?D _ => D
+           end in
+  let H := fresh "HΔ" in
+  pose proof (@delta_inv_open_tvar (Δ1 `union` Δ2) D β Θ
+                ltac:(assumption) ltac:(clear - Hβ; fsetdec) ltac:(clear; fsetdec)
+                Hrig ltac:(assumption) ltac:(assumption)) as H;
+  first [ exact (proj1 H) | exact (proj1 (proj2 H)) | exact (proj2 (proj2 H)) ].
 
 (** The shared body of [a_consistag_decoration_var]'s two ∀ rows, once the
     rule's opener β is introduced: commute ρ with the opening (β avoids ρ's
@@ -1017,17 +1012,6 @@ Proof.
   - rewrite msubst_uskl_ghost in Hg. inversion Hg.
   - rewrite msubst_uskl_univ_ghost in Hg. inversion Hg.
 Qed.
-
-(** The trivial Δ-side conditions of consistency decoration at Δ = ∅. *)
-Lemma rig_empty : forall Θ : aenv,
-  forall α, α `in` (empty `union` empty) -> binds α abind_tvar Θ.
-Proof. intros Θ α Hα. exfalso. clear - Hα. fsetdec. Qed.
-
-Lemma no_flex_dep_empty : forall Θ, no_flex_dep (empty `union` empty) Θ.
-Proof. intros Θ β τ Hb. clear. fsetdec. Qed.
-
-Lemma faf_empty : forall Θ, flex_above_free (empty `union` empty) Θ.
-Proof. intros Θ Θ1 β b Θ2 Heq Hne. clear. fsetdec. Qed.
 
 (** The erasure-swap obligation of [a_subtag_vacuous_erasure]: the
     decorated ρ-image erases like anything erasure-equal to the strip's. *)
