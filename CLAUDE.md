@@ -8,12 +8,20 @@ DEVELOPMENT** since 2026-10-10.  It used to be ported from
 `impredicative/mechanization/frost/` (the `mech-faithful-wf-refine` worktree);
 that tree is now frozen at `884cdc3a` and nothing flows from it any more.
 Work here, then sync downward:
-- `public` branch — the outside-reader release: the SAME proofs, comments
-  rewritten (no dates, ⭐/⚠ markers, paper line numbers, docs/ or cex/
-  references), no `cex/`, `test/`, `docs/`.  Port by a per-file 3-way merge
-  (base = previous `main`, ours = `public`, theirs = new `main`), take CODE
-  from `main`, rewrite new comments in public style, and check that every
-  file's comment-stripped code equals `main`'s.
+- `public` branch — the outside-reader release: the SAME proofs with ALL
+  comments removed (since 2026-10-10), no `cex/`, `test/`, `docs/`.
+  `README.v` is the only commented file: a short header with the notation
+  legend, and one pointer per entry giving the paper's number and name, e.g.
+  `(* Lemma C.7 (Completeness and optimality of consistency) *)` — no
+  explanations.  To sync: copy every `fresco/` file from `main`, strip Coq
+  comments (nested comments + strings handled) and `language.ott`'s
+  whole-line `%` comments, regenerate `README.v` from `main`'s (statements
+  verbatim, pointers from the paper's numbering — compile the paper with its
+  appendices to get current numbers), check every file is token-identical to
+  `main` once comments are ignored, `make coq`, commit, push.  Tools:
+  `scripts/strip_coq_comments.py`, `scripts/make_public_readme.py` (its
+  `POINTER` table maps each README entry to the paper's number and name —
+  update it when an entry is added or the paper is renumbered).
 - the hosted browser <https://jiang.sy/research/popl2027b/> — repo
   `personal_web`: pin the new `public` commit in `sources.lock.json`
   (`fresco` entry, `localPath` = the `public` checkout), then
