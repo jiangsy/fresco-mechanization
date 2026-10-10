@@ -538,7 +538,7 @@ Proof.
   apply msubst_pskl_outer_ext. intros α Hα.
   apply a_tyequiv_downarrow; [ exact Hwf | ].
   eapply a_inc_equiv_lookup_tvar;
-    [ exact Hie | exact Hwf0 | eapply a_scope_pskl_ftv_tvarish; eauto ].
+    [ exact Hie | exact Hwf0 | eapply a_scope_pskl_ftv_binds; eauto ].
 Qed.
 
 Corollary a_inc_equiv_downarrow_pskl_size : forall Θ0 κ1 κ2 Θ P,

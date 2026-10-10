@@ -648,39 +648,50 @@ Qed.
     the paper's (commented-out) "refinement preserves correspondence" for
     TYPES.  [Infer] and [Check] are the two leaves; [Check]'s local
     closure comes off its own consistency premise
-    ([ad_pat_consis_target_lc], algo/sub/look/prop_eq_var.v). *)
+    ([ad_pat_consis_target_lc], consis/prop_soundness_consis.v), which needs
+    the subject free of plain [◇] — true of every type painting. *)
 Lemma ad_pat_sub_mod_comp_ty : forall M Ψ Θ R Q,
   {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_ty | M ] R ⩽ Q }}ad ->
+  uskl_no_ghost R ->
   forall Bt, Q = btyp_to_bskl Bt -> mod_comp_ty Bt M.
 Proof.
   (* [Bt] for the colouring the target erases from — [B] is [Check]'s and
      [ForallR]'s own binder. *)
   intros M Ψ Θ R Q H.
   remember a_sub_mode_ty as NM eqn:HNM.
-  induction H; subst; try discriminate; destr_join; intros Bt HeqB.
+  induction H; subst; try discriminate; destr_join; intros Hng Bt HeqB.
   - (* infer *)
     apply mod_comp_ty__ti. eapply is_styp_of_btyp_to_bskl; eassumption.
-  - (* check *)
+  - (* check : the counterpart is locally closed because the subject has
+       no plain ◇ (a type painting) *)
     apply mod_comp_ty__tc.
     eapply is_ityp_of_erase_inh; [ | symmetry; exact HeqB ].
     apply lc_btyp_of_lc_bskl_erase. rewrite <- HeqB.
-    eapply prop_eq_var.ad_pat_consis_target_lc; eassumption.
+    eapply ad_pat_consis_target_lc; eassumption.
   - (* forall_r *)
     destruct Bt as [ | n | α | B1 B2 | B0 | B0 ]; simpl in HeqB;
       try discriminate.
     inversion HeqB; subst.
     apply mod_comp_ty__tc. apply is_ityp__all with (L := L). intros α Hα.
     apply mod_comp_ty_tc_inv.
-    apply (H0 α Hα eq_refl (open_btyp_wrt_btyp B0 (btyp_var_f α))).
+    apply (H0 α Hα eq_refl Hng (open_btyp_wrt_btyp B0 (btyp_var_f α))).
     rewrite btyp_to_bskl_open. reflexivity.
   - (* arrow *)
     destruct Bt as [ | n | α | B1 B2 | B0 | B0 ]; simpl in HeqB;
       try discriminate.
     inversion HeqB; subst.
-    apply mod_comp_ty__fn. apply (IHad_pat_sub eq_refl B2). reflexivity.
-  - (* forall_l_tagged *) apply (IHad_pat_sub eq_refl Bt); exact HeqB.
-  - (* forall_l_untagged *) apply (IHad_pat_sub eq_refl Bt); exact HeqB.
-  - (* flex_mono *) apply (IHad_pat_sub eq_refl Bt); exact HeqB.
+    apply mod_comp_ty__fn. apply (IHad_pat_sub eq_refl (proj2 Hng) B2). reflexivity.
+  - (* forall_l_tagged : the instantiation is a ghost-free TYPE *)
+    apply (IHad_pat_sub eq_refl); [ | exact HeqB ].
+    apply uskl_no_ghost_open; [ exact Hng | ].
+    apply uskl_no_ghost_of_ghost_free.
+    match goal with Ht : a_tags_sort _ _ ψ |- _ => inversion Ht; assumption end.
+  - (* forall_l_untagged *)
+    apply (IHad_pat_sub eq_refl); [ | exact HeqB ].
+    apply uskl_no_ghost_open; [ exact Hng | ].
+    apply uskl_no_ghost_of_ghost_free.
+    match goal with Ht : a_tags_sort _ _ ψ |- _ => inversion Ht; assumption end.
+  - (* flex_mono *) apply (IHad_pat_sub eq_refl (uskl_no_ghost_ptyp τ) Bt); exact HeqB.
 Qed.
 
 (* --- §8c  local closure off an equivalence --------------------------- *)
@@ -726,11 +737,11 @@ Lemma ad_sd_typing_mod_comp_ty : forall M Θ e B,
 Proof.
   intros M Θ e B H; induction H; intros Hwf.
   - (* unit *) eapply ad_pat_sub_mod_comp_ty;
-      [ eassumption | reflexivity ].
+      [ eassumption | apply uskl_no_ghost_ptyp | reflexivity ].
   - (* var *) eapply ad_pat_sub_mod_comp_ty;
-      [ eassumption | reflexivity ].
+      [ eassumption | apply uskl_no_ghost_ptyp | reflexivity ].
   - (* anno *) eapply ad_pat_sub_mod_comp_ty;
-      [ eassumption | reflexivity ].
+      [ eassumption | apply uskl_no_ghost_ptyp | reflexivity ].
   - (* freeze *)
     apply mod_comp_ty__tc. apply is_ityp_ptyp_to_btyp_inh.
     eapply a_tyequiv_lc_r; eassumption.
@@ -1128,16 +1139,22 @@ Qed.
 Lemma a_wf_ptyp_of_scope_pskl : forall Θ P,
   a_scope_pskl Θ P -> forall A, P = ptyp_to_pskl A -> a_wf_ptyp Θ A.
 Proof.
-  intros Θ P H; induction H; intros A0 Heq;
-    destruct A0; simpl in Heq; try discriminate.
+  intros Θ P [Hlc Hb]; revert Θ Hb; induction Hlc; intros Θ Hb A0 Heq;
+    destruct A0; simpl in Heq; try discriminate; inversion Heq; subst;
+    simpl in Hb.
   - apply a_wf_ptyp__unit.
-  - inversion Heq; subst. apply a_wf_ptyp__var; assumption.
-  - inversion Heq; subst.
-    apply a_wf_ptyp__arrow;
-      [ eapply IHa_scope_pskl1 | eapply IHa_scope_pskl2 ]; reflexivity.
-  - inversion Heq; subst.
-    apply a_wf_ptyp__all with (L := L). intros α Hα.
-    eapply (H0 α Hα). rewrite ptyp_to_pskl_open; reflexivity.
+  - apply a_wf_ptyp__var. apply Hb. clear; fsetdec.
+  - apply a_wf_ptyp__arrow;
+      [ eapply IHHlc1 | eapply IHHlc2 ]; try reflexivity;
+      intros β Hβ; apply Hb; clear - Hβ; fsetdec.
+  - apply a_wf_ptyp__all with (L := ftvar_in_pskl (ptyp_to_pskl A0)).
+    intros α Hα. eapply (H0 α); [ | rewrite ptyp_to_pskl_open; reflexivity ].
+    intros β Hβ. apply a_binds_tvar_cons_tvar.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                  (ptyp_to_pskl A0) (pskl_var_f α)) as Hup.
+    simpl in Hup.
+    destruct (β == α) as [-> | Hne]; [ left; reflexivity | right ].
+    apply Hb. clear - Hup Hβ Hne. fsetdec.
 Qed.
 
 Lemma binds_strip_prefix_mid : forall (b : abind) x Θa Ξ Θ,
@@ -1207,9 +1224,10 @@ Qed.
 (*                                                                        *)
 (*  ⭐ This is what [ad_sd_typing__anno]'s [a_wf_ptyp] premise buys.       *)
 (*  Without it the annotation's type variables are unconstrained — the     *)
-(*  join constrains only its TARGET ([ad_pat_sub_target_wf]) — and the     *)
-(*  statement is false.  With it, a consumer at the empty context need     *)
-(*  not assume [lc_exp e] and [ftvar_in_exp e ⊆ ∅]: they are theorems.     *)
+(*  join constrains only its TARGET ([ad_pat_sub_target_scope_ty]) — and   *)
+(*  the statement is false.  With it, a consumer at the empty context      *)
+(*  need not assume [lc_exp e] and [ftvar_in_exp e ⊆ ∅]: they are          *)
+(*  theorems.                                                             *)
 (* ===================================================================== *)
 
 (** [a_wf_exp] reads the context only through [a_wf_ptyp] on annotations,
@@ -1396,8 +1414,9 @@ Proof.
     destruct (btyp_of_erased_ptyp _ _ HeQt) as [Bt [HeB HeA]].
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     split.
-    { eapply a_wf_ptyp_of_scope_pskl;
-        [ eapply ad_pat_sub_target_wf; exact Hjoin | exact HeQt ]. }
+    { apply a_wf_ptyp_of_wf_pskl_empty.
+      eapply a_sub_output_wf;
+        [ exact H | exact Hwf | exact HwfP0 | apply a_wf_pskl__unit ]. }
     exists Bt. split; [ exact HeA | ]. split; [ | rewrite HeB; exact Href ].
     apply ad_sd_typing__unit.
     rewrite HeB, ptyp_to_uskl_syn_via_pskl. exact Hjoin.
@@ -1412,8 +1431,10 @@ Proof.
     destruct (btyp_of_erased_ptyp _ _ HeQt) as [Bt [HeB HeA]].
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     split.
-    { eapply a_wf_ptyp_of_scope_pskl;
-        [ eapply ad_pat_sub_target_wf; exact Hjoin | exact HeQt ]. }
+    { apply a_wf_ptyp_of_wf_pskl_empty.
+      eapply a_sub_output_wf;
+        [ exact H0 | exact Hwf | exact HwfP0
+        | apply a_wf_ptyp_to_wf_pskl; exact HwfA ]. }
     exists Bt. split; [ exact HeA | ]. split; [ | rewrite HeB; exact Href ].
     eapply ad_sd_typing__var;
       [ apply (a_sub_tm_le H0); [ exact I | exact H ]
@@ -1439,8 +1460,11 @@ Proof.
     destruct (btyp_of_erased_ptyp _ _ HeQt) as [Bo [HeB HeA]].
     split; [ eapply a_isub_trans; eassumption | ]. split; [ exact Hwf2 | ].
     split.
-    { eapply a_wf_ptyp_of_scope_pskl;
-        [ eapply ad_pat_sub_target_wf; exact Hjoin | exact HeQt ]. }
+    { apply a_wf_ptyp_of_wf_pskl_empty.
+      eapply a_sub_output_wf;
+        [ exact H0 | exact Hwf1
+        | eapply a_wf_pskl_isub; [ exact HwfP0 | exact Hle1 ]
+        | apply a_wf_ptyp_to_wf_pskl; exact HwfA1 ]. }
     exists Bo. split; [ exact HeA | ]. split; [ | rewrite HeB; exact Href ].
     eapply ad_sd_typing__anno;
       [ eapply a_wf_ptyp_isub; [ exact HwfA1 | exact Hle2 ]

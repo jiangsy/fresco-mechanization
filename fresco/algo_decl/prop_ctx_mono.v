@@ -218,7 +218,7 @@ Proof.
     intros α Hα; apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
   - apply ad_pat_consis__ghostg; assumption.
   - apply ad_pat_consis__dot_univ_ghost; auto.
-  - apply ad_pat_consis__ghost; [ assumption | eapply a_wf_pskl_mono; eauto ].
+  - apply ad_pat_consis__ghost; [ assumption ].
   - apply ad_pat_consis__univ_ghost; auto.
   - eapply ad_pat_consis__univ_ghost_inh with (L := L).
     intros α Hα; apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
@@ -313,7 +313,7 @@ Proof.
       [ assumption | eassumption | eassumption | eassumption
       | eapply a_wf_pskl_mono; eauto | auto ].
   - apply ad_pat_sub__ghost;
-      [ assumption | eapply a_wf_pskl_mono; eauto | assumption ].
+      [ assumption | assumption ].
   - apply ad_pat_sub__ghostg; assumption.
   - apply ad_pat_sub__univ_ghost_l; auto.
   - apply ad_pat_sub__univ_ghost_lg; auto.

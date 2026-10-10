@@ -55,7 +55,7 @@ Set Implicit Arguments.
 (* ===================================================================== *)
 (*  §0  The two skeleton judgements: scoping facts and the wf → scope      *)
 (*  bridge.  ⚙ These live HERE, beside [a_wf_ptyp_ftv_binds] /             *)
-(*  [a_scope_pskl_ftv_binds] below, because this is the EARLIEST algo      *)
+(*  [a_scope_pskl_ftv_binds] / [a_wf_pskl_lc], because this is the EARLIEST *)
 (*  proof file and [a_wf_aenv__var] stores the                             *)
 (*  DISCIPLINED [{{ Θ ⨟ ∅ ⊢ₚₛ P }}a] — so every file that inverts a context's *)
 (*  term entry needs them, this one included.  ⚠️ algo/prop_basic.v would be the *)
@@ -90,63 +90,84 @@ Proof.
     apply a_binds_tvar_aenv_minus in Htv. apply Htv.
 Qed.
 
-(** The disciplined judgement implies the scoping-only one — the EASY
-    direction, and the only one available: [a_wf_pskl] additionally demands a
-    [∀◇] body be guarded and well-formed at the EMPTY [Δ], and neither is
-    recoverable ([∀α.∀◇.(α→α)] passes [a_scope_pskl] and is well-formed in NO
-    context; docs/WF-SIDE-CONDITIONS.md §1).  Stated with a weakening built in
-    so one application covers "same context" and "any extension". *)
-Lemma a_wf_pskl_to_a_scope_pskl : forall Θ Δ P,
-  a_wf_pskl Θ Δ P ->
-  forall Θa,
-  (forall x b, binds x b Θ -> binds x b Θa) ->
-  (forall α, α `in` Δ -> a_binds_tvar α Θa) ->
-  a_scope_pskl Θa P.
+(** A well-formed skeleton is locally closed.  (Moved here from
+    consis/prop_soundness_consis.v: [a_scope_pskl_of_wf] below needs it.) *)
+Lemma a_wf_pskl_lc : forall Θ Δ P,
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a -> lc_pskl P.
 Proof.
-  intros Θ Δ P Hwfd; induction Hwfd; intros Θa Hincl HΔ.
-  - apply a_scope_pskl__unit.
-  - apply a_scope_pskl__var.
-    destruct H as [Hb | [Hb | [τ Hb]]];
-      [ left | right; left | right; right; exists τ ];
-      apply Hincl; exact Hb.
-  - apply a_scope_pskl__arrow;
-      [ apply IHHwfd1 | apply IHHwfd2 ]; assumption.
-  - apply a_scope_pskl__all with (L := L).
-    intros α Hα.
-    apply H0; [ exact Hα | | ].
-    + intros x b Hb. apply binds_app_iff in Hb. apply binds_app_iff.
-      destruct Hb as [Hb | Hb]; [ left; exact Hb | right; apply Hincl; exact Hb ].
-    + intros β Hβ. destruct (β == α) as [-> | Hne].
-      * left. unfold binds. left. reflexivity.
-      * destruct (HΔ β ltac:(clear - Hβ Hne; solve_notin_auto))
-          as [Hb | [Hb | [τ Hb]]];
-          [ left | right; left | right; right; exists τ ];
-          apply binds_cons_3; exact Hb.
-  - apply a_scope_pskl__ghost.
-  - apply a_scope_pskl__univ_ghost.
-    apply IHHwfd.
-    + intros x b Hb. apply binds_aenv_minus in Hb. apply Hincl, Hb.
-    + intros β Hβ. exfalso. clear - Hβ. fsetdec.
+  intros Θ Δ P H; induction H; eauto using lc_pskl.
 Qed.
 
-(** The same conversion at the shape a context entry actually has: [Δ = ∅] and
-    the context unchanged.  This is what [a_wf_aenv__var]'s consumers want —
-    every site that used to read the entry's [a_scope_pskl] off the context. *)
-Lemma a_scope_pskl_of_wf : forall Θ P,
-  {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
+(** The disciplined judgement implies the scoping facts [a_scope_pskl]
+    (algo/def_rules.v) — at ANY [Δ], since every variable occurrence is
+    checked against the context, never against [Δ].  The converse is FALSE:
+    [∀α.∀◇.(α→α)] is scoped and well-formed in NO context
+    (docs/WF-SIDE-CONDITIONS.md §1). *)
+Lemma a_scope_pskl_of_wf : forall Θ Δ P,
+  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
   a_scope_pskl Θ P.
 Proof.
-  intros Θ P H.
-  apply (a_wf_pskl_to_a_scope_pskl H);
-    [ intros x b Hb; exact Hb
-    | intros α Hα; exfalso; clear - Hα; fsetdec ].
+  intros Θ Δ P H. split;
+    [ eapply a_wf_pskl_lc; exact H | exact (a_wf_pskl_ftv_binds H) ].
 Qed.
 
-(** ⭐ Exported as a HINT deliberately.  The conclusion's head is
-    [a_scope_pskl], a distinctive one, so the hint fires nowhere else — and it
-    lets every site that discharged an entry's [a_scope_pskl] by [eauto] keep
-    its script unchanged now that the context stores the disciplined form. *)
-#[export] Hint Resolve a_scope_pskl_of_wf : core.
+(** The two projections, by name. *)
+Lemma a_scope_pskl_lc : forall Θ P, a_scope_pskl Θ P -> lc_pskl P.
+Proof. intros Θ P H; exact (proj1 H). Qed.
+
+Lemma a_scope_pskl_ftv_binds : forall Θ P γ,
+  a_scope_pskl Θ P -> γ `in` ftvar_in_pskl P -> a_binds_tvar γ Θ.
+Proof. intros Θ P γ H; exact (proj2 H γ). Qed.
+
+(** A variable is scoped where it is bound. *)
+Lemma a_scope_pskl_var : forall Θ α,
+  a_binds_tvar α Θ -> a_scope_pskl Θ (pskl_var_f α).
+Proof.
+  intros Θ α H. split; [ apply lc_pskl_var_f | ].
+  intros β Hβ. simpl in Hβ. apply singleton_1 in Hβ. subst. exact H.
+Qed.
+
+(** The scoping facts of a [∀] from those of its openings (cofinitely many
+    suffice: local closure needs one, the lookups one per variable). *)
+Lemma a_scope_pskl_all_of_open : forall L Θ P,
+  (forall α, α `notin` L ->
+     a_scope_pskl ((α ~ abind_tvar) ++ Θ) (open_pskl_wrt_pskl P (pskl_var_f α))) ->
+  a_scope_pskl Θ (pskl_all_syn P).
+Proof.
+  intros L Θ P H. split.
+  - destruct (atom_fresh (L `union` ftvar_in_pskl P)) as [α Hα].
+    apply lc_pskl_all_syn_exists with (α1 := α).
+    apply (proj1 (H α ltac:(clear - Hα; fsetdec))).
+  - intros γ Hγ. simpl in Hγ.
+    destruct (atom_fresh (L `union` singleton γ)) as [α Hα].
+    assert (Hγo : γ `in` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α))).
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f α)).
+      clear - H0 Hγ; fsetdec. }
+    destruct (a_binds_tvar_cons_tvar_inv
+                (proj2 (H α ltac:(clear - Hα; fsetdec)) γ Hγo)) as [-> | Hb];
+      [ exfalso; clear - Hα; fsetdec | exact Hb ].
+Qed.
+
+(** …and of a [∀] RE-BOUND by closing a context binder (the shape a
+    consistency run's ∀ rows return). *)
+Lemma a_scope_pskl_all_close : forall α Θ Q,
+  a_scope_pskl ((α ~ abind_tvar) ++ Θ) Q ->
+  a_scope_pskl Θ (pskl_all_syn (close_pskl_wrt_pskl α Q)).
+Proof.
+  intros α Θ Q [Hlc Hb]. split.
+  - apply lc_pskl_all_syn_exists with (α1 := α).
+    rewrite open_pskl_wrt_pskl_close_pskl_wrt_pskl. exact Hlc.
+  - intros γ Hγ. simpl in Hγ. rewrite ftvar_in_pskl_close_pskl_wrt_pskl in Hγ.
+    destruct (a_binds_tvar_cons_tvar_inv (Hb γ ltac:(clear - Hγ; fsetdec)))
+      as [-> | Hb']; [ exfalso; clear - Hγ; fsetdec | exact Hb' ].
+Qed.
+
+(** ⭐ A HINT, so that every site that discharges a scoping obligation by
+    [eauto] from a context entry's (disciplined) well-formedness keeps its
+    script unchanged.  An [Extern], because [Δ] does not occur in the
+    conclusion. *)
+#[export] Hint Extern 1 (a_scope_pskl _ _) =>
+  eapply a_scope_pskl_of_wf; eassumption : core.
 
 Unset Implicit Arguments.
 
@@ -2351,27 +2372,6 @@ Proof.
        | unfold a_binds_tvar; auto; right; right; exists τ; exact hb ]).
 Qed.
 
-Lemma a_scope_pskl_ftv_binds : forall (Θ : aenv) P γ,
-  a_scope_pskl Θ P -> γ `in` ftvar_in_pskl P -> a_binds_tvar γ Θ.
-Proof.
-  intros * H; induction H; simpl; intros Hγ; try solve [fsetdec | auto].
-  - (* var *) assert (γ = α) by fsetdec. subst. exact H.
-  - (* arrow *)
-    assert (γ `in` ftvar_in_pskl P1 \/ γ `in` ftvar_in_pskl P2) as [h | h]
-      by fsetdec; auto.
-  - (* all *)
-    destruct (atom_fresh (L `union` singleton γ)) as [α Hα].
-    assert (hγ : γ `in` ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α))).
-    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f α)).
-      fsetdec. }
-    assert (hb : a_binds_tvar γ ((α ~ abind_tvar) ++ Θ))
-      by (apply H0; auto).
-    destruct hb as [hb | [hb | [τ hb]]];
-      (destruct hb as [heq | hb];
-       [ inversion heq; subst; exfalso; fsetdec
-       | unfold a_binds_tvar; auto; right; right; exists τ; exact hb ]).
-Qed.
-
 (** The precision component's term equality: swapping the run's output
     skeleton and ζ's keys leaves the ζ-image unchanged. *)
 Lemma msubst_bskl_kswap_paint : forall a b (ζ : metasubst) P,
@@ -2541,7 +2541,7 @@ Proof.
           [right | left; exact hout].
         match goal with
         | h : {{ _ ⨟ empty ⊢ₚₛ P }}a |- _ =>
-            pose proof (a_scope_pskl_ftv_binds _ _ _ (a_scope_pskl_of_wf h) hin)
+            pose proof (a_wf_pskl_ftv_binds h hin)
               as hbt
         end.
         destruct hbt as [hbt | [hbt | [τ0 hbt]]].

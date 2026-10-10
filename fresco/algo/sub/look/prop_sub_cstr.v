@@ -29,6 +29,7 @@ Require Import src.fresco.algo.prop_inc.
 Require Import src.fresco.algo.prop_basic.
 Require Import src.fresco.algo.prop_stability.
 Require Import src.fresco.algo.prop_refine.
+Require Import src.fresco.algo.prop_swap.   (* a_wf_pskl_lc *)
 Require Import src.fresco.algo.consis.prop_soundness_consis.
 Require Import src.fresco.algo.consis.prop_completeness_consis.
 Require Import src.fresco.algo.prop_mono_bridge.
@@ -861,6 +862,10 @@ Theorem a_looksub_solve_complete_gen :
   ad_pat_sub_fuel n NM M Ψsub Θs Rsub Q ->
   {{ Θ ⨟ empty ⊢ₚₛ (uskl_to_pskl Rsub) }}a ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
+  (* the counterpart is locally closed — the part of its well-formedness
+     (the paper's presupposition) P6-Cs reads; the corollary takes the
+     disciplined form.  docs/WF-SIDE-CONDITIONS.md §2a. *)
+  lc_bskl Q ->
   (* --- the ρ pack (all VACUOUS at ρ = identity) --- *)
   uskl_rsubst NM Θ Δρ Ψρ Rsub
     (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) ->
@@ -944,7 +949,7 @@ Proof.
   intros HwfΘ HwfΘ0 HwfΘw Hmon Hnr Hκw Hψaw HΔρw
          HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
          HscopeR HlcR Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2
-         Hsubty HwfSubj Hrefine Hrho HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hext Hψaap
+         Hsubty HwfSubj Hrefine HlcQ Hrho HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hext Hψaap
          L HL.
   (* ---------------------------------------------------------------- *)
   (* The two special cases go through [a_looksub_solve_complete_leaf],   *)
@@ -988,7 +993,7 @@ Proof.
          HwfΘ HwfΘ0 Hmon Hnr Hκw HΔρw
          HαΘ0 Hκ Hακdom Hκav HeraseR HscopeR HlcR Hdisj
          HwfP0 HwfPi HmodSK HmodTY HαΘ Hsub HΨs1 HΨs2 Hdfresh Hpre
-         Hrefine Hrho HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hext
+         Hrefine HlcQ Hrho HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hext
          HPnα Hin HαR HwfSubj Hψaap L HL.
   (* the lemma's [P] comes back as [P''] and its [Θ] as [Θe]: both are BINDER
      NAMES of the rules, so [induction] has already claimed them.  Renaming
@@ -1000,7 +1005,7 @@ Proof.
     HwfΘ HwfΘ0 Hmon Hnr Hκw HΔρw
     HαΘ0 Hκ Hακdom Hκav HeraseR HscopeR HlcR Hdisj
     HwfP0 HwfPi HmodSK HmodTY HαΘ Hsub HΨs1 HΨs2 Hdfresh Hpre
-    Hrefine Hrho HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hext
+    Hrefine HlcQ Hrho HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hext
     HPnα Hin HαR HwfSubj Hψaap Lav HLav;
     rename Θ into Θsm; rename Θe into Θ.
   all: match goal with
@@ -1126,7 +1131,7 @@ Proof.
       | exact HαΘ | exact HαΘ0 | exact HeraseR
       | exact HscopeR | exact HlcR | exact Htags | exact Hdisj
       | exact Hsub' | exact Hdfresh | exact Hpre | exact HΨs1
-      | exact HΨs2 | exact (ad_consis_join_consis H1) | exact HwfSubj
+      | exact HΨs2 | exact (ad_consis_join_consis H1) | exact HlcQ | exact HwfSubj
       | exact Hrefine
       | exact Hrho | intros x b Hb; exact Hb | exact HΨρ | exact Hrfr
       | exact HΔρΔ | exact HΔρw | exact HΔρftv | exact HΔρPi
@@ -1344,7 +1349,7 @@ Proof.
                    ltac:(intro Hc; discriminate Hc)
                    ltac:(intros _; rewrite <- ptyp_to_pskl_open;
                          apply a_ty_mode_compat__tc)
-                   HαΘβ Hsub HΨs1 HΨs2 Hdfreshβ Hpreβ Hrefβ
+                   HαΘβ Hsub HΨs1 HΨs2 Hdfreshβ Hpreβ Hrefβ ltac:(lc_tgt)
                    Hrhoβ HΨρ Hrfrβ HΔρΔ HΔρftvβ HΔρPi Hextβ
                    HPnα Hin HαR HwfSubjβ Hψaap (add β Lav) HLavβ)
         as (𝒞 & Ξc & Ξs & Pa & κc & κs
@@ -1765,7 +1770,7 @@ Proof.
       | exact HlcRa | exact Htags
       | clear - Hdisj; cbn in Hdisj; fsetdec
       | exact HsubL | exact Hdfresh | exact Hpre | exact HΨs1L | exact HΨs2L
-      | exact (ad_consis_join_consis H) | exact HwfSubjA | exact Href1
+      | exact (ad_consis_join_consis H) | lc_tgt | exact HwfSubjA | exact Href1
       | exact Hrhoa | intros x b Hb; exact Hb | exact HΨρ1e | exact Hrfr
       | exact HΔρΔ | exact HΔρw | exact HΔρftvL | exact HΔρPi
       | exact Hψaap
@@ -2022,7 +2027,7 @@ Proof.
                     Hαr Hinc1' Hακdom' Hκav'
                     eq_refl HscopeRb HlcRb HdisjRb HwfP02R HwfPa1
                     HmodSK2 HmodTY2 HαΘ HsubR HΨs1R HΨs2R Hdfresh
-                    Hpre1 Href2' Hrhob HΨρ2e HrfrR HΔρΔ HΔρftvR HΔρPa1 Hext
+                    Hpre1 Href2' ltac:(lc_tgt) Hrhob HΨρ2e HrfrR HΔρΔ HΔρftvR HΔρPa1 Hext
                     Hne0 Hin0 HαRb HwfSubjB Hψaap
                     (add α (union (union Lav (union (dom Ξs1) (dom Ξc1)))
                                   (ftvar_in_a_cstrs C1))) HLavR).
@@ -2615,7 +2620,7 @@ Proof.
                     Hwfβ Hwfβ0 Hmonβ Hnrβ Hκwβ HΔρwβ
                     HαΘ0β Hκβ Hακdom Hκav eq_refl HscopeRβ
                     HlcR0β Hdisjβ HwfP0β HwfPiβ HmodSK HmodTY HαΘβ Hsub
-                    HΨs1β HΨs2β Hdfreshβ Hpreβ Hrefβ Hrhoβ HΨρβ
+                    HΨs1β HΨs2β Hdfreshβ Hpreβ Hrefβ HlcQ Hrhoβ HΨρβ
                     Hrfrβ HΔρΔβ HΔρftvβ HΔρPiβ Hextβ Hne0 Hin0 HαRβ
                     HwfSubjβ
                     (* ρ-apartness survives the fresh binder: β ∉ ftv ψa *)
@@ -2897,7 +2902,7 @@ Proof.
                     Hwfβ Hwfβ0 Hmonβ Hnrβ Hκwβ HΔρwβ
                     HαΘ0β Hκβ Hακdom Hκav eq_refl HscopeRβ
                     HlcR0β Hdisjβ HwfP0β HwfPiβ HmodSK HmodTY HαΘβ Hsub
-                    HΨs1β HΨs2β Hdfreshβ Hpreβ Hrefβ Hrhoβ HΨρβ
+                    HΨs1β HΨs2β Hdfreshβ Hpreβ Hrefβ HlcQ Hrhoβ HΨρβ
                     Hrfrβ HΔρΔβ HΔρftvβ HΔρPiβ Hextβ Hne0 Hin0 HαRβ
                     HwfSubjβ
                     (* ρ-apartness survives the fresh binder: β ∉ ftv ψa *)
@@ -3343,6 +3348,10 @@ Theorem a_looksub_solve_complete :
   {{ Θ ⨟ empty ⊢ₚₛ
     (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) }}a ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
+  (* the counterpart is well formed — the paper's presupposition of skeleton
+     consistency / subtyping (declarative.tex:2074); docs/WF-SIDE-CONDITIONS.md
+     §2a *)
+  {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   (* ⭐ THE AVOID-SET PARAMETER: the SOLVE generates its own block now, and at
      a binder row the witness must be fixed BEFORE that block is picked. *)
   forall L, ftvar_in_aenv Θ0 [<=] L ->
@@ -3397,7 +3406,7 @@ Proof.
   intros n NM M Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α.
   intros HwfΘ HwfΘ0 HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
          HscopeR HlcR Htags Hdisj Hsub Hψaw Hdfresh Hpre HΨs1 HΨs2
-         Hsubty HwfSubj Hrefine L HL.
+         Hsubty HwfSubj Hrefine HwfQ L HL.
   (* [Θw := Θ] collapses the whole Θw pack: the two binds conditions are the
      identity and the κ-image bound is [a_inc_lookup_flex_ftv_dom] on [Hκ]. *)
   edestruct (@a_looksub_solve_complete_gen n NM M Θ0 Θ Θ Θ κ Δ empty empty Ψ'
@@ -3417,6 +3426,7 @@ Proof.
     | exact Hsub | exact Hdfresh | exact Hpre
     | clear - HΨs1; fsetdec | exact HΨs2
     | exact Hsubty | exact HwfSubj | exact Hrefine
+    | apply lc_bskl_of_bskl_to_pskl; exact (a_wf_pskl_lc HwfQ)
     | apply ursubst__refl;
         [ apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact HwfSubj
         | clear; fsetdec ]

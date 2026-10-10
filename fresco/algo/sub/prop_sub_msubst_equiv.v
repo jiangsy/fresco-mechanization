@@ -1620,7 +1620,7 @@ Proof.
         | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
             destruct Hm2; cbn in He2; discriminate He2
         end | ].
-    apply ad_pat_sub_fuel__ghost; [ exact H | exact H0 | exact H1 ].
+    apply ad_pat_sub_fuel__ghost; assumption.
   - (* ghostg *)
     inversion Htyeq; subst;
       [ lazymatch goal with

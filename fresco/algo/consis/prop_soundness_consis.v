@@ -366,7 +366,6 @@ Proof.
   - (* ghost *)
     rewrite subst_var_bskl_inh.
     apply ad_pat_consis__ghost; auto.
-    apply a_wf_pskl_rename_tvar; auto.
   - (* univ_ghost *)
     apply ad_pat_consis__univ_ghost; auto.
   - (* univ_ghost_inh *)
@@ -1405,13 +1404,6 @@ Proof.
   eapply a_inc_binds_tvar; eauto.
 Qed.
 
-(** A well-formed skeleton is locally closed. *)
-Lemma a_wf_pskl_lc : forall Θ Δ P,
-  {{ Θ ⨟ Δ ⊢ₚₛ P }}a -> lc_pskl P.
-Proof.
-  intros Θ Δ P H; induction H; eauto using lc_pskl.
-Qed.
-
 (** Local closure reflects through the erasure (the converse of
     [lc_bskl_to_pskl]), via degrees. *)
 Lemma degree_bskl_of_bskl_to_pskl : forall Q k,
@@ -1520,43 +1512,157 @@ Proof.
   intros. simpl. destruct (eq_var α β); simpl; reflexivity.
 Qed.
 
-(** A monotype painting of a skeleton whose free variables are in scope is
-    well-formed (the ghost-fill scope the consistency ghost rule demands). *)
-Lemma mono_bskl_syn_wf_pskl : forall Θ P,
-  mono_bskl (pskl_to_bskl_syn P) ->
-  (forall α, α `in` ftvar_in_pskl P -> a_binds_tvar α Θ) ->
-  {{ Θ ⨟ empty ⊢ₚₛ P }}a.
+(* ===================================================================== *)
+(*  The TARGET of a consistency derivation is scoped — when the subject    *)
+(*  has no plain [◇].                                                      *)
+(*                                                                        *)
+(*  The paper's [Ghost] rule (and [ad_pat_consis__ghost], since            *)
+(*  2026-10-10) fills a plain-ghost subject with an ARBITRARY counterpart:  *)
+(*  its well-formedness is the judgement's presupposition (wf of the        *)
+(*  counterpart, declarative.tex:2074), not a consequence of the rules.     *)
+(*  So the target is scoped by the derivation alone exactly when that rule  *)
+(*  cannot fire — [uskl_no_ghost] (def_shapes.v), which holds of every      *)
+(*  type painting and of every decorated skeleton.  Everywhere else the     *)
+(*  statements CARRY the counterpart's well-formedness                     *)
+(*  (docs/WF-SIDE-CONDITIONS.md §2a).                                      *)
+(* ===================================================================== *)
+
+Lemma uskl_no_ghost_open_rec : forall R R' k,
+  uskl_no_ghost R -> uskl_no_ghost R' ->
+  uskl_no_ghost (open_uskl_wrt_uskl_rec k R' R).
 Proof.
-  intros Θ P; induction P; intros Hm Hvis; simpl in *; inversion Hm; subst.
-  - apply a_wf_pskl__unit.
-  - apply a_wf_pskl__var. apply Hvis. clear; fsetdec.
-  - apply a_wf_pskl__arrow; [ apply IHP1 | apply IHP2 ]; auto;
-      intros α0 Hα0; apply Hvis; clear - Hα0; fsetdec.
+  induction R; intros R' k HR HR'; simpl in *; auto.
+  - destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; auto.
+  - destruct HR; split; auto.
 Qed.
 
-(** Every free variable of a consistency TARGET is in scope: the target's
-    variables come from rigid lookups, flexible lookups, or well-formed
-    ghost fills. *)
+Lemma uskl_no_ghost_open : forall R R',
+  uskl_no_ghost R -> uskl_no_ghost R' ->
+  uskl_no_ghost (open_uskl_wrt_uskl R R').
+Proof. intros; apply uskl_no_ghost_open_rec; assumption. Qed.
+
+Lemma uskl_no_ghost_ptyp : forall A, uskl_no_ghost (ptyp_to_uskl_syn A).
+Proof.
+  unfold ptyp_to_uskl_syn, ptyp_to_bskl_syn.
+  induction A; simpl; auto.
+Qed.
+
+Lemma uskl_no_ghost_of_dskl : forall R, is_dskl R -> uskl_no_ghost R.
+Proof.
+  intros R H; induction H; simpl; auto.
+  destruct (atom_fresh L) as [α Hα].
+  specialize (H0 α Hα). unfold open_uskl_wrt_uskl in H0.
+  revert H0. generalize 0. clear. induction R; intros k Hk; simpl in *; eauto.
+  - destruct Hk; split; eauto.
+Qed.
+
+Lemma uskl_no_ghost_of_ghost_free : forall R, uskl_ghost_free R -> uskl_no_ghost R.
+Proof.
+  intros R H; induction H; simpl; auto;
+  destruct (atom_fresh L) as [α Hα];
+  specialize (H0 α Hα); unfold open_uskl_wrt_uskl in H0;
+  revert H0; generalize 0; clear; induction R; intros k Hk; simpl in *; eauto;
+  destruct Hk; split; eauto.
+Qed.
+
+Lemma ad_pat_consis_target_scope : forall Ψ Θ R Q,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+  uskl_no_ghost R ->
+  a_scope_pskl Θ (bskl_to_pskl Q).
+Proof.
+  intros Ψ Θ R Q H; induction H; intros Hng; simpl in *.
+  (* the four ∀ rows and [univ_ghost_inh]: the target opens at a context
+     binder; the subject's no-ghost survives opening with a variable *)
+  all: try solve
+    [ apply a_scope_pskl_all_of_open with (L := L); intros α Hα;
+      rewrite <- bskl_to_pskl_open; apply H0; [ exact Hα | ];
+      first [ exact Hng
+            | apply uskl_no_ghost_open; [ exact Hng | simpl; exact I ] ] ].
+  - split; [ constructor | intros γ Hγ; exfalso; clear - Hγ; fsetdec ].
+  - apply a_scope_pskl_var; assumption.
+  - destruct Hng as [Hng1 Hng2].
+    destruct (IHad_pat_consis1 Hng1) as [Hl1 Hb1].
+    destruct (IHad_pat_consis2 Hng2) as [Hl2 Hb2].
+    split; [ constructor; assumption | ].
+    intros γ Hγ. apply union_1 in Hγ as [Hγ | Hγ]; auto.
+  - split; [ constructor | intros γ Hγ; exfalso; clear - Hγ; fsetdec ].
+  - destruct (IHad_pat_consis Hng) as [Hl Hb].
+    split; [ constructor; assumption | exact Hb ].
+  - (* ghost : a plain-ghost subject is excluded *) contradiction.
+  - destruct (IHad_pat_consis Hng) as [Hl Hb].
+    split; [ constructor; assumption | exact Hb ].
+  - (* univ_ghost_drop *) apply IHad_pat_consis; exact Hng.
+  - (* flex_l : the subject unfolds to a type painting *)
+    apply IHad_pat_consis. apply uskl_no_ghost_ptyp.
+  - (* flex_r : the target IS a defined flexible *)
+    apply a_scope_pskl_var. right; right; eauto.
+Qed.
+
+(** …and when the subject is a TYPE painting outright (no ghost of any
+    kind), the target is a well-formed painting of a type — at ANY [Δ],
+    since [Δ] is read only under a [∀◇].  This is the disciplined form the
+    completeness statements' counterpart-wf premise asks for, at every call
+    site whose join starts from an annotation or a variable's type. *)
+Lemma msubst_pskl_ghost_free : forall κ P,
+  pskl_ghost_free P -> pskl_ghost_free (msubst_pskl κ P).
+Proof.
+  induction P; cbn; intros Hg; auto.
+  - apply ptyp_to_pskl_ghost_free.
+  - destruct Hg; split; auto.
+Qed.
+
+Lemma ad_pat_consis_target_wf_ghost_free : forall Ψ Θ R Q,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+  pskl_ghost_free ⌊ R ⌋ˢ ->
+  forall Δ, {{ Θ ⨟ Δ ⊢ₚₛ (bskl_to_pskl Q) }}a.
+Proof.
+  intros Ψ Θ R Q H; induction H; intros Hgf Δ; simpl in *;
+    try contradiction.
+  (* the four ∀ rows: the body at the opened context, Δ grown *)
+  all: try solve
+    [ apply a_wf_pskl__all with (L := L); intros α Hα;
+      rewrite <- bskl_to_pskl_open; apply H0; [ exact Hα | ];
+      rewrite uskl_to_pskl_open; apply pskl_ghost_free_open; exact Hgf ].
+  - apply a_wf_pskl__unit.
+  - apply a_wf_pskl__var; assumption.
+  - destruct Hgf. apply a_wf_pskl__arrow; auto.
+  - (* flex_l : the subject unfolds to a type painting *)
+    apply IHad_pat_consis. rewrite uskl_to_pskl_ptyp.
+    apply ptyp_to_pskl_ghost_free.
+  - (* flex_r *) apply a_wf_pskl__var. right; right; eauto.
+Qed.
+
+(** The shape every completeness call site has: the subject is a
+    metasubstitution image of a ghost-free (type) skeleton. *)
+Corollary ad_pat_consis_msubst_target_wf : forall Ψ Θ κ P Q,
+  {{ Ψ ⨟ Θ ⊢ˢ (pskl_to_uskl (msubst_pskl κ P)) ∼ Q }}ad ->
+  pskl_ghost_free P ->
+  forall Δ, {{ Θ ⨟ Δ ⊢ₚₛ (bskl_to_pskl Q) }}a.
+Proof.
+  intros Ψ Θ κ P Q H Hgf Δ.
+  eapply ad_pat_consis_target_wf_ghost_free; [ exact H | ].
+  rewrite uskl_to_pskl_pskl_to_uskl. apply msubst_pskl_ghost_free; exact Hgf.
+Qed.
+
+(** The two projections, in the [bskl] form most consumers want. *)
 Lemma ad_pat_consis_target_binds : forall Ψ Θ R Q,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+  uskl_no_ghost R ->
   forall γ, γ `in` ftvar_in_bskl Q -> a_binds_tvar γ Θ.
 Proof.
-  intros Ψ Θ R Q H; induction H; intros γ Hγ; simpl in Hγ;
-    try solve [ clear - Hγ; fsetdec | auto ].
-  all: try solve [ pick fresh α for (L `union` singleton γ);
-    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_lower Q (bskl_var_f α)) as Hlo;
-    assert (HαL : α `notin` L) by (clear - Fr; fsetdec);
-    assert (Hγo : γ `in` ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f α)))
-      by (clear - Hlo Hγ; fsetdec);
-    destruct (a_binds_tvar_cons_tvar_inv (H0 α HαL γ Hγo)) as [-> | Hb];
-      [ clear - Fr; fsetdec | exact Hb ] ].
-  - (* var *) assert (γ = α) by (clear - Hγ; fsetdec). subst. exact H0.
-  - (* arrow *) apply AtomSetImpl.union_1 in Hγ as [Hγ | Hγ]; auto.
-  - (* ghost *)
-    rewrite ftvar_in_bskl_inh in Hγ. eapply a_wf_pskl_ftv_binds; eauto.
-  - (* flex_r *)
-    assert (γ = α) by (clear - Hγ; fsetdec). subst.
-    unfold a_binds_tvar. right; right. eauto.
+  intros Ψ Θ R Q H Hng γ Hγ.
+  apply (a_scope_pskl_ftv_binds (ad_pat_consis_target_scope H Hng)).
+  rewrite ftvar_bskl_to_pskl. exact Hγ.
+Qed.
+
+Lemma ad_pat_consis_target_lc : forall Ψ Θ R Q,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+  uskl_no_ghost R ->
+  lc_bskl Q.
+Proof.
+  intros Ψ Θ R Q H Hng.
+  apply lc_bskl_of_bskl_to_pskl.
+  exact (a_scope_pskl_lc (ad_pat_consis_target_scope H Hng)).
 Qed.
 
 (** SUBSIDIARY INDUCTION #1 (the refinement half of the paper's step (h)):
@@ -1596,9 +1702,7 @@ Proof.
   - (* ghost : the ghost fill is colour-blind here *)
     destruct P0; simpl in Heq; try discriminate.
     simpl. rewrite (mono_bskl_syn_inh _ Hm).
-    apply ad_pat_consis__ghost; [ fsetdec | ].
-    apply mono_bskl_syn_wf_pskl; [ exact Hm | ].
-    intros α0 Hα0. apply Hvis. rewrite ftvar_in_bskl_syn. exact Hα0.
+    apply ad_pat_consis__ghost; fsetdec.
   - (* univ_ghost_remove *)
     destruct P0; simpl in Heq; try discriminate.
     inversion Heq; subst.
@@ -1650,9 +1754,7 @@ Proof.
     inversion HeqQ; subst.
     assert (Hmτ : mono_ptyp τ0) by (eapply a_wf_aenv_binds_def_mono; eauto).
     rewrite <- (ptyp_to_bskl_inh_syn_eq Hmτ).
-    apply ad_pat_consis__ghost; [ exact H | ].
-    apply a_wf_pskl_mono_ptyp; [ exact Hmτ | ].
-    eapply a_wf_aenv_binds_def_wf; eauto.
+    apply ad_pat_consis__ghost; exact H.
   - (* univ_ghost_drop *)
     apply ad_pat_consis__univ_ghost_drop. eapply IHHc; eauto.
   - (* flex_l *)
@@ -1697,8 +1799,7 @@ Proof.
     assert (Hma : mono_ptyp (ptyp_arrow A1 A2))
       by (apply mono_ptyp__arrow; auto).
     rewrite <- (ptyp_to_bskl_inh_syn_eq Hma).
-    apply ad_pat_consis__ghost; [ exact H | ].
-    apply mono_ptyp_wf_pskl; [ exact Hma | exact Hvis ].
+    apply ad_pat_consis__ghost; exact H.
   - (* univ_ghost_drop *)
     apply ad_pat_consis__univ_ghost_drop.
     apply (IHHc Hwf A1' A2' A1 A2 HeqQ HmA1 HmA2 Hvis Ht1 Ht2).
@@ -2261,7 +2362,9 @@ Proof.
         | exact Hwf1
         | rewrite HeqC; apply mono_ptyp_to_bskl_syn; exact HmC
         | reflexivity
-        | intros α0 Hα0; eapply ad_pat_consis_target_binds; eauto ]. }
+        | intros α0 Hα0;
+          eapply ad_pat_consis_target_binds;
+            [ exact HconsQ | apply uskl_no_ghost_ptyp | exact Hα0 ] ]. }
     (* (c) fold the definition on the SUBJECT side *)
     assert (Hc1 : {{ empty ⨟ ((β ~ abind_flex_mono_def τ) ++ Θ1) ⊢ˢ
                     (pskl_to_uskl P) ∼ Qt }}ad).
@@ -2941,7 +3044,7 @@ Proof.
     + exists (pskl_to_bskl_inh P0).
       split; [ apply bskl_to_pskl_pskl_to_bskl_inh | ].
       split.
-      * apply ad_pat_consis__ghost; [ fsetdec | exact HwfP0 ].
+      * apply ad_pat_consis__ghost; [ fsetdec ].
       * eapply ad_refine_syn_refl_inh_gen; exact HwfP0.
     + apply ad_refine_pskl__ghost; exact Hint.
   - (* C-Unit *)
@@ -3846,7 +3949,7 @@ Proof.
     + exists (pskl_to_bskl_inh P0).
       split; [ apply bskl_to_pskl_pskl_to_bskl_inh | ].
       split.
-      * apply ad_pat_consis__ghost; [ fsetdec | exact HwfP0 ].
+      * apply ad_pat_consis__ghost; [ fsetdec ].
       * eapply ad_refine_syn_refl_inh_gen; exact HwfP0.
     + apply ad_refine_pskl__ghost; exact H.
   - (* Unit *)
@@ -4724,4 +4827,150 @@ Proof.
   - exists Qt. split; [ exact HeQt | ]. split; [ exact Hcons | ].
     exact Hrs.
   - exact Hrp.
+Qed.
+
+(* ===================================================================== *)
+(*  A consistency run's OUTPUT is SCOPED in the output context             *)
+(*                                                                        *)
+(*  The scoping half of [a_consis_output_wf] (prop_wf_preservation.v),    *)
+(*  at ANY Δ1/Δ2 and without that lemma's shielded-variable hypotheses.   *)
+(*  ⚙ Why a second statement: consistency completeness's C-Arrow row      *)
+(*  needs the first component's output scoped at the run's output         *)
+(*  context, and [a_consis_output_wf]'s file IMPORTS consistency          *)
+(*  completeness.  Until 2026-10-10 the scope was read off the soundness  *)
+(*  join's TARGET instead ([ad_pat_consis_target_wf]); that reading died  *)
+(*  with the Ghost rows' fill premise.                                     *)
+(* ===================================================================== *)
+Lemma a_consis_output_scope : forall Δ1 Δ2 Θ0 P0 P Q Θ1,
+  {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a ->
+  {{ ⊢ Θ0 }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
+  (forall α, α `in` (Δ1 `union` Δ2) -> binds α abind_tvar Θ0) ->
+  no_flex_dep (Δ1 `union` Δ2) Θ0 ->
+  flex_above_free (Δ1 `union` Δ2) Θ0 ->
+  a_scope_pskl Θ1 Q.
+Proof.
+  intros Δ1 Δ2 Θ0 P0 P Q Θ1 Hc.
+  induction Hc; intros Hwf HwfP0 HwfP Hcov Hnfd Hfaf.
+  - (* C-Ghost : output P0 *) exact (a_scope_pskl_of_wf HwfP0).
+  - (* C-Unit *)
+    split; [ constructor | intros γ Hγ; exfalso; simpl in Hγ; clear - Hγ; fsetdec ].
+  - (* C-Rigid *) apply a_scope_pskl_var. left; exact H.
+  - (* C-Arrow *)
+    inversion HwfP0 as [ | | Θz Δz P0az P0bz HwfP0a HwfP0b | | | ]; subst.
+    inversion HwfP as [ | | Θz Δz P1z P2z HwfP1 HwfP2 | | | ]; subst.
+    destruct (a_consis_sound_aux Hc1 Hwf HwfP0a HwfP1 Hcov Hnfd Hfaf)
+      as [Hle1 [Hwf1 [Hnfd1 [Hfaf1 _]]]].
+    assert (Hcov1 : forall α, α `in` (Δ1 `union` Δ2) -> binds α abind_tvar Θ1)
+      by (intros α Hα; eapply a_isub_binds_tvar; [ exact Hle1 | apply Hcov; exact Hα ]).
+    assert (HwfP0b1 : {{ Θ1 ⨟ empty ⊢ₚₛ P0b }}a)
+      by (eapply a_wf_pskl_isub; [ exact HwfP0b | exact Hle1 ]).
+    assert (HwfP21 : {{ Θ1 ⨟ empty ⊢ₚₛ P2 }}a)
+      by (eapply a_wf_pskl_isub; [ exact HwfP2 | exact Hle1 ]).
+    destruct (IHHc1 Hwf HwfP0a HwfP1 Hcov Hnfd Hfaf) as [Hl1 Hb1].
+    destruct (IHHc2 Hwf1 HwfP0b1 HwfP21 Hcov1 Hnfd1 Hfaf1) as [Hl2 Hb2].
+    destruct (a_consis_sound_aux Hc2 Hwf1 HwfP0b1 HwfP21 Hcov1 Hnfd1 Hfaf1)
+      as [Hle2 _].
+    split; [ constructor; assumption | ].
+    intros γ Hγ; simpl in Hγ. apply union_1 in Hγ as [Hγ | Hγ];
+      [ eapply a_isub_binds_tvarish; [ exact Hle2 | exact (Hb1 γ Hγ) ]
+      | exact (Hb2 γ Hγ) ].
+  - (* C-ForallInh : the opened run, re-bound *)
+    assert (HαP0 : α `notin` ftvar_in_pskl P0) by (clear - H; fsetdec).
+    assert (HαP : α `notin` ftvar_in_pskl P) by (clear - H; fsetdec).
+    assert (HαΔ : α `notin` (Δ1 `union` Δ2)) by (clear - H; fsetdec).
+    assert (HαΘ0 : α `notin` dom Θ0)
+      by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - H H0; fsetdec).
+    apply a_scope_pskl_all_close.
+    apply IHHc.
+    + apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf ].
+    + apply a_wf_pskl_all_syn_open_tvar;
+        [ exact HwfP0 | clear - HαΘ0 HαP0; fsetdec ].
+    + apply a_wf_pskl_all_syn_open_tvar;
+        [ exact HwfP | clear - HαΘ0 HαP; fsetdec ].
+    + intros α0 Hα0. destruct (α0 == α) as [->|Hne];
+        [ unfold binds; left; reflexivity
+        | unfold binds; right; apply Hcov; clear - Hα0 Hne; fsetdec ].
+    + apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
+        [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ].
+    + apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
+        [ clear; fsetdec | apply faf_open_tvar; auto; clear - HαΔ; fsetdec ].
+  - (* C-ForallSyn : the subject's opening, re-bound *)
+    assert (HαP : α `notin` ftvar_in_pskl P) by (clear - H; fsetdec).
+    assert (HαΔ : α `notin` (Δ1 `union` Δ2)) by (clear - H; fsetdec).
+    assert (HαΘ0 : α `notin` dom Θ0)
+      by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - H H0; fsetdec).
+    apply a_scope_pskl_all_close.
+    apply IHHc.
+    + apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf ].
+    + eapply a_wf_pskl_delta_mono;
+        [ apply (a_wf_pskl_reassoc HwfP0 α) | clear; fsetdec ].
+    + apply a_wf_pskl_all_syn_open_tvar;
+        [ exact HwfP | clear - HαΘ0 HαP; fsetdec ].
+    + intros α0 Hα0. destruct (α0 == α) as [->|Hne];
+        [ unfold binds; left; reflexivity
+        | unfold binds; right; apply Hcov; clear - Hα0 Hne; fsetdec ].
+    + apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
+        [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ].
+    + apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
+        [ clear; fsetdec | apply faf_open_tvar; auto; clear - HαΔ; fsetdec ].
+  - (* C-UnivGhost *)
+    inversion HwfP0 as [ | | | | | Θz Δz P0z Hg0 Hwb0 ]; subst.
+    inversion HwfP as [ | | | | | Θz Δz Pz Hgs Hwbs ]; subst.
+    rewrite aenv_minus_empty in Hwb0, Hwbs.
+    destruct (IHHc Hwf Hwb0 Hwbs Hcov Hnfd Hfaf) as [Hl Hb].
+    split; [ constructor; exact Hl | exact Hb ].
+  - (* C-UnivGhost1 : the input's opening, re-bound *)
+    assert (HαP0 : α `notin` ftvar_in_pskl P0) by (clear - H; fsetdec).
+    assert (HαΔ : α `notin` (Δ1 `union` Δ2)) by (clear - H; fsetdec).
+    assert (HαΘ0 : α `notin` dom Θ0)
+      by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - H H0; fsetdec).
+    apply a_scope_pskl_all_close.
+    apply IHHc.
+    + apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf ].
+    + apply a_wf_pskl_all_syn_open_tvar;
+        [ exact HwfP0 | clear - HαΘ0 HαP0; fsetdec ].
+    + eapply a_wf_pskl_delta_mono;
+        [ apply (a_wf_pskl_reassoc HwfP α) | clear; fsetdec ].
+    + intros α0 Hα0. destruct (α0 == α) as [->|Hne];
+        [ unfold binds; left; reflexivity
+        | unfold binds; right; apply Hcov; clear - Hα0 Hne; fsetdec ].
+    + apply no_flex_dep_cong with (Δ := add α (Δ1 `union` Δ2));
+        [ clear; fsetdec | apply no_flex_dep_open_tvar; auto ].
+    + apply faf_cong with (Δ := add α (Δ1 `union` Δ2));
+        [ clear; fsetdec | apply faf_open_tvar; auto; clear - HαΔ; fsetdec ].
+  - (* C-UnivGhost2 *)
+    inversion HwfP as [ | | | | | Θz Δz Pz Hgs Hwbs ]; subst.
+    rewrite aenv_minus_empty in Hwbs.
+    exact (IHHc Hwf HwfP0 Hwbs Hcov Hnfd Hfaf).
+  - (* C-Flex : the subject variable survives the unification *)
+    assert (Hbα : a_binds_tvar α Θ0).
+    { inversion HwfP as [ | Θz Δz αz Hd | | | | ]; subst; exact Hd. }
+    pose proof a_assign_unify_consis_sound as [_ [Hus _]].
+    destruct (Hus _ _ _ _ H Hwf) as [Hle _].
+    apply a_scope_pskl_var. eapply a_isub_binds_tvarish; [ exact Hle | exact Hbα ].
+  - (* C-FlexL *)
+    assert (Hbα : a_binds_tvar α Θ0).
+    { inversion HwfP as [ | Θz Δz αz Hd | | | | ]; subst; exact Hd. }
+    pose proof a_assign_unify_consis_sound as [Has _].
+    match goal with
+    | Ha : {{ _ ⊲[ _ ] _ ≔ _ ⊣ _ }}a |- _ =>
+        destruct (Has _ _ _ _ _ Ha (a_decls__nil) Hwf HwfP0) as [Hle _]
+    end.
+    apply a_scope_pskl_var. eapply a_isub_binds_tvarish; [ exact Hle | exact Hbα ].
+  - (* C-FlexR *)
+    assert (Hbα : a_binds_tvar α Θ0).
+    { inversion HwfP0 as [ | Θz Δz αz Hd | | | | ]; subst; exact Hd. }
+    pose proof a_assign_unify_consis_sound as [Has _].
+    match goal with
+    | Ha : {{ _ ⊲[ _ ] _ ≔ _ ⊣ _ }}a |- _ =>
+        destruct (Has _ _ _ _ _ Ha (a_decls__nil) Hwf HwfP) as [Hle _]
+    end.
+    apply a_scope_pskl_var. eapply a_isub_binds_tvarish; [ exact Hle | exact Hbα ].
+  - (* C-GhostR : output the subject *) exact (a_scope_pskl_of_wf HwfP).
+  - (* C-UnivGhostR *)
+    inversion HwfP0 as [ | | | | | Θz Δz P0z Hg0 Hwb0 ]; subst.
+    rewrite aenv_minus_empty in Hwb0.
+    exact (IHHc Hwf Hwb0 HwfP Hcov Hnfd Hfaf).
 Qed.

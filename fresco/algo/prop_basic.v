@@ -191,17 +191,12 @@ Proof.
   intros * H; induction H; auto.
 Qed.
 
-Lemma a_scope_pskl_lc : forall Θ P, a_scope_pskl Θ P -> lc_pskl P.
-Proof.
-  intros * H; induction H; auto.
-Qed.
-
 (** Well-formed contexts have locally closed binding payloads — the bridge
     that feeds [lc_aenv]-hypothesised reflexivity ([a_isub_refl] below). *)
 Lemma a_wf_aenv_lc_aenv : forall Θ, {{ ⊢ Θ }}a -> lc_aenv Θ.
 Proof.
   intros Θ H; induction H; constructor; simpl; auto.
-  - eapply a_scope_pskl_lc; eapply a_scope_pskl_of_wf; eauto.
+  - eapply a_wf_pskl_lc; eauto.
   - eapply a_wf_ptyp_lc; eauto.
 Qed.
 
@@ -593,9 +588,7 @@ Proof.
     replace (ptyp_to_bskl_syn (ptyp_var_f α))
       with (pskl_to_bskl_inh (pskl_var_f α)) by reflexivity.
     replace (pskl_to_uskl pskl_ghost) with uskl_ghost by reflexivity.
-    apply ad_pat_consis__ghost; [ fsetdec | ].
-    apply a_wf_pskl__var. apply Hβs.
-    unfold binds; left; reflexivity.
+    apply ad_pat_consis__ghost; fsetdec.
   - (* ∀◇P : the universal ghost is dropped *)
     replace (pskl_to_uskl (pskl_univ_ghost P))
       with (uskl_univ_ghost (pskl_to_uskl P)) by reflexivity.
@@ -896,13 +889,7 @@ Proof. intros β Θ [Hb | [Hb | [τ Hb]]]; apply binds_In in Hb; exact Hb. Qed.
 Lemma a_scope_pskl_ftv_dom : forall Θ P,
   a_scope_pskl Θ P -> ftvar_in_pskl P [<=] dom Θ.
 Proof.
-  intros Θ P H; induction H; simpl; try fsetdec.
-  - apply a_binds_tvar_in_dom in H. fsetdec.
-  - destruct (atom_fresh (L `union` dom Θ `union` ftvar_in_pskl P))
-      as [α Hα].
-    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower P (pskl_var_f α)) as Hlo.
-    specialize (H0 α ltac:(clear - Hα; solve_notin_auto)). simpl in H0.
-    clear - H0 Hlo Hα. fsetdec.
+  intros Θ P [_ H] α Hα. exact (a_binds_tvar_in_dom (H α Hα)).
 Qed.
 
 (** Embedding composition and substitution commutation for the fold step. *)

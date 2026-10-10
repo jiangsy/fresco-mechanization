@@ -92,7 +92,7 @@ Inductive ad_pat : mode -> aenv -> exp -> bskl -> Prop :=
        rows (2026-08-07, hand-off §5).  The embedded subtyping's external
        side condition is well-formedness of BOTH sides (declarative.tex:1427;
        WF-SIDE-CONDITIONS.md), and [Q] is otherwise unconstrained here —
-       [ad_pat_sub_target_wf] gives only scope, and the wf cannot propagate
+       [ad_pat_sub_target_scope_ty] gives only scope, and the wf cannot propagate
        top-down (it dies at [ad_pat__app]'s existential premise skeleton, and
        the refinement rules alone do not preserve wf:
        [ad_refine_syn_output_not_wf], cex/cex_refine_not_transitive.v).
@@ -178,7 +178,7 @@ Inductive ad_sd_typing : mode -> aenv -> exp -> btyp -> Prop :=
        type-carrying siblings ([__abs_check_base], [__abs_anno_check_base],
        [__abs], [__abs_anno]) all state this; sd-Anno was the one rule that
        did not, and without it a derivation says NOTHING about the scope of
-       the types the term mentions — [ad_pat_sub_target_wf] constrains only
+       the types the term mentions — [ad_pat_sub_target_scope_ty] constrains only
        the join's TARGET.  With it, [ad_sd_typing_wf_exp] holds: a derivation
        exhibits its own subject as a well-formed term, which is what the
        paper's ambient "all inputs are well-formed" means.

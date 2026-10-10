@@ -204,7 +204,7 @@ Proof.
     apply ad_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
       [ apply HR1; assumption | apply HR2; assumption | assumption ].
   - (* ghost : uskl_ghost ∼ any inh painting via the wf target *)
-    apply ad_pat_consis__ghost; [ assumption | exact HwfB ].
+    apply ad_pat_consis__ghost; [ assumption ].
   - (* univ_ghost_drop *) apply ad_pat_consis__univ_ghost_drop. apply IHHc; assumption.
   - (* flex_l *) eapply ad_pat_consis__flex_l; [ eassumption | ].
     apply IHHc; assumption.
@@ -245,7 +245,7 @@ Proof.
     | Hbody : forall α, α `notin` ?L1 -> _ |- _ =>
         apply (Hbody α ltac:(clear - Hα; solve_notin_auto))
     end.
-  - (* ghost *) apply ad_pat_consis__ghost; [ assumption | exact HwfB ].
+  - (* ghost *) apply ad_pat_consis__ghost; [ assumption ].
   - (* univ_ghost_inh : R = uskl_univ_ghost R *)
     inversion HQ; subst.
     apply ad_pat_consis__univ_ghost_inh with (L := L `union` L0).
@@ -890,7 +890,6 @@ Proof.
     rewrite subst_var_bskl_inh.
     apply ad_pat_sub_fuel__ghost;
       [ assumption
-      | apply a_wf_pskl_rename_tvar; [ assumption | clear; fsetdec | clear; fsetdec ]
       | rewrite <- subst_var_bskl_inh;
         change (bskl_var_f β') with (ptyp_to_bskl_syn (ptyp_var_f β'));
         apply mod_comp_sk_subst_mono; first [ assumption | apply mono_ptyp__var ] ].
@@ -1067,7 +1066,7 @@ Proof.
       | eapply a_wf_pskl_isub; eassumption
       | apply IHad_pat_sub_fuel; exact Hle ].
   - apply ad_pat_sub_fuel__ghost;
-      [ assumption | eapply a_wf_pskl_isub; eassumption | assumption ].
+      [ assumption | assumption ].
   - apply ad_pat_sub_fuel__ghostg; [ assumption | assumption ].
   - apply ad_pat_sub_fuel__univ_ghost_l; [ assumption | apply IHad_pat_sub_fuel; exact Hle ].
   - apply ad_pat_sub_fuel__univ_ghost_lg; [ assumption | apply IHad_pat_sub_fuel; exact Hle ].
@@ -1109,7 +1108,7 @@ Proof.
       | eapply a_wf_pskl_isub; eassumption
       | apply IHad_pat_sub; exact Hle ].
   - apply ad_pat_sub__ghost;
-      [ assumption | eapply a_wf_pskl_isub; eassumption | assumption ].
+      [ assumption | assumption ].
   - apply ad_pat_sub__ghostg; [ assumption | assumption ].
   - apply ad_pat_sub__univ_ghost_l; [ assumption | apply IHad_pat_sub; exact Hle ].
   - apply ad_pat_sub__univ_ghost_lg; [ assumption | apply IHad_pat_sub; exact Hle ].
@@ -1165,7 +1164,7 @@ Proof.
       | eapply a_wf_pskl_weaken; eassumption
       | apply IHad_pat_sub_fuel; exact Hmon ].
   - apply ad_pat_sub_fuel__ghost;
-      [ assumption | eapply a_wf_pskl_weaken; eassumption | assumption ].
+      [ assumption | assumption ].
   - apply ad_pat_sub_fuel__ghostg; [ assumption | assumption ].
   - apply ad_pat_sub_fuel__univ_ghost_l; [ assumption | apply IHad_pat_sub_fuel; exact Hmon ].
   - apply ad_pat_sub_fuel__univ_ghost_lg; [ assumption | apply IHad_pat_sub_fuel; exact Hmon ].
@@ -1388,10 +1387,6 @@ Proof.
     rewrite pskl_to_bskl_inh_subst_unit.
     apply ad_pat_sub_fuel__ghost;
       [ assumption
-      | eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono);
-          [ eassumption | reflexivity | exact Hfr | clear; fsetdec
-          | apply guarded_pskl__unit | apply a_wf_pskl__unit
-          | simpl; clear; fsetdec ]
       | rewrite <- pskl_to_bskl_inh_subst_unit;
         apply mod_comp_sk_subst_unit; assumption ].
   - (* __ghostg *)
@@ -1453,7 +1448,7 @@ Proof.
     destruct_if as [-> | Hne].
     + (* the variable IS the unfolded definition *)
       apply ad_refine_pskl_refl.
-      apply a_scope_pskl_of_ptyp_vis;
+      apply a_wf_pskl_of_ptyp_vis;
         [ apply mono_ptyp_lc; assumption
         | intros α0 Hα0; apply Hvis; assumption ].
     + apply ad_refine_pskl__var.
@@ -1680,7 +1675,7 @@ Proof.
         eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ0);
           [ eassumption | reflexivity | exact Hfr | clear; fsetdec
           | apply mono_ptyp_to_pskl_guarded; assumption
-          | apply a_scope_pskl_of_ptyp_vis;
+          | apply a_wf_pskl_of_ptyp_vis;
               [ apply mono_ptyp_lc; assumption
               | intros β0 Hβ0; apply Hvis; assumption ] 
           | clear; fsetdec ].
@@ -1699,7 +1694,7 @@ Proof.
         eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ0);
           [ eassumption | reflexivity | exact Hfr | clear; fsetdec
           | apply mono_ptyp_to_pskl_guarded; assumption
-          | apply a_scope_pskl_of_ptyp_vis;
+          | apply a_wf_pskl_of_ptyp_vis;
               [ apply mono_ptyp_lc; assumption
               | intros β0 Hβ0; apply Hvis; assumption ] 
           | clear; fsetdec ].
@@ -1707,13 +1702,6 @@ Proof.
     rewrite pskl_to_bskl_inh_subst_mono; [ | assumption ].
     apply ad_pat_sub_fuel__ghost;
       [ assumption
-      | eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ0);
-          [ eassumption | reflexivity | exact Hfr | clear; fsetdec
-          | apply mono_ptyp_to_pskl_guarded; assumption
-          | apply a_scope_pskl_of_ptyp_vis;
-              [ apply mono_ptyp_lc; assumption
-              | intros β0 Hβ0; apply Hvis; assumption ] 
-          | clear; fsetdec ]
       | rewrite <- pskl_to_bskl_inh_subst_mono; [ | assumption ];
         apply mod_comp_sk_subst_mono; assumption ].
   - (* __ghostg *)
@@ -1893,7 +1881,7 @@ Proof.
       | assumption | ].
     apply IHad_pat_sub_fuel. clear - Heq; fsetdec.
   - apply ad_pat_sub_fuel__ghost;
-      [ clear - H Heq; fsetdec | assumption | assumption ].
+      [ clear - H Heq; fsetdec | assumption ].
   - apply ad_pat_sub_fuel__ghostg; [ clear - H Heq; fsetdec | assumption ].
   - apply ad_pat_sub_fuel__univ_ghost_l; [ assumption | apply IHad_pat_sub_fuel; exact Heq ].
   - apply ad_pat_sub_fuel__univ_ghost_lg; [ assumption | apply IHad_pat_sub_fuel; exact Heq ].
@@ -2343,7 +2331,7 @@ Proof.
     split; [ apply bskl_to_pskl_pskl_to_bskl_inh | ].
     split.
     + exists 0. apply ad_pat_sub_fuel__ghost;
-        [ exact HΨ | exact HwfP0 | exact (Hmod eq_refl) ].
+        [ exact HΨ | exact (Hmod eq_refl) ].
     + eapply ad_refine_syn_refl_inh_gen; exact HwfP0.
 
   - (* GhostG (SK) : dotted ghost below ◇ *)
@@ -2496,7 +2484,7 @@ Proof.
     assert (HwfΞΘ0 : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (Hwfpaint : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ ptyp_to_pskl τ }}a).
-    { apply a_scope_pskl_of_ptyp_vis;
+    { apply a_wf_pskl_of_ptyp_vis;
         [ apply mono_ptyp_lc; exact Hm | ].
       intros α0 Hα0.
       pose proof (a_wf_ptyp_ftv_tvarish Hwfτ Hα0) as Ht.
@@ -2713,7 +2701,7 @@ Proof.
     + eapply ad_refine_syn_weaken; [ exact Hfill | ].
       intros y b0 Hb; unfold binds; right; exact Hb.
 
-  - (* Flex-SkipTmVar (skeleton entry) — the same, at [a_scope_pskl]. *)
+  - (* Flex-SkipTmVar (skeleton entry) — the same, at the entry's skeleton wf. *)
     intros NM M P0 Θ0 Θ1 Ξ α x Q P Hxout Hprem IH Hwf Hdecl HwfP0 Hαb Hmod Hgf.
     assert (Huq : uniq (Ξ ++ (x ~ abind_var_skl Q) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf).
@@ -2752,7 +2740,7 @@ Proof.
         unfold binds; apply in_or_app; left; exact Hb. }
       apply a_isub_cons_var_skl;
         [ eapply a_isub_strengthen_decls_src; eauto
-        | eapply a_scope_pskl_lc; eauto ]. }
+        | eapply a_wf_pskl_lc; eauto ]. }
     split.
     { apply a_wf_aenv__var; [ exact Hxout | | exact Hwf1 ].
       eapply a_wf_pskl_isub; [ exact HscQ' | exact Hle ]. }
@@ -2892,7 +2880,6 @@ Proof.
         first [ assumption | clear; fsetdec ].
   - rewrite subst_var_bskl_inh.
     apply ad_pat_sub__ghost; auto.
-    + apply a_wf_pskl_rename_tvar; [ assumption | clear; fsetdec | clear; fsetdec ].
     + rewrite <- subst_var_bskl_inh.
       change (bskl_var_f β') with (ptyp_to_bskl_syn (ptyp_var_f β')).
       apply mod_comp_sk_subst_mono; auto using mono_ptyp.

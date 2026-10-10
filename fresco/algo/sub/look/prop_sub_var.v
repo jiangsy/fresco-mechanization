@@ -37,7 +37,8 @@ Require Import src.fresco.algo.prop_metasubst.
 Require Import src.fresco.algo.prop_mono_bridge.
 Require Import src.fresco.algo.prop_precise.
 Require Import src.fresco.algo.consis.prop_consis_precise.  (* d_tags_skl_var_inv *)
-Require Import src.fresco.algo.consis.prop_soundness_consis.    (* a_wf_pskl_lc *)
+Require Import src.fresco.algo.prop_swap.   (* a_wf_pskl_lc *)
+Require Import src.fresco.algo.consis.prop_soundness_consis.
 Require Import src.fresco.deco_algo.prop_decorate_sub.    (* lc_uskl_to_pskl *)
 Require Import src.fresco.algo.prop_pat_sub.
 Require Import src.fresco.algo.prop_refine.       (* ad_refine_syn_weaken *)

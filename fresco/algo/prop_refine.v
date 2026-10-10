@@ -419,7 +419,7 @@ Proof.
     + apply a_binds_tvar_weaken_cons; auto.
   - (* ghost ↦ □ : the RHS is the inherited painting of □ *)
     replace bskl_ghost with (pskl_to_bskl_inh pskl_ghost) by reflexivity.
-    apply ad_pat_consis__ghost; [ fsetdec | apply a_wf_pskl__ghost ].
+    apply ad_pat_consis__ghost; [ fsetdec ].
   - (* univ_ghost ↦ ∀◇ *)
     apply ad_pat_consis__univ_ghost. auto.
   - (* dot_ghost ↦ □ *)

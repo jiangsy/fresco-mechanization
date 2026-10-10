@@ -26,6 +26,7 @@ Require Import src.fresco.algo.prop_inc.
 Require Import src.fresco.algo.prop_basic.
 Require Import src.fresco.algo.prop_stability.
 Require Import src.fresco.algo.prop_refine.
+Require Import src.fresco.algo.prop_swap.   (* a_wf_pskl_lc *)
 Require Import src.fresco.algo.consis.prop_soundness_consis.
 Require Import src.fresco.algo.consis.prop_completeness_consis.
 Require Import src.fresco.algo.prop_mono_bridge.
@@ -48,6 +49,26 @@ Set Implicit Arguments.
 (* Most P6-Cv leaf/absurd helpers live in sub/look/prop_rsubst.v; this file
    adds the ForallSyn-specific kit and the main induction over the whole
    consistency judgment. *)
+
+(** A consistency subject related by ρ to a tag-sorted (decorated)
+    skeleton carries no plain [◇] — so its counterpart is scoped by the
+    derivation alone ([ad_pat_consis_target_scope]).  P6 needs no
+    counterpart-wf hypothesis for that reason. *)
+Lemma uskl_rsubst_no_ghost : forall NM Θ Δρ Ψρ R ψ Ψ',
+  uskl_rsubst NM Θ Δρ Ψρ R ψ -> a_tags_sort NM Ψ' ψ -> uskl_no_ghost R.
+Proof.
+  intros NM Θ Δρ Ψρ R ψ Ψ' Hr Ht.
+  apply uskl_no_ghost_of_dskl. eapply uskl_rsubst_is_dskl; [ exact Hr | ].
+  inversion Ht; assumption.
+Qed.
+
+Lemma uskl_no_ghost_open_inv : forall R α,
+  uskl_no_ghost (open_uskl_wrt_uskl R (uskl_var_f α)) -> uskl_no_ghost R.
+Proof.
+  intros R α. unfold open_uskl_wrt_uskl. generalize 0.
+  induction R; intros k Hk; simpl in *; eauto.
+  destruct Hk; split; eauto.
+Qed.
 
 (** a_inc images are Θ-scoped (the prose wf side-condition, pointwise). *)
 Lemma a_inc_image_ftv_dom : forall Θ0 κ Θ,
@@ -354,32 +375,6 @@ Qed.
     [ad_refine_syn_ghost_sskl] now asks for.  Same statement as
     [ad_pat_consis_lc_r] (algo/typing/prop_soundness_typing.v), which sits
     downstream of this file and cannot be imported here. *)
-Lemma ad_pat_consis_target_lc : forall Ψ Θ R Q,
-  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad -> lc_bskl Q.
-Proof.
-  intros Ψ Θ R Q H; induction H.
-  - apply lc_bskl_unit.
-  - apply lc_bskl_var_f.
-  - apply lc_bskl_arrow; assumption.
-  - destruct (atom_fresh L) as [α Hα].
-    apply lc_bskl_all_inh_exists with (α1 := α); auto.
-  - destruct (atom_fresh L) as [α Hα].
-    apply lc_bskl_all_inh_exists with (α1 := α); auto.
-  - destruct (atom_fresh L) as [α Hα].
-    apply lc_bskl_all_syn_exists with (α1 := α); auto.
-  - destruct (atom_fresh L) as [α Hα].
-    apply lc_bskl_all_syn_exists with (α1 := α); auto.
-  - apply lc_bskl_ghost.
-  - apply lc_bskl_univ_ghost; assumption.
-  - apply lc_pskl_to_bskl_inh. eapply a_wf_pskl_lc; eassumption.
-  - apply lc_bskl_univ_ghost; assumption.
-  - destruct (atom_fresh L) as [α Hα].
-    apply lc_bskl_all_inh_exists with (α1 := α); auto.
-  - assumption.
-  - assumption.
-  - apply lc_bskl_var_f.
-Qed.
-
 (** A refinement out of ◇ fills it with a Δ-avoiding skeleton (the ghost
     rule's side condition), possibly behind defined-flexible lookups, so
     every Δ-variable of the target is bound in the context. *)
@@ -687,6 +682,14 @@ Proof.
     { intros ψa1 ψa2 Ψρ1 Ψρ2 Hrho1 Hrho2 HΨρs Htags0 Hpre0.
       destruct (a_tags_sort_arrow_inv Htags0)
         as (Ψ'1 & Ψ'2 & Htags1 & Htags2 & HΨ'disj & HΨ's).
+      (* the branch SUBJECTS are decorated (the guesses are), so they carry no
+         plain ◇ and their counterparts are scoped by the derivation *)
+      assert (Hng1 : uskl_no_ghost R1)
+        by (apply uskl_no_ghost_of_dskl; eapply uskl_rsubst_is_dskl;
+              [ exact Hrho1 | inversion Htags1; assumption ]).
+      assert (Hng2 : uskl_no_ghost R2)
+        by (apply uskl_no_ghost_of_dskl; eapply uskl_rsubst_is_dskl;
+              [ exact Hrho2 | inversion Htags2; assumption ]).
       (* branch tag-flow facts, fixed for the whole grid *)
       assert (Hft1 : Ψ1 [<=] Ψρ1 `union` Ψ'1).
       { pose proof (ad_pat_consis_ftag_sub Hconsis1) as Ha.
@@ -733,8 +736,8 @@ Proof.
                      Ψa [=] empty).
       { intros Hrh.
         pose proof (ad_refine_syn_ghost_sskl Hrh eq_refl
-                      (lc_bskl_arrow _ _ (ad_pat_consis_target_lc Hconsis1)
-                                     (ad_pat_consis_target_lc Hconsis2)))
+                      (lc_bskl_arrow _ _ (ad_pat_consis_target_lc Hconsis1 Hng1)
+                                     (ad_pat_consis_target_lc Hconsis2 Hng2)))
           as Hss.
         assert (HskQ1 : is_sskl Q1) by (inversion Hss; subst; assumption).
         assert (HskQ2 : is_sskl Q2) by (inversion Hss; subst; assumption).
@@ -1110,8 +1113,8 @@ Proof.
                 [ exact HspΘ | exact HΔrd | exact Hrefine1 | ].
               intros γ Hγ; simpl in Hγ.
               destruct (AtomSetImpl.union_1 Hγ) as [Hγ1 | Hγ2];
-                [ exact (ad_pat_consis_target_binds Hconsis1 Hγ1)
-                | exact (ad_pat_consis_target_binds Hconsis2 Hγ2) ]. }
+                [ exact (ad_pat_consis_target_binds Hconsis1 Hng1 Hγ1)
+                | exact (ad_pat_consis_target_binds Hconsis2 Hng2 Hγ2) ]. }
             eapply solve_ext_nil with (Pa := (pskl_arrow Pi1 Pi2));
               [ apply a_solve_eq__ghost_r | ].
             intros Δ' HS1 HS2 HS3.
@@ -1272,8 +1275,8 @@ Proof.
                 [ exact HspΘ | exact HΔrd | exact Hrefine1 | ].
               intros γ Hγ; simpl in Hγ.
               destruct (AtomSetImpl.union_1 Hγ) as [Hγ1 | Hγ2];
-                [ exact (ad_pat_consis_target_binds Hconsis1 Hγ1)
-                | exact (ad_pat_consis_target_binds Hconsis2 Hγ2) ]. }
+                [ exact (ad_pat_consis_target_binds Hconsis1 Hng1 Hγ1)
+                | exact (ad_pat_consis_target_binds Hconsis2 Hng2 Hγ2) ]. }
             eapply solve_ext_nil with (Pa := pskl_ghost); [ apply a_solve_eq__ghost_r | ].
             intros Δ' HS1 HS2 HS3.
             eapply ad_partial_precise_psi_cong;
@@ -1364,8 +1367,8 @@ Proof.
                 [ exact HspΘ | exact HΔrd | exact Hrefine1 | ].
               intros γ Hγ; simpl in Hγ.
               destruct (AtomSetImpl.union_1 Hγ) as [Hγ1 | Hγ2];
-                [ exact (ad_pat_consis_target_binds Hconsis1 Hγ1)
-                | exact (ad_pat_consis_target_binds Hconsis2 Hγ2) ]. }
+                [ exact (ad_pat_consis_target_binds Hconsis1 Hng1 Hγ1)
+                | exact (ad_pat_consis_target_binds Hconsis2 Hng2 Hγ2) ]. }
             eapply solve_ext_nil with (Pa := (pskl_univ_ghost Pi'));
               [ apply a_solve_eq__ghost_r | ].
             intros Δ' HS1 HS2 HS3.
@@ -1437,6 +1440,11 @@ Proof.
     { intros ψR Lr Hrhof Htags0 Hpre0.
       destruct (a_tags_sort_all_tag_inv Htags0)
         as (Lt & Ψ0' & Htagsf & Hεnin & HΨ'eq).
+      assert (HngR : uskl_no_ghost (uskl_all_tag ε R)).
+      { pick fresh αf for (Lr `union` Lt). simpl.
+        apply (uskl_no_ghost_open_inv R αf).
+        eapply uskl_rsubst_no_ghost;
+          [ apply Hrhof | apply Htagsf ]; clear - Fr; solve_notin. }
       (* ε is premise-solved: it is a Ψ'-tag, hence never ρ-introduced *)
       assert (Hεa : ε `in` Ψa)
         by (clear - H1 Hsubeq1 Hinter HΨ'eq; fsetdec).
@@ -2172,6 +2180,11 @@ Proof.
     { intros ψR Lr Hrhof Htags0 Hpre0.
       destruct (a_tags_sort_all_tag_inv Htags0)
         as (Lt & Ψ0' & Htagsf & Hεnin & HΨ'eq).
+      assert (HngR : uskl_no_ghost (uskl_all_tag ε R)).
+      { pick fresh αf for (Lr `union` Lt). simpl.
+        apply (uskl_no_ghost_open_inv R αf).
+        eapply uskl_rsubst_no_ghost;
+          [ apply Hrhof | apply Htagsf ]; clear - Fr; solve_notin. }
       assert (Hdomsub : dom Θr [<=] dom Θ)
         by (eapply aenv_split_dom_r; exact HspΘ).
       (* body ftag flow at one fresh var: Ψ ⊆ Ψρ ∪ Ψ0' *)
@@ -2238,8 +2251,9 @@ Proof.
         simpl in Hrefine.
         pose proof (ad_refine_syn_ghost_sskl Hrefine eq_refl
                       ltac:(eapply ad_pat_consis_target_lc;
-                            eapply ad_pat_consis__forall_syn_tagged
-                              with (ε := ε); exact H))
+                            [ eapply ad_pat_consis__forall_syn_tagged
+                                with (ε := ε); exact H
+                            | exact HngR ]))
           as Hss.
         assert (HΨe : Ψ [=] empty).
         { eapply ad_pat_consis_sskl_tags;
@@ -2250,8 +2264,9 @@ Proof.
         { assert (Ht : ftvar_in_bskl (bskl_all_syn Q) [<=] dom Θr).
           { eapply ghost_refine_target_ftv_dom_r;
               [ exact HspΘ | exact HΔrd | exact Hrefine | ].
-            eapply ad_pat_consis_target_binds.
-            eapply ad_pat_consis__forall_syn_tagged with (ε := ε); exact H. }
+            eapply ad_pat_consis_target_binds;
+              [ eapply ad_pat_consis__forall_syn_tagged with (ε := ε); exact H
+              | exact HngR ]. }
           simpl in Ht; exact Ht. }
         eapply solve_ext_nil with (Pa := Pi); [ apply a_solve_eq__ghost_r | ].
         intros Δ' HS1 HS2 HS3.
@@ -2989,6 +3004,8 @@ Proof.
     { intros ψa0 Hrho0 Htags0 Hpre0.
       assert (Htags1 : a_tags_sort NM Ψ' ψa0)
         by (apply a_tags_sort_dot_univ_ghost_inv; exact Htags0).
+      assert (HngR : uskl_no_ghost R)
+        by (eapply uskl_rsubst_no_ghost; [ exact Hrho0 | exact Htags1 ]).
       (* the P0=□ rows' target bound: ψa0's variables are Θr- or
          Δρ-scoped once the counterpart is a synthesised fill *)
       assert (HψaB : ftvar_in_bskl Q [<=] dom Θr ->
@@ -3028,14 +3045,14 @@ Proof.
         + (* P0 = □: SE-VacuousR; Q synthesized ⇒ Ψa = ∅ *)
           simpl in Hrefine.
           pose proof (ad_refine_syn_ghost_sskl Hrefine eq_refl
-                        (lc_bskl_univ_ghost _ (ad_pat_consis_target_lc Hconsis))) as Hss.
+                        (lc_bskl_univ_ghost _ (ad_pat_consis_target_lc Hconsis HngR))) as Hss.
           assert (HskQ : is_sskl Q) by (inversion Hss; subst; assumption).
           pose proof (ad_pat_consis_sskl_tags Hconsis HwfΘ HskQ) as HΨe.
           assert (HQB : ftvar_in_bskl Q [<=] dom Θr).
           { assert (Ht : ftvar_in_bskl (bskl_univ_ghost Q) [<=] dom Θr).
             { eapply ghost_refine_target_ftv_dom_r;
                 [ exact HspΘ | exact HΔrd | exact Hrefine | ].
-              exact (ad_pat_consis_target_binds Hconsis). }
+              exact (ad_pat_consis_target_binds Hconsis HngR). }
             simpl in Ht; exact Ht. }
           eapply solve_ext_nil with (Pa := pskl_ghost); [ apply a_solve_eq__ghost_r | ].
           intros Δ' HS1 HS2 HS3.
@@ -3162,14 +3179,14 @@ Proof.
           * (* P0 = □: SE-VacuousR *)
             simpl in Hrefine.
             pose proof (ad_refine_syn_ghost_sskl Hrefine eq_refl
-                        (lc_bskl_univ_ghost _ (ad_pat_consis_target_lc Hconsis))) as Hss.
+                        (lc_bskl_univ_ghost _ (ad_pat_consis_target_lc Hconsis HngR))) as Hss.
             assert (HskQ : is_sskl Q) by (inversion Hss; subst; assumption).
             pose proof (ad_pat_consis_sskl_tags Hconsis HwfΘ HskQ) as HΨe.
             assert (HQB : ftvar_in_bskl Q [<=] dom Θr).
             { assert (Ht : ftvar_in_bskl (bskl_univ_ghost Q) [<=] dom Θr).
               { eapply ghost_refine_target_ftv_dom_r;
                   [ exact HspΘ | exact HΔrd | exact Hrefine | ].
-                exact (ad_pat_consis_target_binds Hconsis). }
+                exact (ad_pat_consis_target_binds Hconsis HngR). }
               simpl in Ht; exact Ht. }
             eapply solve_ext_nil with (Pa := (pskl_univ_ghost Pi'));
               [ apply a_solve_eq__ghost_r | ].

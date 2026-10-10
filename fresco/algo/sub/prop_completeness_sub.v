@@ -66,6 +66,7 @@ Require Import src.fresco.algo.prop_basic.
 Require Import src.fresco.algo.prop_refine.
 Require Import src.fresco.algo.prop_normal.
 Require Import src.fresco.algo.prop_metasubst.
+Require Import src.fresco.algo.prop_swap.   (* a_wf_pskl_lc *)
 Require Import src.fresco.algo.consis.prop_soundness_consis.
 Require Import src.fresco.algo.consis.prop_completeness_consis.
 Require Import src.fresco.algo.sub.prop_sub_msubst_equiv.

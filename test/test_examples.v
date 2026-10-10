@@ -100,17 +100,10 @@ Ltac crush_btvar :=
         | right; left; solve [ crush_binds ]
         | right; right; eexists; solve [ crush_binds ] ].
 
-(** [a_scope_pskl Θ P] on concrete syntax. *)
+(** [{{ Θ ⨟ Δ ⊢ₚₛ P }}a] on concrete syntax (e.g. ForallL's instantiation
+    premise). *)
 Ltac crush_wf :=
-  repeat (first [ apply a_scope_pskl__arrow
-                | apply a_scope_pskl__unit
-                | apply a_scope_pskl__ghost
-                | apply a_scope_pskl__univ_ghost
-                | apply a_scope_pskl__var; crush_btvar
-                | eapply a_scope_pskl__all with (L := {});
-                  intros ? _; simpl_open
-                (* disciplined twin (ForallL's instantiation premise) *)
-                | apply a_wf_pskl__arrow
+  repeat (first [ apply a_wf_pskl__arrow
                 | apply a_wf_pskl__unit
                 | apply a_wf_pskl__ghost
                 | apply a_wf_pskl__univ_ghost; [ crush_lc | ]

@@ -173,7 +173,11 @@ Print Assumptions a_consis_sound.
    FACTORS through the solution — ∃ζ. ζ ∷ Θ₁ ⊑ Θ ∧ ζ ∘ κ₁ ≡ κ ∧ ζP₁ ⊑ ⌊Qb⌋.
    That factoring IS the optimality.
    ⚠️ The paper's 2-condition statement is FALSE as literally given; what is
-   proved is the AUGMENTED one.  docs/PAPER-GAPS.md. *)
+   proved is the AUGMENTED one.  docs/PAPER-GAPS.md.
+   Beyond the paper's premises it carries the paper's own presupposition that
+   the counterpart is well formed, Θ ⊢ ⌊Qb⌋ (declarative.tex:2074): the Ghost
+   rule — no premise, as in the paper — fills a ghost with an ARBITRARY
+   counterpart.  docs/WF-SIDE-CONDITIONS.md §2a. *)
 Check a_consis_complete.
 Print Assumptions a_consis_complete.
 
@@ -217,7 +221,10 @@ Print Assumptions a_sub_complete.
    analogue of [ad_pat_consis_target_ftv] is FALSE
    (cex/cex_p6ss_sub_target_ftv.v).  ⚠️ P6-Cs carries one paper-EXTERNAL wf
    side condition whose NECESSITY is machine-checked
-   (cex/cex_p6cs_subject_wf.v).  Both in docs/PAPER-GAPS.md.
+   (cex/cex_p6cs_subject_wf.v).  Both in docs/PAPER-GAPS.md.  P6-Cs, P6-Ss
+   and P6-L also carry the counterpart's well-formedness, Θ ⊢ ⌊Q⌋ — the
+   same presupposition as [a_consis_complete]'s (docs/WF-SIDE-CONDITIONS.md
+   §2a); P6-Cv / P6-Sv need none, their subjects being decorated.
    ⚙ Bare [Check]s deliberately: these statements carry the ρ / Ψ / Θw
    bookkeeping that makes the induction go through, and printing it here would
    bury the chain.  The statements are in the files named above. *)

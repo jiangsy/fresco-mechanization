@@ -138,11 +138,11 @@ Definition a_binds_tvar (α : atom) (Θ : aenv) : Prop :=
    of ForallL mean; crucially, [a_inc]'s flex rule checks the solving monotype
    here, which is what forces identity information-increases to KEEP flexible
    variables in the target (stability of variable lookups depends on it). *)
-(* ⚙ COFINITE, DELIBERATELY — and so are [a_scope_pskl] and [a_wf_pskl] below,
-   against the exists-fresh discipline every OPERATIONAL judgment in this file
-   follows.  Well-formedness is not a run: nothing here opens a binder at a
-   name it chose, so there is no witness to name, and the cofinite form gives
-   the strong elimination the whole tree leans on.  Do not "fix" these three to
+(* ⚙ COFINITE, DELIBERATELY — and so is [a_wf_pskl] below, against the
+   exists-fresh discipline every OPERATIONAL judgment in this file follows.
+   Well-formedness is not a run: nothing here opens a binder at a name it
+   chose, so there is no witness to name, and the cofinite form gives the
+   strong elimination the whole tree leans on.  Do not "fix" these two to
    match their file-mates. *)
 Inductive a_wf_ptyp : aenv -> ptyp -> Prop :=
 | a_wf_ptyp__unit : forall Θ,
@@ -159,25 +159,17 @@ Inductive a_wf_ptyp : aenv -> ptyp -> Prop :=
        a_wf_ptyp ((α ~ abind_tvar) ++ Θ) (open_ptyp_wrt_ptyp A (ptyp_var_f α))) ->
     a_wf_ptyp Θ (ptyp_all A).
 
-Inductive a_scope_pskl : aenv -> pskl -> Prop :=
-| a_scope_pskl__unit : forall Θ,
-    a_scope_pskl Θ pskl_unit
-| a_scope_pskl__var : forall Θ α,
-    a_binds_tvar α Θ ->
-    a_scope_pskl Θ (pskl_var_f α)
-| a_scope_pskl__arrow : forall Θ P1 P2,
-    a_scope_pskl Θ P1 ->
-    a_scope_pskl Θ P2 ->
-    a_scope_pskl Θ (pskl_arrow P1 P2)
-| a_scope_pskl__all : forall L Θ P,
-    (forall α, α `notin` L ->
-       a_scope_pskl ((α ~ abind_tvar) ++ Θ) (open_pskl_wrt_pskl P (pskl_var_f α))) ->
-    a_scope_pskl Θ (pskl_all_syn P)
-| a_scope_pskl__ghost : forall Θ,
-    a_scope_pskl Θ pskl_ghost
-| a_scope_pskl__univ_ghost : forall Θ P,
-    a_scope_pskl Θ P ->
-    a_scope_pskl Θ (pskl_univ_ghost P).
+(** SCOPING of a skeleton under [Θ] — NOT a judgement.  The paper has ONE
+    skeleton well-formedness, [a_wf_pskl] below; this is just the two plain
+    facts "locally closed" and "every free variable is a type variable of [Θ]"
+    under one name, for the places where only those are available.  The
+    disciplined judgement implies it ([a_scope_pskl_of_wf], prop_swap.v §0),
+    never conversely: [∀α.∀◇.(α→α)] is scoped and well-formed in NO context.
+    ⚙ Until 2026-10-10 this was a second, scoping-only INDUCTIVE (with a [∀◇]
+    rule that merely recursed); it was replaced by its characterisation,
+    proved equivalent to it in both directions before the switch. *)
+Definition a_scope_pskl (Θ : aenv) (P : pskl) : Prop :=
+  lc_pskl P /\ (forall α, α `in` ftvar_in_pskl P -> a_binds_tvar α Θ).
 
 Reserved Notation "{{ Θ ⨟ Δ ⊢ₚₛ P }}a"
   (at level 0, Δ at level 74, P at level 74,
@@ -1607,8 +1599,8 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
        re-attaching Ξ needs the freshness stated. *)
     uniq (Ξ ++ Θ0) ->
     (* the paper's [Θ₀,Ξ ⊢ P₁] is its DISCIPLINED skeleton wf (there is no
-       weak judgment in the paper; [a_scope_pskl]'s scoping-only reading is the
-       mech/impl liberalism, WF-SIDE-CONDITIONS.md) — the instantiation must
+       weak judgment in the paper; a scoping-only reading is the reference
+       implementation's liberalism, WF-SIDE-CONDITIONS.md) — the instantiation must
        not smuggle a binder into a ∀◇-body (∀α.∀◇.(α→α) is wf nowhere). *)
     {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P1 }}a ->
     a_sub NM M P0 (Ξ ++ Θ0) (open_pskl_wrt_pskl P P1) Q Θ1 ->
