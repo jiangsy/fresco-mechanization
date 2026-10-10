@@ -20,232 +20,164 @@ files were `Admitted` scaffolding subsumed by the current algo development.
 
 # Part 1: Paper → mechanization map
 
-## Definitions (all 🟢 compiled)
+The index for finding each paper Lemma / Theorem / judgement in Coq.  Audited
+against the tree on 2026-10-10: every Coq name below exists under that name in
+the file given (paths relative to `fresco/`).  History lives in Part 2; this
+part records only where things are now.
 
-| Paper | Mechanization | Status |
-|---|---|---|
-| Syntax (types/terms/skeletons, decl §3) | `fresco/language.ott` → `def_ott.v` (`ptyp/btyp/utyp/pskl/bskl/uskl`, `exp`) | 🟢 synced |
-| Colour/shape predicates (syn/inh/decorated/guarded/values) | `fresco/def_shapes.v` | 🟢 synced (`is_dskl` fixed) |
-| `tags{Ψ}{φ}` / `tags{Ψ}{ψ}` | `decl/def_rules.v` `d_tags` / `d_tags_skl` | 🟢 synced (ψ-grammar exact) |
-| Typing (fig:decl-typing) | `d_typing` | 🟢 |
-| Syntax-directed typing (§3.3) | `d_sd_typing` | 🟢 |
-| Subtyping + consistency (fig:decl-subtyping-consistency) | `d_sub`, `d_consis` | 🟢 |
-| Skeleton wf / refinement (§3.5) | `d_wf_pskl/uskl`, `d_refine_syn` | 🟢 |
-| Skeleton inference (fig:decl-skeleton-inference) | `d_pat` | 🟢 restructured to embedded-subtyping base rules |
-| Skeleton subtyping/consistency (fig:decl-skeleton-subtyping-consistency) | `d_pat_sub`, `d_pat_consis` | 🟢 |
-| THE JOIN — consistency + its refinement presupposition, as ONE relation (declarative.tex:2074) | `d_consis_join` (`decl/def_rules.v`), `ad_consis_join` (`algo_decl/def_consis_refine.v`), notation `∼ᵣ` | 🟢 all eleven consistency-leaf rows take it |
-| Algorithmic contexts/suffixes (§5.1) | `algo/def_rules.v` `aenv/abind/a_suffix` | 🟢 rewritten |
-| `skmod[TY]/[SK]` on input skeletons | `a_ty_mode_compat`, `a_sk_mode_compat` | 🟢 |
-| guess^TY / guess^N (LaTeX `\guessMono`/`\guess`) | `a_guess_mono`, `a_guess` | 🟢 |
-| Constraint collection (fig:poly-info-extraction) | `a_looksub`, `a_lookeq` | 🟢 no-refresh, □-Vacuous |
-| Constraint solving (fig:constraint-solving) | `a_solve_sub`, `a_solve_eq`, `a_solve_cstr` | 🟢 GhostLF/GhostL with ∀◇ outputs |
-| look | `a_extract` | 🟢 |
-| unifyvar / assignvar | `a_unify`, `a_assign` | 🟢 |
-| Algorithmic consistency (fig:alg-consistency) | `a_consis` | 🟢 NEW Δ₁∣Δ₂ tracking |
-| Algorithmic subtyping (fig:alg-subtyping) | `a_sub` + `a_sub_flex` | 🟢 |
-| Skeleton splitting | `a_split` | 🟢 |
-| Algorithmic skeleton inference (fig:alg-skeleton-inference) | `a_pat` | 🟢 |
-| Algorithmic type inference (fig:alg-type-inference) | `a_typing` | 🟢 ∀ᾱ.A₀ AbsCheck (step/base), typed Freeze |
-| Erasure ⌊·⌋, decorated subtyping/consistency, tag solving (app:decorated-algosub) | `algo/def_decorated.v` (`uskl_to_pskl`, `a_subtag`, `a_consistag`, `a_solvetag(_sub/_eq)`) | 🟢 |
-| Metasubstitutions κ : Θ ⇒ Θ' (app:metasubstitutions) | `algo/def_meta.v` (`a_inc`, `a_inc_equiv`, `a_tyequiv`, `⊴`, and the application family `msubst_{ptyp,btyp,pskl,uskl_syn}`) | 🟢 |
-| Decl judgments in algo contexts (app:decl-in-algo-context) | `algo_decl/def_consis_refine.v` (`ad_pat_consis`, `ad_refine_syn`, `ad_refine_pskl` + flex-lookup rules); `algo_decl/def_subtyping.v` (`ad_pat_sub`, `ad_pat_sub_fuel`, `ad_partial_precise`); `algo_decl/def_typing.v` (`ad_pat`, `ad_sd_typing`) | 🟢 COMPLETE 2026-08-06.  The typing layer that section D needs landed: `ad_pat` (skeleton inference) and `ad_sd_typing` (SYNTAX-DIRECTED typing — the appendix ports that one, not `d_typing`).  Per the appendix, NO new rule was needed (every type-level lookup happens inside the embedded subtyping/consistency/refinement premises, which already carry their flexible rows); what was added are the appendix's THREE explicit type-equivalence premises, on `sd-Freeze`, `sd-AbsAnnoCheck` and `sd-AbsAnno`.  `abind_to_pskl` (the `dbind_to_pskl` mirror) added to `algo/def_rules.v` |
+- ⭐ = one of the 34 headline claims `Check`ed together with `Print Assumptions`
+  in [`README.v`](README.v).  The build fails unless each reports *Closed
+  under the global context*.
+- **Qed** = proved with no axioms and no admits (the tree has neither).
+- **Statement differs** = what is proved is a repaired, augmented or
+  generalised form.  The reason is in [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md),
+  and wf hypotheses the paper states only in prose are listed in
+  [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md).
+- Paper locations: `declarative.tex` / `algorithmic.tex` are in
+  `paper/sections/`, and the proof appendices are in `paper/sections/appendices/`.
 
-## Theorems / lemmas (bottom-up order; ⬜ = to prove, per paper appendix)
+## 1. Judgements and definitions
 
-**B. consistency-proofs.tex** (§Consistency) — ALL PROVED (status audited 2026-07-28; every `algo/` file is admit-free)
-- ✅ Soundness of decorated consistency (`a_consistag_sound_aux`, `algo/prop_consis_sound.v`)
-- ✅ Decorating algorithmic consistency (`a_consis_decorate`, `algo/prop_decorate.v`); ✅ Consistency decoration (`algo/prop_decorate_sub.v`, consistency-proofs:88)
-- ✅ Soundness of Consistency, all three parts: part 1 `a_consis_sound` / `a_consis_sound_aux` (`algo/prop_consis_sound.v`, the aconsis main induction), parts 2–3 `a_unify_sound` / `a_assign_sound` (mutual bundle `a_assign_unify_consis_sound`)
-- ✅ Consistency constraint decoration for variables (`algo/prop_decorate_sub.v`, consistency-proofs:606)
-- ✅ Completeness of consistency constraint collection & solving: `a_lookeq_solve_complete` (P6-Cs, `algo/prop_look_complete_cstr.v`) and `a_solve_eq_complete_var` (P6-Cv, `algo/prop_look_complete_var.v`) — both axiom-free; P6-Cs carries one paper-external wf side condition whose necessity is machine-checked (`algo/cex/cex_p6cs_subject_wf.v`, docs/WF-SIDE-CONDITIONS.md)
-- ✅ Completeness and optimality of Consistency, all three parts (`a_consis_complete` / `complete_mu` / `assign_complete_step`, `algo/prop_consis_complete.v`)
+The relation names are stable.  ⚠️ Constructor names (rule labels) can change
+under definition syncs, so this table does not list them.
 
-**C. subtyping-proofs.tex** (§Subtyping)
-- ✅ Decorating algorithmic subtyping (`a_sub_decorate` / `a_sub_decorate_bundle`, `algo/prop_decorate_sub.v` + `algo/prop_soundness_sub.v`); Soundness of decorated subtyping (`a_subtag_sound_bundle`, `algo/prop_sub_sound.v`)
-- ✅ Look decoration (`algo/prop_pat_sub.v` §7); Decorating constraint solving (`algo/prop_soundness_sub.v`); Constraint solving concatenation (`algo/prop_decorate_sub.v` §3, lemma:solvetag-concat)
-- ✅ Subtyping decoration (variables → general) (`algo/prop_decorate_sub.v`, subtyping-proofs:175/541); Vacuous subtyping decoration (same file, :483)
-- ✅ Stability of constraint collection (`a_looksub_lookeq_subst_stable`); Look freshness (`a_extract_output_fresh`) — both `algo/prop_looksub.v`
-- ✅ Decorating instantiation (`a_extract_decorate`, `algo/prop_soundness_sub.v`); Soundness of decorated algorithmic subtyping of flexible variables (the flex half of `a_subtag_sound_bundle`)
-- ✅ **Theorem: Soundness of subtyping** (`a_sub_sound`, `algo/prop_soundness_sub.v`, axiom-free)
-- ✅ Complete partial precision (`ad_partial_precise_complete`, `algo/sub/prop_completeness_sub_precise.v` P5b, lemma:partial-precision-complete; the `_gen` form was merged back 2026-10-09); Stability of subtyping under more precise substitution (`ad_pat_sub_precise_upre_fuel`, same file — P5)
-- ✅ Completeness of constraint collection & solving **for variables** (subtyping-proofs:1696, P6-Sv) — `a_solve_sub_complete_var` in `fresco/algo/prop_look_complete_sub_var.v`, **Qed and axiom-free** (`Print Assumptions`: closed under the global context).  The paper's statement is **FALSE as given**, machine-checked counterexample `fresco/algo/cex/cex_p6sv_forall_flex.v` (`p6sv_with_p6cv_premises_is_false`): its own ForallL case builds, from a ρ = IDENTITY instance, the raw-flexible-payload configuration that `cex_p6_flex_freshened.v` rules unreachable on the constraint-collection route.  What is proved is the REPAIRED statement, which adds the positional premise `flex_shield Θ0 Ψ' Δρ P0 ψa` (plus `flex_apart_walk`, and a `binds`-monotone context generalization so Sub-ForallL can run the IH at `Θ,β`).  `flex_shield_excludes_cex` is kept as the regression test tying the premise to the counterexample.  See docs/PAPER-GAPS.md and DESIGN-completeness-subtyping.md §6 (x)–(a3)
-- 🟢 Completeness of constraint collection & solving (subtyping-proofs:2202, P6-Ss) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_looksub_solve_complete_gen` (ρ-generalized) + the paper's premise-free ρ = identity corollary `a_looksub_solve_complete` in `fresco/algo/prop_look_complete_sub_cstr.v`; **11 of 12 rows closed**, ALL TWELVE ROWS closed.  ⚠️ Phase B's planned prerequisite — a sub-side `ad_pat_consis_target_ftv` — is FALSE at `ad_pat_sub_g__forall_l_tagged` even under `is_dskl` (`cex/cex_p6ss_sub_target_ftv.v`); what Sub-ForallR carries instead is a MODE-GUARDED DISJUNCTION (DESIGN §8 (h)), whose right disjunct (`alpha_stack`) is the shape that never descends the target.  Like P6-Sv it is a REPAIRED statement (`sub_shield`).  ⚠️ P6-Cs's `Δρ ∩ dom Θ0 = ∅` premise was VACUOUS — `cex/cex_p6cs_rsubst_delta_vacuous.v` — and is now the ftv-level one.
-- ✅ **Look completeness** (subtyping-proofs:2730, P6-L) — **CLOSED 2026-07-30**, `Qed` + axiom-free — `a_extract_complete_gen` in `fresco/algo/prop_look_complete_extract.v`.  **P6 IS COMPLETE**: all five of its lemmas (P6-Cv, P6-Cs, P6-Sv, P6-Ss, P6-L) are closed.  The statement is the paper's, with the paper's own PROSE well-formedness of ψa restored on the statement (`Θ ⨟ Δ ⊢ₚₛᵃ ⌊ψa⌋ˢ`, which `ad_partial_precise_complete` needs, plus the precision ghost rule's `Δ ∩ ftv ψa = ∅`); the paper's `inc[θ≡θa]{Θ0}{Θ}` appears as the reflexive `a_inc_equiv Θ0 κ κ Θ` beside an a_inc conclusion exhibiting θa as the EXTENSION `κa ++ κ` — the mech's `a_inc_equiv` is positional, so that is where the content lives (same reading as P6-Ss).  One ENCODING FIX was required first: `a_extract` now carries a context and solves at `Ξ ++ Θ0`, not `Ξ` alone — the paper's solve/guess judgments are context-FREE, and handing the solve `Ξ` alone hid Θ0's flexibles from the one context-sensitive rule of the cluster (`a_solve_eq__flex_r`), which made P6-L unprovable.  See DESIGN-completeness-subtyping.md §7.4 / §7.5
-- 🟢 Completeness of flexible-variable subtyping (subtyping-proofs:2836, P7a) — **ALL FIVE ROWS CLOSED 2026-08-03**, `Qed` + axiom-free, in `fresco/algo/prop_sub_complete_thm.v`: §(F) `a_sub_flex_complete_depend`, §(G) `_skip`, §(I) `_assign`, §(K) `_solve`, §(M) `a_sub_flex_complete_skip_rigid`.  §(I)/§(K) are the CROSS-HALF rows (both re-enter the MAIN judgment, so their IH is the **P7b** motive).  §(M) needed the ⇓-apparatus of §(L0)/§(L1)/§(L) — `a_inc__tvar` shrinks the TARGET, so the IH runs at the truncation `Θ'` and every solution-side premise is ⇓-normalized before being strengthened there; its one obligation beyond the consistency walk's `Assign-SkipRigid` is `ad_precise_downarrow` (`⇓ˢP ⊑ P`), which brings the motive's PRECISION conjunct back from `⇓ᵇQ` to `Q`.  The motive's flexibility premise was STRENGTHENED to `a_flex_tvar Θ0 α` (the walk's own invariant, as in `assign_complete_at`); no downstream statement changed.  The remaining P7 work is the DISPATCHER (§12) plus its STUCK-CHECK.  What follows is the pre-closure record.  TASK 0 (supplying P6-L's `sub_shield` premise at P7b's Sub-ForallL) lives in `fresco/algo/prop_sub_shield_supply.v`, all Qed + axiom-free: a mono-ish counterpart (§4, covers a raw FLEXIBLE `P0`), the non-composite shapes (§5), any **flex-free** `P0` (§6, uniformly in ψa and Δρ), and — the generalization that does the real work — any **inh-free counterpart** / any `P0` **with no ∀** (§7/§8: `ad_pat_consis_inh_free_tag_free`, `ad_pat_sub_g_inh_free_tag_free`, `ad_refine_syn_inh_free`, `sub_shield_supply_all_free_p0`).  ⚠️ Residual SETTLED 2026-08-03 and it is NEGATIVE: a `P0` carrying a ∀ below its head is not merely uncovered, it makes `sub_shield` FALSE at a REACHABLE configuration (`cex/cex_p7_shield_realizable.v`, Qed + axiom-free — the full completeness input, the ForallL join node, the fill, and `~ sub_shield` all machine-checked, plus `join_at_Rw_is_forall_l`: no other join rule applies there).  `sub_shield` is a MECH-INVENTED repair premise, so no paper statement is refuted and P6-Sv/P6-Ss stay `Qed`; what is refuted is its NON-POSITIONAL indexing, and the repair is a positional re-indexing replayed through P6-Ss and P7b's two ForallL rows.  Until then P7c's two ForallL cases are BLOCKED (the other ten are not).  DESIGN-completeness-subtyping.md §14.1 / §9.0.2
-- 🟡 Theorem: Completeness and optimality of subtyping (subtyping-proofs:3050, P7b/P7c) — **IN PROGRESS**.  Motive locked AND REPAIRED 2026-07-30 (`sub_complete_concl` / `sub_flex_complete_concl` / `a_sub_complete_bundle`, `fresco/algo/prop_sub_complete_thm.v`): the join is the LEAF-VALID mirror `ad_pat_sub_gv` (def_decl_algo_sub_hyg.v) carrying the subject refinement at the consistency leaves, with NO root-level third premise — the first-cut root premise was REFUTED as a lockstep condition (machine-checked `cex/cex_p7_univ_ghost_r_vacuous.v` + `cex/cex_p7_third_premise_forall.v`: it lost Sub-UnivGhostR entirely and the head-disagreeing ForallL/ForallR solutions `∀a.a ⩽ unit`, `unit ⩽ ∀a.unit`).  FIVE of P7b's rows closed, Qed + axiom-free — Sub-Ghost, Sub-GhostG, **Sub-Infer**, **Sub-Check** and **Sub-UnivGhostR** (a REAL proof: algorithmic UnivGhostR + the `□`-P0 precision core at the stripped counterpart + a `∀◇`-wrap).  The enabling lemma is `a_inc_equiv_precise_msubst` (precision is stable under equivalent metasubstitutions), with the shared core `a_sub_complete_ghost_p0_precision`.  ⚠️ Remaining obligation: transport P5's precision-substitution + the freshening kits to `_gv` for ForallL/ForallR.  See docs/PAPER-GAPS.md and DESIGN §9.1.3 / §1.  ⚠️ The property the paper marks with its own TODO at `:3243` ("input `P_0` concrete ⟹ RHS is `P_0`") is **FALSE** — machine-checked `fresco/algo/cex/cex_p7_concrete_rhs.v` (`p7_concrete_rhs_is_false`).  Sub-Check / Sub-ForallR are unaffected: both already argue via the EQUIVALENCE, and BOTH halves of it are proved in `fresco/algo/prop_sub_concrete_rhs.v` — `a_consis_concrete_output_equiv` and `a_sub_concrete_output_equiv`, each `Θ1 ⊢ P0 ≡ˢ P'`, both falling out of the SOUNDNESS theorems' refinement conjunct plus `ad_refine_syn_ghost_free_equiv`.  See docs/PAPER-GAPS.md and DESIGN §9.1
+| Paper | Coq | File | Notes |
+|---|---|---|---|
+| Syntax: types, terms, skeletons, tagged/decorated forms, contexts (declarative.tex §Syntax) | `ptyp` `btyp` `utyp` `pskl` `bskl` `uskl` `exp` | `language.ott` → `def_ott.v` | generated (do not edit) |
+| Colours, shapes, guardedness, values, mode compatibility | `is_styp` `is_ityp` `is_dskl` `guarded_*` `is_value` `mod_comp_ty` `mod_comp_sk` `mono_ptyp` | `def_shapes.v` | |
+| Paint/erase conversions (`syn{A}`, `inh{A}`, `⌊·⌋`) | `ptyp_to_btyp_syn` … (see the file) | `coercions.v`; facts in `prop_coercions.v` | |
+| `tags{Ψ}{φ}` / `tags{Ψ}{ψ}` | `d_tags`, `d_tags_skl` | `decl/def_rules.v` | |
+| Declarative typing (`fig:decl-typing`) | `d_typing` | `decl/def_rules.v` | |
+| Syntax-directed typing (declarative.tex §Syntax-Directed; `fig:syntax-directed-typing`) | `d_sd_typing` | `decl/def_rules.v` | |
+| Subtyping + consistency (`fig:decl-subtyping-consistency`, `fig:decl-subtyping-all`) | `d_sub`, `d_consis` | `decl/def_rules.v` | |
+| Type / skeleton well-formedness; refinement (declarative.tex §Skeletons and Ghosts) | `d_wf_ptyp` `d_wf_btyp` `d_wf_utyp` `d_wf_pskl` `d_wf_uskl`; `d_refine_syn`, `d_refine_pskl` | `decl/def_rules.v` | refinement's wf presupposition is a hypothesis (WF-SIDE-CONDITIONS §1) |
+| Skeleton inference (`fig:decl-skeleton-inference`) | `d_pat` | `decl/def_rules.v` | |
+| Skeleton subtyping / consistency (`fig:decl-skeleton-subtyping-consistency`) | `d_pat_sub`, `d_pat_consis` | `decl/def_rules.v` | |
+| Skeleton consistency together with its refinement presupposition (declarative.tex:2074, prose) | `d_consis_join` / `ad_consis_join` | `decl/def_rules.v` / `algo_decl/def_consis_refine.v` | the presupposition is load-bearing (`docs/ghost-capture.tex`) |
+| Shallow monotype subtyping `Γ ⊢ A ≤ B` (declarative.tex:1186, `\iffalse`'d) | `d_shallow_sub` | `decl/def_rules.v` | see ⭐ `d_shallow_sub_complete` in §6 |
+| Algorithmic contexts, suffixes, wf (algorithmic.tex §Algorithmic Syntax) | `abind` `a_suffix` `a_wf_ptyp` `a_scope_pskl` `a_wf_pskl` `a_wf_aenv` | `algo/def_rules.v` | |
+| `skmod[TY]` / `skmod[SK]` (§From Colours to Input Skeletons) | `a_ty_mode_compat`, `a_sk_mode_compat` | `algo/def_rules.v` | |
+| Information increase, equivalence, metasubstitution (`fig:information-increase-and-equivalence`, `app:metasubstitutions`) | `a_inc`, `a_inc_equiv`, `a_tyequiv`, `a_pskl_tyequiv`, `msubst_pskl` … | `algo/def_meta.v` | metasubstitutions are written `κ`, not the paper's `θ` (CLAUDE.md) |
+| `guess^TY` / `guess^N` | `a_guess_mono`, `a_guess` | `algo/def_rules.v` | |
+| Constraint collection (`fig:poly-info-extraction`) | `a_looksub` / `a_lookeq` | `algo/def_rules.v` | |
+| Constraint solving (`fig:constraint-solving`) | `a_solve_sub` / `a_solve_eq`, `a_solve_cstr` | `algo/def_rules.v` | the authors' repaired `SolE-FlexR` (PAPER-GAPS, "SolE-FlexR repaired") |
+| look (`fig:selected-look`) | `a_extract` | `algo/def_rules.v` | |
+| assignvar / unifyvar / consistency (`fig:alg-consistency`) | `a_assign` / `a_unify` / `a_consis` (mutual) | `algo/def_rules.v` | |
+| Algorithmic subtyping (`fig:alg-subtyping`) | `a_sub` / `a_sub_flex` (mutual) | `algo/def_rules.v` | |
+| Splitting | `a_split` | `algo/def_rules.v` | |
+| Algorithmic skeleton inference (`fig:alg-skeleton-inference`) | `a_pat` | `algo/def_rules.v` | |
+| Algorithmic type inference (`fig:alg-type-inference`) | `a_typing` | `algo/def_rules.v` | four rule-level side conditions the paper leaves to prose (PAPER-GAPS, "RULE-LEVEL SIDE CONDITIONS") |
+| Declarative judgements in algorithmic contexts (`app:decl-in-algo-context`, `fig:declarative-in-algo-context`) | `ad_pat_consis`, `ad_refine_syn`, `ad_refine_pskl`; `ad_pat_sub` (+ fuel mirror `ad_pat_sub_fuel`), `ad_partial_precise`; `ad_pat`, `ad_sd_typing` | `algo_decl/def_consis_refine.v`, `def_subtyping.v`, `def_typing.v` | conservativity over a flexible-free Θ: `algo_decl/prop_conserv.v` |
+| Precision `P ⊑ Q` | `ad_precise` | `algo/prop_precise.v` | |
+| Decorated subtyping / consistency / tag solving (`app:decorated-algosub`, `fig:decorated-alg-*`, `fig:decorated-tag-solving`) | `a_subtag` / `a_subtag_flex`, `a_consistag`, `a_solvetag` / `a_solvetag_sub` / `a_solvetag_eq`, `a_tags_sort` | `deco_algo/def_decorated.v` | |
+| Context precision `⪯ᶜᵗˣ` (proofs.tex, Definition) | `ad_ctx_precise` | `algo/prop_precise_sub.v` | |
+| Problems and solutions of type inference / skeleton inference / subtyping / consistency (four Definitions) | (no standalone definition) | — | spelled out in the hypotheses of the corresponding theorems |
+| *(no paper counterpart)* the state-threaded encoding with a fresh-name supply | `e_typing` and the other `e_*` relations | `ext_algo/` | bridged to `algo/` judgement by judgement (`docs/HANDOFF-extractable-algo-encoding.md`) |
 
-**D. proofs.tex** (§Proofs for Algorithms) — STARTED 2026-08-06.  🟢 the
-DEFINITIONAL layer is in (`algo_decl/def_typing.v`: `ad_pat`,
-`ad_sd_typing`); the lemma/theorem block is teed up with per-item design in
-[`docs/HANDOFF-section-d.md`](docs/HANDOFF-section-d.md).
-⚠️ Three of these are marked "straightforward induction" in the paper and are
-NOT straightforward in the mechanization — reasons recorded per lemma there.
-- 🟢 **Suffix moving — CLOSED 2026-08-06**, Qed + axiom-free
-  (`algo_decl/ + deco_algo/prop_ctx_mono.v`): `ad_sd_typing_suffix_moving`,
-  `ad_pat_suffix_moving`.  ⭐ ONE lemma, not
-  five: every `ad_*` judgement reads its context only through `binds` and
-  `a_binds_tvar` (itself a disjunction of `binds`), and NOTHING in the layer is
-  anti-monotone — the negative side conditions (`a_non_flex`, `a_flex_tvar`)
-  live in the ALGORITHMIC judgments.  So one relation `aenv_binds_le` gives
-  weakening, exchange and block permutation for `a_wf_ptyp` / `a_wf_pskl` /
-  `a_tyequiv` / `ad_pat_consis` / `ad_refine_syn` / `ad_refine_pskl` /
-  `ad_pat_sub` / `ad_pat` / `ad_sd_typing` at once.  ⚙ **The mech statement
-  needs NO side condition**: the paper's "Ξ does not depend on entries in Θ₂"
-  is what keeps the RESULT context well-formed (`Θ ⊢ ctx` orders definitions
-  before uses), not what makes the judgement move — a block permutation
-  preserves `binds` in BOTH directions.  A dropped premise only strengthens the
-  lemma.  ⚠️ TRAP for the rest of section D: `econstructor` on a cofinite rule
-  SHELVES the avoid-set evar `?L`, so the premise never reaches the following
-  tactic and resurfaces at `Qed` as "incomplete proof" — supply `L` by hand
-  (that is also what keeps the file under a second)
-- ✅ Suffix erasure — CLOSED 2026-08-06 (all six judgements,
-  `algo/prop_suffix_erase.v`).  NOT a `binds`-monotone statement (it must show the
-  derivation never LOOKED into Ξ).  ⚠️ **CONFIRMED 2026-08-06 to be needed**
-  (the four CHECK rows of `a_typing` DROP the pending suffix from their
-  output, unlike `a_pat`'s, which keep it), and **CONFIRMED not to be the
-  paper's "straightforward induction on the typing derivation"**: the
-  obstruction is `ad_pat_sub`'s `ForallL`, which instantiates with a
-  freely-chosen decorated skeleton `ψ` that may mention Ξ, so the recursive
-  premise is not Ξ-fresh even when the conclusion is.  Reachable with a
-  DEFINED `α̂ ∈ Ξ`.  ⭐ Working route: erase by SOLVING —
-  `Ξ ++ Θ ⊢ J ⟹ Θ ⊢ κJ` for a κ solving Ξ into Θ, identity on Ξ-free types
-  (five per-judgement transports).  ⚙ `ad_pat_sub`'s own driver
-  (`ad_pat_sub_strip_suffix`, prop_pat_sub.v) ALREADY EXISTED — the tree
-  solved this at the subtyping layer during the subtyping-soundness
-  campaign, with the same ForallL insight recorded in
-  `ad_pat_sub_subst_flex`'s header.  🟡 NEW `algo/prop_suffix_erase.v`
-  (Qed, axiom-free) adds the layers above it: the substitution kit
-  (`subst_abind`/`subst_aenv` + the coercion commutations),
-  `a_wf_ptyp`/`a_wf_pskl`, `a_tyequiv`, `ad_refine_syn`, `ad_pat_consis`,
-  and the driver `ad_refine_syn_strip_suffix`.
-  ⛔ LEFT: `ad_pat` and `ad_sd_typing`, which additionally need
-  `ad_pat_sub_subst_mid` in the SUBSTITUTED-CONTEXT style (prop_pat_sub.v's
-  version concludes at the un-substituted tail, which does not compose with
-  the binder rows that push TERM entries).  The fallback (weaker, read the
-  conclusion up to a flexible suffix) is no longer needed.
-  docs/PAPER-GAPS.md + HANDOFF §1
-- ✅ Splitting refines — CLOSED 2026-08-06, COLOURED (`a_split_refines`,
-  prop_soundness_typing.v §11), via `ad_pat_consis_mono_to_refine`.
-  Historical route notes: 2 of 3 rows trivial (`ad_refine_pskl_refl`, which
-  forces an EXTERNAL wf premise); the `a_split__flex` row is a real proof: its
-  premise is a full `a_consis` run.  ⭐ Route scouted: `a_assign_sound` →
-  invert `ad_pat_consis__flex_r` (the only applicable rule) → `binds α
-  (abind_flex_mono_def τ) Θ1`, leaving a mono-level `≡ˢ ⟹ ⊳` obligation.
-  ⚙ 2026-08-06: that last obligation is `consis_mono_join`'s output fed to
-  the CONVERSE of `refine_mono_join` (prop_mono_bridge.v).  ⛔ Do not prove
-  the converse by induction on `≡ᵗ` — `sym`/`trans` would need refinement
-  symmetry and TRANSITIVITY, and transitivity is false
-  (`cex/cex_refine_not_transitive.v`) [⚠️ RETRACTED 2026-10-08: that
-  counterexample relied on the mech's old Ghost rule demanding a wf fill;
-  transitivity is proved under the wf presupposition, `ad_refine_syn_trans`,
-  and not refuted without it]; go through `prop_normal.v`'s
-  `a_tyequiv_downarrow` normal form, as `a_tyequiv_arrow_inv` does
-- ✅ Precision extends skeleton subtyping — `ad_precise_extends_pat_sub`
-  (`algo/sub/prop_completeness_sub_precise.v`), Qed, audited in `README.v`.
-  Since 2026-10-08 it also assumes the precision target `P` is well-formed
-  (`{{ Θ ⨟ Δ ⊢ₚₛ P }}a`) — the paper's presupposition, since precision is
-  refinement (algorithmic.tex:535); registered in
-  `docs/WF-SIDE-CONDITIONS.md` §1a.  (The pre-closure note read: "⚠️ SCOUT
-  FIRST: `P' ⊑ P` admits `P' = □`, where the only applicable row is
-  `ad_pat_sub__ghost` …, so the statement may need a side condition".)
-- ✅ Precision preserves refinement — `ad_precise_preserves_refine`
-  (`algo/prop_precise.v:585`), Qed, audited in `README.v`
-- ⬜ Context precision (+ preserves skeleton inference) — new `⪯ctx` inductive
-  + one lemma over `ad_pat`; needs a "same non-variable entries ⟹ preserved"
-  context-change lemma for `ad_pat_sub` / `ad_refine_syn` that does not exist
-  yet.  GATED on "Precision extends skeleton subtyping" (the `ad_pat__var` row)
-- ✅ **Theorem: Soundness of skeleton inference — CLOSED 2026-08-06**,
-  `a_pat_sound` (`algo/prop_soundness_pat.v` §5), Qed and *Closed under the
-  global context*; all ten `a_pat` rows proved; `Check`ed and audited in
-  `README.v`.  Its last piece, AbsAnno's refinement-target transport, is
-  `a_consis_chk_annot_refine` (§4) — the paper's inline "preservation of
-  refinement under type equivalence", which exists nowhere as a lemma
-  (docs/PAPER-GAPS.md).  ⚠️ The statement carries ONE hypothesis beyond the
-  paper's list: `a_wf_exp Θ0 e` (the problem definition's "M wf in Θ0").
-  WF-SIDE-CONDITIONS pattern
-- ✅ **Theorem: Soundness of type inference — CLOSED 2026-08-06**,
-  `a_typing_sound` (`algo/prop_soundness_typing.v` §13), Qed and *Closed under
-  the global context*; all eleven `a_typing` rows proved; `Check`ed and audited
-  in `README.v`.  Carries theorem 1's extra hypothesis, plus ONE extra
-  conclusion conjunct (`a_wf_ptyp Θ1 A`, the output type scoped in the output
-  context, which `AT-App` consumes).  ⚠️ FOUR rule-level side conditions the
-  paper leaves to prose are now stated on `fig:alg-type-inference`
-  (docs/PAPER-GAPS.md): the two Barendregt conditions the four suffix-DISCARDING
-  check rows need for `lemma:suffix-erasure`, the `uniq` filter `AT-Abs` needs
-  on `guess^TY`'s block, and the correction of `AT-AbsAnnoCheck`'s result
-  domain.  ⭐ Reader-facing form: `a_typing_sound_infer` / `a_typing_sound_check`
-  (algo/typing/prop_closed.v) — the empty context, one per user-facing mode,
-  and since 2026-08-10 stated against the paper's own §declarative system
-  (`· ⊢ˢ[M] e ⦂ B` and `· ⊢[M] e ⦂ B`) through the conservativity bridge
-  `algo_decl/prop_conserv.v`, with the run's output context closed off by a
-  metasubstitution the proof BUILDS.
-  History of the build-up:
-- 🟡 (history) **Theorem: Soundness of type inference — STARTED 2026-08-06**
-  (`algo/prop_soundness_typing.v`, NEW; all Qed and axiom-free).  ⭐ The
-  `Freeze` ingredient is DONE and was DERIVED from theorem 1's transport, not
-  rebuilt: `a_consis_chk_tyequiv` (the paper's "which further gives
-  `Θ2 ⊢ B ≡ A`") = the transport + ⭐ `ad_refine_syn_inh_tyequiv`, which says
-  **a refinement between two GHOST-FREE paintings IS a type equivalence**
-  (refinement's job is filling ghosts; between paintings of plain types only
-  the structural rows and the two flexible lookups can fire — exactly `≡ᵗ`'s
-  generating set).  Also banked: `a_typing_tm_ge`, `ad_sd_typing_isub_tm`,
-  `btyp_syn_painting_inv`, `ad_sd_typing_subst_tm`/`_rename_tm`, and ⭐
-  `btyp_inh_painting_inv` (in CHECK mode the colouring is FORCED, which
-  removes the need for a TYPE-variable renaming at this layer).
-  **2026-08-06 sixth pass — two more prerequisites CLOSED**, both Qed and
-  axiom-free: §8 `ad_sd_typing_mod_comp_ty` (⭐ not the SK proof one sort up
-  — `mod_comp_ty` is stated on a `btyp` while the premise's target is that
-  `btyp`'s SKELETON, so it needs `is_styp_of_btyp_to_bskl` and
-  `is_ityp_of_erase_inh`, the second of which genuinely needs local closure,
-  supplied by `ad_pat_consis_lc_r` + `lc_btyp_of_lc_bskl_erase`; the `≡ᵗ`
-  rows take theirs from `a_tyequiv_lc`, which carries `a_wf_aenv` exactly as
-  `d_typing_skmod` carries `d_wf_denv`) and §9 `a_guess_mono_refine` (the
-  paper's inline "by definition of `guess^TY`, `Θ1,ᾱ ⊢ inh{P} ⊳ inh{A}`" —
-  a SIZE induction, with the ∀ witness going into **Δ**).
-  LEFT: suffix ERASURE (see above), COLOURED split-refine, `AT-App`'s
-  typing-under-`≡ᵗ` transport at TC, then the eleven-row induction; see
-  docs/HANDOFF-section-d.md §7.5
-- ✅ **Theorem: Completeness + optimality of skeleton inference — CLOSED
-  2026-08-07**, `a_pat_complete` (`algo/prop_completeness_pat.v`), Qed and
-  *Closed under the global context*; `Check`ed and audited in `README.v`.
-  Nine step lemmas glued by strong induction on `size_exp` (the mech FUSED
-  the paper's `P-Sub` into the base rows, so every recursive premise is at a
-  strict subterm).  Carries theorem 1's hypotheses, plus the payload-wf
-  DISCIPLINE of the TARGET context's skeleton term entries.
-- ✅ **Theorem: Completeness + optimality of type inference — CLOSED
-  2026-08-08**, `a_typing_complete` (`algo/prop_completeness_typing.v`), Qed
-  and *Closed under the global context*; `Check`ed and audited in `README.v`.
-  Twelve step lemmas glued by strong induction on the LEXICOGRAPHIC
-  `(size_exp e, size_btyp B)`: ten rows recurse at a strictly smaller
-  SUBJECT, and only the two ∀-peeling AbsCheck rows recurse at the same
-  subject, dropping one `∀` off the declarative result.
-  ⭐ Reader-facing form: `a_typing_complete_infer` / `a_typing_complete_check`
-  (algo/typing/prop_closed.v) — the empty context, one per user-facing mode,
-  with no metasubstitution quantified and the optimality already
-  instantiated; each has the declarative derivation as its ONLY premise.
-  ⭐ Its two unrecorded prerequisites, both closed here: `a_split_complete_tc`
-  — completeness of SPLITTING at check mode, i.e. the paper's AbsCheck
-  **subcase 2**, where the split's flexible row has to be BUILT out of a full
-  consistency run — and the §6.3#2 SCOPING invariant
-  (`algo/prop_ty_scope.v`), which discharges the suffix-discarding rows'
-  premise (2).  ⚠️ Three findings on the paper's own AbsCheck proof are
-  registered in [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) (the shape
-  enumeration is incomplete; the subcase-2 metasubstitution extension maps
-  a flexible to a NON-monotype; the split run and the scoping step are
-  asserted).
-- ⚙ §4b's composition gap (completeness consumed a leaf-valid join while
-  soundness concluded only the plain one) is CLOSED, and since 2026-08-12 it
-  is closed at the SOURCE: the paper's leaf presupposition sits ON
-  `ad_pat_sub` itself (`3f08641`), so both sides speak of one relation.  The
-  three-relation era — `ad_pat_sub_g` / `_gv` / `_v` and the forgetful map
-  `ad_pat_sub_fuel_forget` — is retired; what is left is `ad_pat_sub` and its
-  fuel-indexed mirror `ad_pat_sub_fuel`, bridged at the end of
-  `algo_decl/prop_ctx_mono.v`.
+## 2. Declarative metatheory (`full-decl-proofs.tex`)
 
-**A. full-decl-proofs.tex** (declarative metatheory — REBASED onto the synced defs)
-- ✅ Soundness/Completeness of syntax-directed rules (`d_sd_typing_sound` / `d_sd_typing_complete`, `prop_syntax_directed.v`, 0 admits)
-- ✅ General subsumption; Consistency-Subtyping Transitivity; Subtyping Transitivity; Function Subtyping; Generalised General Subsumption (`prop_general_subsumption.v` D1/D12 + spine, 0 admits; `Print Assumptions` audited in `README.v`)
-- Restored chain: `prop_weakening` (d_pat base cases repaired for embedded subtyping), `prop_renaming` + `prop_general_subsumption` (compiled unchanged), `prop_skeleton` (lean extraction: the 18-block dependency closure the equivalence needs; the pre-restart skeleton-safety machinery — incl. the now-false `pskl_to_dskl_is_dskl`, a casualty of the `is_dskl` sync fix A1 — stays in `prop_skeleton.v.legacy` for the later paper-faithful redo), `prop_syntax_directed` (base cases of `d_pat_subst_unit` repaired; obsolete `is_base_term` helper dropped)
+| Paper | Coq | File | Status |
+|---|---|---|---|
+| `lemma:typing-syn-soundness`: Soundness of syntax-directed rule | ⭐ `d_sd_typing_sound` | `decl/prop_syntax_directed.v` | Qed |
+| `lemma:typing-syn-completeness`: Completeness of syntax-directed rule | ⭐ `d_sd_typing_complete` | `decl/prop_syntax_directed.v` | Qed |
+| `lemma:general-subsumption`: General subsumption | ⭐ `d_sd_typing_general_subsumption`; ⭐ `d_typing_general_subsumption` (corollary) | `decl/prop_general_subsumption.v`; `decl/prop_syntax_directed.v` | Qed.  Proved on the syntax-directed system, where `Sub` is not a rule. |
+| `lemma:consist-subtyping-transitivity`: Consistency-subtyping transitivity | ⭐ `d_consis_sub_trans` (via `d_consis_sub_trans_mid`) | `decl/prop_general_subsumption.v` | Qed.  Two implicit equations are made explicit; nothing is weakened (README.v §I, PAPER-GAPS). |
+| `lemma:subtyping-transitivity`: Subtyping transitivity | `d_sub_trans_spine` | `decl/prop_general_subsumption.v` | Qed |
+| `lemma:function-subtyping`: Function subtyping | no standalone lemma | — | covered: the paper's case analysis on `M` is done by inversion inside `d_sd_typing_general_subsumption_spine` |
+| Generalised general subsumption (unlabelled) | `d_sd_typing_general_subsumption_spine` | `decl/prop_general_subsumption.v` | Qed |
+
+## 3. Consistency (`consistency-proofs.tex`; theorems in `full-algo-spec.tex`)
+
+| Paper | Coq | File | Status |
+|---|---|---|---|
+| `lemma:sound-decorated-consistency`: Soundness of decorated consistency | `a_consistag_sound_aux` | `algo/consis/prop_soundness_consis.v` | Qed |
+| `lemma:decorating-algorithmic-consistency`: Decorating algorithmic consistency | `a_consis_decorate` | `algo/consis/prop_consis_rename.v` | Qed |
+| `lemma:consistency-decoration`: Consistency decoration | `a_consistag_decoration` | `deco_algo/prop_decorate_sub.v` | Qed |
+| `lemma:consistency-decoration-var`: Consistency constraint decoration for variables | `a_consistag_decoration_var` | `deco_algo/prop_decorate_sub.v` | Qed |
+| `lemma:complete-consistency-constraint-collection-solving-var` (P6-Cv) | ⭐ `a_solve_eq_complete_var` | `algo/sub/look/prop_eq_var.v` | Qed |
+| `lemma:complete-consistency-constraint-collection-solving` (P6-Cs) | ⭐ `a_lookeq_solve_complete` | `algo/sub/look/prop_eq_cstr.v` | Qed.  It carries one external subject-wf hypothesis, shown necessary by `cex/cex_p6cs_subject_wf.v` (WF-SIDE-CONDITIONS). |
+| [thm:sound-consistency]: Soundness of consistency (3 parts) | ⭐ `a_consis_sound`; `a_unify_sound`, `a_assign_sound`; mutual bundle `a_assign_unify_consis_sound` | `algo/consis/prop_soundness_consis.v` | Qed |
+| [thm:complete-consistency]: Completeness and optimality of consistency (3 parts) | ⭐ `a_consis_complete`; bundle `complete_mu` (with `assign_complete_step`) | `algo/consis/prop_completeness_consis.v` | Qed, **statement differs**.  The paper's 2-condition statement is false as given, so the augmented one is proved (PAPER-GAPS, "FALSE — thm:complete-consistency optimality"). |
+
+## 4. Subtyping (`subtyping-proofs.tex`; theorems in `algorithmic.tex`)
+
+| Paper | Coq | File | Status |
+|---|---|---|---|
+| `lemma:decorating-algorithmic-subtyping`: Decorating algorithmic subtyping | `a_sub_decorate_bundle` | `deco_algo/prop_soundness_sub.v` | Qed |
+| `lemma:sound-decorated-subtyping`: Soundness of decorated subtyping | `a_subtag_sound_bundle` (left conjunct) | `algo/sub/prop_soundness_subtag.v` | Qed |
+| `lemma:look-decoration`: Look decoration | `pskl_decorate_exists` | `algo/prop_pat_sub.v` §7 | Qed |
+| `lemma:decorate-constraint-solving`: Decorating constraint solving | `a_extract_decorate` (via `solve_cstr_decorate`) | `deco_algo/prop_soundness_sub.v` | Qed.  It adds the TY "against a type" ghost-freeness hypothesis, which the paper states in prose. |
+| `lemma:solvetag-concat`: Constraint solving concatenation | `a_solvetag_split`, `a_solvetag_join` | `deco_algo/prop_decorate_sub.v` | Qed |
+| `lemma:subtyping-decoration-var`: Subtyping decoration for variables | `a_subtag_decoration_var` | `deco_algo/prop_decorate_sub.v` | Qed |
+| `lemma:vacuous-subtyping-decoration`: Vacuous subtyping decoration | `a_subtag_vacuous_erasure` | `deco_algo/prop_decorate_sub.v` | Qed |
+| `lemma:constraint-collection-stable-substitution`: Stability of constraint collection (an iff) | **not mechanized as stated**; the weaker existential-output form `a_looksub_lookeq_subst_gen_size` / `a_looksub_subst_gen` is what the proofs use | `deco_algo/prop_decorate_sub.v` | Without a Barendregt premise the statement is false (`cex/cex_look_subst_stable_leak.v`; PAPER-GAPS, "PROSE-COMPLETION — constraint-collection-stable-substitution").  The premised forward and reverse forms were Qed with no consumer, and `efc8707` deleted them as unused even though the `prop_looksub.v` §4 banner said to keep them.  Restore from `efc8707^`. |
+| `lemma:look-output-fresh`: Look freshness | covered by `a_solve_cstr_ftv` (disjunctive) and `a_solve_cstr_ftv_eq` (exact, eq-only constraints) | `algo/sub/prop_looksub.v` §3 | Qed, **statement differs**.  The exists-fresh `SS-ForallR` leaks its binder, so the exact bound holds only for eq-only lists.  The old exact wrapper (`a_extract_output_fresh`) was deleted as unused in `746dd57`. |
+| `lemma:subtyping-decoration`: Subtyping decoration | `a_subtag_decoration` | `deco_algo/prop_soundness_sub.v` §14 | Qed |
+| `lemma:look-decoration-replacement`: Decorating instantiation | no standalone lemma | — | covered: proved inline in the ForallL case of `a_sub_decorate_bundle`, by composing `a_extract_decorate` and `a_subtag_decoration` |
+| `lemma:sound-decorated-flex-subtyping`: Soundness of decorated subtyping of flexible variables | `a_subtag_sound_bundle` (right conjunct; motive `subtag_flex_sound_concl`) | `algo/sub/prop_soundness_subtag.v` | Qed |
+| [thm:sound-subtyping]: Soundness of subtyping | ⭐ `a_sub_sound` | `deco_algo/prop_soundness_sub.v` | Qed |
+| `lemma:partial-precision-complete`: Complete partial precision | `ad_partial_precise_complete` | `algo/sub/prop_completeness_sub_precise.v` | Qed |
+| `lemma:precision-substitution` (P5): Stability of subtyping under more precise substitution | ⭐ `ad_pat_sub_precise_upre_fuel` | `algo/sub/prop_completeness_sub_precise.v` | Qed, **statement differs**.  It is stated over the fuel mirror with a generalised motive, and `fresh Ψ'` is read as global freshness (PAPER-GAPS). |
+| `lemma:complete-constraint-collection-solving-var` (P6-Sv) | ⭐ `a_solve_sub_complete_var` | `algo/sub/look/prop_sub_var.v` | Qed.  The paper's statement once the authors' `SolE-FlexR` repair is in place, with no repair premise. |
+| `lemma:complete-constraint-collection-solving` (P6-Ss) | ⭐ `a_looksub_solve_complete` (from `a_looksub_solve_complete_gen`) | `algo/sub/look/prop_sub_cstr.v` | Qed.  Sub-ForallR uses a mode-guarded ftv disjunction because the sub-side target-ftv lemma is false (`cex/cex_p6ss_sub_target_ftv.v`). |
+| `lemma:complete-look` (P6-L): Look completeness | ⭐ `a_extract_complete` (from `a_extract_complete_gen`) | `algo/sub/look/prop_extract.v` | Qed.  It was false before the `SolE-FlexR` repair (`docs/refutations.tex`). |
+| `lemma:complete-flex-subtyping` (P7a): Completeness of flexible-variable subtyping | motive `sub_flex_complete_concl`; rows `a_sub_flex_complete_depend`, `a_sub_flex_complete_skip`, `a_sub_flex_complete_assign`, `a_sub_flex_complete_solve`, `a_sub_flex_complete_skip_rigid`; assembled in `sub_flex_complete_holds` | `algo/sub/prop_completeness_sub_gen.v`; `algo/sub/prop_completeness_sub.v` | Qed (mutual with P7b) |
+| [thm:complete-subtyping]: Completeness and optimality of subtyping | ⭐ `a_sub_complete`; generalised bundle `a_sub_complete_bundle_holds` (P7b) | `algo/sub/prop_completeness_sub.v` | Qed, no residual hypothesis.  Its extra premises are external wf conditions: wf of the counterpart, and the subject's TY ghost-freeness (WF-SIDE-CONDITIONS).  The TODO property at `subtyping-proofs.tex:3243` is false (`cex/cex_p7_concrete_rhs.v`). |
+
+## 5. Skeleton and type inference (`proofs.tex`; theorems in `algorithmic.tex`)
+
+| Paper | Coq | File | Status |
+|---|---|---|---|
+| `lemma:suffix-moving`: Suffix moving | `ad_pat_suffix_moving`, `ad_sd_typing_suffix_moving` | `algo_decl/prop_ctx_mono.v` | Qed.  It needs no side condition, so it is stronger than the paper's statement. |
+| `lemma:suffix-erasure`: Suffix erasure | `ad_sd_typing_strip_suffix` (from the `*_subst_mid` family, e.g. `ad_pat_subst_mid`, `ad_sd_typing_subst_mid`) | `algo/prop_suffix_erase.v` | Qed.  The proof differs: "straightforward induction" fails at ForallL, so the mech erases by solving (PAPER-GAPS, "GAP — lemma:suffix-erasure"). |
+| `lemma:split-refine`: Splitting refines | `a_split_refines_gen` | `algo/typing/prop_soundness_typing.v` §11 | Qed.  Stated coloured and codomain-generalised, which is the form `a_typing`'s check rows consume. |
+| `lemma:precision-sub`: Precision extends skeleton subtyping | ⭐ `ad_precise_extends_pat_sub` | `algo/sub/prop_completeness_sub_precise.v` | Qed.  It adds wf of the precision target (WF-SIDE-CONDITIONS §1a). |
+| `lemma:precision-preserves-refinement`: Precision preserves refinement | `ad_precise_preserves_refine` | `algo/prop_precise.v` | Qed.  The external wf hypothesis is required, since the lemma is false without it (PAPER-GAPS). |
+| `lemma:context-precision-skeleton`: Context precision preserves skeleton inference | ⭐ `ad_ctx_precise_pat` | `algo/prop_precise_sub.v` | Qed |
+| [thm:sound-skeleton-inference]: Soundness of skeleton inference | ⭐ `a_pat_sound` | `algo/pat/prop_soundness_pat.v` | Qed.  One extra hypothesis, `a_wf_exp` (the problem's "M wf in Θ0"). |
+| [thm:sound-type-inference]: Soundness of type inference | ⭐ `a_typing_sound`; closed-program forms ⭐ `a_typing_sound_infer`, ⭐ `a_typing_sound_check` (stated over the paper's declarative `d_sd_typing` / `d_typing`) | `algo/typing/prop_soundness_typing.v`; `algo/typing/prop_closed.v` | Qed.  One extra conclusion conjunct (the output type is scoped in the output context). |
+| [thm:complete-skeleton-inference]: Completeness and optimality of skeleton inference | ⭐ `a_pat_complete` | `algo/pat/prop_completeness_pat.v` | Qed |
+| [thm:complete-type-inference]: Completeness and optimality of type inference | ⭐ `a_typing_complete`; closed-program forms ⭐ `a_typing_complete_infer`, ⭐ `a_typing_complete_check`, and over the declarative system ⭐ `a_typing_complete_sd_infer`, ⭐ `a_typing_complete_sd_check`, ⭐ `a_typing_complete_decl_infer`, ⭐ `a_typing_complete_decl_check` | `algo/typing/prop_completeness_typing.v`; `algo/typing/prop_closed.v` | Qed.  The declarative forms carry the prose presupposition at `declarative.tex:2074` (`d_consis_join`; `docs/ghost-capture.tex`). |
+
+The paper asserts these facts inline and never states them; the mech proves
+them (PAPER-GAPS has the details):
+
+- `a_consis_chk_annot_refine` (`algo/pat/prop_soundness_pat.v`) is "preservation
+  of refinement under type equivalence", used at AbsAnno in
+  thm:sound-skeleton-inference.
+- `a_split_complete_tc` (`algo/typing/prop_completeness_typing.v`) is
+  completeness of splitting at check mode, the AbsCheck subcase 2 of
+  thm:complete-type-inference.  That theorem's scoping premise for the
+  suffix-discarding rows comes from `algo/typing/prop_scope.v`.
+
+## 6. Prose claims and decidability (no numbered paper statement)
+
+| Paper passage | Coq | File | Status |
+|---|---|---|---|
+| Order irrelevance, "not sensitive to argument order" (`overview.tex:859`) | ⭐ `d_typing_order_irrel` | `decl/prop_stability.v` | Qed |
+| Check-mode `⩽` subsumes shallow monotype subtyping (`declarative.tex:1173`, `\iffalse`'d) | ⭐ `d_shallow_sub_complete` | `decl/prop_shallow.v` | Qed |
+| Only polytypes need annotation (`introduction.tex:171`, `\iffalse`'d) | ⭐ `mono_lambda_anno_redundant` | `decl/prop_shallow.v` | Qed |
+| Decidability of type inference (the argument from "never guess polytypes", `declarative.tex:856`) | ⭐ `e_typing_dec_init`; ⭐ `fresco_infer` (certified, extracted entry point) | `ext_algo/prop_run_corollaries.v` | Qed (`docs/HANDOFF-extractable-algo-encoding.md`) |
+
+## 7. Not mechanized
+
+- [lemma:no-guess-poly], "No guessing of polytypes" (`declarative.tex:1236`).
+  The paper puts it inside `\iffalse` and calls it "a bit sketchy", and it has
+  no precise statement.
+- "Soundness of subtyping" `⊢[TC] syn{A} ⩽ inh{B} ⟹ Γ ⊢ A ≤ B`
+  (`declarative.tex:1229`, `\iffalse`'d).  Only the converse is mechanized
+  (`d_shallow_sub_complete`, §6).
+- "Preservation of skeleton well-formedness" and "Safety of skeleton
+  inference" (`declarative.tex:2121`, `:2133`, both `\iffalse`'d).  The
+  pre-restart proofs (`decl/prop_safety.v.legacy`, last present at `a81ef2d`)
+  were not ported.
+- `lemma:constraint-collection-stable-substitution` in the paper's own
+  fixed-output form.  See §4: it was proved, then deleted as unreferenced in
+  `efc8707`.
+- No standalone lemma, but the content is covered inline:
+  `lemma:function-subtyping` (§2) and `lemma:look-decoration-replacement` (§4).
+- Commented-out labels in `proofs.tex` (`lemma:stability`, `lemma:consis-sub`)
+  have nothing to map.
 
 # Part 2: Progress log (most recent first)
 
