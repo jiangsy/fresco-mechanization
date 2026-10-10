@@ -1,0 +1,13 @@
+*.vo
+*.vos
+*.vok
+*.glob
+*.aux
+.*.aux
+.lia.cache
+CoqMakefile
+CoqMakefile.conf
+fresco/ext_algo/extraction/extracted/
+.DS_Store
+.CoqMakefile.d
+.FILE_LIST
