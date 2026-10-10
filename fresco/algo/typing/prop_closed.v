@@ -15,13 +15,9 @@
     app:decl-in-algo-context's "it is easy to extend them to algorithmic
     contexts Θ", which the paper asserts and never states.
 
-    ⭕ COMPLETENESS still reads [ad_sd_typing] over [nil : aenv]: it needs the
-    OTHER direction of the bridge, which is blocked twice over — the base
-    rows' LEAF-VALID join is not recoverable from the plain [d_sub] at a
-    ghosty subject (cex/cex_ad_pat_join_not_leaf_valid.v), and the mirrors'
-    ForallL rows demand a tag hygiene the declarative rules state only
-    against the tag context.  Both are analysed at prop_conserv.v §12; the
-    routes are in docs/HANDOFF-closed-corollaries-declarative.md. *)
+    COMPLETENESS is stated both ways: over [ad_sd_typing] at [nil : aenv],
+    and — through the other direction of the bridge, [d_sd_typing_to_ad] —
+    over the paper's own [d_sd_typing] / [d_typing] (the last section). *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
@@ -59,8 +55,6 @@ Require Import src.fresco.algo.prop_wf_preservation.
 Require Import src.fresco.algo.prop_normal.
 Require Import src.fresco.algo.sub.prop_solve_sub.
 Require Import Coq.micromega.Lia.
-
-Set Implicit Arguments.
 Require Import src.fresco.algo.sub.prop_soundness_subtag.
 Require Import src.fresco.algo.pat.prop_soundness_pat.
 Require Import src.fresco.algo.prop_suffix_erase.
@@ -78,7 +72,7 @@ Require Import src.fresco.decl.prop_syntax_directed.
 Set Implicit Arguments.
 
 (* ===================================================================== *)
-(*  §14  THE CLOSED-PROGRAM COROLLARIES.                                  *)
+(*  THE CLOSED-PROGRAM COROLLARIES.                                       *)
 (*                                                                        *)
 (*  At the EMPTY context the input can only be in one of the two          *)
 (*  user-facing modes — INFERENCE, whose input is the ghost [□], and      *)

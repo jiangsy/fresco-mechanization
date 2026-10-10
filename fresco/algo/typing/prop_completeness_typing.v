@@ -34,7 +34,7 @@
     precision between two type paintings IS a type equivalence, via
     [ad_refine_syn_inh_tyequiv]).
 
-    THE NINE ROWS, all closed: Unit/Var (direct), Anno (consumes
+    THE ELEVEN ROWS, all closed: Unit/Var (direct), Anno (consumes
     prop_rigidity's [a_typing_tc_rigid_output]), Freeze, Abs / AbsAnno, the four
     check rows [abs{,_anno}_check_{step,base}] — whose [_base] halves needed
     the MISSING prerequisite [a_split_complete_tc], completeness of splitting
@@ -66,6 +66,7 @@ Require Import src.fresco.algo.prop_compose.
 Require Import src.fresco.algo.sub.prop_sub_msubst_equiv.
 Require Import src.fresco.algo.prop_swap.
 Require Import src.fresco.algo.sub.prop_completeness_sub_gen.
+Require Import src.fresco.algo.sub.look.prop_extract.   (* a_inc_lookup_ftv *)
 Require Import src.fresco.algo.sub.prop_completeness_sub.
 Require Import src.fresco.algo.prop_stability.
 Require Import src.fresco.algo.prop_basic.
@@ -78,8 +79,6 @@ Require Import src.fresco.algo.prop_wf_preservation.
 Require Import src.fresco.algo.prop_normal.
 Require Import src.fresco.algo.sub.prop_solve_sub.
 Require Import Coq.micromega.Lia.
-
-Set Implicit Arguments.
 Require Import src.fresco.algo.sub.prop_soundness_subtag.
 Require Import src.fresco.algo.pat.prop_soundness_pat.
 Require Import src.fresco.algo.prop_suffix_erase.
@@ -89,6 +88,8 @@ Require Import src.fresco.algo.pat.prop_completeness_pat.
 Require Import src.fresco.algo.typing.prop_rigidity.
 Require Import src.fresco.algo.typing.prop_shape.
 Require Import src.fresco.algo.typing.prop_scope.
+
+Set Implicit Arguments.
 
 (* ===================================================================== *)
 (*  THEOREM 4 — the statement, factored like [pat_complete_concl]         *)
@@ -501,28 +502,6 @@ Proof.
     end.
 Qed.
 
-(** Strip a TERM entry off a type's wf (term entries are invisible to
-    [a_binds_tvar]). *)
-Lemma a_wf_ptyp_strip_tm_cons : forall x A0 Θ A,
-  a_wf_ptyp ((x ~ abind_var_typ A0) ++ Θ) A ->
-  a_wf_ptyp Θ A.
-Proof.
-  intros x A0 Θ A HwfA.
-  apply a_wf_ptyp_of_lc_tvarish;
-    [ eapply a_wf_ptyp_lc; exact HwfA | ].
-  intros α Hα.
-  pose proof (a_wf_ptyp_ftv_tvarish HwfA Hα) as Ht.
-  destruct Ht as [Hr | [Hm | [τ Hd]]].
-  - left. destruct (binds_cons_1 _ _ _ _ _ _ Hr) as [[_ Heq] | Hr'];
-      [ discriminate Heq | exact Hr' ].
-  - right; left.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hm) as [[_ Heq] | Hm'];
-      [ discriminate Heq | exact Hm' ].
-  - right; right. exists τ.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hd) as [[_ Heq] | Hd'];
-      [ discriminate Heq | exact Hd' ].
-Qed.
-
 (** ⭐ K1's typing analogue, BOTTOM-UP: a syntax-directed typing's TARGET
     type is well formed (the base rows read it off their joins, the ≡ᵗ
     premises transport it, the binder rows strip their term entry). *)
@@ -556,7 +535,7 @@ Proof.
     destruct (atom_fresh (L `union` dom Θ)) as [x Hx].
     apply a_wf_ptyp__arrow.
     + rewrite btyp_to_ptyp_ptyp_to_btyp_inh. exact H.
-    + eapply a_wf_ptyp_strip_tm_cons with (x := x) (A0 := A).
+    + apply (@a_wf_ptyp_strip_tm_head x (abind_var_typ A)); [ intros [] | ].
       apply H2; [ clear - Hx; fsetdec | ].
       apply a_wf_aenv__var_typ;
         [ clear - Hx; fsetdec | exact H | exact Hwf ].
@@ -574,7 +553,7 @@ Proof.
     + rewrite btyp_to_ptyp_ptyp_to_btyp_inh.
       eapply (proj1 (a_tyequiv_wf_iff H0 (fun y b h => h) Hwf)).
       exact H.
-    + eapply a_wf_ptyp_strip_tm_cons with (x := x) (A0 := A).
+    + apply (@a_wf_ptyp_strip_tm_head x (abind_var_typ A)); [ intros [] | ].
       apply H3; [ clear - Hx; fsetdec | ].
       apply a_wf_aenv__var_typ;
         [ clear - Hx; fsetdec | exact H | exact Hwf ].
@@ -583,7 +562,7 @@ Proof.
     destruct (atom_fresh (L `union` dom Θ)) as [x Hx].
     apply a_wf_ptyp__arrow.
     + rewrite btyp_to_ptyp_ptyp_to_btyp_inh. exact H0.
-    + eapply a_wf_ptyp_strip_tm_cons with (x := x) (A0 := A).
+    + apply (@a_wf_ptyp_strip_tm_head x (abind_var_typ A)); [ intros [] | ].
       apply H3; [ clear - Hx; fsetdec | ].
       apply a_wf_aenv__var_typ;
         [ clear - Hx; fsetdec | exact H0 | exact Hwf ].
@@ -594,7 +573,7 @@ Proof.
     + rewrite H2.
       eapply (proj1 (a_tyequiv_wf_iff H1 (fun y b h => h) Hwf)).
       exact H0.
-    + eapply a_wf_ptyp_strip_tm_cons with (x := x) (A0 := A).
+    + apply (@a_wf_ptyp_strip_tm_head x (abind_var_typ A)); [ intros [] | ].
       apply H5; [ clear - Hx; fsetdec | ].
       apply a_wf_aenv__var_typ;
         [ clear - Hx; fsetdec | exact H0 | exact Hwf ].
@@ -1124,18 +1103,8 @@ Lemma uniq_app_of : forall (Ξ1 Ξ2 : aenv),
   (forall α, α `in` dom Ξ1 -> α `notin` dom Ξ2) ->
   uniq (Ξ1 ++ Ξ2).
 Proof.
-  intros Ξ1; induction Ξ1 as [ | [α b] Ξ1' IH ]; intros Ξ2 Hu1 Hu2 Hdj;
-    [ exact Hu2 | ].
-  inversion Hu1; subst.
-  simpl_env. apply uniq_cons.
-  - apply IH; [ assumption | exact Hu2 | ].
-    intros β Hβ. apply Hdj. simpl. clear - Hβ; fsetdec.
-  - rewrite dom_app.
-    assert (Hα2 : α `notin` dom Ξ2)
-      by (apply Hdj; simpl; clear; fsetdec).
-    match goal with
-    | Hn : α `notin` dom Ξ1' |- _ => clear - Hn Hα2; fsetdec
-    end.
+  intros Ξ1 Ξ2 Hu1 Hu2 Hdj. apply uniq_app_4; [ exact Hu1 | exact Hu2 | ].
+  unfold disjoint. rewrite (inter_empty_pointwise _ _ Hdj). reflexivity.
 Qed.
 
 (** ⭐ [guess^TY] EXISTENCE, with an AVOID SET: completeness CHOOSES the
@@ -1165,8 +1134,7 @@ Proof.
     exists (Ξ1 ++ Ξ2), (ptyp_arrow A B).
     repeat split.
     + apply a_guess_mono__arrow; [ exact Hg1 | exact Hg2 ].
-    + clear - Hd1 Hd2. induction Hd1; simpl_env;
-        [ exact Hd2 | apply a_decls__cons; assumption ].
+    + apply a_decls_app; assumption.
     + apply uniq_app_of; [ exact Hu1 | exact Hu2 | ].
       intros α Hα Hα2.
       pose proof (Hav2 α Hα2) as Hn. clear - Hn Hα; fsetdec.
@@ -1280,29 +1248,6 @@ Proof.
            (msubst_ptyp κ (ptyp_var_f β)) Bt eq_refl eq_refl).
 Qed.
 
-(** An in-domain lookup through an increase is a Θ-wf image. *)
-Lemma a_inc_lookup_in_wf : forall Θ1 κg Θ β,
-  κg ∷ Θ1 ⊑ Θ ->
-  β `in` dom κg ->
-  a_wf_ptyp Θ (msubst_lookup κg β).
-Proof.
-  intros Θ1 κg Θ β Hinc; induction Hinc; intros Hd; simpl in *.
-  - exfalso; clear - Hd; fsetdec.
-  - destruct (β == α) as [-> | Hne]; [ assumption | ].
-    apply IHHinc. clear - Hd Hne; fsetdec.
-  - destruct (β == α) as [-> | Hne]; [ assumption | ].
-    apply IHHinc. clear - Hd Hne; fsetdec.
-  - eapply a_wf_ptyp_weaken;
-      [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
-      | apply IHHinc; exact Hd ].
-  - eapply a_wf_ptyp_weaken;
-      [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
-      | apply IHHinc; exact Hd ].
-  - eapply a_wf_ptyp_weaken;
-      [ intros y c Hc; apply binds_app_3; apply binds_cons_3; exact Hc
-      | apply IHHinc; exact Hd ].
-Qed.
-
 (** A fresh atom stays out of a κ-image (the entries are Θ-scoped). *)
 Lemma msubst_ptyp_ftv_notin_inc : forall A (κg : metasubst) Θ1 Θ α0,
   κg ∷ Θ1 ⊑ Θ ->
@@ -1310,27 +1255,11 @@ Lemma msubst_ptyp_ftv_notin_inc : forall A (κg : metasubst) Θ1 Θ α0,
   α0 `notin` dom Θ ->
   α0 `notin` ftvar_in_ptyp (msubst_ptyp κg A).
 Proof.
-  intros A; induction A; intros κg Θ1 Θ α0 Hinc HA Hd; simpl in *;
-    try solve [ fsetdec
-              | intros Hc; apply (IHA _ _ _ _ Hinc HA Hd); exact Hc ].
-  - (* var β *)
-    destruct (AtomSetProperties.In_dec α (dom κg)) as [Hin | Hni].
-    + pose proof (a_inc_lookup_in_wf Hinc Hin) as Hwfl.
-      intros Hc.
-      pose proof (a_wf_ptyp_ftv_tvarish Hwfl Hc) as Ht.
-      destruct Ht as [Hr | [Hm | [τ Hdf]]];
-        [ apply binds_In in Hr; clear - Hd Hr; fsetdec
-        | apply binds_In in Hm; clear - Hd Hm; fsetdec
-        | apply binds_In in Hdf; clear - Hd Hdf; fsetdec ].
-    + rewrite msubst_lookup_notin; [ | exact Hni ].
-      simpl. clear - HA; fsetdec.
-  - (* arrow *)
-    intros Hc.
-    assert (HA1 : α0 `notin` ftvar_in_ptyp A1) by (clear - HA; fsetdec).
-    assert (HA2 : α0 `notin` ftvar_in_ptyp A2) by (clear - HA; fsetdec).
-    destruct (union_1 Hc) as [H1 | H2];
-      [ exact (IHA1 _ _ _ _ Hinc HA1 Hd H1)
-      | exact (IHA2 _ _ _ _ Hinc HA2 Hd H2) ].
+  intros A κg Θ1 Θ α0 Hinc HA Hd Hc.
+  destruct (msubst_ptyp_ftv _ _ Hc) as [β [Hβ Hl]].
+  pose proof (a_inc_lookup_ftv β Hinc) as Hsc.
+  destruct (α0 == β) as [-> | Hne];
+    [ contradiction | apply Hsc in Hl; clear - Hl Hd Hne; fsetdec ].
 Qed.
 
 Lemma msubst_lookup_app_agree : forall (ζ X Y : metasubst) α,
@@ -1341,11 +1270,6 @@ Proof.
     [ exact Hxy | ].
   simpl. destruct (α == β); [ reflexivity | apply IH; exact Hxy ].
 Qed.
-
-(** The composite that is never a syn painting's ∀-free companion. *)
-Lemma ptyp_to_bskl_syn_via_pskl : forall τ,
-  ptyp_to_bskl_syn τ = pskl_to_bskl_syn (ptyp_to_pskl τ).
-Proof. induction τ; simpl; f_equal; auto. Qed.
 
 (** ⭐⭐ GUESS-COMPLETENESS — the paper's Abs step ⑯⑰, which its authors
     flag as "a bit sketchy", made explicit.  If the κ-image of [P] refines
@@ -1359,18 +1283,6 @@ Proof. induction τ; simpl; f_equal; auto. Qed.
     are monotypes, [guess_complete_var_image]); the ∀ row takes ONE fresh
     instance ([a_guess_mono_open_at]) and re-generates the ≡ᵗ family by
     the α0 ⇄ α transposition. *)
-Lemma a_wf_ptyp_strip_tvar_head : forall β Θ A,
-  a_wf_ptyp ((β ~ abind_tvar) ++ Θ) A ->
-  β `notin` ftvar_in_ptyp A ->
-  a_wf_ptyp Θ A.
-Proof.
-  intros β Θ A Hwf Hfr.
-  apply a_wf_ptyp_of_lc_tvarish; [ eapply a_wf_ptyp_lc; exact Hwf | ].
-  intros α Hα.
-  destruct (a_binds_tvar_cons_tvar_inv (a_wf_ptyp_ftv_tvarish Hwf Hα))
-    as [-> | Hb]; [ exfalso; clear - Hα Hfr; fsetdec | exact Hb ].
-Qed.
-
 Lemma a_guess_mono_complete_gen : forall Θ Δ Qs Qt,
   ad_refine_syn Θ Δ Qs Qt ->
   forall P0 (Bt : btyp) Θg Ξg A' κ Θ1,
@@ -1552,7 +1464,7 @@ Proof.
       { apply a_guess_mono_open_at;
           [ apply a_guess_mono__forall with (β := β);
               [ exact Hfrβ | exact Hg0 ]
-          | clear - Hα0; fsetdec ]. }
+          | clear - Hα0; solve_notin_auto ]. }
       destruct (H1 α0 ltac:(clear - Hα0; solve_notin_auto)
                   (open_pskl_wrt_pskl Pw (pskl_var_f α0))
                   (open_btyp_wrt_btyp B0 (btyp_var_f α0))
@@ -1561,7 +1473,7 @@ Proof.
                      (ptyp_var_f α0))
                   κ ((α0 ~ abind_tvar) ++ Θ1)
                   ltac:(apply a_wf_aenv__tvar;
-                        [ clear - Hα0; fsetdec | exact HwfΘ ])
+                        [ clear - Hα0; solve_notin_auto | exact HwfΘ ])
                   ltac:(rewrite btyp_to_ptyp_open_var;
                         apply HwfB0; clear - Hα0; solve_notin_auto)
                   ltac:(assert (Hfr0 : α0 `notin` dom κ)
@@ -1580,7 +1492,7 @@ Proof.
                                       Pw (pskl_var_f α0)) as Hup;
                         simpl in Hup, Hn |- *;
                         assert (Hne : α <> α0)
-                          by (intros ->; clear - Hα Hα0; fsetdec);
+                          by (intros ->; apply Hα0; clear - Hα; fsetdec);
                         clear - Hn Hup Hne; fsetdec))
         as [ζg [Hmap [Hentx Heqc0]]].
       (* the fills avoid the binder (it is in the Δ-slot): strip it *)
@@ -1590,8 +1502,9 @@ Proof.
       { intros α τ Hin.
         destruct (Hentx α τ Hin) as [Hm [Hw Hav']].
         split; [ exact Hm | split ].
-        - eapply a_wf_ptyp_strip_tvar_head; [ exact Hw | ].
-          intros Hc. apply (Hav' α0 Hc). clear; fsetdec.
+        - eapply a_wf_ptyp_strip_prefix with (Ξ := α0 ~ abind_tvar);
+            [ exact Hw | ].
+          intros γ Hγ Hc. apply (Hav' γ Hc). clear - Hγ; simpl in Hγ; fsetdec.
         - intros γ Hγ Hc. apply (Hav' γ Hγ). clear - Hc; fsetdec. }
       assert (Hent : forall α τ, In (α, τ) ζg -> mono_ptyp τ /\ a_wf_ptyp Θ τ)
         by (intros α τ Hin; destruct (Hent' α τ Hin) as [? [? _]]; split; assumption).
@@ -1607,7 +1520,7 @@ Proof.
             | eapply a_guess_mono_decls; exact Hg0 | exact Hent ]).
       pose proof (keys_eq_dom _ _ Hmap) as Hdζ.
       assert (Hfrg : α0 `notin` dom (ζg ++ κ))
-        by (rewrite dom_app; rewrite Hdζ; clear - Hα0; fsetdec).
+        by (rewrite dom_app; rewrite Hdζ; clear - Hα0; solve_notin_auto).
       rewrite (@msubst_ptyp_open (Ξg ++ Θ1) (ζg ++ κ) Θ
                  (close_ptyp_wrt_ptyp β A0) α0 Hincg Hfrg)
         in Heqc0.
@@ -1620,7 +1533,7 @@ Proof.
       intros α Hα.
       pose proof (a_tyequiv_swap α0 α _ _ _ Heqc0) as Hsw.
       assert (Hfe1 : α0 `notin` (dom Θ `union` ftvar_in_aenv Θ))
-        by (clear - Hα0; fsetdec).
+        by (clear - Hα0; solve_notin_auto).
       assert (Hfe2 : α `notin` (dom Θ `union` ftvar_in_aenv Θ))
         by (clear - Hα; fsetdec).
       rewrite (@swap_aenv_fresh_eq α0 α Θ Hfe1 Hfe2) in Hsw.
@@ -1633,10 +1546,10 @@ Proof.
              images *)
         unfold X.
         eapply msubst_ptyp_ftv_notin_inc;
-          [ exact Hincg | clear - Hα0; fsetdec | clear - Hα0; fsetdec ]. }
+          [ exact Hincg | clear - Hα0; solve_notin_auto | clear - Hα0; solve_notin_auto ]. }
       rewrite (swap_ptyp_fresh_id α0 α (btyp_to_ptyp B0)) in Hsw;
         [ | | clear - Hα; fsetdec ].
-      2:{ rewrite ftvar_btyp_to_ptyp. clear - Hα0; fsetdec. }
+      2:{ rewrite ftvar_btyp_to_ptyp. clear - Hα0; solve_notin_auto. }
       exact Hsw.
   - (* ghost *)
     destruct P0 as [ | nb | βv | Pa Pb | Pw | | Pt ]; simpl in HeqS;
@@ -1712,8 +1625,8 @@ Proof.
                 ltac:(rewrite btyp_to_ptyp_ptyp_to_btyp_syn;
                       eapply a_wf_aenv_binds_def_wf; eassumption)
                 HeqS
-                ltac:(rewrite btyp_to_bskl_ptyp_to_btyp_syn,
-                        <- ptyp_to_bskl_syn_via_pskl; reflexivity)
+                ltac:(rewrite btyp_to_bskl_ptyp_to_btyp_syn;
+                      unfold ptyp_to_bskl_syn; reflexivity)
                 (mono_ptyp_to_btyp_syn_is_ityp Hmτ)
                 Hg Hinc Huq Hav)
       as [ζg [Hmap [Hent Heqc]]].
@@ -1810,17 +1723,6 @@ Proof.
     split; [ reflexivity | ]. split; [ reflexivity | ].
     split; [ simpl; rewrite Hl1; reflexivity | ].
     split; [ simpl; rewrite Hl2; reflexivity | exact Heqv0 ].
-Qed.
-
-(** A declarations block's member is its flexible entry. *)
-Lemma a_decls_in_dom_binds : forall (Ξg : aenv) α,
-  a_decls Ξg -> α `in` dom Ξg -> binds α abind_flex_mono Ξg.
-Proof.
-  intros Ξg α Hd; induction Hd; intros Hin; simpl in Hin;
-    [ exfalso; clear - Hin; fsetdec | ].
-  destruct (α == α1) as [-> | Hne];
-    [ apply binds_app_2; unfold binds; simpl; auto
-    | apply binds_app_3; apply IHHd; clear - Hin Hne; fsetdec ].
 Qed.
 
 (* ===================================================================== *)
@@ -1957,7 +1859,7 @@ Proof.
       apply msubst_lookup_app_notin.
       rewrite Hdζ.
       intros Hc.
-      pose proof (Havb α Hc) as Hn. clear - Hn Hα; fsetdec. }
+      pose proof (Havb α Hc) as Hn. clear - Hn Hα; destruct_notin; fsetdec. }
     rewrite Hag. exact HrefC. }
   (* ---- 4. one fresh binder and the block-extended contexts ---- *)
   destruct (atom_fresh (L `union` dom Θ0 `union` ftvar_in_aenv Θ0
@@ -1971,19 +1873,13 @@ Proof.
   { apply a_wf_aenv_prepend_decls; [ exact Hdecls | exact Huqb | | exact Hwf0 ].
     intros α Hα. pose proof (Havb α Hα) as Hn. clear - Hn; fsetdec. }
   assert (HwfA' : a_wf_ptyp (Ξg ++ Θ0) A').
-  { apply a_wf_ptyp_of_lc_tvarish;
-      [ eapply a_guess_mono_lc; exact Hguess | ].
-    intros α Hα.
-    pose proof (a_guess_mono_ftv Hguess) as Hsub.
-    destruct (AtomSetProperties.In_dec α (dom Ξg)) as [Hin | Hni].
-    - right; left. apply binds_app_2.
-      apply a_decls_in_dom_binds; [ exact Hdecls | exact Hin ].
-    - assert (HαP : α `in` ftvar_in_pskl P) by (clear - Hα Hsub Hni; fsetdec).
-      pose proof (a_wf_pskl_ftv_binds HwfP HαP) as Ht.
-      destruct Ht as [Hr | [Hm | [τ Hdf]]];
+  { eapply a_guess_mono_wf; [ exact Hguess | | ].
+    - intros α Hα.
+      destruct (a_wf_pskl_ftv_binds HwfP Hα) as [Hr | [Hm | [τ Hdf]]];
         [ left; apply binds_app_3; exact Hr
         | right; left; apply binds_app_3; exact Hm
-        | right; right; exists τ; apply binds_app_3; exact Hdf ]. }
+        | right; right; exists τ; apply binds_app_3; exact Hdf ].
+    - intros α1 Hb. right; left. apply binds_app_2; exact Hb. }
   assert (Hwf0x : {{ ⊢ ((x ~ abind_var_typ A') ++ Ξg ++ Θ0) }}a)
     by (apply a_wf_aenv__var_typ;
         [ rewrite dom_app; clear - Hx; fsetdec | exact HwfA' | exact HwfΞg ]).
@@ -2069,7 +1965,7 @@ Proof.
         | intros α Hα Hc;
           pose proof (Havb α Hα) as Hn;
           assert (Hd0 : α `in` dom Θ0) by (clear - Hc; fsetdec);
-          clear - Hn Hd0; fsetdec ].
+          clear - Hn Hd0; destruct_notin; fsetdec ].
     - exact Hsuf.
     - rewrite !dom_app. clear - Hx HxΞ HxΘ2. solve_notin.
     - exact HrunB. }
@@ -3165,7 +3061,7 @@ Qed.
 (* ===================================================================== *)
 (*  STEP A.3 — COMPLETENESS OF SPLITTING AT CHECK MODE.                   *)
 (*                                                                        *)
-(*  [a_split_complete] (prop_completeness_pat.v:932) is stated for        *)
+(*  [a_split_complete] (prop_completeness_pat.v:747) is stated for        *)
 (*  [M <> mode_tc] and returns the IDENTITY split — at TC the input is a   *)
 (*  TYPE painting [⌈A0⌉], so [a_split__flex] IS reachable                  *)
 (*  ([a_split_ty_shape]'s "whole asymmetry") and the row has to be built.  *)
@@ -4016,11 +3912,11 @@ Qed.
 
 (* ===================================================================== *)
 (*  THEOREM 4 — thm:complete-type-inference.  The induction is pure glue   *)
-(*  over the twelve step lemmas, on the LEXICOGRAPHIC measure              *)
-(*  [(size_exp e, size_btyp B)]: ten rows recurse at a strictly smaller    *)
-(*  SUBJECT (any second component is then allowed), and only the two       *)
-(*  [_step] check rows recurse at the SAME subject — they peel one ∀ off   *)
-(*  the declarative result, so the second component drops.                 *)
+(*  over the eleven step lemmas, on the LEXICOGRAPHIC measure              *)
+(*  [(size_exp e, size_btyp B)]: the recursive rows recurse at a strictly  *)
+(*  smaller SUBJECT (any second component is then allowed), and only the   *)
+(*  two [_step] check rows recurse at the SAME subject — they peel one ∀  *)
+(*  off the declarative result, so the second component drops.            *)
 (* ===================================================================== *)
 
 Lemma a_typing_complete_gen : forall n m e M Θ0 P0 κ Θ B,
