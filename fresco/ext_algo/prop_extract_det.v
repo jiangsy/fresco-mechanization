@@ -443,8 +443,6 @@ Qed.
 (*  §3b's reason, verbatim).                                              *)
 (* ===================================================================== *)
 
-Local Ltac rel4 := split; [ | split; [ | split ] ].
-
 Definition lookeq_rel_stmt (n : nat) : Prop :=
   forall S0 Θ α P P' S1 Ξ C,
     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
@@ -469,7 +467,7 @@ Proof.
       apply mem_false_notin in Hmem.
       destruct (e_lookeq_absent_pins D1 Hmem) as [-> [-> HS]].
       destruct (e_lookeq_absent_pins D2 Hmem) as [-> [-> HS']].
-      exists nil. rel4; simpl; try reflexivity.
+      exists nil. repeat apply conj; simpl; try reflexivity.
       - intros ? ? [].
       - clear - HS HS'. fsetdec. }
   apply mem_true_in in Hmem. rename Hmem into HαP.
@@ -477,7 +475,7 @@ Proof.
 
   - (* LE-Var — the subject IS the marker *)
     destruct (e_lookeq_inv_var D2) as [-> [-> ->]].
-    exists nil. rel4; simpl; try reflexivity. intros ? ? [].
+    exists nil. repeat apply conj; simpl; try reflexivity. intros ? ? [].
 
   - (* LE-Absent — excluded by the occurrence split *)
     exfalso.
@@ -490,7 +488,7 @@ Proof.
     | Hne : _ <> pskl_var_f α |- _ => rename Hne into Hnev
     end.
     destruct (e_lookeq_inv_ghost D2 Hnev HαP) as [-> [-> ->]].
-    exists nil. rel4; simpl; try reflexivity. intros ? ? [].
+    exists nil. repeat apply conj; simpl; try reflexivity. intros ? ? [].
 
   - (* LE-FlexR — the GENERATING row: one fresh flexible on each side *)
     match goal with
@@ -504,7 +502,7 @@ Proof.
     end.
     destruct (e_lookeq_inv_flex_r D2 Hnev Hflx HαP)
       as (γ2 & Hγ2 & -> & -> & ->).
-    exists ((γ1, γ2) :: nil). rel4.
+    exists ((γ1, γ2) :: nil). repeat apply conj.
     + intros ? ? [Heqp | []]. inversion Heqp; subst. split; assumption.
     + cbn [swaps_atoms]. rewrite swap_atoms_add.
       rewrite (swap_atoms_notin γ1 γ2 S0 Hα1 Hγ2).
@@ -574,7 +572,7 @@ Proof.
       by (apply swaps_cstrs_fresh_id; intros a0 b0 Hin;
           destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0]; split;
           clear - Ha0 Hb0 Hcs1' Hcov Hgr1'; fsetdec).
-    exists (ps1 ++ ps2). rel4.
+    exists (ps1 ++ ps2). repeat apply conj.
     + intros a0 b0 Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
       * exact (Hav1 a0 b0 Hin).
       * destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
@@ -620,7 +618,7 @@ Proof.
                        clear - Hcov Hup1 Hup2; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HC']]]].
-    exists ((β1, β2) :: ps'). rel4.
+    exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
         [ inversion Heqp; subst; split; assumption | ].
       destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
@@ -663,7 +661,7 @@ Proof.
                        clear - Hcov Hup1; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HC']]]].
-    exists ((β1, β2) :: ps'). rel4.
+    exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
         [ inversion Heqp; subst; split; assumption | ].
       destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
@@ -719,7 +717,7 @@ Proof.
                        clear - Hcov Hup2; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HC']]]].
-    exists ((β1, β2) :: ps'). rel4.
+    exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
         [ inversion Heqp; subst; split; assumption | ].
       destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
@@ -943,7 +941,7 @@ Proof.
   2:{ apply mem_false_notin in Hmem.
       destruct (e_looksub_absent_pins D1 Hmem) as [-> [-> HS]].
       destruct (e_looksub_absent_pins D2 Hmem) as [-> [-> HS']].
-      exists nil. rel4; simpl; try reflexivity.
+      exists nil. repeat apply conj; simpl; try reflexivity.
       - intros ? ? [].
       - clear - HS HS'. fsetdec. }
   apply mem_true_in in Hmem. rename Hmem into HαP.
@@ -951,7 +949,7 @@ Proof.
 
   - (* LS-Var *)
     destruct (e_looksub_inv_var D2) as [-> [-> ->]].
-    exists nil. rel4; simpl; try reflexivity. intros ? ? [].
+    exists nil. repeat apply conj; simpl; try reflexivity. intros ? ? [].
 
   - (* LS-Absent — excluded *)
     exfalso.
@@ -964,7 +962,7 @@ Proof.
     | Hne : _ <> pskl_var_f α |- _ => rename Hne into Hnev
     end.
     destruct (e_looksub_inv_ghost D2 Hnev HαP) as [-> [-> ->]].
-    exists nil. rel4; simpl; try reflexivity. intros ? ? [].
+    exists nil. repeat apply conj; simpl; try reflexivity. intros ? ? [].
 
   - (* LS-Check — down to the EQ layer, which §3 has already settled *)
     match goal with
@@ -1016,7 +1014,7 @@ Proof.
                        clear - Hcov Hup; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HC']]]].
-    exists ((β1, β2) :: ps'). rel4.
+    exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
         [ inversion Heqp; subst; split; assumption | ].
       destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
@@ -1074,7 +1072,7 @@ Proof.
       by (apply swaps_cstrs_fresh_id; intros a0 b0 Hin;
           destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0]; split;
           clear - Ha0 Hb0 Hcs1' Hcov Hgr1'; fsetdec).
-    exists (ps1 ++ ps2). rel4.
+    exists (ps1 ++ ps2). repeat apply conj.
     + intros a0 b0 Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
       * exact (Hav1 a0 b0 Hin).
       * destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
@@ -1124,7 +1122,7 @@ Proof.
                        clear - Hcov Hup; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HC']]]].
-    exists ((β1, β2) :: ps'). rel4.
+    exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
         [ inversion Heqp; subst; split; assumption | ].
       destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
@@ -1323,7 +1321,7 @@ Proof.
 Qed.
 
 Local Ltac rel_nil :=
-  exists (@nil (atom * atom)); rel4;
+  exists (@nil (atom * atom)); repeat apply conj;
   solve [ intros ? ? [] | simpl; reflexivity ].
 
 Definition solve_eq_rel_stmt (n : nat) : Prop :=
@@ -1365,7 +1363,7 @@ Proof.
       end.
       destruct (e_guess_mono_rel G1 G2 ltac:(clear - Hcov; fsetdec))
         as [ps [Hav [HS [HX HA]]]].
-      exists ps. rel4; [ exact Hav | exact HS | exact HX | ].
+      exists ps. repeat apply conj; [ exact Hav | exact HS | exact HX | ].
       rewrite swaps_pskl_ptyp_to_pskl, HA. reflexivity.
 
   - (* SE-GhostL — a ◇ subject answers with the counterpart *)
@@ -1421,7 +1419,7 @@ Proof.
       by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
           destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0]; split;
           clear - Ha0 Hb0 Hout1'; fsetdec).
-    exists (ps1 ++ ps2). rel4.
+    exists (ps1 ++ ps2). repeat apply conj.
     + intros a0 b0 Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
       * exact (Hav1 a0 b0 Hin).
       * destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
@@ -1465,7 +1463,7 @@ Proof.
                        clear - Hcov Hu1 Hu2; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
-    exists ((β1, β2) :: ps'). rel4.
+    exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
         [ inversion Heqp; subst; split; assumption | ].
       destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
@@ -1493,7 +1491,7 @@ Proof.
     destruct (IH _ _ _ _ _ _ _ Dp ltac:(simpl; lia)
                  ltac:(clear - Hcov; simpl in *; fsetdec) _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
-    exists ps'. rel4; [ exact Hav' | exact HS' | exact HX' | ].
+    exists ps'. repeat apply conj; [ exact Hav' | exact HS' | exact HX' | ].
     rewrite swaps_pskl_univ_ghost, HY'. reflexivity.
 
   - (* SE-GhostForall — the COUNTERPART opens *)
@@ -1526,7 +1524,7 @@ Proof.
                        clear - Hcov Hu2; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
-    exists ((β1, β2) :: ps'). rel4.
+    exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
         [ inversion Heqp; subst; split; assumption | ].
       destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
@@ -1583,7 +1581,7 @@ Proof.
                        clear - Hcov Hu1; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
-    exists ((β1, β2) :: ps'). rel4.
+    exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
         [ inversion Heqp; subst; split; assumption | ].
       destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
@@ -1658,14 +1656,14 @@ Proof.
   intros * D1 D2 Hcov.
   inversion D1; subst; inversion D2; subst.
   - (* SK — the identity *)
-    exists (@nil (atom * atom)). rel4; simpl; try reflexivity.
+    exists (@nil (atom * atom)). repeat apply conj; simpl; try reflexivity.
     intros ? ? [].
   - (* TY — [guess^TY]'s own determinism, read through [ptyp_to_pskl] *)
     match goal with
     | G1 : e_guess_mono S0 Q S1 Ξ _, G2 : e_guess_mono S0 Q S1' Ξ' _ |- _ =>
         destruct (e_guess_mono_rel G1 G2 Hcov) as [ps [Hav [HS [HX HA]]]]
     end.
-    exists ps. rel4; [ exact Hav | exact HS | exact HX | ].
+    exists ps. repeat apply conj; [ exact Hav | exact HS | exact HX | ].
     rewrite swaps_pskl_ptyp_to_pskl, HA. reflexivity.
 Qed.
 
@@ -1896,7 +1894,7 @@ Proof.
                        clear - Hcov Hu1; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
-    exists ((β1, β2) :: ps'). rel4.
+    exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
         [ inversion Heqp; subst; split; assumption | ].
       destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
@@ -1923,7 +1921,7 @@ Proof.
     destruct (IH _ _ _ _ _ _ _ _ Dp ltac:(simpl; lia)
                  ltac:(clear - Hcov; simpl in *; fsetdec) _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
-    exists ps'. rel4; [ exact Hav' | exact HS' | exact HX' | ].
+    exists ps'. repeat apply conj; [ exact Hav' | exact HS' | exact HX' | ].
     rewrite swaps_pskl_univ_ghost, HY'. reflexivity.
 
   - (* SS-Vacuous — a ◇ counterpart answers with the subject *)
@@ -1983,7 +1981,7 @@ Proof.
                        clear - Hcov Hu1; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
-    exists ((β1, β2) :: ps'). rel4.
+    exists ((β1, β2) :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
         [ inversion Heqp; subst; split; assumption | ].
       destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
@@ -2039,7 +2037,7 @@ Proof.
       by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
           destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0]; split;
           clear - Ha0 Hb0 Hout1'; fsetdec).
-    exists (ps1 ++ ps2). rel4.
+    exists (ps1 ++ ps2). repeat apply conj.
     + intros a0 b0 Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
       * exact (Hav1 a0 b0 Hin).
       * destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
@@ -2093,7 +2091,7 @@ Proof.
       by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
           destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0]; split;
           clear - Ha0 Hb0 Hout1'; simpl in *; fsetdec).
-    exists (ps1 ++ ps2). rel4.
+    exists (ps1 ++ ps2). repeat apply conj.
     + intros a0 b0 Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
       * exact (Hav1 a0 b0 Hin).
       * destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
@@ -2221,7 +2219,7 @@ Proof.
         by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
             destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0]; split;
             clear - Ha0 Hb0 Hdom1' Hftv1'; fsetdec).
-      exists (ps1 ++ ps2). rel4.
+      exists (ps1 ++ ps2). repeat apply conj.
       * intros a0 b0 Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
         { exact (Hav1 a0 b0 Hin). }
         { destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
@@ -2326,7 +2324,7 @@ Proof.
     by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
         destruct (Hav3 a0 b0 Hin) as [Ha0 Hb0]; split;
         clear - Ha0 Hb0 HdomF HftF; fsetdec).
-  exists (ps1 ++ ps2 ++ ps3). rel4.
+  exists (ps1 ++ ps2 ++ ps3). repeat apply conj.
   - intros a0 b0 Hin. rewrite ? in_app_iff in Hin.
     destruct Hin as [Hin | [Hin | Hin]].
     + exact (Hav1 a0 b0 Hin).

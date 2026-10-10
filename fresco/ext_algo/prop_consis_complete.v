@@ -503,11 +503,6 @@ Qed.
 (*  moved one side onto the other's rails.                                 *)
 (* --------------------------------------------------------------------- *)
 
-(** ⚠️ [repeat split] INTRODUCES PRODUCTS (Coq's [constructor] does), so it
-    dives straight through the [forall a b] conjunct and leaves goals with
-    the pair already introduced.  Four goals, spelled out. *)
-Local Ltac rel4 := split; [ | split; [ | split ] ].
-
 Lemma e_guess_mono_rel_n : forall n S0 P S1 Ξ A,
   size_pskl P <= n ->
   e_guess_mono S0 P S1 Ξ A ->
@@ -525,12 +520,12 @@ Proof.
   - (* unit *)
     destruct (e_guess_mono_inv_unit Hd) as [-> [-> ->]].
     destruct (e_guess_mono_inv_unit Hd') as [-> [-> ->]].
-    exists nil. rel4; simpl; try reflexivity. intros ? ? [].
+    exists nil. repeat apply conj; simpl; try reflexivity. intros ? ? [].
   - (* var_b — no rule *) destruct (e_guess_mono_inv_var_b Hd).
   - (* var_f *)
     destruct (e_guess_mono_inv_var Hd) as [-> [-> ->]].
     destruct (e_guess_mono_inv_var Hd') as [-> [-> ->]].
-    exists nil. rel4; simpl; try reflexivity. intros ? ? [].
+    exists nil. repeat apply conj; simpl; try reflexivity. intros ? ? [].
   - (* arrow — the threading row *)
     destruct (e_guess_mono_inv_arrow Hd)
       as [Sa [Xa [Xb [Aa [Ab [-> [-> [D1 D2]]]]]]]].
@@ -564,7 +559,7 @@ Proof.
       by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
           destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0]; split;
           clear - Ha0 Hb0 Hdom1' HftA1' Hcov Hgr1'; fsetdec).
-    exists (ps1 ++ ps2). rel4.
+    exists (ps1 ++ ps2). repeat apply conj.
     + intros a0 b0 Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
       * exact (Hav1 a0 b0 Hin).
       * destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
@@ -596,7 +591,7 @@ Proof.
                  Dpt ltac:(clear - Hup Hcov; simpl in *; fsetdec)
                  S1' Ξ' Aa' Dp')
       as [ps' [Hav' [HS' [HX' HA']]]].
-    exists ((β, β') :: ps'). rel4.
+    exists ((β, β') :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
         [ inversion Heqp; subst; split; assumption | ].
       destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
@@ -614,7 +609,7 @@ Proof.
   - (* ghost — the row that INVENTS *)
     destruct (e_guess_mono_inv_ghost Hd) as [α [Hα [-> [-> ->]]]].
     destruct (e_guess_mono_inv_ghost Hd') as [α' [Hα' [-> [-> ->]]]].
-    exists ((α, α') :: nil). rel4.
+    exists ((α, α') :: nil). repeat apply conj.
     + intros ? ? [Heqp | []]. inversion Heqp; subst. split; assumption.
     + cbn [swaps_atoms]. rewrite swap_atoms_add.
       rewrite (swap_atoms_notin α α' S0 Hα Hα').
@@ -1198,14 +1193,12 @@ Local Ltac kill_ccall Hmot Hu Hcov Hder q r Hr ps Hav HS HT HQ :=
       | discriminate ]
   end.
 
-Local Ltac head_fresh Hav Hcov :=
+Ltac head_fresh Hav Hcov :=
   apply swaps_aenv_fresh_id; intros a0 b0 Hin;
   let Ha0 := fresh "Ha0" in let Hb0 := fresh "Hb0" in
   destruct (Hav a0 b0 Hin) as [Ha0 Hb0]; split;
   clear - Ha0 Hb0 Hcov; repeat rewrite ftvar_in_aenv_app in Hcov;
   simpl in *; fsetdec.
-
-Local Ltac split4 := split; [ | split; [ | split ] ].
 
 (** A [pskl_var_f]-shaped output: the runner answers with the variable it
     was handed, and the chain fixes it because it is in the supply. *)
@@ -1263,7 +1256,7 @@ Local Ltac do_solve_m Hocc Hg Hmt Hcov rg Hgs ps Hav HSg HXg HAg :=
   assert (Hain : True) by exact I;
   eexists; exists ps;
   split; [ reflexivity | ];
-  split4;
+  repeat apply conj;
   [ exact Hav
   | cbn [cs_supply proj1_sig]; exact HSg
   | cbn [cs_ctx proj1_sig];
@@ -1302,7 +1295,7 @@ Local Ltac do_flex_id HD Hd :=
   cbv beta iota;
   eexists; exists (@nil (atom * atom));
   split; [ reflexivity | ];
-  split4; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
+  repeat apply conj; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
           | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity | exact I ].
 
 (** The runner's binary tests are DEPENDENT matches (the branch's Equations
@@ -1343,7 +1336,7 @@ Local Ltac do_flex_l Hmot Hd Hu Hcov :=
   kill_ccall Hmot Hu Hcov0 Da pskl_unit r Hr ps Hav HS HT HQ;
   eexists; exists ps;
   split; [ reflexivity | ];
-  split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+  repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
           | cbn [cs_ctx proj1_sig]; exact HT | ];
   out_var_id Hav Hcov.
 
@@ -1365,7 +1358,7 @@ Local Ltac do_ghost_cell Hdis :=
   end;
   eexists; exists (@nil (atom * atom));
   split; [ reflexivity | ];
-  split4; [ intros ? ? []
+  repeat apply conj; [ intros ? ? []
           | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
           | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity
           | cbn [swaps_pskl cs_out proj1_sig]; reflexivity ].
@@ -1386,7 +1379,7 @@ Local Ltac do_pass Hmot Hd Hu Hcov Qd :=
   kill_ccall Hmot Hu Hcov0 Hd Qd r Hr ps Hav HS HT HQ;
   exists r, ps;
   split; [ reflexivity | ];
-  split4; [ exact Hav | exact HS | exact HT | exact HQ ].
+  repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
 
 
 (** U-FlexR at a concrete non-variable subject: the runner assigns the
@@ -1411,7 +1404,7 @@ Local Ltac do_flex_r Hmot Hd Hu Hcov :=
   kill_ccall Hmot Hu Hcov0 Da pskl_unit r Hr ps Hav HS HT HQ;
   eexists; exists ps;
   split; [ reflexivity | ];
-  split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+  repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
           | cbn [cs_ctx proj1_sig]; exact HT | ];
   cbn [cs_out proj1_sig]; out_var_id Hav Hcov.
 
@@ -1444,7 +1437,7 @@ Proof.
       exists (mk_consis_result (cs_supply r)
                 ((β0 ~ abind_tvar) ++ cs_ctx r) pskl_unit), ps.
       split; [ reflexivity | ].
-      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
     + (* term variable, TYPE payload — Assign-SkipTmVar *)
@@ -1459,7 +1452,7 @@ Proof.
       exists (mk_consis_result (cs_supply r)
                 ((β0 ~ abind_var_typ A) ++ cs_ctx r) pskl_unit), ps.
       split; [ reflexivity | ].
-      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
     + (* term variable, SKELETON payload *)
@@ -1474,7 +1467,7 @@ Proof.
       exists (mk_consis_result (cs_supply r)
                 ((β0 ~ abind_var_skl Q) ++ cs_ctx r) pskl_unit), ps.
       split; [ reflexivity | ].
-      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
     + (* undefined flexible head *)
@@ -1490,7 +1483,7 @@ Proof.
            exists (mk_consis_result S1 ((α ~ abind_flex_mono) ++ Θ0)
                      pskl_unit), (@nil (atom * atom)).
            split; [ reflexivity | ].
-           split4; [ intros ? ? [] | cbn [cs_supply proj1_sig]; reflexivity
+           repeat apply conj; [ intros ? ? [] | cbn [cs_supply proj1_sig]; reflexivity
                    | cbn [cs_ctx proj1_sig]; reflexivity
                    | exact I ].
         -- (* Assign-SolveM, at every leaf of the runner's Ξ × P dispatch *)
@@ -1521,7 +1514,7 @@ Proof.
              r Hr ps Hav HS HT HQ.
            exists r, ps.
            split; [ reflexivity | ].
-           split4; [ exact Hav | exact HS | exact HT | exact I ].
+           repeat apply conj; [ exact Hav | exact HS | exact HT | exact I ].
         -- destruct (sumbool_of_bool (mem β0 (ftvar_in_pskl P)))
              as [Hm | Hm];
              [ exfalso; apply mem_true_in in Hm; contradiction | ].
@@ -1535,7 +1528,7 @@ Proof.
            exists (mk_consis_result (cs_supply r)
                      ((β0 ~ abind_flex_mono) ++ cs_ctx r) pskl_unit), ps.
            split; [ reflexivity | ].
-           split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+           repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
            cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
            head_fresh Hav Hcov.
     + (* defined flexible head — Assign-Assign *)
@@ -1592,7 +1585,7 @@ Proof.
       exists (mk_consis_result (cs_supply r)
                 ((β0 ~ abind_flex_mono_def τ) ++ cs_ctx r) pskl_unit), ps.
       split; [ reflexivity | ].
-      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
   - (* ================== unify =================== *)
@@ -1618,7 +1611,7 @@ Proof.
       exists (mk_consis_result (cs_supply r)
                 ((γ ~ abind_tvar) ++ cs_ctx r) pskl_unit), ps.
       split; [ reflexivity | ].
-      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
     + (* term variable, TYPE payload *)
@@ -1636,7 +1629,7 @@ Proof.
       exists (mk_consis_result (cs_supply r)
                 ((γ ~ abind_var_typ A) ++ cs_ctx r) pskl_unit), ps.
       split; [ reflexivity | ].
-      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
     + (* term variable, SKELETON payload *)
@@ -1654,7 +1647,7 @@ Proof.
       exists (mk_consis_result (cs_supply r)
                 ((γ ~ abind_var_skl Q) ++ cs_ctx r) pskl_unit), ps.
       split; [ reflexivity | ].
-      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
     + (* undefined flexible head — L / R / Skip *)
@@ -1671,7 +1664,7 @@ Proof.
         cbv beta iota.
         eexists; exists (@nil (atom * atom)).
         split; [ reflexivity | ].
-        split4; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
+        repeat apply conj; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
                 | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity | exact I ].
       * cbv beta iota. split_eqdec Heq3 Hne3.
         -- (* the head IS β — Flex-Flex-R *)
@@ -1683,7 +1676,7 @@ Proof.
            cbv beta iota.
            eexists; exists (@nil (atom * atom)).
            split; [ reflexivity | ].
-           split4; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
+           repeat apply conj; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
                    | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity | exact I ].
         -- (* Flex-Flex-Skip *)
            cbv beta iota.
@@ -1697,7 +1690,7 @@ Proof.
            exists (mk_consis_result (cs_supply r)
                      ((γ ~ abind_flex_mono) ++ cs_ctx r) pskl_unit), ps.
            split; [ reflexivity | ].
-           split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+           repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
            cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
            head_fresh Hav Hcov.
     + (* defined flexible head — Flex-Flex-Assign *)
@@ -1765,7 +1758,7 @@ Proof.
       exists (mk_consis_result (cs_supply r)
                 ((γ ~ abind_flex_mono_def τ) ++ cs_ctx r) pskl_unit), ps.
       split; [ reflexivity | ].
-      split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
   - (* ================== consis ================== *)
@@ -1785,7 +1778,7 @@ Proof.
         destruct (e_consis_inv_unit Hd) as [-> [-> ->]].
         exists (mk_consis_result S1 Θ' pskl_unit), (@nil (atom * atom)).
         split; [ reflexivity | ].
-        split4; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
+        repeat apply conj; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
                 | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity
                 | cbn [swaps_pskl cs_out proj1_sig]; reflexivity ].
       * (* a dangling index is no subject *) inversion Hlc1.
@@ -1802,7 +1795,7 @@ Proof.
         exists (mk_consis_result (cs_supply r) (cs_ctx r) (pskl_var_f α0)),
                ps.
         split; [ reflexivity | ].
-        split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+        repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
                 | cbn [cs_ctx proj1_sig]; exact HT | ].
         cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
       * (* 1 ∼ → : no rule fires *) inversion Hd.
@@ -1821,7 +1814,7 @@ Proof.
         kill_ccall (Q6 Pb eq_refl) Hu Hcov0 Dc Qd r Hr ps Hav HS HT HQ.
         exists r, ps.
         split; [ reflexivity | ].
-        split4; [ exact Hav | exact HS | exact HT | exact HQ ].
+        repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
     + (* a dangling index is no pattern *) inversion Hlc0.
     + (* ================= pattern [β̂] ================= *)
       destruct P as [ | n | α0 | Pa Pb | Pb | | Pb ]; cbv beta iota.
@@ -1841,7 +1834,7 @@ Proof.
               ** exists (mk_consis_result S1 Θ' (pskl_var_f α0)),
                         (@nil (atom * atom)).
                  split; [ reflexivity | ].
-                 split4; [ intros ? ? []
+                 repeat apply conj; [ intros ? ? []
                          | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
                          | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity
                          | cbn [swaps_pskl cs_out proj1_sig]; reflexivity ].
@@ -1850,7 +1843,7 @@ Proof.
                  exists (mk_consis_result S1 Θ' (pskl_var_f α0)),
                         (@nil (atom * atom)).
                  split; [ reflexivity | ].
-                 split4; [ intros ? ? []
+                 repeat apply conj; [ intros ? ? []
                          | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
                          | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity
                          | cbn [swaps_pskl cs_out proj1_sig]; reflexivity ].
@@ -1876,7 +1869,7 @@ Proof.
                  exists (mk_consis_result (cs_supply r) (cs_ctx r)
                            (pskl_var_f α0)), ps.
                  split; [ reflexivity | ].
-                 split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+                 repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
                          | cbn [cs_ctx proj1_sig]; exact HT | ].
                  cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
               ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
@@ -1904,7 +1897,7 @@ Proof.
                  exists (mk_consis_result (cs_supply r) (cs_ctx r)
                            (pskl_var_f α0)), ps.
                  split; [ reflexivity | ].
-                 split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+                 repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
                          | cbn [cs_ctx proj1_sig]; exact HT | ].
                  cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
               ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
@@ -1939,7 +1932,7 @@ Proof.
                      exists (mk_consis_result (cs_supply r) (cs_ctx r)
                                (pskl_var_f β0)), ps.
                      split; [ reflexivity | ].
-                     split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+                     repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
                              | cbn [cs_ctx proj1_sig]; exact HT | ].
                      cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
               ** destruct (sumbool_of_bool (flex_bound_ck Θ' α0))
@@ -1963,7 +1956,7 @@ Proof.
                          exists (mk_consis_result (cs_supply r) (cs_ctx r)
                                    (pskl_var_f α0)), ps.
                          split; [ reflexivity | ].
-                         split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+                         repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
                                  | cbn [cs_ctx proj1_sig]; exact HT | ].
                          cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
                      +++ exfalso. destruct Hnf as [_ Hf]. apply Hf.
@@ -2006,7 +1999,7 @@ Proof.
            exists (mk_consis_result (cs_supply r) (cs_ctx r)
                      (pskl_var_f β0)), ps.
            split; [ reflexivity | ].
-           split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+           repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
                    | cbn [cs_ctx proj1_sig]; exact HT | ].
            cbn [cs_out proj1_sig]. out_var_id Hav Hcov.
         -- destruct (sumbool_of_bool (flex_bound_ck Θ' β0)) as [Hfb | Hfb];
@@ -2021,7 +2014,7 @@ Proof.
            kill_ccall (Q6 Pb eq_refl) Hu Hcov0 Dc Qd r Hr ps Hav HS HT HQ.
            exists r, ps.
            split; [ reflexivity | ].
-           split4; [ exact Hav | exact HS | exact HT | exact HQ ].
+           repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
     + (* ================= pattern [→] ================= *)
       destruct P as [ | n | α0 | Pa Pb | Pb | | Pb ]; cbv beta iota.
       * (* → ∼ 1 : no rule fires *) inversion Hd.
@@ -2075,7 +2068,7 @@ Proof.
         exists (mk_consis_result (cs_supply r2) (cs_ctx r2)
                   (pskl_arrow (cs_out r1) (cs_out r2))), (ps1 ++ ps2).
         split; [ reflexivity | ].
-        split4.
+        repeat apply conj.
         -- intros a0 b0 Hin. apply in_app_or in Hin.
            destruct Hin as [Hin | Hin]; [ exact (Hav1 a0 b0 Hin) | ].
            destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
@@ -2169,7 +2162,7 @@ Proof.
                                    (cs_out r)))),
                ((α, supply_fresh S1) :: ps).
         split; [ reflexivity | ].
-        split4.
+        repeat apply conj.
         -- intros a0 b0 [Heqp | Hin];
              [ inversion Heqp; subst; split; assumption | ].
            destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
@@ -2250,7 +2243,7 @@ Proof.
                                    (cs_out r)))),
                ((α, supply_fresh S1) :: ps).
         split; [ reflexivity | ].
-        split4.
+        repeat apply conj.
         -- intros a0 b0 [Heqp | Hin];
              [ inversion Heqp; subst; split; assumption | ].
            destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
@@ -2316,7 +2309,7 @@ Proof.
              r Hr ps Hav HS HT HQ.
            eexists; exists ps.
            split; [ reflexivity | ].
-           split4; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
+           repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS
                    | cbn [cs_ctx proj1_sig]; exact HT | ].
            out_var_id Hav Hcov.
         -- destruct (sumbool_of_bool (flex_bound_ck Θ' α0)) as [Hfb | Hfb];
@@ -2387,7 +2380,7 @@ Proof.
                                    (cs_out r)))),
                ((α, supply_fresh S1) :: ps).
         split; [ reflexivity | ].
-        split4.
+        repeat apply conj.
         -- intros a0 b0 [Heqp | Hin];
              [ inversion Heqp; subst; split; assumption | ].
            destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
@@ -2419,7 +2412,7 @@ Proof.
         exists (mk_consis_result (cs_supply r) (cs_ctx r)
                   (pskl_univ_ghost (cs_out r))), ps.
         split; [ reflexivity | ].
-        split4; [ exact Hav | cbn [cs_supply]; exact HS
+        repeat apply conj; [ exact Hav | cbn [cs_supply]; exact HS
                 | cbn [cs_ctx]; exact HT | ].
         cbn [cs_out]. rewrite swaps_pskl_univ_ghost. f_equal. exact HQ.
 

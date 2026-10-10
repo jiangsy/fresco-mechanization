@@ -845,17 +845,6 @@ Local Ltac kill_scall Hmot Hu Hcov Hder r Hr ps Hav HS HT HQ :=
       | discriminate ]
   end.
 
-(** The head entry a walk row re-wraps is named in [sub_call_cover], hence
-    in [S0], which every chain pair dodges. *)
-Local Ltac head_fresh Hav Hcov :=
-  apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-  let Ha0 := fresh "Ha0" in let Hb0 := fresh "Hb0" in
-  destruct (Hav a0 b0 Hin) as [Ha0 Hb0]; split;
-  clear - Ha0 Hb0 Hcov; repeat rewrite ftvar_in_aenv_app in Hcov;
-  simpl in *; fsetdec.
-
-Local Ltac split4 := split; [ | split; [ | split ] ].
-
 (** ⚠️ The runner's atom tests are CONVOYED, so the GOAL's own scrutinee
     has to be destructed — prop_consis_complete.v §7's warning, verbatim. *)
 Local Ltac split_eqdec Hl Hr :=
@@ -970,7 +959,7 @@ Proof.
     exists (mk_sub_result (sb_supply r) ((γ ~ abind_tvar) ++ sb_ctx r)
               (sb_out r)), ps.
     split; [ reflexivity | ].
-    split4; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
+    repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
             | | cbn [sb_out proj1_sig]; exact HQ ].
     cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
     head_fresh Hav Hcov.
@@ -986,7 +975,7 @@ Proof.
     exists (mk_sub_result (sb_supply r) ((γ ~ abind_var_typ A) ++ sb_ctx r)
               (sb_out r)), ps.
     split; [ reflexivity | ].
-    split4; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
+    repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
             | | cbn [sb_out proj1_sig]; exact HQ ].
     cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
     head_fresh Hav Hcov.
@@ -1002,7 +991,7 @@ Proof.
     exists (mk_sub_result (sb_supply r) ((γ ~ abind_var_skl Qp) ++ sb_ctx r)
               (sb_out r)), ps.
     split; [ reflexivity | ].
-    split4; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
+    repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
             | | cbn [sb_out proj1_sig]; exact HQ ].
     cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
     head_fresh Hav Hcov.
@@ -1076,7 +1065,7 @@ Proof.
       kill_scall (Hsl Θ0' eq_refl) Hu0 Hcov0 Ds0 r Hr ps Hav HS HT HQ.
       exists r, (ps0 ++ ps).
       split; [ reflexivity | ].
-      split4.
+      repeat apply conj.
       * intros a0 b0 Hin. apply in_app_or in Hin.
         destruct Hin as [Hin | Hin]; [ exact (Hav0 _ _ Hin) | ].
         destruct (Hav _ _ Hin) as [Ha0 Hb0]. split; fsetdec.
@@ -1100,7 +1089,7 @@ Proof.
         kill_scall (proj1 (Hdp γ Θ0' eq_refl)) Hu0 Hcov0 Dd
           r Hr ps Hav HS HT HQ.
         exists r, ps. split; [ reflexivity | ].
-        split4; [ exact Hav | exact HS | exact HT | exact HQ ].
+        repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
       * (* SI-Flex-Skip — the head is re-wrapped *)
         destruct (sumbool_of_bool (mem γ (ftvar_in_pskl P0))) as [Hm | Hm];
           [ exfalso; apply mem_true_in in Hm; contradiction | ].
@@ -1115,7 +1104,7 @@ Proof.
         exists (mk_sub_result (sb_supply r)
                   ((γ ~ abind_flex_mono) ++ sb_ctx r) (sb_out r)), ps.
         split; [ reflexivity | ].
-        split4; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
+        repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
                 | | cbn [sb_out proj1_sig]; exact HQ ].
         cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
         head_fresh Hav Hcov.
@@ -1158,7 +1147,7 @@ Proof.
     exists (mk_sub_result (sb_supply r)
               ((γ ~ abind_flex_mono_def τ) ++ sb_ctx r) (sb_out r)), ps.
     split; [ reflexivity | ].
-    split4; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
+    repeat apply conj; [ exact Hav | cbn [sb_supply proj1_sig]; exact HS
             | | cbn [sb_out proj1_sig]; exact HQ ].
     cbn [sb_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
     head_fresh Hav Hcov.
@@ -1208,7 +1197,6 @@ Local Ltac ck_leaf :=
     so on [ghost_free_ck (P → Q)] it would happily UNFOLD the fixpoint and
     split a goal the [_ck_complete] lemma answers whole. *)
 Ltac ck_true_with leaf := repeat (leaf || (apply andb_true_intro; split)).
-Local Ltac ck_true := ck_true_with ltac:(idtac; ck_leaf).
 
 (** A runner test the derivation's own premises satisfy: prove the boolean
     TRUE first, then the rejecting branch is [congruence]. *)
@@ -1236,7 +1224,7 @@ Local Ltac out_fixed Hav Hcov :=
 Local Ltac answer_id :=
   eexists; exists (@nil (atom * atom));
   split; [ reflexivity | ];
-  split4; [ intros ? ? []
+  repeat apply conj; [ intros ? ? []
           | cbn [swaps_atoms sb_supply]; reflexivity
           | cbn [swaps_aenv sb_ctx]; reflexivity
           | cbn [swaps_pskl sb_out]; reflexivity ].
@@ -1270,7 +1258,7 @@ Local Ltac do_check Hd Hu Hcov :=
   kill_consis Hu Hcov0 Dc r Hr ps Hav HS HT HQ;
   eexists; exists ps;
   split; [ reflexivity | ];
-  split4; [ exact Hav | cbn [sb_supply]; exact HS
+  repeat apply conj; [ exact Hav | cbn [sb_supply]; exact HS
           | cbn [sb_ctx]; exact HT
           | cbn [sb_out]; out_fixed Hav Hcov ].
 
@@ -1289,7 +1277,7 @@ Local Ltac do_univ_ghost_l Hd Hu Hcov Hmot :=
   end;
   kill_scall Hmot Hu Hcov0 Ds r Hr ps Hav HS HT HQ;
   exists r, ps; split; [ reflexivity | ];
-  split4; [ exact Hav | exact HS | exact HT | exact HQ ].
+  repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
 
 (** [SI-Ghost] — a [◇] subject at [sk] answers with the pattern, spending
     nothing. *)
@@ -1449,7 +1437,7 @@ Local Ltac do_forall_l Hd Hu Hcov pmot s0 t0 p0 q :=
   kill_scall (pmot Hg _ _ _ Hrx Hwf1) Hu1 Hcov1 Ds2 r Hr ps Hav HS HT HQ;
   exists r, (((ad, supply_fresh s0) :: nil) ++ ps1 ++ ps);
   split; [ reflexivity | ];
-  split4;
+  repeat apply conj;
   [ intros a0 b0 Hin; rewrite ! in_app_iff in Hin;
     destruct Hin as [Hin | [Hin | Hin]];
     [ exact (Hav0 a0 b0 Hin)
@@ -1686,7 +1674,7 @@ Proof.
                   (swaps_aenv ps (swaps_aenv ((ad, supply_fresh S0) :: nil) Θd))
                   (pskl_all_syn B)), (((ad, supply_fresh S0) :: nil) ++ ps).
         split; [ reflexivity | ].
-        split4.
+        repeat apply conj.
         -- intros a0 b0 Hin. apply in_app_or in Hin.
            destruct Hin as [Hin | Hin]; [ exact (Hav0 a0 b0 Hin) | ].
            destruct (Hav a0 b0 Hin) as [Hya Hyb].
@@ -1726,7 +1714,7 @@ Proof.
       kill_scall (Hfm γ M' eq_refl eq_refl) Hu0 Hcov0 Df
         r Hr ps Hav HS HT HQ.
       exists r, ps. split; [ reflexivity | ].
-      split4; [ exact Hav | exact HS | exact HT | exact HQ ].
+      repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
     * (* SI-Arrow, at an arrow pattern; every other pattern rejects *)
       destruct P0 as [ | n0 | γ0 | P0a P0b | B | | P0b ]; cbv beta iota;
         [ | | | | | | ];
@@ -1765,7 +1753,7 @@ Proof.
       exists (mk_sub_result (sb_supply r2) (sb_ctx r2)
                 (pskl_arrow (cs_out r1) (sb_out r2))), (ps1 ++ ps2).
       split; [ reflexivity | ].
-      split4.
+      repeat apply conj.
       -- intros a0 b0 Hin. apply in_app_or in Hin.
          destruct Hin as [Hin | Hin]; [ exact (Hav1 a0 b0 Hin) | ].
          destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].

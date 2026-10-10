@@ -199,79 +199,83 @@ Qed.
 (*  §3  Consistency and refinement over Θ                                 *)
 (* ===================================================================== *)
 
+Lemma a_binds_tvar_mono_cons_tvar : forall α Θ Θ',
+  (forall β, a_binds_tvar β Θ -> a_binds_tvar β Θ') ->
+  forall β, a_binds_tvar β ((α ~ abind_tvar) ++ Θ) ->
+    a_binds_tvar β ((α ~ abind_tvar) ++ Θ').
+Proof.
+  intros * Hm β Hb. apply a_binds_tvar_cons_tvar.
+  destruct (a_binds_tvar_cons_tvar_inv Hb); auto.
+Qed.
+
+Lemma flex_defs_cons_tvar : forall α (Θ Θ' : aenv),
+  (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
+     binds β (abind_flex_mono_def τ) Θ') ->
+  forall β τ, binds β (abind_flex_mono_def τ) ((α ~ abind_tvar) ++ Θ) ->
+    binds β (abind_flex_mono_def τ) ((α ~ abind_tvar) ++ Θ').
+Proof.
+  intros * Hm β τ Hb.
+  destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+    [ discriminate | ].
+  unfold binds; right; apply Hm; exact Hb'.
+Qed.
+
+(** Consistency reads type-variable availability and flexible definitions. *)
+Lemma ad_pat_consis_transport : forall Ψ Θ R Q,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+  forall Θ', (forall α, a_binds_tvar α Θ -> a_binds_tvar α Θ') ->
+  (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
+     binds α (abind_flex_mono_def τ) Θ') ->
+  {{ Ψ ⨟ Θ' ⊢ˢ R ∼ Q }}ad.
+Proof.
+  intros * H; induction H; intros Θ' Htv Hdef;
+    eauto 6 using ad_pat_consis, a_binds_tvar_mono_cons_tvar, flex_defs_cons_tvar.
+Qed.
+
 Lemma ad_pat_consis_mono : forall Ψ Θ R Q,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall Θ', aenv_tbinds_le Θ Θ' -> {{ Ψ ⨟ Θ' ⊢ˢ R ∼ Q }}ad.
 Proof.
-  intros Ψ Θ R Q H; induction H; intros Θ' Hle.
-  - apply ad_pat_consis__unit; assumption.
-  - apply ad_pat_consis__var; [ assumption | eapply a_binds_tvar_mono; eauto ].
-  - eapply ad_pat_consis__arrow; eauto.
-  - eapply ad_pat_consis__forall_inh_tagged with (L := L);
-      [ intros α Hα; apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ]
-      | eassumption ].
-  - eapply ad_pat_consis__forall_inh_untagged with (L := L).
-    intros α Hα; apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - eapply ad_pat_consis__forall_syn_tagged with (L := L).
-    intros α Hα; apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - eapply ad_pat_consis__forall_syn with (L := L).
-    intros α Hα; apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply ad_pat_consis__ghostg; assumption.
-  - apply ad_pat_consis__dot_univ_ghost; auto.
-  - apply ad_pat_consis__ghost; [ assumption ].
-  - apply ad_pat_consis__univ_ghost; auto.
-  - eapply ad_pat_consis__univ_ghost_inh with (L := L).
-    intros α Hα; apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply ad_pat_consis__univ_ghost_drop; auto.
-  - eapply ad_pat_consis__flex_l;
-      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
-  - eapply ad_pat_consis__flex_r;
-      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
+  intros * H Θ' Hle. eapply ad_pat_consis_transport; [ exact H | | ];
+    intros; eauto using a_binds_tvar_mono, aenv_tbinds_le_flex_def.
+Qed.
+
+(** Refinement consults the context ONLY through its flexible
+    definitions (the flex lookups); rigid entries are never read. *)
+Lemma ad_refine_syn_defs_mono : forall Θ Δ Q Q',
+  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
+  forall Θ', (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
+                binds β (abind_flex_mono_def τ) Θ') ->
+  {{ Θ' ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
+Proof.
+  intros * H; induction H; intros Θ' Hm;
+    eauto 6 using ad_refine_syn, flex_defs_cons_tvar.
+Qed.
+
+Lemma ad_refine_pskl_defs_mono : forall Θ Δ P P',
+  {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad ->
+  forall Θ', (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
+                binds β (abind_flex_mono_def τ) Θ') ->
+  {{ Θ' ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad.
+Proof.
+  intros * H; induction H; intros Θ' Hm;
+    eauto 6 using ad_refine_pskl, flex_defs_cons_tvar.
 Qed.
 
 Lemma ad_refine_syn_mono : forall Θ Δ Q Q',
   {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
   forall Θ', aenv_tbinds_le Θ Θ' -> {{ Θ' ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
 Proof.
-  intros Θ Δ Q Q' H; induction H; intros Θ' Hle.
-  - apply ad_refine_syn__unit.
-  - apply ad_refine_syn__var.
-  - apply ad_refine_syn__arrow; auto.
-  - (* ∀ : binds into both Θ and Δ *)
-    apply ad_refine_syn__all with (L := L); [ assumption | ]. intros α Hα.
-    apply H1; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply ad_refine_syn__ghost. assumption.
-  - apply ad_refine_syn__univ_ghost_remove; auto.
-  - (* univ_ghost_fill : binds into Θ *)
-    apply ad_refine_syn__univ_ghost_fill with (L := L); [ assumption | ].
-    intros α Hα.
-    apply H1; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply ad_refine_syn__univ_ghost_keep; auto.
-  - eapply ad_refine_syn__flex_l;
-      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
-  - eapply ad_refine_syn__flex_r;
-      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
+  intros * H Θ' Hle. eapply ad_refine_syn_defs_mono;
+    [ exact H | intros; eapply aenv_tbinds_le_flex_def; eauto ].
 Qed.
 
 Lemma ad_refine_pskl_mono : forall Θ Δ P P',
   {{ Θ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad ->
   forall Θ', aenv_tbinds_le Θ Θ' -> {{ Θ' ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad.
 Proof.
-  intros Θ Δ P P' H; induction H; intros Θ' Hle.
-  - apply ad_refine_pskl__unit.
-  - apply ad_refine_pskl__var.
-  - apply ad_refine_pskl__arrow; auto.
-  - apply ad_refine_pskl__all with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply ad_refine_pskl__ghost. assumption.
-  - apply ad_refine_pskl__univ_ghost_remove; auto.
-  - apply ad_refine_pskl__univ_ghost_fill with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply aenv_tbinds_le_cons; exact Hle ].
-  - apply ad_refine_pskl__univ_ghost_keep; auto.
-  - eapply ad_refine_pskl__flex_l;
-      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
-  - eapply ad_refine_pskl__flex_r;
-      [ eapply aenv_tbinds_le_flex_def; eauto | auto ].
+  intros * H Θ' Hle. eapply ad_refine_pskl_defs_mono;
+    [ exact H | intros; eapply aenv_tbinds_le_flex_def; eauto ].
 Qed.
 
 (** The JOIN travels because both of its halves do. *)

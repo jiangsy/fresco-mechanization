@@ -467,8 +467,6 @@ Arguments e_split_flex_realign {S0 Θ0 α Qd Sd Θd ad bd} _ _ _ _.
 (*  consistency call being variables.                                     *)
 (* ===================================================================== *)
 
-Local Ltac split4 := split; [ | split; [ | split ] ].
-Local Ltac split5 := split; [ | split4 ].
 
 Lemma e_split_impl_complete : forall S0 Θ0 P0 Sd Θd Pd Qd,
   {{ S0 ↝ Sd ⊨ Θ0 ⊲ P0 ▹ Pd ⇢ Qd ⊣ Θd }}e ->
@@ -546,7 +544,7 @@ Proof.
     { intros a0 b0 Hin. apply in_app_or in Hin.
       destruct Hin as [Hin | Hin]; [ exact (Hav0 _ _ Hin) | ].
       destruct (Hav1 _ _ Hin) as [Hka Hkb]. split; fsetdec. }
-    split5.
+    repeat apply conj.
     + exact Havc.
     + cbn [sp_supply proj1_sig]. rewrite swaps_atoms_app.
       rewrite <- HS1. apply swaps_atoms_cong. symmetry. exact HS0.
@@ -568,7 +566,7 @@ Proof.
     rewrite e_split_impl_equation_4.
     eexists; exists (@nil (atom * atom)).
     split; [ reflexivity | ].
-    split5; [ intros ? ? [] | reflexivity | reflexivity
+    repeat apply conj; [ intros ? ? [] | reflexivity | reflexivity
             | reflexivity | reflexivity ].
   - exfalso. exact (e_split_inv_all_syn Hd).
   - (* the HOLE row *)
@@ -576,7 +574,7 @@ Proof.
     rewrite e_split_impl_equation_6.
     eexists; exists (@nil (atom * atom)).
     split; [ reflexivity | ].
-    split5; [ intros ? ? [] | reflexivity | reflexivity
+    repeat apply conj; [ intros ? ? [] | reflexivity | reflexivity
             | reflexivity | reflexivity ].
   - exfalso. exact (e_split_inv_univ_ghost Hd).
 Qed.
@@ -665,7 +663,6 @@ Local Ltac ck_leaf_pat :=
         | apply pskl_eqb_complete; reflexivity
         | apply ptyp_eqb_complete; reflexivity ].
 
-Local Ltac ck_true_pat := ck_true_with ltac:(idtac; ck_leaf_pat).
 Local Ltac bool_true_pat := bool_true_with ltac:(idtac; ck_leaf_pat).
 
 (** Run level 6's headline at the subtyping call the goal contains, then
@@ -721,15 +718,6 @@ Ltac kill_dec Hcomp t Ht :=
       | discriminate ]
   end.
 
-(** ⚠️ [lc_exp]'s two binder rows are COFINITE, so their inversion yields a
-    FAMILY; the abs rows need it at the runner's own binder.  Select by
-    TYPE (prop_run_invariants.v §4c's tactic, verbatim). *)
-Local Ltac open_exp_lc x :=
-  match goal with
-  | Hx : forall _ : _, lc_exp (open_exp_wrt_exp _ (exp_var_f _)) |- _ =>
-      exact (Hx x)
-  end.
-
 (** A row that answers from its inputs alone: the EMPTY chain. *)
 Lemma e_pat_impl_complete_ind : forall S0 m Θ0 P0 e,
   e_pat_order S0 m Θ0 P0 e -> pat_complete S0 m Θ0 P0 e.
@@ -753,7 +741,7 @@ Proof.
     kill_sub Ds Hu Hcovs r Hr ps Hav HS HT HQ.
     eexists; exists ps.
     split; [ cbn [pat_answer proj1_sig]; reflexivity | ].
-    split4; [ exact Hav
+    repeat apply conj; [ exact Hav
             | cbn [pt_supply]; exact HS
             | cbn [pt_ctx]; exact HT
             | cbn [pt_skel]; exact HQ ].
@@ -781,7 +769,7 @@ Proof.
       kill_sub Ds Hu Hcovs r Hr ps Hav HS HT HQ.
       eexists; exists ps.
       split; [ cbn [pat_answer proj1_sig]; reflexivity | ].
-      split4; [ exact Hav
+      repeat apply conj; [ exact Hav
               | cbn [pt_supply]; exact HS
               | cbn [pt_ctx]; exact HT
               | cbn [pt_skel]; exact HQ ].
@@ -801,7 +789,7 @@ Proof.
       kill_sub Ds Hu Hcovs r Hr ps Hav HS HT HQ.
       eexists; exists ps.
       split; [ cbn [pat_answer proj1_sig]; reflexivity | ].
-      split4; [ exact Hav
+      repeat apply conj; [ exact Hav
               | cbn [pt_supply]; exact HS
               | cbn [pt_ctx]; exact HT
               | cbn [pt_skel]; exact HQ ].
@@ -901,7 +889,7 @@ Proof.
       bool_true_pat.
       eexists; exists (((xd, supply_fresh S0) :: nil) ++ ps2).
       split; [ cbn [pat_answer proj1_sig]; reflexivity | ].
-      split4.
+      repeat apply conj.
       - intros a0 b0 Hin. apply in_app_or in Hin.
         destruct Hin as [Hin | Hin]; [ exact (Hav0 _ _ Hin) | ].
         destruct (Hav2 _ _ Hin) as [Hka Hkb]. split; fsetdec.
@@ -1072,7 +1060,7 @@ Proof.
       exists ((ps1 ++ ((swaps_atom ps1 xd,
                 supply_fresh (sp_supply rs)) :: nil)) ++ ps2);
       split; [ cbn [pat_answer proj1_sig]; reflexivity | ];
-      split4;
+      repeat apply conj;
       [ intros a0 b0 Hin; repeat (apply in_app_or in Hin;
           destruct Hin as [Hin | Hin]);
         [ exact (Hav1 _ _ Hin)
@@ -1189,7 +1177,7 @@ Proof.
       bool_true_pat.
       eexists; exists (((xd, supply_fresh S0) :: nil) ++ ps2).
       split; [ cbn [pat_answer proj1_sig]; reflexivity | ].
-      split4.
+      repeat apply conj.
       - intros a0 b0 Hin. apply in_app_or in Hin.
         destruct Hin as [Hin | Hin]; [ exact (Hav0 _ _ Hin) | ].
         destruct (Hav2 _ _ Hin) as [Hka Hkb]. split; fsetdec.
@@ -1438,7 +1426,7 @@ Proof.
       exists (((ps1 ++ psc) ++ ((swaps_atom psc (swaps_atom ps1 xd),
                 supply_fresh (cs_supply rc)) :: nil)) ++ ps2);
       split; [ cbn [pat_answer proj1_sig]; reflexivity | ];
-      split4;
+      repeat apply conj;
       [ intros a0 b0 Hin; repeat (apply in_app_or in Hin;
           destruct Hin as [Hin | Hin]);
         [ exact (Hav1 _ _ Hin)
@@ -1514,7 +1502,7 @@ Proof.
     cbn [fst snd].
     eexists; exists (ps1 ++ ps2).
     split; [ cbn [pat_answer proj1_sig]; reflexivity | ].
-    split4.
+    repeat apply conj.
     + intros a0 b0 Hin. apply in_app_or in Hin.
       destruct Hin as [Hin | Hin]; [ exact (Hav1 _ _ Hin) | ].
       destruct (Hav2 _ _ Hin) as [Hka Hkb]. split; fsetdec.
@@ -1535,7 +1523,7 @@ Proof.
     kill_sub Ds Hu Hcovs r Hr ps Hav HS HT HQ.
     eexists; exists ps.
     split; [ cbn [pat_answer proj1_sig]; reflexivity | ].
-    split4; [ exact Hav
+    repeat apply conj; [ exact Hav
             | cbn [pt_supply]; exact HS
             | cbn [pt_ctx]; exact HT
             | cbn [pt_skel]; exact HQ ].
@@ -1551,7 +1539,7 @@ Proof.
       r Hr ps Hav HS HT HQ.
     eexists; exists ps.
     split; [ cbn [pat_answer proj1_sig]; reflexivity | ].
-    split4; [ exact Hav
+    repeat apply conj; [ exact Hav
             | cbn [pt_supply]; exact HS
             | cbn [pt_ctx]; exact HT
             | cbn [pt_skel]; exact HQ ].

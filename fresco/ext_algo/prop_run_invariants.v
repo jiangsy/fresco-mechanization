@@ -623,7 +623,7 @@ Qed.
 (** ⚠️ [lc_exp]'s two binder rows are COFINITE, so their inversion yields a
     FAMILY; the [abs] rows need it at the rule's own witness, and the
     hypothesis' generated name shifts from row to row.  Select it by TYPE. *)
-Local Ltac open_exp_lc x :=
+Ltac open_exp_lc x :=
   match goal with
   | Hx : forall _ : _, lc_exp (open_exp_wrt_exp _ (exp_var_f _)) |- _ =>
       exact (Hx x)

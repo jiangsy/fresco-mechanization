@@ -89,30 +89,6 @@ Qed.
 (*   type-variables-in-Δ steps, part 1 cases Flex / FlexL / FlexR)       *)
 (* ===================================================================== *)
 
-(** Refinement consults the context ONLY through its flexible
-    definitions (the flex lookups); rigid entries are never read. *)
-Lemma flex_defs_cons_tvar : forall α (Θ Θ' : aenv),
-  (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
-     binds β (abind_flex_mono_def τ) Θ') ->
-  forall β τ, binds β (abind_flex_mono_def τ) ((α ~ abind_tvar) ++ Θ) ->
-    binds β (abind_flex_mono_def τ) ((α ~ abind_tvar) ++ Θ').
-Proof.
-  intros * Hm β τ Hb.
-  destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-    [ discriminate | ].
-  unfold binds; right; apply Hm; exact Hb'.
-Qed.
-
-Lemma ad_refine_syn_defs_mono : forall Θ Δ Q Q',
-  {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad ->
-  forall Θ', (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
-                binds β (abind_flex_mono_def τ) Θ') ->
-  {{ Θ' ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
-Proof.
-  intros * H; induction H; intros Θ' Hm;
-    eauto 6 using ad_refine_syn, flex_defs_cons_tvar.
-Qed.
-
 (** Skeleton wf survives removing a rigid entry the skeleton avoids
     (the [abind_tvar] instance of [a_wf_pskl_strip_mid]). *)
 Lemma a_wf_pskl_strip_tvar : forall Θ1 α Θ2 Δ P,

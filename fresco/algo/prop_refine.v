@@ -16,6 +16,7 @@ Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_consis_refine.
+Require Import src.fresco.algo_decl.prop_ctx_mono.
 Require Import src.fresco.algo.prop_basic.
 
 Set Implicit Arguments.
@@ -145,27 +146,8 @@ Lemma ad_refine_syn_weaken : forall Θ Δ Q Q',
   (forall x b, binds x b Θ -> binds x b Θ') ->
   {{ Θ' ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
 Proof.
-  intros Θ Δ Q Q' H; induction H; intros Θ' Hmon.
-  - apply ad_refine_syn__unit.
-  - apply ad_refine_syn__var.
-  - apply ad_refine_syn__arrow; auto.
-  - eapply ad_refine_syn__all with (L := L); [ assumption | ].
-    intros α Hα. apply H1; auto.
-    intros x b Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
-      [ unfold binds; left; reflexivity
-      | unfold binds; right; apply Hmon; auto ].
-  - apply ad_refine_syn__ghost; assumption.
-  - apply ad_refine_syn__univ_ghost_remove; auto.
-  - eapply ad_refine_syn__univ_ghost_fill with (L := L); [ assumption | ].
-    intros α Hα. apply H1; auto.
-    intros x b Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
-      [ unfold binds; left; reflexivity
-      | unfold binds; right; apply Hmon; auto ].
-  - apply ad_refine_syn__univ_ghost_keep; auto.
-  - eapply ad_refine_syn__flex_l; eauto.
-  - eapply ad_refine_syn__flex_r; eauto.
+  intros * H Θ' Hle. eapply ad_refine_syn_defs_mono;
+    [ exact H | intros; apply Hle; assumption ].
 Qed.
 
 Lemma ad_refine_pskl_weaken : forall Θ Δ P P',
@@ -174,27 +156,8 @@ Lemma ad_refine_pskl_weaken : forall Θ Δ P P',
   (forall x b, binds x b Θ -> binds x b Θ') ->
   {{ Θ' ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad.
 Proof.
-  intros Θ Δ P P' H; induction H; intros Θ' Hmon.
-  - apply ad_refine_pskl__unit.
-  - apply ad_refine_pskl__var.
-  - apply ad_refine_pskl__arrow; auto.
-  - eapply ad_refine_pskl__all with (L := L).
-    intros α Hα. apply H0; auto.
-    intros x b Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
-      [ unfold binds; left; reflexivity
-      | unfold binds; right; apply Hmon; auto ].
-  - apply ad_refine_pskl__ghost; assumption.
-  - apply ad_refine_pskl__univ_ghost_remove; auto.
-  - eapply ad_refine_pskl__univ_ghost_fill with (L := L).
-    intros α Hα. apply H0; auto.
-    intros x b Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
-      [ unfold binds; left; reflexivity
-      | unfold binds; right; apply Hmon; auto ].
-  - apply ad_refine_pskl__univ_ghost_keep; auto.
-  - eapply ad_refine_pskl__flex_l; eauto.
-  - eapply ad_refine_pskl__flex_r; eauto.
+  intros * H Θ' Hle. eapply ad_refine_pskl_defs_mono;
+    [ exact H | intros; apply Hle; assumption ].
 Qed.
 
 (* ===================================================================== *)

@@ -181,6 +181,21 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Further simplification with a net LOC reduction per refactor
+
+- Reuse context transport for weakening and identity-increase stability (−144
+  nonblank code lines, including helpers/imports). Move `ad_refine_syn_defs_mono`
+  and its binder helper to `algo_decl/prop_ctx_mono.v`; add the uncoloured instance
+  and `ad_pat_consis_transport`. Existing theorem statements are unchanged.
+- Replace numbered split helpers with `repeat apply conj`; share `head_fresh` and
+  `open_exp_lc` through existing imports; remove three unused `ck_true*` wrappers
+  (−26 nonblank code lines).
+- Remove the unused `e_looksub_lookeq_nall` branch and its constraint-counting
+  definitions/append lemma (−31 nonblank code lines). The old extraction handoff's
+  §8b.3 remains a historical account; the live termination measure is unchanged.
+- Validation: `make coq` passes, including the final rebuild after removing the
+  split helpers; all 34 README assumption reports are closed. Net: −201 code lines.
+
 ## 2026-10-10 — Ghost rows faithful everywhere; `a_scope_pskl` a Definition; near-twin rows factored
 
 Branches `scope-pass` and `twins-pass` (merged).  Full build green, 34/34 closed.

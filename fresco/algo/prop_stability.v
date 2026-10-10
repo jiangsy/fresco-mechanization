@@ -18,6 +18,7 @@ Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
 Require Import src.fresco.algo.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
+Require Import src.fresco.algo_decl.prop_ctx_mono.
 Require Import src.fresco.algo.prop_inc.
 
 Set Implicit Arguments.
@@ -72,27 +73,8 @@ Lemma ad_pat_consis_isub : forall Ψ Θ R Q,
   forall Θ', Θ ⊴ Θ' ->
   {{ Ψ ⨟ Θ' ⊢ˢ R ∼ Q }}ad.
 Proof.
-  intros Ψ Θ R Q H; induction H; intros Θ' Hle.
-  - apply ad_pat_consis__unit; auto.
-  - apply ad_pat_consis__var; eauto using a_isub_binds_tvarish.
-  - eapply ad_pat_consis__arrow; eauto.
-  - eapply ad_pat_consis__forall_inh_tagged with (L := L); eauto.
-    intros α Hα. eauto using a_isub_cons_tvar.
-  - eapply ad_pat_consis__forall_inh_untagged with (L := L); eauto.
-    intros α Hα. eauto using a_isub_cons_tvar.
-  - eapply ad_pat_consis__forall_syn_tagged with (L := L); eauto.
-    intros α Hα. eauto using a_isub_cons_tvar.
-  - eapply ad_pat_consis__forall_syn with (L := L); eauto.
-    intros α Hα. eauto using a_isub_cons_tvar.
-  - apply ad_pat_consis__ghostg; auto.
-  - apply ad_pat_consis__dot_univ_ghost; auto.
-  - apply ad_pat_consis__ghost; eauto using a_wf_pskl_isub.
-  - apply ad_pat_consis__univ_ghost; auto.
-  - eapply ad_pat_consis__univ_ghost_inh with (L := L); eauto.
-    intros α Hα. eauto using a_isub_cons_tvar.
-  - apply ad_pat_consis__univ_ghost_drop; auto.
-  - eapply ad_pat_consis__flex_l; eauto using a_isub_binds_flex_def.
-  - eapply ad_pat_consis__flex_r; eauto using a_isub_binds_flex_def.
+  intros * H Θ' Hle. eapply ad_pat_consis_transport; [ exact H | | ];
+    intros; eauto using a_isub_binds_tvarish, a_isub_binds_flex_def.
 Qed.
 
 Lemma ad_refine_syn_isub : forall Θ Δ Q Q',
@@ -100,19 +82,8 @@ Lemma ad_refine_syn_isub : forall Θ Δ Q Q',
   forall Θ', Θ ⊴ Θ' ->
   {{ Θ' ⨟ Δ ⊢ᵣ Q ⊳ Q' }}ad.
 Proof.
-  intros Θ Δ Q Q' H; induction H; intros Θ' Hle.
-  - apply ad_refine_syn__unit.
-  - apply ad_refine_syn__var.
-  - apply ad_refine_syn__arrow; auto.
-  - eapply ad_refine_syn__all with (L := L); [ assumption | ].
-    intros α Hα. eauto using a_isub_cons_tvar.
-  - apply ad_refine_syn__ghost; auto.
-  - apply ad_refine_syn__univ_ghost_remove; auto.
-  - eapply ad_refine_syn__univ_ghost_fill with (L := L); [ assumption | ].
-    intros α Hα. eauto using a_isub_cons_tvar.
-  - apply ad_refine_syn__univ_ghost_keep; auto.
-  - eapply ad_refine_syn__flex_l; eauto using a_isub_binds_flex_def.
-  - eapply ad_refine_syn__flex_r; eauto using a_isub_binds_flex_def.
+  intros * H Θ' Hle. eapply ad_refine_syn_defs_mono;
+    [ exact H | intros; eapply a_isub_binds_flex_def; eauto ].
 Qed.
 
 Lemma ad_refine_pskl_isub : forall Θ Δ P P',
@@ -120,19 +91,8 @@ Lemma ad_refine_pskl_isub : forall Θ Δ P P',
   forall Θ', Θ ⊴ Θ' ->
   {{ Θ' ⨟ Δ ⊢ᵣₚ P ⊳ P' }}ad.
 Proof.
-  intros Θ Δ P P' H; induction H; intros Θ' Hle.
-  - apply ad_refine_pskl__unit.
-  - apply ad_refine_pskl__var.
-  - apply ad_refine_pskl__arrow; auto.
-  - eapply ad_refine_pskl__all with (L := L).
-    intros α Hα. eauto using a_isub_cons_tvar.
-  - apply ad_refine_pskl__ghost; auto.
-  - apply ad_refine_pskl__univ_ghost_remove; auto.
-  - eapply ad_refine_pskl__univ_ghost_fill with (L := L).
-    intros α Hα. eauto using a_isub_cons_tvar.
-  - apply ad_refine_pskl__univ_ghost_keep; auto.
-  - eapply ad_refine_pskl__flex_l; eauto using a_isub_binds_flex_def.
-  - eapply ad_refine_pskl__flex_r; eauto using a_isub_binds_flex_def.
+  intros * H Θ' Hle. eapply ad_refine_pskl_defs_mono;
+    [ exact H | intros; eapply a_isub_binds_flex_def; eauto ].
 Qed.
 
 (** The JOIN is stable because both of its halves are. *)

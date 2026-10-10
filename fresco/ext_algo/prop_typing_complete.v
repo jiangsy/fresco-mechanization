@@ -598,8 +598,6 @@ Definition typing_complete (S0 : supply) (m : mode) (Θ0 : aenv) (P0 : pskl)
 (*  §4  THE MAIN INDUCTION                                                *)
 (* ===================================================================== *)
 
-Local Ltac split4 := split; [ | split; [ | split ] ].
-
 Local Ltac ck_leaf_ty :=
   solve [ apply defs_mono_ck_complete; assumption
         | apply lc_pskl_ck_complete; assumption
@@ -610,7 +608,6 @@ Local Ltac ck_leaf_ty :=
         | apply ptyp_eqb_complete; congruence
         | apply inter_is_empty_complete; assumption ].
 
-Local Ltac ck_true_ty := ck_true_with ltac:(idtac; ck_leaf_ty).
 Local Ltac bool_true_ty := bool_true_with ltac:(idtac; ck_leaf_ty).
 
 Local Ltac kill_sub Hder Hu0 Hcov0 r Hr ps Hav HS HT HQ :=
@@ -662,12 +659,6 @@ Local Ltac kill_pat_call Hp0 He0 HΘ0 HD0 Hu0 Hcov0 Hder r Hr ps
       | discriminate ]
   end.
 
-Local Ltac open_exp_lc x :=
-  match goal with
-  | Hx : forall _ : _, lc_exp (open_exp_wrt_exp _ (exp_var_f _)) |- _ =>
-      exact (Hx x)
-  end.
-
 Lemma e_typing_impl_complete_ind : forall S0 m Θ0 P0 e,
   e_typing_order S0 m Θ0 P0 e -> typing_complete S0 m Θ0 P0 e.
 Proof.
@@ -693,7 +684,7 @@ Proof.
     kill_dec (pskl_readback_complete_eq Hout) A0 HA0.
     eexists; exists ps.
     split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
-    split4; [ exact Hav | cbn [ty_supply]; exact HS
+    repeat apply conj; [ exact Hav | cbn [ty_supply]; exact HS
             | cbn [ty_ctx]; exact HT | cbn [ty_out]; reflexivity ].
 
   - (* ============ a bound index is unreachable ============ *)
@@ -721,7 +712,7 @@ Proof.
     kill_dec (pskl_readback_complete_eq Hout) B0 HB0.
     eexists; exists ps.
     split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
-    split4; [ exact Hav | cbn [ty_supply]; exact HS
+    repeat apply conj; [ exact Hav | cbn [ty_supply]; exact HS
             | cbn [ty_ctx]; exact HT | cbn [ty_out]; reflexivity ].
 
   - (* ============ AT-Abs, and the two check-mode abs rows ============ *)
@@ -901,7 +892,7 @@ Proof.
         bool_true_ty.
         eexists; exists (((αd, supply_fresh S0) :: nil) ++ ps2).
         split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
-        split4.
+        repeat apply conj.
         + intros a0 b0 Hin. apply in_app_or in Hin.
           destruct Hin as [Hin | Hin]; [ exact (Hav0 _ _ Hin) | ].
           destruct (Hav2 _ _ Hin) as [Hka Hkb]. split; fsetdec.
@@ -1133,7 +1124,7 @@ Proof.
         exists ((ps1 ++ ((swaps_atom ps1 xd,
                   supply_fresh (sp_supply rs)) :: nil)) ++ ps2).
         split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
-        split4.
+        repeat apply conj.
         + intros a0 b0 Hin. repeat (apply in_app_or in Hin;
             destruct Hin as [Hin | Hin]).
           * exact (Hav1 _ _ Hin).
@@ -1421,7 +1412,7 @@ Proof.
       exists (((ps1 ++ psg) ++ ((swaps_atom psg (swaps_atom ps1 xd),
                 supply_fresh (gr_supply rg)) :: nil)) ++ ps2);
       split; [ cbn [typing_answer proj1_sig]; reflexivity | ];
-      split4;
+      repeat apply conj;
       [ intros a0 b0 Hin; repeat (apply in_app_or in Hin;
           destruct Hin as [Hin | Hin]);
         [ exact (Hav1 _ _ Hin)
@@ -1607,7 +1598,7 @@ Proof.
         bool_true_ty.
         eexists; exists (((αd, supply_fresh S0) :: nil) ++ ps2).
         split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
-        split4.
+        repeat apply conj.
         + intros a0 b0 Hin. apply in_app_or in Hin.
           destruct Hin as [Hin | Hin]; [ exact (Hav0 _ _ Hin) | ].
           destruct (Hav2 _ _ Hin) as [Hka Hkb]. split; fsetdec.
@@ -1920,7 +1911,7 @@ Proof.
         exists (((ps1 ++ psc) ++ ((swaps_atom psc (swaps_atom ps1 xd),
                   supply_fresh (cs_supply rc)) :: nil)) ++ ps2).
         split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
-        split4.
+        repeat apply conj.
         + intros a0 b0 Hin. repeat (apply in_app_or in Hin;
             destruct Hin as [Hin | Hin]).
           * exact (Hav1 _ _ Hin).
@@ -2195,7 +2186,7 @@ Proof.
       exists (((ps1 ++ psc) ++ ((swaps_atom psc (swaps_atom ps1 xd),
                 supply_fresh (cs_supply rc)) :: nil)) ++ ps2);
       split; [ cbn [typing_answer proj1_sig]; reflexivity | ];
-      split4;
+      repeat apply conj;
       [ intros a0 b0 Hin; repeat (apply in_app_or in Hin;
           destruct Hin as [Hin | Hin]);
         [ exact (Hav1 _ _ Hin)
@@ -2300,7 +2291,7 @@ Proof.
     unfold typing_spec in Hr3.
     eexists; exists ((ps1 ++ ps2) ++ ps3).
     split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
-    split4.
+    repeat apply conj.
     + intros a0 b0 Hin. repeat (apply in_app_or in Hin;
         destruct Hin as [Hin | Hin]).
       * exact (Hav1 _ _ Hin).
@@ -2363,7 +2354,7 @@ Proof.
     kill_dec (pskl_readback_complete_eq Hout) B0 HB0.
     eexists; exists (ps1 ++ ps2).
     split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
-    split4.
+    repeat apply conj.
     + intros a0 b0 Hin. apply in_app_or in Hin.
       destruct Hin as [Hin | Hin]; [ exact (Hav1 _ _ Hin) | ].
       destruct (Hav2 _ _ Hin) as [Hka Hkb]. split;
@@ -2430,7 +2421,7 @@ Proof.
     end.
     eexists; exists (ps1 ++ ps2).
     split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
-    split4.
+    repeat apply conj.
     + intros a0 b0 Hin. apply in_app_or in Hin.
       destruct Hin as [Hin | Hin]; [ exact (Hav1 _ _ Hin) | ].
       destruct (Hav2 _ _ Hin) as [Hka Hkb]. split;

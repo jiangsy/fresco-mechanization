@@ -27,6 +27,7 @@ Require Import src.fresco.algo.prop_basic.
 Require Import src.fresco.algo.prop_stability.
 Require Import src.fresco.algo.prop_refine.
 Require Import src.fresco.algo.prop_swap.   (* a_wf_pskl_lc *)
+Require Import src.fresco.algo_decl.prop_ctx_mono.
 Require Import src.fresco.algo.consis.prop_soundness_consis.
 Require Import src.fresco.algo.consis.prop_completeness_consis.
 Require Import src.fresco.algo.prop_mono_bridge.

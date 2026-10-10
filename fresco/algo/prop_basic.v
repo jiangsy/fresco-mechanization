@@ -20,6 +20,7 @@ Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
 Require Import src.fresco.algo.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
+Require Import src.fresco.algo_decl.prop_ctx_mono.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo.prop_inc.
 Require Import src.fresco.algo.prop_swap.
@@ -44,16 +45,9 @@ Lemma a_wf_ptyp_weaken : forall Θ Θ' A,
   a_wf_ptyp Θ A ->
   a_wf_ptyp Θ' A.
 Proof.
-  intros * Hmon Hwf; revert Θ' Hmon; induction Hwf; intros Θ' Hmon;
-    eauto using a_wf_ptyp.
-  - apply a_wf_ptyp__var.
-    destruct H as [Hb | [Hb | [τ Hb]]];
-      [ left | right; left | right; right; exists τ ]; auto.
-  - apply a_wf_ptyp__all with (L := L). intros α Hα.
-    apply H0; auto. intros x b Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
-      [ unfold binds; left; reflexivity
-      | unfold binds; right; apply Hmon; auto ].
+  intros * Hmon Hwf.
+  eapply a_wf_ptyp_mono; [ exact Hwf | ].
+  apply aenv_tbinds_le_of_binds_le. exact Hmon.
 Qed.
 
 Lemma a_tyequiv_weaken_cons : forall Θ (e : list (atom * abind)) A A',
@@ -894,49 +888,9 @@ Lemma ad_pat_consis_weaken : forall Ψ Θ R Q,
   (forall x b, binds x b Θ -> binds x b Θ') ->
   {{ Ψ ⨟ Θ' ⊢ˢ R ∼ Q }}ad.
 Proof.
-  intros Ψ Θ R Q H; induction H; intros Θ' Hmon.
-  - apply ad_pat_consis__unit; auto.
-  - apply ad_pat_consis__var; auto.
-    destruct H0 as [Hb | [Hb | [τ Hb]]];
-      [ left | right; left | right; right; exists τ ]; auto.
-  - eapply ad_pat_consis__arrow; eauto.
-  - eapply ad_pat_consis__forall_inh_tagged with (L := L); eauto.
-    intros α Hα. apply H0; auto.
-    intros x b Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
-      [ unfold binds; left; reflexivity
-      | unfold binds; right; apply Hmon; auto ].
-  - eapply ad_pat_consis__forall_inh_untagged with (L := L); eauto.
-    intros α Hα. apply H0; auto.
-    intros x b Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
-      [ unfold binds; left; reflexivity
-      | unfold binds; right; apply Hmon; auto ].
-  - eapply ad_pat_consis__forall_syn_tagged with (L := L); eauto.
-    intros α Hα. apply H0; auto.
-    intros x b Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
-      [ unfold binds; left; reflexivity
-      | unfold binds; right; apply Hmon; auto ].
-  - eapply ad_pat_consis__forall_syn with (L := L); eauto.
-    intros α Hα. apply H0; auto.
-    intros x b Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
-      [ unfold binds; left; reflexivity
-      | unfold binds; right; apply Hmon; auto ].
-  - apply ad_pat_consis__ghostg; auto.
-  - apply ad_pat_consis__dot_univ_ghost; auto.
-  - apply ad_pat_consis__ghost; eauto using a_wf_pskl_weaken.
-  - apply ad_pat_consis__univ_ghost; auto.
-  - eapply ad_pat_consis__univ_ghost_inh with (L := L); eauto.
-    intros α Hα. apply H0; auto.
-    intros x b Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
-      [ unfold binds; left; reflexivity
-      | unfold binds; right; apply Hmon; auto ].
-  - apply ad_pat_consis__univ_ghost_drop; auto.
-  - eapply ad_pat_consis__flex_l; eauto.
-  - eapply ad_pat_consis__flex_r; eauto.
+  intros * H Θ' Hmon.
+  eapply ad_pat_consis_mono; [ exact H | ].
+  apply aenv_tbinds_le_of_binds_le. exact Hmon.
 Qed.
 
 Lemma ad_pat_consis_weaken_cons : forall Ψ Θ (e : list (atom * abind)) R Q,

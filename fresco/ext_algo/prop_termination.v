@@ -23,9 +23,7 @@
     impredicative polymorphic subtyping, which the paper cites as its own
     motivation.
 
-    §1 counts the ∀s of a type, a skeleton and a constraint list, and §4
-    bounds the collection's constraint yield by the COUNTERPART alone (the
-    subject is only walked, never deposited).  [nall P0] is one component of
+    [nall P0] counts the pattern's quantifiers and is one component of
     §17's lexicographic measure.
 
     ⚙ AND THE SECOND HALF OF THE ARGUMENT IS NOT A SIZE BOUND AT ALL (user,
@@ -128,60 +126,6 @@ Proof. intros. apply nall_pskl_open_rec. Qed.
 Lemma nall_ptyp_to_pskl : forall A,
   nall_pskl (ptyp_to_pskl A) = nall_ptyp A.
 Proof. induction A; simpl; lia. Qed.
-
-(* ===================================================================== *)
-(*  §3  Counting ∀s in a constraint list                                  *)
-(*                                                                        *)
-(*  The collection deposits skeleton FRAGMENTS of its two inputs into     *)
-(*  [C]; the fold then replays them against the accumulated pattern.  So  *)
-(*  the count of a constraint list is the ledger the bound moves through. *)
-(* ===================================================================== *)
-
-Definition nall_a_cstr (c : a_cstr) : nat :=
-  match c with
-  | a_cstr_sub _ P => nall_pskl P
-  | a_cstr_eq P    => nall_pskl P
-  end.
-
-Fixpoint nall_a_cstrs (C : a_cstrs) : nat :=
-  match C with
-  | nil     => 0
-  | c :: C' => nall_a_cstr c + nall_a_cstrs C'
-  end.
-
-Lemma nall_a_cstrs_app : forall C1 C2,
-  nall_a_cstrs (C1 ++ C2) = nall_a_cstrs C1 + nall_a_cstrs C2.
-Proof.
-  induction C1 as [ | c C1' IH ]; intros; simpl; [ auto | rewrite IH; lia ].
-Qed.
-
-(* ===================================================================== *)
-(*  §4  ⭐ EVERY ∀ THE COLLECTION DEPOSITS IS THE COUNTERPART'S            *)
-(*                                                                        *)
-(*  Sharper than "no ∀ of its own": the constraints are bounded by the    *)
-(*  COUNTERPART alone, the subject contributes nothing.  Read the three   *)
-(*  depositing rows and the reason is visible — LS-Var and LE-Var         *)
-(*  deposit the counterpart standing opposite the looked-up variable,     *)
-(*  and LE-FlexR deposits a fresh VARIABLE (∀-free, exactly as            *)
-(*  [guess^TY]'s ghost row).  The subject is only ever WALKED.             *)
-(* ===================================================================== *)
-
-Lemma e_looksub_lookeq_nall :
-  (forall S0 Θ α m P P' S1 Ξ C,
-     {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-     nall_a_cstrs C <= nall_pskl P') /\
-  (forall S0 Θ α P P' S1 Ξ C,
-     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-     nall_a_cstrs C <= nall_pskl P').
-Proof.
-  apply (e_looksub_lookeq_mutind
-           (fun S0 Θ α m P P' S1 Ξ C _ => nall_a_cstrs C <= nall_pskl P')
-           (fun S0 Θ α P P' S1 Ξ C _ => nall_a_cstrs C <= nall_pskl P'));
-    intros; simpl in *;
-    repeat rewrite nall_a_cstrs_app;
-    repeat rewrite nall_pskl_open in *;
-    lia.
-Qed.
 
 (* ===================================================================== *)
 (*  §7  ⭐⭐ THE HEAD CHAIN — the count [a_sub__forall_l] actually consumes *)
