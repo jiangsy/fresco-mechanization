@@ -104,7 +104,13 @@ Proof.
     look_grow_facts;
     repeat (rewrite dom_app in * || rewrite ftvar_in_aenv_app in * );
     simpl in *;
-    repeat split;
+    repeat match goal with |- _ /\ _ => split end;
+    (* ⚙ the rows that pass a premise's block through: its freshness at a
+       LARGER supply is a two-set fact, and [fsetdec] over the whole context
+       costs ~2 s a call here — so try it alone first *)
+    try solve [ match goal with
+                | H : ?X ∩ _ [=] empty |- ?X ∩ _ [=] empty => clear - H; fsetdec
+                end ];
     try solve [ fsetdec ];
     try solve [ solve_uniq ];
     (* the two ARROW rows: the blocks are disjoint because the right one is
