@@ -401,12 +401,13 @@ Lemma ad_sd_typing_subst_tm : forall M Θ' e B,
   {{ (Θa ++ (y ~ b) ++ Θ0) ⊢ˢᵈ[ M ] (subst_exp_in_exp (exp_var_f y) x e) ⦂ B }}ad.
 Proof.
   intros M Θ' e B H; induction H;
-    intros Θa x0 b0 Θb y Heq Htm Hx0; subst; simpl.
+    intros Θa x0 b0 Θb y Heq Htm Hx0; subst; simpl;
+  assert (Hren : aenv_tbinds_le (Θa ++ (x0 ~ b0) ++ Θb) (Θa ++ (y ~ b0) ++ Θb))
+    by (apply aenv_tbinds_le_rename_tm; apply abind_is_tm_not_ty; exact Htm).
   - (* unit *)
     apply ad_sd_typing__unit.
     eapply ad_pat_sub_mono;
-      [ eassumption | apply aenv_tbinds_le_rename_tm;
-                      apply abind_is_tm_not_ty; exact Htm ].
+      [ eassumption | exact Hren ].
   - (* var *)
     destruct_if as [Heqx | Hne].
     + subst x.
@@ -420,12 +421,10 @@ Proof.
         [ rewrite Hb0; apply binds_app_3;
           unfold binds; simpl; left; reflexivity
         | eapply ad_pat_sub_mono;
-            [ eassumption | apply aenv_tbinds_le_rename_tm;
-                            apply abind_is_tm_not_ty; exact Htm ] ].
+            [ eassumption | exact Hren ] ].
     + eapply ad_sd_typing__var;
         [ | eapply ad_pat_sub_mono;
-              [ eassumption | apply aenv_tbinds_le_rename_tm;
-                              apply abind_is_tm_not_ty; exact Htm ] ].
+              [ eassumption | exact Hren ] ].
       apply binds_app_1 in H as [Hb | Hb];
         [ apply binds_app_2; exact Hb | ].
       apply binds_app_1 in Hb as [Hb | Hb];
@@ -434,18 +433,15 @@ Proof.
   - (* anno *)
     eapply ad_sd_typing__anno;
       [ eapply a_wf_ptyp_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ]
+          [ eassumption | exact Hren ]
       | apply IHad_sd_typing; auto
       | eapply ad_pat_sub_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ] ].
+          [ eassumption | exact Hren ] ].
   - (* freeze *)
     eapply ad_sd_typing__freeze;
       [ apply IHad_sd_typing; auto
       | eapply a_tyequiv_ctx_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ] ].
+          [ eassumption | exact Hren ] ].
   - (* abs_check_step : a RIGID binder joins the prefix *)
     apply ad_sd_typing__abs_check_step
       with (L := L `union` singleton x0 `union` singleton y);
@@ -458,8 +454,7 @@ Proof.
     apply ad_sd_typing__abs_check_base
       with (L := L `union` singleton x0 `union` singleton y);
       [ eapply a_wf_ptyp_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ]
+          [ eassumption | exact Hren ]
       | assumption | ].
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
@@ -479,11 +474,9 @@ Proof.
     apply ad_sd_typing__abs_anno_check_base
       with (L := L `union` singleton x0 `union` singleton y) (A' := A');
       [ eapply a_wf_ptyp_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ]
+          [ eassumption | exact Hren ]
       | eapply a_tyequiv_ctx_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ]
+          [ eassumption | exact Hren ]
       | assumption | ].
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
@@ -496,8 +489,7 @@ Proof.
       with (L := L `union` singleton x0 `union` singleton y);
       [ assumption
       | eapply a_wf_ptyp_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ]
+          [ eassumption | exact Hren ]
       | assumption | ].
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
@@ -510,11 +502,9 @@ Proof.
       with (L := L `union` singleton x0 `union` singleton y);
       try assumption; try reflexivity;
       try (eapply a_wf_ptyp_mono;
-           [ eassumption | apply aenv_tbinds_le_rename_tm;
-                           apply abind_is_tm_not_ty; exact Htm ]);
+           [ eassumption | exact Hren ]);
       try (eapply a_tyequiv_ctx_mono;
-           [ eassumption | apply aenv_tbinds_le_rename_tm;
-                           apply abind_is_tm_not_ty; exact Htm ]).
+           [ eassumption | exact Hren ]).
     intros z Hz.
     rewrite subst_exp_in_exp_open_exp_wrt_exp_var;
       [ | clear - Hz; fsetdec | apply lc_exp_var_f ].
@@ -526,12 +516,10 @@ Proof.
       [ eapply ad_pat_subst_tm; [ eassumption | reflexivity | exact Htm
                                 | exact Hx0 ]
       | eapply ad_refine_syn_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ]
+          [ eassumption | exact Hren ]
       | apply IHad_sd_typing1; auto
       | eapply a_tyequiv_ctx_mono;
-          [ eassumption | apply aenv_tbinds_le_rename_tm;
-                          apply abind_is_tm_not_ty; exact Htm ]
+          [ eassumption | exact Hren ]
       | apply IHad_sd_typing2; auto ].
 Qed.
 
@@ -616,11 +604,7 @@ Qed.
     the premise's target is that [btyp]'s SKELETON, so the two shapes have
     to be bridged, and the bridge at CHECK mode needs local closure. *)
 
-(* --- §8a  local closure of a consistency's target -------------------- *)
-
-(** [prop_eq_var.ad_pat_consis_target_lc] (algo/sub/look/prop_eq_var.v). *)
-
-(* --- §8b  the two [btyp] / [bskl] shape bridges ---------------------- *)
+(* --- §8a  the two [btyp] / [bskl] shape bridges ---------------------- *)
 
 (** Erasing to the skeleton reflects local closure. *)
 Lemma degree_btyp_of_degree_bskl_erase : forall B k,
@@ -660,12 +644,13 @@ Proof.
     rewrite H2. reflexivity.
 Qed.
 
-(* --- §8c  the SK-sorted [ad_pat_sub_mod_comp_sk]'s TY analogue -------- *)
+(* --- §8b  the SK-sorted [ad_pat_sub_mod_comp_sk]'s TY analogue -------- *)
 
 (** The TY-sorted all-in-one subtyping run's target is mode-compatible —
     the paper's (commented-out) "refinement preserves correspondence" for
     TYPES.  [Infer] and [Check] are the two leaves; [Check]'s local
-    closure comes off its own consistency premise (§8a). *)
+    closure comes off its own consistency premise
+    ([ad_pat_consis_target_lc], algo/sub/look/prop_eq_var.v). *)
 Lemma ad_pat_sub_mod_comp_ty : forall M Ψ Θ R Q,
   {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_ty | M ] R ⩽ Q }}ad ->
   forall Bt, Q = btyp_to_bskl Bt -> mod_comp_ty Bt M.
@@ -700,7 +685,7 @@ Proof.
   - (* flex_mono *) apply (IHad_pat_sub eq_refl Bt); exact HeqB.
 Qed.
 
-(* --- §8d  local closure off an equivalence --------------------------- *)
+(* --- §8c  local closure off an equivalence --------------------------- *)
 
 (** [≡ᵗ]'s [flex_def] row hands back a flexible's DEFINITION, whose local
     closure is only available from the context — hence the [a_wf_aenv]
@@ -730,13 +715,13 @@ Corollary a_tyequiv_lc_r : forall Θ A A',
   {{ Θ ⊢ A ≡ᵗ A' }}a -> {{ ⊢ Θ }}a -> lc_ptyp A'.
 Proof. intros * H Hwf. apply (proj2 (a_tyequiv_lc H Hwf)). Qed.
 
-(* --- §8e  the theorem of this section --------------------------------- *)
+(* --- §8d  the theorem of this section --------------------------------- *)
 
 (** ⭐ The [ad_pat_mod_comp_sk] mirror: a type-inference colouring is
     mode-compatible.  The two Abs rows carry it outright, the three base
-    rows read it off their subtyping premise (§8c), the two check-Abs
+    rows read it off their subtyping premise (§8b), the two check-Abs
     pairs rebuild it from [is_ityp], [Freeze] and [AbsAnnoCheck] take
-    their local closure off the appendix's [≡ᵗ] premise (§8d), and [App]
+    their local closure off the appendix's [≡ᵗ] premise (§8c), and [App]
     inverts its function premise's. *)
 Lemma ad_sd_typing_mod_comp_ty : forall M Θ e B,
   {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad -> {{ ⊢ Θ }}a -> mod_comp_ty B M.
@@ -1075,9 +1060,7 @@ Qed.
 (*  §12  The eleven-row induction's own kit                               *)
 (* ===================================================================== *)
 
-(* --- §12a  reading a PAINTING's skeleton well-formedness as a type's --- *)
-
-(* --- §12b  scoping bounds the suffix-erasure freshness reads off ------ *)
+(* --- §12a  scoping bounds the suffix-erasure freshness reads off ------ *)
 
 (** A well-formed TERM mentions only type variables of its context — the
     "the term is the source program" half of [lemma:suffix-erasure]'s
@@ -1103,7 +1086,7 @@ Proof.
   - (* app *) clear - IHa_wf_exp1 IHa_wf_exp2; fsetdec.
 Qed.
 
-(* --- §12c  a ghost-free bskl IS a colouring -------------------------- *)
+(* --- §12b  a ghost-free bskl IS a colouring -------------------------- *)
 
 (** [a_sub_sound] hands back a [bskl]; the TY-sorted declarative
     judgements want a [btyp].  Whenever the erasure is a painting of a type
@@ -1136,15 +1119,7 @@ Proof.
   inversion Heq; subst. exists B1, B2; repeat split.
 Qed.
 
-(* --- §12d  mode compatibility at the TY sort -------------------------- *)
-
-(* --- §12e  the split is sound: increase, wf, and both components ------ *)
-
-(* --- §12f  guess^TY's block, and the type it produces ----------------- *)
-
-(* --- §12g  the term-entry peel that DROPS the suffix ------------------ *)
-
-(* --- §12h  scoping: reading a scope off, and stripping a suffix ------- *)
+(* --- §12c  scoping: reading a scope off, and stripping a suffix ------- *)
 
 Lemma a_wf_ptyp_of_scope_pskl : forall Θ P,
   a_scope_pskl Θ P -> forall A, P = ptyp_to_pskl A -> a_wf_ptyp Θ A.
@@ -1224,7 +1199,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §12h  A DERIVATION EXHIBITS ITS OWN SUBJECT AS A WELL-FORMED TERM.     *)
+(*  §12d  A DERIVATION EXHIBITS ITS OWN SUBJECT AS A WELL-FORMED TERM.     *)
 (*                                                                        *)
 (*  ⭐ This is what [ad_sd_typing__anno]'s [a_wf_ptyp] premise buys.       *)
 (*  Without it the annotation's type variables are unconstrained — the     *)
@@ -1340,7 +1315,7 @@ Proof.
   - apply lc_exp_app; assumption.
 Qed.
 
-(* --- §12i  odds and ends --------------------------------------------- *)
+(* --- §12e  odds and ends --------------------------------------------- *)
 
 Lemma a_decls_binds_flex : forall Ξ y (b : abind),
   a_decls Ξ -> binds y b Ξ -> b = abind_flex_mono.
@@ -1357,6 +1332,26 @@ Proof. induction A; simpl; intuition. Qed.
 Lemma ftvar_in_bskl_inh_ptyp : forall A,
   ftvar_in_bskl (pskl_to_bskl_inh (ptyp_to_pskl A)) [=] ftvar_in_ptyp A.
 Proof. induction A; simpl; fsetdec. Qed.
+
+(** Opening a well-formed [∀] at ONE fresh atom — the exists-fresh form the
+    check [_step] rows need (the rule binds a single [α], not a cofinite
+    family, so the wf premise has to be re-instantiated by renaming). *)
+Lemma a_wf_ptyp_all_open_at : forall Θ A0 α,
+  a_wf_ptyp Θ (ptyp_all A0) ->
+  a_wf_ptyp ((α ~ abind_tvar) ++ Θ) (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)).
+Proof.
+  intros Θ A0 α Hwf.
+  inversion Hwf as [ | | | L0 Θx A0x Hbody Heq1 Heq2 ]; subst.
+  destruct (atom_fresh (L0 `union` ftvar_in_ptyp A0 `union` singleton α))
+    as [β0 Hβ0].
+  pose proof (@a_wf_ptyp_rename_tvar _ _
+                (Hbody β0 ltac:(clear - Hβ0; solve_notin_auto)) nil β0 Θ α eq_refl)
+    as Hr.
+  simpl in Hr.
+  rewrite <- (subst_ptyp_in_ptyp_intro β0 A0 (ptyp_var_f α)
+                ltac:(clear - Hβ0; solve_notin_auto)) in Hr.
+  exact Hr.
+Qed.
 
 (* ===================================================================== *)
 (*  §13  thm:sound-type-inference                                        *)
@@ -1389,7 +1384,7 @@ Proof.
     pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf Hb)
       as Hskl.
   - (* AT-Unit *)
-    destruct (a_sub_sound_v H Hwf HwfP0
+    destruct (a_sub_sound H Hwf HwfP0
                 ltac:(apply a_wf_pskl__unit)
                 ltac:(intros Hd; discriminate)
                 ltac:(intros _; exact Hmod))
@@ -1405,7 +1400,7 @@ Proof.
   - (* AT-Var *)
     assert (HwfA : a_wf_ptyp Θ0 A)
       by (eapply a_wf_aenv_binds_var_typ_wf; eassumption).
-    destruct (a_sub_sound_v H0 Hwf HwfP0
+    destruct (a_sub_sound H0 Hwf HwfP0
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA)
                 ltac:(intros Hd; discriminate)
                 ltac:(intros _; exact Hmod))
@@ -1431,7 +1426,7 @@ Proof.
       eapply ad_sd_typing_mod_comp_ty; eassumption. }
     subst Bt.
     assert (HwfA1 : a_wf_ptyp Θ1 A) by (eapply a_wf_ptyp_isub; eassumption).
-    destruct (a_sub_sound_v H0 Hwf1
+    destruct (a_sub_sound H0 Hwf1
                 ltac:(eapply a_wf_pskl_isub; [ exact HwfP0 | exact Hle1 ])
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA1)
                 ltac:(intros Hd; discriminate)
@@ -1527,7 +1522,7 @@ Proof.
       apply lc_aenv_app_inv in Hwfout as [_ Hwfout].
       apply lc_aenv_app_inv in Hwfout as [_ Hwfout]. exact Hwfout. }
     assert (Hisubαs : (αs ++ Θ0) ⊴ (Ξ ++ Θ2))
-      by (eapply a_isub_peel_var_typ_mid; eassumption).
+      by (eapply a_isub_peel_tm_mid; [ | eassumption .. ]; exact I).
     assert (Hisub : Θ0 ⊴ (Ξ ++ Θ2))
       by (eapply a_isub_strengthen_decls_src; eassumption).
     assert (Hwf2 : {{ ⊢ (Ξ ++ Θ2) }}a)
@@ -1590,7 +1585,7 @@ Proof.
     + simpl. rewrite btyp_to_bskl_ptyp_to_btyp_inh. exact Href2.
   - (* AT-AbsAnno *)
     destruct (a_split_ty_shape H0 Hmod H) as [HeqΘ Hshape]; subst Θ1.
-    destruct (a_wf_exp_abs_anno_inv Hexp) as [HwfA _].
+    pose proof (a_wf_exp_abs_anno_inv Hexp) as HwfA.
     assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
                    a_ty_mode_compat (decr_mode m) Q).
     { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
@@ -1624,7 +1619,7 @@ Proof.
       apply lc_aenv_app_inv in Hwfout as [_ Hwfout].
       apply lc_aenv_app_inv in Hwfout as [_ Hwfout]. exact Hwfout. }
     assert (Hisub : Θ2 ⊴ (Ξ ++ Θ3))
-      by (eapply a_isub_peel_var_typ_mid; eassumption).
+      by (eapply a_isub_peel_tm_mid; [ | eassumption .. ]; exact I).
     assert (Hisub0 : Θ0 ⊴ (Ξ ++ Θ3)) by (eapply a_isub_trans; eassumption).
     assert (Hwf3 : {{ ⊢ (Ξ ++ Θ3) }}a)
       by (eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []).
@@ -1703,20 +1698,8 @@ Proof.
     assert (Hwfα : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]).
     assert (HwfA0α : a_wf_ptyp ((α ~ abind_tvar) ++ Θ0)
-                       (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))).
-    { inversion HwfA0; subst.
-      match goal with
-      | Hf : forall β, β `notin` ?Lw0 -> a_wf_ptyp _ _ |- _ =>
-          destruct (atom_fresh (Lw0 `union` ftvar_in_ptyp A0
-                                  `union` singleton α)) as [β0 Hβ0];
-          pose proof (@a_wf_ptyp_rename_tvar _ _
-                        (Hf β0 ltac:(clear - Hβ0; solve_notin_auto))
-                        nil β0 Θ0 α eq_refl) as Hr
-      end.
-      simpl in Hr.
-      rewrite <- (subst_ptyp_in_ptyp_intro β0 A0 (ptyp_var_f α)
-                    ltac:(clear - Hβ0; solve_notin_auto)) in Hr.
-      exact Hr. }
+                       (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
+      by (apply a_wf_ptyp_all_open_at; exact HwfA0).
     destruct (IHa_typing Hwfα
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA0α)
                 (a_ty_mode_compat__tc _)
@@ -1976,20 +1959,8 @@ Proof.
     assert (Hwfα : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
       by (apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ]).
     assert (HwfA0α : a_wf_ptyp ((α ~ abind_tvar) ++ Θ0)
-                       (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))).
-    { inversion HwfA0; subst.
-      match goal with
-      | Hf : forall β, β `notin` ?Lw0 -> a_wf_ptyp _ _ |- _ =>
-          destruct (atom_fresh (Lw0 `union` ftvar_in_ptyp A0
-                                  `union` singleton α)) as [β0 Hβ0];
-          pose proof (@a_wf_ptyp_rename_tvar _ _
-                        (Hf β0 ltac:(clear - Hβ0; solve_notin_auto))
-                        nil β0 Θ0 α eq_refl) as Hr
-      end.
-      simpl in Hr.
-      rewrite <- (subst_ptyp_in_ptyp_intro β0 A0 (ptyp_var_f α)
-                    ltac:(clear - Hβ0; solve_notin_auto)) in Hr.
-      exact Hr. }
+                       (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
+      by (apply a_wf_ptyp_all_open_at; exact HwfA0).
     destruct (IHa_typing Hwfα
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA0α)
                 (a_ty_mode_compat__tc _)
@@ -2149,7 +2120,7 @@ Proof.
         | clear; fsetdec ].
   - (* AT-AbsAnnoCheck (→) : row 8 plus the annotation's consistency, whose
        ≡ᵗ reading is what [sd-AbsAnnoCheck]'s appendix premise consumes *)
-    destruct (a_wf_exp_abs_anno_inv Hexp) as [HwfAan _].
+    pose proof (a_wf_exp_abs_anno_inv Hexp) as HwfAan.
     destruct (a_split_wf H Hwf HwfP0) as [Hles [Hwfs [HwfPA HwfPB]]].
     assert (HwfAs : a_wf_ptyp Θ1 A')
       by (apply a_wf_ptyp_of_wf_pskl_empty; exact HwfPA).

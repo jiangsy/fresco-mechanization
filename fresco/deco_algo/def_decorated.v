@@ -103,6 +103,11 @@ Inductive a_consistag :
     {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
     Ψ [=] empty ->
     {{ Θ0 ⊢[ Δ1 | Δ2 | (pskl_var_f β) | Ψ ] (uskl_var_f α) ∼ (pskl_var_f α) ⊣ Θ1 }}da
+(* ⚙ FlexL / FlexR omit the plain rules' [P0 <> ◇] / [P <> ◇] guards
+   ([a_consis__flex_l] / [__flex_r]).  Harmless: decoration only has to
+   REPLAY every plain run, which fewer premises makes easier, and the
+   decorated soundness bundle is proved for every decorated derivation,
+   guarded or not. *)
 | a_consistag__flex_l : forall Δ1 Δ2 Ψ Θ0 Θ1 α P0,            (* FlexL *)
     a_non_flex Θ0 P0 ->
     {{ Θ0 ⊲[ nil ] α ≔ P0 ⊣ Θ1 }}a ->
@@ -223,11 +228,12 @@ Inductive a_subtag :
     guarded_uskl T ->
     guarded_pskl B ->
     {{ Θ0 ⊢[ empty | empty | B | Ψ ] T ∼ Q ⊣ Θ1 }}da ->
-    (* The consistency output [Q] is NOT used (paper full-algo-spec.tex:1441:
-       "when the output Q is not used"); when the target [B] is a type it is
-       a type EQUIVALENT to [B] (:1444), not literally [B].  Pinning it to [B]
-       is unsound for a flexible subject [α̂] (all three witnesses — paper
-       [FlexL]:1655, [a_consis__flex_l], impl [U-FlexL]:182 — output [α̂]). *)
+    (* The consistency output [Q] is NOT pinned to [B], although the paper's
+       [Check] (full-algo-spec.tex:799) writes it as [B]: when the target [B]
+       is a type the output is only a type EQUIVALENT to [B].  Pinning it is
+       unsound for a flexible subject [α̂] (all three witnesses — paper
+       [U-FlexL] (:1665), [a_consis__flex_l], impl [U-FlexL]:182 — output
+       [α̂]). *)
     {{ Θ0 ⊢[ a_sub_mode_ty | mode_tc | B | Ψ ] T ⩽ B ⊣ Θ1 }}da
 | a_subtag__forall_r : forall α Ψ Θ0 Θ1 Ξ R B,                (* ForallR *)
     (* SORT, mirroring [a_sub__forall_r]: the target [∀α.B] is a TYPE. *)
@@ -365,7 +371,7 @@ with a_subtag_flex :
     a_subtag_flex NM M P0 Θ0 Ξ α A Θ1 ->
     a_subtag_flex NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α A ((β ~ abind_tvar) ++ Θ1)
 (* the decorated mirrors of [a_sub_flex__skip_tm_var] / [__skip_tm_skl]
-   ([paper-gap] Flex-SkipTmVar, algo/def_rules.v) *)
+   (Flex-SkipTmVar, full-algo-spec.tex:914) *)
 | a_subtag_flex__skip_tm_var : forall NM M P0 Θ0 Θ1 Ξ α x Q A,
     x `notin` dom Θ1 ->
     a_subtag_flex NM M P0 Θ0 Ξ α A Θ1 ->
