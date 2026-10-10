@@ -3051,3 +3051,59 @@ Proof.
     + exact (Hagp a b Hin).
 Qed.
 
+
+(** Context relations already preserve flexibility once atom images are
+    injective and functional on the source context. *)
+Lemma rel_aenv_binds_r : forall ρ V Θ1 Θ2 b b2,
+  rel_aenv ρ V Θ1 Θ2 -> binds b b2 Θ2 ->
+  exists a b1, rel_atom ρ V a b /\ rel_abind ρ V b1 b2 /\ binds a b1 Θ1.
+Proof.
+  intros * H; induction H; intros Hb; [ inversion Hb | ].
+  unfold binds in Hb; simpl in Hb; destruct Hb as [Heq | Hb].
+  - inversion Heq; subst. exists a, b1. repeat split; try assumption.
+    unfold binds; simpl; left; reflexivity.
+  - destruct (IHrel_aenv Hb) as (a' & b1' & Hat & Hab & Hbd).
+    exists a', b1'. repeat split; try assumption.
+    unfold binds in Hbd |- *; simpl; right; exact Hbd.
+Qed.
+
+Lemma rel_aenv_flex : forall ρ V Θ1 Θ2 a b,
+  rel_aenv ρ V Θ1 Θ2 -> rel_inj ρ V -> rel_fun ρ V (dom Θ1) ->
+  rel_atom ρ V a b -> (a_flex_tvar Θ1 a <-> a_flex_tvar Θ2 b).
+Proof.
+  intros * Hr Hinj Hfun Hat. split; intros [Hb | [τ Hb]].
+  - destruct (rel_aenv_binds_pin abind_flex_mono Hr Hfun Hb Hat) as (bd & Hbd & Hb').
+    inversion Hbd; subst. left; exact Hb'.
+  - destruct (rel_aenv_binds_pin (abind_flex_mono_def τ) Hr Hfun Hb Hat) as (bd & Hbd & Hb').
+    inversion Hbd; subst. right; eexists; exact Hb'.
+  - destruct (@rel_aenv_binds_r ρ V Θ1 Θ2 b abind_flex_mono Hr Hb) as (a' & bd & Hat' & Hbd & Hb').
+    assert (a' = a) by (exact (Hinj _ _ _ Hat' Hat)). subst a'.
+    inversion Hbd; subst. left; exact Hb'.
+  - destruct (@rel_aenv_binds_r ρ V Θ1 Θ2 b (abind_flex_mono_def τ) Hr Hb) as (a' & bd & Hat' & Hbd & Hb').
+    assert (a' = a) by (exact (Hinj _ _ _ Hat' Hat)). subst a'.
+    inversion Hbd; subst. right; eexists; exact Hb'.
+Qed.
+
+Lemma rel_aenv_flex_agree : forall ρ V Θ1 Θ2,
+  rel_aenv ρ V Θ1 Θ2 -> rel_inj ρ V -> rel_fun ρ V (dom Θ1) ->
+  flex_agree_rel ρ V Θ1 Θ2.
+Proof.
+  intros * Hr Hinj Hfun. split; intros.
+  - eapply rel_aenv_flex; eauto using rel_atom__id.
+  - eapply rel_aenv_flex; eauto using rel_atom__pair.
+Qed.
+
+Lemma rel_aenv_flex_agree_ext : forall ρe ρ V Θ1 Θ2 D W S,
+  rel_aenv (ρe ++ ρ) V Θ1 Θ2 ->
+  rel_inj ρ V -> rel_fun ρ V D -> rel_ext ρe W S ->
+  D [<=] W -> V [<=] D -> V ∪ cols_r ρ [<=] S ->
+  (forall a, a `in` dom Θ1 -> a `notin` D -> a `notin` cols_l ρ) ->
+  flex_agree_rel (ρe ++ ρ) V Θ1 Θ2.
+Proof.
+  intros * Hr Hinj Hfun Hext HD HV Hcov Hblk.
+  eapply rel_aenv_flex_agree; [ exact Hr | | ].
+  - eapply rel_inj_app; eassumption.
+  - eapply rel_fun_app;
+      [ exact Hfun | exact Hext | exact HD | exact Hblk | ].
+    intros a Ha Hn. clear - Hn HV. fsetdec.
+Qed.

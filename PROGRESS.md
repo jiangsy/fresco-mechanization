@@ -181,6 +181,43 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Derive flexibility agreement from related contexts
+
+The lift was maintaining flexibility agreement separately from a context
+relation, injectivity, and functionality on the source context. Proved that
+those existing facts imply the agreement, including after fresh relation
+extensions. The shared proof uses binding correspondence in both directions;
+it needs no well-formedness or operational reverse-preservation argument.
+
+Applied the result to abstraction lifting, the shared universal-check step,
+subtyping's forall-right branch, and both abstraction-check base branches.
+Removed the separate arguments that peel binders, strip discarded prefixes,
+and reason backwards through runs about pairs removed by restrictions.
+The context relation and existing fresh-extension facts already suffice.
+
+**Reduction:** 396 nonblank, noncomment Coq lines including all four added
+lemmas (50 lines). Every refactored logical proof is shorter:
+`lift_pat_abs_core` 310→263; `lift_typing_abs_core` 337→290;
+`lift_typing_check_step_of_rule` 514→418;
+`a_sub_sub_flex_rel_e` 1618→1516; `a_typing_rel_e` 1962→1808.
+All retained theorem statements and computational definitions are unchanged.
+
+**Validation:** full `make coq`; all 34 headline assumption checks closed
+under the global context. Extracted OCaml unchanged.
+
+**Larger opportunity under investigation:** the two lift files contained
+10,410 handwritten Coq lines before this pass. Discarded-prefix cases still
+repeat input relation restriction, restoration to the caller's pair list,
+and output-pair domain arguments. A shared restriction/restoration theorem
+could remove those repeated intermediate proofs. The remaining arbitrary
+atom-pair relation cannot simply be replaced everywhere by swap chains:
+collection binders may leak and a single source atom can have distinct
+images in sibling premises. Any narrower higher-level route must first
+establish functionality on the well-formed context and result support.
+No thousand-line saving is claimed until a complete replacement builds and
+its added infrastructure is included in the count.
+
+
 ## 2026-10-11 — Derivation induction for sub-collection determinism
 
 Replaced `looksub_rel_stmt`, `e_looksub_rel_n`, and the wrapper with a
