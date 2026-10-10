@@ -894,14 +894,10 @@ Proof.
   - (* ForallR *) destruct B0; simpl in HQ; try discriminate HQ.
     inversion HQ; subst.
     apply d_sub__forall_r with (L := L).
-    + apply is_ityp__all with (L := L). intros α Hα.
-      eapply ad_pat_sub_ty_tc_target_ityp;
-        [ exact (H α Hα) | reflexivity | reflexivity
-        | rewrite btyp_to_bskl_open; reflexivity ].
-    + intros α Hα.
-      exact (H0 α Hα eq_refl ((α ~ dbind_tvar) ++ Γ0) eq_refl C0
-               (open_btyp_wrt_btyp B0 (btyp_var_f α)) eq_refl
-               ltac:(rewrite btyp_to_bskl_open; reflexivity)).
+    intros α Hα.
+    exact (H0 α Hα eq_refl ((α ~ dbind_tvar) ++ Γ0) eq_refl C0
+             (open_btyp_wrt_btyp B0 (btyp_var_f α)) eq_refl
+             ltac:(rewrite btyp_to_bskl_open; reflexivity)).
   - (* Arrow *)
     destruct C0; simpl in HR; try discriminate HR.
     destruct B0; simpl in HQ; try discriminate HQ.
@@ -1035,16 +1031,14 @@ Proof.
     rewrite (a_tyequiv_denv_eq (denv_to_aenv Γ0) B A H0 Γ0 eq_refl) in *.
     apply d_sd_typing__freeze. exact (IHad_sd_typing Γ0 eq_refl).
   - (* sd-AbsCheck (∀) *) apply d_sd_typing__abs_check_step with (L := L);
-      [ assumption
-      | intros α Hα; exact (H1 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl) ].
+      intros α Hα; exact (H1 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
   - (* sd-AbsCheck (→) *) apply d_sd_typing__abs_check_base with (L := L);
       [ exact (a_wf_ptyp_to_d (denv_to_aenv Γ0) A H Γ0 eq_refl)
       | assumption
       | intros x Hx; exact (H2 x Hx ((x ~ dbind_typ A) ++ Γ0) eq_refl) ].
   - (* sd-AbsAnnoCheck (∀) *)
     apply d_sd_typing__abs_anno_check_step with (L := L);
-      [ assumption
-      | intros α Hα; exact (H1 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl) ].
+      intros α Hα; exact (H1 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
   - (* sd-AbsAnnoCheck (→) *)
     rewrite <- (a_tyequiv_denv_eq (denv_to_aenv Γ0) A A' H0 Γ0 eq_refl).
     apply d_sd_typing__abs_anno_check_base with (L := L);
@@ -1444,7 +1438,7 @@ Proof.
     apply ad_pat_sub__forall_r with (L := L `union` dom Γ). intros α Hα.
     change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
     rewrite <- btyp_to_bskl_open.
-    apply H1; [ clear - Hα; fsetdec
+    apply H0; [ clear - Hα; fsetdec
               | apply (d_wf_utyp_weakening_head ((α ~ dbind_tvar) ++ nil)); assumption ].
   - (* arg *)
     inversion Hwf; subst.
@@ -1593,9 +1587,9 @@ Proof.
                    apply aenv_tbinds_le_weaken_cons)).
   - (* sd-AbsCheck (∀) *)
     apply ad_sd_typing__abs_check_step with (L := L `union` dom Γ);
-      [ assumption | ].
+      [ eapply d_sd_typing_tc_abs_is_ityp; eapply d_sd_typing__abs_check_step; exact H | ].
     intros α Hα.
-    exact (H1 α ltac:(clear - Hα; solve_notin_auto)
+    exact (H0 α ltac:(clear - Hα; solve_notin_auto)
              ltac:(apply d_wf_denv__tvar;
                      [ exact Hwf | clear - Hα; solve_notin_auto ])
              ltac:(apply (a_wf_exp_mono Hwfe);
@@ -1635,9 +1629,9 @@ Proof.
                    apply aenv_tbinds_le_weaken_cons)).
   - (* sd-AbsAnnoCheck (∀) *)
     apply ad_sd_typing__abs_anno_check_step with (L := L `union` dom Γ);
-      [ assumption | ].
+      [ eapply d_sd_typing_tc_abs_anno_is_ityp; eapply d_sd_typing__abs_anno_check_step; exact H | ].
     intros α Hα.
-    exact (H1 α ltac:(clear - Hα; solve_notin_auto)
+    exact (H0 α ltac:(clear - Hα; solve_notin_auto)
              ltac:(apply d_wf_denv__tvar;
                      [ exact Hwf | clear - Hα; solve_notin_auto ])
              ltac:(apply (a_wf_exp_mono Hwfe);

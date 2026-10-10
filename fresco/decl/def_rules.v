@@ -404,7 +404,8 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
     is_ityp B ->
     {{ Ψ ⨟ Γ ⊢[ mode_tc ] C ⩽ B }}d
 | d_sub__forall_r : forall L Ψ Γ C B,
-    is_ityp (btyp_all_inh B) ->
+    (* Paper [ForallR].  No [is_ityp] premise: the body is a TC-mode
+       subtyping, whose target is always inherited ([d_sub_tc_is_ityp]). *)
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ] C ⩽
          (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
@@ -954,7 +955,8 @@ Inductive d_sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
    in [d_sd_typing] — no mutual block), and [__abs_check_base] is the [ᾱ = ·]
    arrow whose body checks.  Together they type [λx.M] at [∀ᾱ.(inh A → B)]. *)
 | d_sd_typing__abs_check_step : forall L Γ e B,
-    is_ityp (btyp_all_inh B) ->
+    (* no [is_ityp] premise: the body is TC-mode, whose type is always
+       inherited ([d_sd_typing_tc_abs_is_ityp] / [_abs_anno_is_ityp]) *)
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢ˢᵈ[ mode_tc ] (exp_abs e)
          ⦂ (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
@@ -982,7 +984,8 @@ Inductive d_sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
     {{ Γ ⊢ˢᵈ[ m ] (exp_abs_anno A e) ⦂ (btyp_arrow B1 B2) }}d
 (* Paper [sdtylab{AbsAnnoCheck}]: same fold for the annotated checked lambda. *)
 | d_sd_typing__abs_anno_check_step : forall L Γ A e B,
-    is_ityp (btyp_all_inh B) ->
+    (* no [is_ityp] premise: the body is TC-mode, whose type is always
+       inherited ([d_sd_typing_tc_abs_is_ityp] / [_abs_anno_is_ityp]) *)
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢ˢᵈ[ mode_tc ] (exp_abs_anno A e)
          ⦂ (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->

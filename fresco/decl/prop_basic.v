@@ -50,6 +50,18 @@ Qed.
 
 (** * Local closure for shape predicates. *)
 
+(** At [mode_tc] the RHS of [⩽] is always inherited.  This is why
+    [d_sub__forall_r] needs no [is_ityp] premise (the paper's ForallR has
+    none): its body is itself a TC-mode subtyping. *)
+Lemma d_sub_tc_is_ityp : forall Ψ Γ C B,
+    {{ Ψ ⨟ Γ ⊢[ mode_tc ] C ⩽ B }}d -> is_ityp B.
+Proof.
+  intros Ψ Γ C B H. remember mode_tc as m eqn:Hm.
+  induction H; subst; try discriminate; auto.
+  apply is_ityp__all with (L := L). intros α Hα. auto.
+Qed.
+
+
 Lemma is_ityp_lc : forall B, is_ityp B -> lc_btyp B.
 Proof.
   intros B H. induction H; eauto.

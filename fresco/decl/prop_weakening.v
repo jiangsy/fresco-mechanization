@@ -47,7 +47,7 @@ Proof.
   intros m Ψ Γ C B H; induction H; intros Γ' Hle.
   - apply d_sub__infer; eauto using d_consis_tvar_mono.
   - apply d_sub__check; eauto using d_consis_tvar_mono.
-  - apply d_sub__forall_r with (L := L); [ assumption | mono_cof ].
+  - apply d_sub__forall_r with (L := L); mono_cof.
   - eapply d_sub__arrow; eauto using d_consis_tvar_mono.
   - eapply d_sub__forall_l_tagged; eauto using d_wf_utyp_tvar_mono.
   - eapply d_sub__forall_l_untagged; eauto using d_wf_utyp_tvar_mono.
@@ -131,13 +131,13 @@ Proof.
   - apply d_sd_typing__var with (A := A); eauto using d_sub_tvar_mono.
   - apply d_sd_typing__abs with (L := L) (A := A);
       [ assumption | eauto using d_wf_ptyp_tvar_mono | assumption | mono_cof ].
-  - apply d_sd_typing__abs_check_step with (L := L); [ assumption | mono_cof ].
+  - apply d_sd_typing__abs_check_step with (L := L); mono_cof.
   - apply d_sd_typing__abs_check_base with (L := L);
       [ eauto using d_wf_ptyp_tvar_mono | assumption | mono_cof ].
   - eapply d_sd_typing__anno; eauto using d_sub_tvar_mono.
   - apply d_sd_typing__abs_anno with (L := L) (A := A) (B1 := B1);
       [ assumption | eauto using d_wf_ptyp_tvar_mono | assumption | assumption | mono_cof ].
-  - apply d_sd_typing__abs_anno_check_step with (L := L); [ assumption | mono_cof ].
+  - apply d_sd_typing__abs_anno_check_step with (L := L); mono_cof.
   - apply d_sd_typing__abs_anno_check_base with (L := L);
       [ eauto using d_wf_ptyp_tvar_mono | assumption | mono_cof ].
   - apply d_sd_typing__freeze; auto.

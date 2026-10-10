@@ -41,6 +41,33 @@ Lemma is_ityp_arrow_l : forall B1 B2, is_ityp (btyp_arrow B1 B2) -> is_ityp B1.
 Proof. intros B1 B2 H. inversion H; assumption. Qed.
 Lemma is_ityp_arrow_r : forall B1 B2, is_ityp (btyp_arrow B1 B2) -> is_ityp B2.
 Proof. intros B1 B2 H. inversion H; assumption. Qed.
+(** A [tc]-checked lambda is typed only by the [abs_check] rules, which carry
+    the body-inheritance side condition (base) or recurse at the same lambda
+    (step) — so its type is fully inherited.
+    (No [sub] interference: [d_sd_typing] has no [Sub] rule, and the embedded
+    base rules match only unit/var/anno; no [app]: it is not an application.)
+    This is why the folded [abs_check_step] / [abs_anno_check_step] need no
+    [is_ityp] premise (the paper's AbsCheck has none). *)
+Lemma d_sd_typing_tc_abs_is_ityp : forall Γ e B,
+    d_sd_typing mode_tc Γ (exp_abs e) B -> is_ityp B.
+Proof.
+  intros Γ e B H. dependent induction H.
+  - exfalso; match goal with Hne : _ <> mode_tc |- _ => apply Hne; reflexivity end.
+  - apply is_ityp__all with (L := L). intros α Hα. eauto.
+  - apply is_ityp__arrow;
+      [ apply is_ityp_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | assumption ].
+Qed.
+
+Lemma d_sd_typing_tc_abs_anno_is_ityp : forall Γ A0 e B,
+    d_sd_typing mode_tc Γ (exp_abs_anno A0 e) B -> is_ityp B.
+Proof.
+  intros Γ A0 e B H. dependent induction H.
+  - exfalso; match goal with Hne : _ <> mode_tc |- _ => apply Hne; reflexivity end.
+  - apply is_ityp__all with (L := L). intros α Hα. eauto.
+  - apply is_ityp__arrow;
+      [ apply is_ityp_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | assumption ].
+Qed.
+
 (* ===================================================================== *)
 (*  Soundness:  d_sd_typing ⊆ d_typing                                      *)
 (* ===================================================================== *)
@@ -58,12 +85,14 @@ Proof.
   - (* abs (m ≠ tc) *)
     apply d_typing__abs with (L := L) (A := A); assumption.
   - (* abs_check_step: peel one inherited ∀ via d_typing__forall.  The result
-       body [B] is fully inherited ([is_ityp (btyp_all_inh B)]), hence equal to
+       body [B] is fully inherited ([d_sd_typing_tc_abs_is_ityp]), hence equal to
        its own inh-repainting, which is what d_typing__forall demands. *)
-    pose proof (ptyp_to_btyp_inh_btyp_to_ptyp H) as Hrt. simpl in Hrt. injection Hrt as Hrt.
+    assert (Hit : is_ityp (btyp_all_inh B))
+      by (eapply d_sd_typing_tc_abs_is_ityp; apply d_sd_typing__abs_check_step with (L := L); exact H).
+    pose proof (ptyp_to_btyp_inh_btyp_to_ptyp Hit) as Hrt. simpl in Hrt. injection Hrt as Hrt.
     rewrite <- Hrt. apply d_typing__forall with (L := L) (A := btyp_to_ptyp B).
     + apply is_value__abs.
-    + intros α Hα. rewrite Hrt. apply H1; assumption.
+    + intros α Hα. rewrite Hrt. apply H0; assumption.
   - (* abs_check_base (ᾱ = ·): the standalone check rule was removed from
        d_typing, so use the GENERAL d_typing__abs at [tc].  Its [mod_comp_ty]
        premise at [tc] is [is_ityp (inh A → B)] — domain inherited (lc [A] from
@@ -79,10 +108,12 @@ Proof.
   - (* abs_anno (m ≠ tc) *)
     apply d_typing__abs_anno with (L := L) (A := A) (B1 := B1); assumption.
   - (* abs_anno_check_step: as abs_check_step, over the annotated lambda. *)
-    pose proof (ptyp_to_btyp_inh_btyp_to_ptyp H) as Hrt. simpl in Hrt. injection Hrt as Hrt.
+    assert (Hit : is_ityp (btyp_all_inh B))
+      by (eapply d_sd_typing_tc_abs_anno_is_ityp; apply d_sd_typing__abs_anno_check_step with (L := L); exact H).
+    pose proof (ptyp_to_btyp_inh_btyp_to_ptyp Hit) as Hrt. simpl in Hrt. injection Hrt as Hrt.
     rewrite <- Hrt. apply d_typing__forall with (L := L) (A := btyp_to_ptyp B).
     + apply is_value__abs_anno.
-    + intros α Hα. rewrite Hrt. apply H1; assumption.
+    + intros α Hα. rewrite Hrt. apply H0; assumption.
   - (* abs_anno_check_base (ᾱ = ·): general d_typing__abs_anno at [tc], domain
        [inh A] (so [B1 = ptyp_to_btyp_inh A], erasing to [A]). *)
     apply d_typing__abs_anno with (L := L) (A := A) (B1 := ptyp_to_btyp_inh A).
@@ -109,32 +140,6 @@ Qed.
    [d_pat_consis_subst_unit], [d_pat_sub_subst_unit] already exist, and the
    remaining [d_sub] / [d_pat] / [d_sd_typing] subst lemmas are the content of
    [d_sd_typing_forall_admissible]'s base-term cases below. *)
-
-(** A [tc]-checked lambda is typed only by the [abs_check] rules, which carry
-    the body-inheritance side condition — so its type is fully inherited.
-    (No [sub] interference: [d_sd_typing] has no [Sub] rule, and the embedded
-    base rules match only unit/var/anno; no [app]: it is not an application.)
-    This recovers the [is_ityp] obligation that the folded [abs_check_step] /
-    [abs_anno_check_step] demand. *)
-Lemma d_sd_typing_tc_abs_is_ityp : forall Γ e B,
-    d_sd_typing mode_tc Γ (exp_abs e) B -> is_ityp B.
-Proof.
-  intros Γ e B H. dependent induction H.
-  - exfalso; match goal with Hne : _ <> mode_tc |- _ => apply Hne; reflexivity end.
-  - assumption.
-  - apply is_ityp__arrow;
-      [ apply is_ityp_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | assumption ].
-Qed.
-
-Lemma d_sd_typing_tc_abs_anno_is_ityp : forall Γ A0 e B,
-    d_sd_typing mode_tc Γ (exp_abs_anno A0 e) B -> is_ityp B.
-Proof.
-  intros Γ A0 e B H. dependent induction H.
-  - exfalso; match goal with Hne : _ <> mode_tc |- _ => apply Hne; reflexivity end.
-  - assumption.
-  - apply is_ityp__arrow;
-      [ apply is_ityp_ptyp_to_btyp_inh; eapply d_wf_ptyp_lc; eassumption | assumption ].
-Qed.
 
 (* ===================================================================== *)
 (*  [α := unit] type-substitution strengthening (for the base-term anno    *)
@@ -264,14 +269,11 @@ Proof.
       | apply is_ityp_subst_unit; assumption ].
   - (* forall_r *)
     apply d_sub__forall_r with (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
-    + change (btyp_all_inh (subst_btyp_in_btyp btyp_unit α0 B))
-        with (subst_btyp_in_btyp btyp_unit α0 (btyp_all_inh B)).
-      apply is_ityp_subst_unit; assumption.
-    + intros α2 Hα2.
-      rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-        by (first [ apply lc_btyp_unit | fsetdec ]).
-      rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
-      eapply (H1 α2); [ fsetdec | simpl_env; reflexivity ].
+    intros α2 Hα2.
+    rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
+      by (first [ apply lc_btyp_unit | fsetdec ]).
+    rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
+    eapply (H0 α2); [ fsetdec | simpl_env; reflexivity ].
   - (* arg *)
     eapply d_sub__arrow.
     + change btyp_unit with (utyp_to_btyp utyp_unit).
@@ -654,13 +656,12 @@ Proof.
         [ simpl_env; reflexivity | assumption ].
   - (* abs_check_step *)
     apply d_sd_typing__abs_check_step with (L := L `union` {{α0}}).
-    + pose proof (is_ityp_subst_unit (btyp_all_inh B) α0 H) as Hi. simpl in Hi. exact Hi.
-    + intros α Hα.
-      rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (first [ apply lc_btyp_unit | fsetdec ]).
-      rewrite_env (((α ~ subst_unit_dbind α0 dbind_tvar) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
-      rewrite map_subst_unit_dbind_cons.
-      eapply (H1 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) α0 Γ2);
-        [ simpl_env; reflexivity | assumption ].
+    intros α Hα.
+    rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (first [ apply lc_btyp_unit | fsetdec ]).
+    rewrite_env (((α ~ subst_unit_dbind α0 dbind_tvar) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
+    rewrite map_subst_unit_dbind_cons.
+    eapply (H0 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) α0 Γ2);
+      [ simpl_env; reflexivity | assumption ].
   - (* abs_check_base *)
     rewrite ptyp_to_btyp_inh_subst_unit.
     apply d_sd_typing__abs_check_base with (L := L `union` {{α0}}).
@@ -695,13 +696,12 @@ Proof.
         [ simpl_env; reflexivity | assumption ].
   - (* abs_anno_check_step *)
     apply d_sd_typing__abs_anno_check_step with (L := L `union` {{α0}}).
-    + pose proof (is_ityp_subst_unit (btyp_all_inh B) α0 H) as Hi. simpl in Hi. exact Hi.
-    + intros α Hα.
-      rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (first [ apply lc_btyp_unit | fsetdec ]).
-      rewrite_env (((α ~ subst_unit_dbind α0 dbind_tvar) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
-      rewrite map_subst_unit_dbind_cons.
-      eapply (H1 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) α0 Γ2);
-        [ simpl_env; reflexivity | assumption ].
+    intros α Hα.
+    rewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (first [ apply lc_btyp_unit | fsetdec ]).
+    rewrite_env (((α ~ subst_unit_dbind α0 dbind_tvar) ++ map (subst_unit_dbind α0) Γ1) ++ Γ2).
+    rewrite map_subst_unit_dbind_cons.
+    eapply (H0 α ltac:(solve_notin_auto) ((α ~ dbind_tvar) ++ Γ1) α0 Γ2);
+      [ simpl_env; reflexivity | assumption ].
   - (* abs_anno_check_base *)
     rewrite ptyp_to_btyp_inh_subst_unit.
     apply d_sd_typing__abs_anno_check_base with (L := L `union` {{α0}}).
@@ -809,14 +809,8 @@ Proof.
     | Hs : {{ empty ⨟ _ ⊢[ mode_tc ] ptyp_to_utyp_syn ptyp_unit ⩽ _ }}d |- _ =>
         rename Hs into Hs0
     end.
-    assert (Hia : is_ityp (btyp_all_inh B)).
-    { apply is_ityp__all with (L := {{α0}} `union` ftvar_in_btyp B). intros β Hβ.
-      pose proof (is_ityp_rename_tvar α0 β (mod_comp_ty_tc_inv _ (d_sub_skmod Hs0))) as Hir.
-      rewrite <- (subst_btyp_in_btyp_intro α0 B (btyp_var_f β)) in Hir by fsetdec.
-      exact Hir. }
     apply d_sd_typing__unit.
-    apply d_sub__forall_r with (L := dom Γ `union` {{α0}} `union` ftvar_in_btyp B);
-      [ exact Hia | ].
+    apply d_sub__forall_r with (L := dom Γ `union` {{α0}} `union` ftvar_in_btyp B).
     intros α Hα.
     pose proof (d_sub_rename_tvar (β := α) Hs0 nil Γ α0
                   ltac:(reflexivity) ltac:(simpl; solve_notin_auto)) as Hren.
@@ -838,14 +832,8 @@ Proof.
         assert (HX0A : α0 `notin` ftvar_in_ptyp AA)
           by (pose proof (ftvar_in_denv_binds_typ _ _ _ HbΓ); fsetdec)
     end.
-    assert (Hia : is_ityp (btyp_all_inh B)).
-    { apply is_ityp__all with (L := {{α0}} `union` ftvar_in_btyp B). intros β Hβ.
-      pose proof (is_ityp_rename_tvar α0 β (mod_comp_ty_tc_inv _ (d_sub_skmod Hs0))) as Hir.
-      rewrite <- (subst_btyp_in_btyp_intro α0 B (btyp_var_f β)) in Hir by fsetdec.
-      exact Hir. }
     eapply d_sd_typing__var; [ exact HbΓ | ].
-    apply d_sub__forall_r with (L := dom Γ `union` {{α0}} `union` ftvar_in_btyp B);
-      [ exact Hia | ].
+    apply d_sub__forall_r with (L := dom Γ `union` {{α0}} `union` ftvar_in_btyp B).
     intros α Hα.
     pose proof (d_sub_rename_tvar (β := α) Hs0 nil Γ α0
                   ltac:(reflexivity) ltac:(simpl; solve_notin_auto)) as Hren.
@@ -854,18 +842,10 @@ Proof.
       in Hren by (rewrite ftvar_ptyp_to_utyp_syn; exact HX0A).
     rewrite <- (subst_btyp_in_btyp_intro α0 B (btyp_var_f α)) in Hren by fsetdec.
     exact Hren.
-  - (* λx.M : the folded ∀-peel.  [is_ityp (btyp_all_inh B)] is recovered from
-       the per-instance typings: each [open B α] types the lambda at [tc], so is
-       inherited ([d_sd_typing_tc_abs_is_ityp]). *)
-    apply d_sd_typing__abs_check_step with (L := L);
-      [ apply is_ityp__all with (L := L); intros α Hα;
-        exact (d_sd_typing_tc_abs_is_ityp _ _ _ (IH α Hα))
-      | assumption ].
+  - (* λx.M : the folded ∀-peel. *)
+    apply d_sd_typing__abs_check_step with (L := L); assumption.
   - (* λxᴬ.M : the folded ∀-peel (as above). *)
-    apply d_sd_typing__abs_anno_check_step with (L := L);
-      [ apply is_ityp__all with (L := L); intros α Hα;
-        exact (d_sd_typing_tc_abs_anno_is_ityp _ _ _ _ (IH α Hα))
-      | assumption ].
+    apply d_sd_typing__abs_anno_check_step with (L := L); assumption.
   - (* (M : A) : the checked premise is strengthened to [Γ] by [α0 := unit]
        (identity: [α0] fresh for [e] and [A]); the subtyping is re-wrapped. *)
     pick fresh α0 for (L `union` dom Γ `union` ftvar_in_btyp B `union` ftvar_in_denv Γ
@@ -877,11 +857,6 @@ Proof.
         rename Hp into Hp0; rename Hs into Hs0
     end.
     assert (HX0A : α0 `notin` ftvar_in_ptyp A) by (simpl in Fr; fsetdec).
-    assert (Hia : is_ityp (btyp_all_inh B)).
-    { apply is_ityp__all with (L := {{α0}} `union` ftvar_in_btyp B). intros β Hβ.
-      pose proof (is_ityp_rename_tvar α0 β (mod_comp_ty_tc_inv _ (d_sub_skmod Hs0))) as Hir.
-      rewrite <- (subst_btyp_in_btyp_intro α0 B (btyp_var_f β)) in Hir by fsetdec.
-      exact Hir. }
     eapply d_sd_typing__anno.
     + pose proof (d_sd_typing_subst_unit _ _ _ _ Hp0 nil α0 Γ
                     ltac:(reflexivity) ltac:(apply tvar_clean_fresh; solve_notin_auto)) as Hsg.
@@ -891,8 +866,7 @@ Proof.
       rewrite (subst_ptyp_in_ptyp_fresh_eq A ptyp_unit α0) in Hsg by exact HX0A.
       exact Hsg.
     + apply d_sub__forall_r with
-        (L := dom Γ `union` {{α0}} `union` ftvar_in_ptyp A `union` ftvar_in_btyp B);
-        [ exact Hia | ].
+        (L := dom Γ `union` {{α0}} `union` ftvar_in_ptyp A `union` ftvar_in_btyp B).
       intros α Hα.
       pose proof (d_sub_rename_tvar (β := α) Hs0 nil Γ α0
                     ltac:(reflexivity) ltac:(simpl; solve_notin_auto)) as Hren.
@@ -1051,7 +1025,7 @@ Proof.
   - (* sd-AbsCheck (∀) *)
     pick fresh α for (L `union` dom Γ).
     apply lc_btyp_all_inh_exists with (α1 := α).
-    apply H1; [ solve_notin_auto
+    apply H0; [ solve_notin_auto
               | apply d_wf_denv__tvar; [ exact Hwf | solve_notin_auto ] ].
   - (* sd-AbsCheck (→) *)
     pick fresh x for (L `union` dom Γ). apply lc_btyp_arrow;
@@ -1074,7 +1048,7 @@ Proof.
   - (* sd-AbsAnnoCheck (∀) *)
     pick fresh α for (L `union` dom Γ).
     apply lc_btyp_all_inh_exists with (α1 := α).
-    apply H1; [ solve_notin_auto
+    apply H0; [ solve_notin_auto
               | apply d_wf_denv__tvar; [ exact Hwf | solve_notin_auto ] ].
   - (* sd-AbsAnnoCheck (→) *)
     pick fresh x for (L `union` dom Γ). apply lc_btyp_arrow;
