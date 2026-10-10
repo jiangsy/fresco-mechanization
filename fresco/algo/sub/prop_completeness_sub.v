@@ -611,7 +611,7 @@ Proof.
              [ discriminate Hc
              | apply binds_In in Hb; simpl_env in Huq; solve_uniq ]). }
         assert (Hfα0 : a_flex_tvar Θ0' α)
-          by (eapply a_flex_tvar_strip_head; [ exact Hne | exact Hfα ]).
+          by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hne)); exact Hfα).
         eapply sub_flex_rigid_head_absurd;
           [ exact HdeclsΞ | exact HdomΞ | exact Hwf | exact Hwfth | exact HwfP0
           | exact Hfα0 | exact Hβin | exact Hinc | exact Hslack | exact HD

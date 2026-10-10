@@ -195,15 +195,10 @@ Lemma a_tyequiv_strengthen_tvar_cons : forall Θ0 A A',
   forall α Θ, Θ0 = (α ~ abind_tvar) ++ Θ ->
   {{ Θ ⊢ A ≡ᵗ A' }}a.
 Proof.
-  intros Θ0 A A' Heq; induction Heq; intros α0 Θ0' HΘ; subst.
-  - apply a_tyequiv__refl; assumption.
-  - apply a_tyequiv__sym; eauto.
-  - eapply a_tyequiv__trans; eauto.
-  - apply a_tyequiv__flex_def.
-    destruct (binds_cons_1 _ _ _ _ _ _ H) as [[Heqx Heqb] | Hb'];
-      [ discriminate | exact Hb' ].
-  - apply a_tyequiv__arrow; eauto.
-  - apply a_tyequiv__all with (L := L); intros α Hα; eauto.
+  intros * Heq α Θ ->. eapply a_tyequiv_transport; [ | exact Heq ].
+  intros β τ Hb. apply a_tyequiv__flex_def.
+  destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hbad] | Hb'];
+    [ discriminate | exact Hb' ].
 Qed.
 
 Lemma a_pskl_tyequiv_strengthen_tvar_cons : forall Θ0 P P',
@@ -211,16 +206,10 @@ Lemma a_pskl_tyequiv_strengthen_tvar_cons : forall Θ0 P P',
   forall α Θ, Θ0 = (α ~ abind_tvar) ++ Θ ->
   {{ Θ ⊢ P ≡ˢ P' }}a.
 Proof.
-  intros Θ0 P P' Heq; induction Heq; intros α0 Θ0' HΘ; subst.
-  - apply a_pskl_tyequiv__refl; assumption.
-  - apply a_pskl_tyequiv__sym; eauto.
-  - eapply a_pskl_tyequiv__trans; eauto.
-  - apply a_pskl_tyequiv__flex_def.
-    destruct (binds_cons_1 _ _ _ _ _ _ H) as [[Heqx Heqb] | Hb'];
-      [ discriminate | exact Hb' ].
-  - apply a_pskl_tyequiv__arrow; eauto.
-  - apply a_pskl_tyequiv__all with (L := L); intros α Hα; eauto.
-  - apply a_pskl_tyequiv__univ_ghost; eauto.
+  intros * Heq α Θ ->. eapply a_pskl_tyequiv_transport; [ | exact Heq ].
+  intros β τ Hb. apply a_pskl_tyequiv__flex_def.
+  destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hbad] | Hb'];
+    [ discriminate | exact Hb' ].
 Qed.
 
 (** Identity metasubstitutions have locally-closed (variable) images. *)

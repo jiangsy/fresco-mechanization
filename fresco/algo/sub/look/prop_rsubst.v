@@ -446,27 +446,13 @@ Proof.
     | apply a_flex__var_def with (α := α) (τ := τ) ]; assumption.
 Qed.
 
-Lemma a_flex_tvar_cons : forall b bd Θ α,
-  a_flex_tvar Θ α -> a_flex_tvar ((b ~ bd) ++ Θ) α.
-Proof.
-  intros b bd Θ α [Hb | [τ Hb]];
-    [ left | right; exists τ ]; unfold binds; simpl; right; assumption.
-Qed.
-
 (** The same, over an arbitrary PREFIX — what the threading rows need, their
     second premise running at [Ξ1 ++ Θ]. *)
 Lemma a_flex_tvar_app_mono : forall Ξ Θ Θ' α,
   (forall a, a_flex_tvar Θ a -> a_flex_tvar Θ' a) ->
   a_flex_tvar (Ξ ++ Θ) α -> a_flex_tvar (Ξ ++ Θ') α.
 Proof.
-  intros Ξ Θ Θ' α Hm [Hb | [τ Hb]];
-    destruct (binds_app_1 _ _ _ _ _ Hb) as [HbΞ | HbΘ].
-  - left; apply binds_app_2; exact HbΞ.
-  - destruct (Hm α (or_introl HbΘ)) as [Hb' | [τ Hb']];
-      [ left | right; exists τ ]; apply binds_app_3; exact Hb'.
-  - right; exists τ; apply binds_app_2; exact HbΞ.
-  - destruct (Hm α (or_intror (ex_intro _ τ HbΘ))) as [Hb' | [τ0 Hb']];
-      [ left | right; exists τ0 ]; apply binds_app_3; exact Hb'.
+  intros * Hm. rewrite !a_flex_tvar_app_iff. intuition auto.
 Qed.
 
 Lemma a_flex_app_weaken : forall Ξ Θ P, a_flex Θ P -> a_flex (Ξ ++ Θ) P.
@@ -501,7 +487,7 @@ Ltac solve_ctx_change_ih :=
       apply IH;
         [ match goal with Hf : ftvar_in_aenv _ [<=] _ |- _ =>
             simpl; clear - Hf; fsetdec end
-        | intros α0 Hft; apply a_flex_tvar_cons;
+        | intros α0 Hft; apply a_flex_tvar_weaken_app;
           match goal with Hm : forall a, a_flex_tvar _ a -> _ |- _ =>
             apply Hm; eapply a_flex_tvar_strip_tvar; exact Hft end
         | intros P0 Hf0; apply a_flex_cons;

@@ -277,20 +277,6 @@ Definition core_rigid_above (m : atom) (Θ : aenv) (C : ptyp) : Prop :=
 (*  conclusion into the check rows' premise (2).                          *)
 (* ===================================================================== *)
 
-Lemma a_suffix_binds_not_tvar : forall Ξ γ,
-  a_suffix Ξ ->
-  γ `in` dom Ξ ->
-  ~ binds γ abind_tvar Ξ.
-Proof.
-  intros Ξ γ Hsuf; induction Hsuf; intros Hd Hb; simpl in Hd.
-  - clear - Hd; fsetdec.
-  - destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'].
-    + subst. match goal with
-             | Hsb : a_suffix_binding abind_tvar |- _ => inversion Hsb
-             end.
-    + apply IHHsuf; [ apply binds_In in Hb'; exact Hb' | exact Hb' ].
-Qed.
-
 (** A rigid atom of the OUTPUT that lies in the discarded suffix is
     impossible: the suffix binds it flexibly, and [uniq] makes that its
     only binding. *)
@@ -302,7 +288,7 @@ Lemma suffix_no_rigid_mid : forall Ξ m (b : abind) Θ γ,
 Proof.
   intros Ξ m b Θ γ Hsuf Hu Hd Hb.
   destruct (binds_app_1 _ _ _ _ _ Hb) as [HbΞ | Hbrest].
-  - exact (a_suffix_binds_not_tvar Hsuf Hd HbΞ).
+  - eapply a_suffix_no_tvar; eassumption.
   - (* γ is in dom Ξ AND bound below it — [uniq] forbids that *)
     apply binds_In in Hbrest.
     clear - Hu Hd Hbrest.

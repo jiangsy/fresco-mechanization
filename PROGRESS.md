@@ -181,6 +181,21 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Second simplification pass: flexibility algebra and equivalence transport
+
+- Normalize flexibility over context appends/singletons in
+  `a_assign_unify_consis_flex_preserve`, using existing lemmas. Delete its two
+  orphaned binding helpers; derive skeleton-entry free-variable bounds from
+  well-formedness instead of another induction (−156 nonblank code lines).
+- Remove the freshness-restricted flexibility weakening lemma and the resulting
+  freshness/well-formedness detours in subject-flexibility proofs (−50).
+- Share semantic transport of type/skeleton equivalence across identity increase,
+  weakening and rigid-head strengthening (−13, including both new lemmas/imports).
+- Remove redundant flexibility/suffix lemmas and use existing append and head
+  equivalences at their consumers (−35). Net: −254 nonblank code lines.
+- Validation: full `make coq` passes; all 34 headline assumption reports are
+  `Closed under the global context`. Retained theorem statements are unchanged.
+
 ## 2026-10-11 — Further simplification with a net LOC reduction per refactor
 
 - Reuse context transport for weakening and identity-increase stability (−144

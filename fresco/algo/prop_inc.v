@@ -262,6 +262,24 @@ Proof.
     auto using binds_weaken_mid.
 Qed.
 
+(** Transport equivalence by interpreting each flexible definition in the
+    target context; a syntactically identical binding is not required. *)
+Lemma a_tyequiv_transport : forall Θ Θ' A B,
+  (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
+     {{ Θ' ⊢ (ptyp_var_f α) ≡ᵗ τ }}a) ->
+  {{ Θ ⊢ A ≡ᵗ B }}a -> {{ Θ' ⊢ A ≡ᵗ B }}a.
+Proof.
+  intros * Hdefs Heq; induction Heq; eauto using a_tyequiv.
+Qed.
+
+Lemma a_pskl_tyequiv_transport : forall Θ Θ' P Q,
+  (forall α τ, binds α (abind_flex_mono_def τ) Θ ->
+     {{ Θ' ⊢ (pskl_var_f α) ≡ˢ (ptyp_to_pskl τ) }}a) ->
+  {{ Θ ⊢ P ≡ˢ Q }}a -> {{ Θ' ⊢ P ≡ˢ Q }}a.
+Proof.
+  intros * Hdefs Heq; induction Heq; eauto using a_pskl_tyequiv.
+Qed.
+
 (** [a_tyequiv] uses its context only through positive [binds] lookups, so it
     is monotone in the context. *)
 Lemma a_tyequiv_weaken : forall Θ Θ' A A',
@@ -269,7 +287,8 @@ Lemma a_tyequiv_weaken : forall Θ Θ' A A',
   {{ Θ ⊢ A ≡ᵗ A' }}a ->
   {{ Θ' ⊢ A ≡ᵗ A' }}a.
 Proof.
-  intros * Hmon Heq; induction Heq; eauto using a_tyequiv.
+  intros * Hmon. apply a_tyequiv_transport.
+  intros; apply a_tyequiv__flex_def; auto.
 Qed.
 
 (** Rigid variables survive any increase. *)
@@ -420,13 +439,8 @@ Lemma a_tyequiv_isub : forall Θ κ Θ' A A',
   {{ Θ ⊢ A ≡ᵗ A' }}a ->
   {{ Θ' ⊢ A ≡ᵗ A' }}a.
 Proof.
-  intros * Hinc Hid Heq; induction Heq.
-  - apply a_tyequiv__refl; auto.
-  - apply a_tyequiv__sym; auto.
-  - eapply a_tyequiv__trans; eauto.
-  - eapply a_inc_binds_flex_def in H as [_ ?]; eauto.
-  - apply a_tyequiv__arrow; auto.
-  - eapply a_tyequiv__all; eauto.
+  intros * Hinc Hid. apply a_tyequiv_transport.
+  intros; eapply a_inc_binds_flex_def; eauto.
 Qed.
 
 (** Type equivalence embeds into skeleton equivalence. *)
@@ -451,16 +465,9 @@ Lemma a_pskl_tyequiv_isub : forall Θ κ Θ' P P',
   {{ Θ ⊢ P ≡ˢ P' }}a ->
   {{ Θ' ⊢ P ≡ˢ P' }}a.
 Proof.
-  intros * Hinc Hid Heq; induction Heq.
-  - apply a_pskl_tyequiv__refl; auto.
-  - apply a_pskl_tyequiv__sym; auto.
-  - eapply a_pskl_tyequiv__trans; eauto.
-  - eapply a_inc_binds_flex_def in H as [_ Heqv]; eauto.
-    change (pskl_var_f α) with (ptyp_to_pskl (ptyp_var_f α)).
-    apply a_tyequiv_pskl. exact Heqv.
-  - apply a_pskl_tyequiv__arrow; auto.
-  - eapply a_pskl_tyequiv__all; eauto.
-  - apply a_pskl_tyequiv__univ_ghost; auto.
+  intros * Hinc Hid. apply a_pskl_tyequiv_transport.
+  intros; change (pskl_var_f _) with (ptyp_to_pskl (ptyp_var_f α)).
+  apply a_tyequiv_pskl. eapply a_inc_binds_flex_def; eauto.
 Qed.
 
 (* ===================================================================== *)

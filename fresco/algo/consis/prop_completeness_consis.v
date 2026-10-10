@@ -1427,8 +1427,8 @@ Lemma a_pskl_tyequiv_weaken : forall Θ Θ' P P',
   {{ Θ ⊢ P ≡ˢ P' }}a ->
   {{ Θ' ⊢ P ≡ˢ P' }}a.
 Proof.
-  intros * Hmon Heq; revert Θ' Hmon; induction Heq; intros Θ' Hmon;
-    eauto using a_pskl_tyequiv.
+  intros * Hmon. apply a_pskl_tyequiv_transport.
+  intros; apply a_pskl_tyequiv__flex_def; auto.
 Qed.
 
 Lemma a_scope_pskl_weaken : forall Θ Θ' P,
@@ -1932,17 +1932,6 @@ Lemma avoid_same_dom : forall (α1 : atom) (b1 b0 : abind) (N : atoms)
   forall γ, γ `in` dom ((α1 ~ b1) ++ Θ0') ->
     γ `in` dom ((α1 ~ b0) ++ Θ0') \/ γ `notin` N.
 Proof. intros. left. simpl_env in *. fsetdec. Qed.
-
-(** A hatted variable other than the head is hatted in the tail. *)
-Lemma a_flex_tvar_strip_head : forall (α1 : atom) b Θ0 β1,
-  β1 <> α1 ->
-  a_flex_tvar ((α1 ~ b) ++ Θ0) β1 ->
-  a_flex_tvar Θ0 β1.
-Proof.
-  intros α1 b Θ0 β1 Hne [Hb | [τ Hb]];
-    apply binds_cons_1 in Hb as [[Heq _] | Hb];
-    solve [ exfalso; auto | left; exact Hb | right; exists τ; exact Hb ].
-Qed.
 
 (** The [V]-measure of an embedded monotype is its type-level measure. *)
 Lemma Vpskl_ptyp_to_pskl : forall Θ κ A,
@@ -3286,9 +3275,9 @@ Proof.
           apply binds_cons_1 in Hb as [[_ Hb] | Hb];
           solve [ discriminate | apply binds_In in Hb; auto ]).
     assert (Hfα0 : a_flex_tvar Θ0' α)
-      by (eapply a_flex_tvar_strip_head; [ exact Hα1α | exact Hfα ]).
+      by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hα1α)); exact Hfα).
     assert (Hfβ0 : a_flex_tvar Θ0' β)
-      by (eapply a_flex_tvar_strip_head; [ exact Hα1β | exact Hfβ ]).
+      by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hα1β)); exact Hfβ).
     assert (Hbtα : a_binds_tvar α Θ0') by (right; exact Hfα0).
     assert (Hbtβ : a_binds_tvar β Θ0') by (right; exact Hfβ0).
     apply a_inc_tvar_inv in Hinc as [Ξ [Θ2 [-> [HΞ Hinc']]]].
@@ -3344,9 +3333,9 @@ Proof.
           apply binds_cons_1 in Hb as [[_ Hb] | Hb];
           solve [ discriminate | apply binds_In in Hb; auto ]).
     assert (Hfα0 : a_flex_tvar Θ0' α)
-      by (eapply a_flex_tvar_strip_head; [ exact Hα1α | exact Hfα ]).
+      by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hα1α)); exact Hfα).
     assert (Hfβ0 : a_flex_tvar Θ0' β)
-      by (eapply a_flex_tvar_strip_head; [ exact Hα1β | exact Hfβ ]).
+      by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hα1β)); exact Hfβ).
     assert (Hbtα : a_binds_tvar α Θ0') by (right; exact Hfα0).
     assert (Hbtβ : a_binds_tvar β Θ0') by (right; exact Hfβ0).
     apply a_inc_var_inv in Hinc as [Ξ [A' [Θ2 [-> [HA'eq [HΞ Hinc']]]]]].
@@ -3414,9 +3403,9 @@ Proof.
           apply binds_cons_1 in Hb as [[_ Hb] | Hb];
           solve [ discriminate | apply binds_In in Hb; auto ]).
     assert (Hfα0 : a_flex_tvar Θ0' α)
-      by (eapply a_flex_tvar_strip_head; [ exact Hα1α | exact Hfα ]).
+      by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hα1α)); exact Hfα).
     assert (Hfβ0 : a_flex_tvar Θ0' β)
-      by (eapply a_flex_tvar_strip_head; [ exact Hα1β | exact Hfβ ]).
+      by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hα1β)); exact Hfβ).
     assert (Hbtα : a_binds_tvar α Θ0') by (right; exact Hfα0).
     assert (Hbtβ : a_binds_tvar β Θ0') by (right; exact Hfβ0).
     apply a_inc_var_skl_inv in Hinc as [Ξ [P' [Θ2 [-> [HP'eq [HΞ Hinc']]]]]].
@@ -3481,7 +3470,7 @@ Proof.
       inversion Hinc as [ | Θs κs Θt αs τ Hinc' Hwfτ Hmτ [Heqα Heqκ] Heqt
                         | | | | ]; subst.
       assert (Hfβ0 : a_flex_tvar Θ0' β)
-        by (eapply a_flex_tvar_strip_head; [ exact Hβα | exact Hfβ ]).
+        by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hβα)); exact Hfβ).
       exists ((α ~ abind_flex_mono_def (ptyp_var_f β)) ++ Θ0'). split.
       { apply a_unify__flex_l; [ exact Hne | exact Hfβ0 ]. }
       split; [ apply avoid_same_dom | ].
@@ -3498,7 +3487,7 @@ Proof.
                           | | | | ]; subst.
         assert (Hα1α' : α <> β) by exact Hne.
         assert (Hfα0 : a_flex_tvar Θ0' α)
-          by (eapply a_flex_tvar_strip_head; [ exact Hne | exact Hfα ]).
+          by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hne)); exact Hfα).
         exists ((β ~ abind_flex_mono_def (ptyp_var_f α)) ++ Θ0'). split.
         { apply a_unify__flex_r; [ exact Hne | exact Hfα0 ]. }
         split; [ apply avoid_same_dom | ].
@@ -3515,9 +3504,9 @@ Proof.
         assert (Hαα1 : α <> α1) by auto.
         assert (Hβα1 : β <> α1) by auto.
         assert (Hfα0 : a_flex_tvar Θ0' α)
-          by (eapply a_flex_tvar_strip_head; [ exact Hαα1 | exact Hfα ]).
+          by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hαα1)); exact Hfα).
         assert (Hfβ0 : a_flex_tvar Θ0' β)
-          by (eapply a_flex_tvar_strip_head; [ exact Hβα1 | exact Hfβ ]).
+          by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hβα1)); exact Hfβ).
         rewrite (msubst_lookup_cons_neq τα1 κs Hαα1) in Heq.
         rewrite (msubst_lookup_cons_neq τα1 κs Hβα1) in Heq.
         assert (Hlt : mu_lt (mu_unify Θ κs α β Θ0')
@@ -3582,7 +3571,7 @@ Proof.
           | rewrite msubst_lookup_cons_eq;
             apply a_tyequiv__sym; exact Heqd ].
       - assert (Hfδ' : a_flex_tvar Θ0' β1)
-          by (eapply a_flex_tvar_strip_head; [ exact Hβ1α1 | exact Hfδ ]).
+          by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hβ1α1)); exact Hfδ).
         repeat split.
         + apply a_wf_ptyp__var. right. exact Hfδ'.
         + apply mono_ptyp__var.
@@ -5500,7 +5489,7 @@ Proof.
         by (eapply a_wf_aenv_strip_prefix; exact Hwf).
       inversion Hwfmid as [ | γh Θh Hnd Hwf0 | | | | ]; subst.
       assert (Hfα0 : a_flex_tvar Θ0' α)
-        by (eapply a_flex_tvar_strip_head; [ exact Hαα1 | exact Hfα ]).
+        by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hαα1)); exact Hfα).
       destruct (AtomSetProperties.In_dec α1 (ftvar_in_pskl P)) as [Hγin | Hγni].
       * (* Assign-Depend : α1̂ moves to the tail of Ξ; pure re-association. *)
         assert (Hdecl' : a_decls (Ξ ++ (α1 ~ abind_flex_mono)))

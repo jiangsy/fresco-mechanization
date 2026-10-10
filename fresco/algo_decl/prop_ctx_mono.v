@@ -45,6 +45,7 @@ Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
 Require Import src.fresco.algo.def_meta.
 Require Import src.fresco.algo.prop_swap.
+Require Import src.fresco.algo.prop_inc.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.algo_decl.def_subtyping.
 Require Import src.fresco.algo_decl.def_typing.
@@ -185,14 +186,8 @@ Lemma a_tyequiv_ctx_mono : forall Θ A B,
   {{ Θ ⊢ A ≡ᵗ B }}a ->
   forall Θ', aenv_tbinds_le Θ Θ' -> {{ Θ' ⊢ A ≡ᵗ B }}a.
 Proof.
-  intros Θ A B H; induction H; intros Θ' Hle.
-  - apply a_tyequiv__refl; assumption.
-  - apply a_tyequiv__sym; auto.
-  - eapply a_tyequiv__trans; eauto.
-  - eapply a_tyequiv__flex_def. eapply aenv_tbinds_le_flex_def; eauto.
-  - apply a_tyequiv__arrow; auto.
-  - (* ∀ : the equational theory does not bind into Θ *)
-    apply a_tyequiv__all with (L := L). intros α Hα. apply H0; auto.
+  intros * Heq Θ' Hle. eapply a_tyequiv_transport; [ | exact Heq ].
+  intros; apply a_tyequiv__flex_def; eapply aenv_tbinds_le_flex_def; eauto.
 Qed.
 
 (* ===================================================================== *)

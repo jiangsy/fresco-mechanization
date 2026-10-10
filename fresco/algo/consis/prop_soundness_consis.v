@@ -1336,52 +1336,14 @@ Proof.
 Qed.
 
 (** The subjects of a variable unification are flexible. *)
-Lemma a_flex_tvar_weaken_cons : forall α (e : list (atom * abind)) Θ,
-  a_flex_tvar Θ α ->
-  α `notin` dom e ->
-  a_flex_tvar (e ++ Θ) α.
-Proof.
-  intros α e Θ [Hb | [τ Hb]] Hd;
-    [ left | right; exists τ ];
-    unfold binds; apply in_or_app; right; exact Hb.
-Qed.
-
 Lemma a_unify_subjects_flex : forall Θ0 α β Θ1,
   {{ ⊢ Θ0 }}a ->
   {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a ->
   a_flex_tvar Θ0 α /\ a_flex_tvar Θ0 β.
 Proof.
-  intros Θ0 α β Θ1 Hwf Hu; induction Hu.
-  - (* flex_id : the rule's premise IS the flexibility (defined or not) *)
-    split; assumption.
-  - (* flex_l : (α~flex)++Θ0 *)
-    split; [ left; unfold binds; left; reflexivity | ].
-    apply a_flex_tvar_weaken_cons; [ auto | ].
-    simpl. destruct H0 as [Hb | [τ Hb]]; apply binds_In in Hb; fsetdec.
-  - (* flex_r : (β~flex)++Θ0 *)
-    split; [ | left; unfold binds; left; reflexivity ].
-    apply a_flex_tvar_weaken_cons; [ auto | ].
-    simpl. destruct H0 as [Hb | [τ Hb]]; apply binds_In in Hb; fsetdec.
-  - (* flex_assign : the hatted subjects are premises of the rule *)
-    split; assumption.
-  - (* flex_skip : (α1~flex)++Θ0 *)
-    apply a_wf_aenv_flex_inv in Hwf. destruct Hwf as [Hfr Hwf0].
-    destruct (IHHu Hwf0) as [Hfα Hfβ].
-    split; (apply a_flex_tvar_weaken_cons;
-            [ auto | simpl; clear - H H0; fsetdec ]).
-  - (* skip_other *)
-    assert (Hwf0 : {{ ⊢ Θ0 }}a /\ c `notin` dom Θ0).
-    { destruct H as [-> | [[Q ->] | [Q ->]]].
-      - apply a_wf_aenv_tvar_inv in Hwf; tauto.
-      - apply a_wf_aenv_var_typ_inv in Hwf; destruct Hwf as [? [? ?]]; auto.
-      - apply a_wf_aenv_var_skl_inv in Hwf; destruct Hwf as [? [? ?]]; auto. }
-    destruct Hwf0 as [Hwf0 Hcd].
-    destruct (IHHu Hwf0) as [Hfα Hfβ].
-    assert (Hαd : α `in` dom Θ0)
-      by (destruct Hfα as [Hb | [τ Hb]]; apply binds_In in Hb; auto).
-    assert (Hβd : β `in` dom Θ0)
-      by (destruct Hfβ as [Hb | [τ Hb]]; apply binds_In in Hb; auto).
-    split; (apply a_flex_tvar_weaken_cons; [ auto | simpl; fsetdec ]).
+  intros * _ Hu; induction Hu;
+    intuition eauto using a_flex_tvar_weaken_app;
+    left; unfold binds; simpl; auto.
 Qed.
 
 (** The subject of an assignment is flexible in the input context.
@@ -1398,23 +1360,10 @@ Lemma a_assign_subject_flex : forall Θ0 Ξ α P Θ1,
   {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a ->
   a_flex_tvar (Ξ ++ Θ0) α.
 Proof.
-  intros * H; induction H.
-  - (* UnivGhost-Id *)
-    left. simpl. unfold binds; left; reflexivity.
-  - (* SolveM *)
-    left. unfold binds. apply in_or_app. right. left. reflexivity.
-  - (* Assign : from the hatted-subject premise, not from an IH *)
-    apply a_flex_tvar_weaken_app. assumption.
-  - (* Depend : tail-append ⇒ just reassociate *)
-    simpl_env in IHa_assign. exact IHa_assign.
-  - (* Skip *)
-    apply a_flex_tvar_weaken_mid; auto.
-  - (* SkipRigid *)
-    apply a_flex_tvar_weaken_mid; auto.
-  - (* SkipTmVar (typ) *)
-    apply a_flex_tvar_weaken_mid; auto.
-  - (* SkipTmVar (skl) *)
-    apply a_flex_tvar_weaken_mid; auto.
+  intros * H; induction H; simpl_env in *;
+    eauto using a_flex_tvar_weaken_app, a_flex_tvar_weaken_mid.
+  - left; unfold binds; simpl; auto.
+  - left; unfold binds; apply in_or_app; right; left; reflexivity.
 Qed.
 
 (** Rigid bindings are preserved exactly along [⊴]. *)
