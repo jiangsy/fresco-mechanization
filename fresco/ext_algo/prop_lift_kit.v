@@ -2514,10 +2514,8 @@ Qed.
 (*  than one atom — and it is cheaper, because only the LEFT column has to *)
 (*  be filtered: a pair is consulted by `rel_aenv` only at an atom the     *)
 (*  context binds or a payload mentions, i.e. inside `ftvar_in_aenv Θ1`.   *)
-(*  ⚙ The deleted pairs are answered by the SAME argument the ∀ rows use   *)
-(*  for their opener — a deleted left atom is off `dom Θ0`, so the input   *)
-(*  agreement makes its partner rigid, and `a_sub_sub_flex_flex_rev`       *)
-(*  carries that to the output.                                           *)
+(*  Restored flexibility agreement follows directly from the context      *)
+(*  relation, injectivity, and functionality on its source domain.         *)
 (* --------------------------------------------------------------------- *)
 
 (* ⭐ THE LEFT-SET RESTRICTION.  [restrict_pairs] deletes the pairs at ONE

@@ -181,6 +181,35 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Remove the obsolete backward-preservation proof layer
+
+The remaining consistency-binder closer now excludes a deleted opener's
+partner directly through the final context relation and injectivity at the
+caller's atom-pair list. It no longer transports flexibility backwards through
+an operational run. Its three callers supply their existing injectivity
+premise and no longer construct coverage facts solely for that detour.
+
+This removes the final external consumer of the backward-flexibility proof
+ladder. Deleted six internal lemmas covering typing, patterns, splitting,
+consistency checks, subtyping/flexible walks, and assignment/unification/
+consistency. Their two domain-removal helpers also became unused. The
+supply-domain bound for typing, its pattern counterpart, and two supporting
+consistency-check bounds became unused after the preceding agreement cleanup
+and are deleted too. Audited all tracked Coq code: no retained declaration
+references any of the twelve removed lemmas.
+
+**Reduction:** 778 nonblank, noncomment Coq lines. Together with the previous
+396-line context-agreement pass, this removes **1,174 Coq lines from one
+proof detour**, including all newly added infrastructure. The closer's proof
+body shrinks 110→105; its three callers shrink 162→155, 165→158, and
+165→158. The internal closer replaces the old reverse-route premises with
+caller injectivity; every other retained statement and all computational
+definitions are unchanged. Paper-facing theorems are unchanged.
+
+**Validation:** full `make coq`; all 34 headline assumption checks closed
+under the global context. Extracted OCaml unchanged.
+
+
 ## 2026-10-11 — Derive flexibility agreement from related contexts
 
 The lift was maintaining flexibility agreement separately from a context
