@@ -2058,6 +2058,34 @@ Proof.
       apply binds_app_3; apply binds_cons_3; exact Hb1.
 Qed.
 
+(** [a_inc_equiv_glue] when both first-stage increases are identities: the
+    domain-inclusion premise is then derivable (an identity preserves the
+    flexibles of its source). *)
+Corollary a_inc_equiv_glue_id : forall Θ0 Θmid Θfin Θ κ κ1a κ1b ζ1 ζ2,
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θmid }}a -> {{ ⊢ Θfin }}a -> {{ ⊢ Θ }}a ->
+  is_id_msubst κ1a -> is_id_msubst κ1b ->
+  κ1a ∷ Θ0 ⊑ Θmid ->
+  κ1b ∷ Θmid ⊑ Θfin ->
+  ζ1 ∷ Θmid ⊑ Θ ->
+  ζ2 ∷ Θfin ⊑ Θ ->
+  a_inc_equiv Θ0 κ (msubst_compose ζ1 κ1a) Θ ->
+  a_inc_equiv Θmid ζ1 (msubst_compose ζ2 κ1b) Θ ->
+  a_inc_equiv Θ0 κ (msubst_compose ζ2 κ1a) Θ.
+Proof.
+  intros Θ0 Θmid Θfin Θ κ κ1a κ1b ζ1 ζ2
+         Hwf0 Hwfm Hwff HwfT Hida Hidb Ha Hb Hζ1 Hζ2 Hsub1 Hsub2.
+  eapply a_inc_equiv_glue;
+    [ exact Hwf0 | exact Hwfm | exact Hwff | exact HwfT
+    | exact Hida | exact Hidb
+    | | exact Ha | exact Hb | exact Hζ1 | exact Hζ2 | exact Hsub1 | exact Hsub2 ].
+  intros α Hα.
+  pose proof (a_inc_dom_flex Ha Hα) as Hfα.
+  eapply a_inc_flex_dom;
+    [ exact Hb | exact Hwfm
+    | eapply a_inc_id_flex_preserve;
+        [ exact Ha | exact Hida | exact Hwf0 | exact Hfα ] ].
+Qed.
+
 (* ===================================================================== *)
 (*  P-App, the step lemma.  No binder and no renaming — but two composed  *)
 (*  runs, glued exactly like AbsAnno's two stages.                        *)
@@ -2214,18 +2242,9 @@ Proof.
   split; [ exact Hζ2 | ].
   split.
   { assert (Hglue : a_inc_equiv Θ0 κ (msubst_compose ζ2 κa) Θ).
-    { eapply a_inc_equiv_glue with
+    { eapply a_inc_equiv_glue_id with
         (Θmid := Θ1) (Θfin := Θ2) (κ1b := κb) (ζ1 := ζ1);
-        [ exact Hwf0 | exact Hwf1 | exact Hwf2 | exact HwfΘ
-        | exact Hida | exact Hidb
-        | intros α Hα;
-          pose proof (a_inc_dom_flex Hinca Hα) as Hfα;
-          eapply a_inc_flex_dom;
-            [ exact Hincb | exact Hwf1
-            | eapply a_inc_id_flex_preserve;
-                [ exact Hinca | exact Hida | exact Hwf0 | exact Hfα ] ]
-        | exact Hinca | exact Hincb | exact Hζ1 | exact Hζ2
-        | exact Heqv1 | exact Heqv2 ]. }
+        [ exact Hwf0 | exact Hwf1 | exact Hwf2 | exact HwfΘ        | exact Hida | exact Hidb        | exact Hinca | exact Hincb | exact Hζ1 | exact Hζ2        | exact Heqv1 | exact Heqv2 ]. }
     rewrite Heqκa. exact Hglue. }
   { (* the codomain of the arrow precision *)
     unfold ad_precise in Hprec2 |- *.

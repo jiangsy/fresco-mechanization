@@ -604,11 +604,7 @@ Qed.
     the premise's target is that [btyp]'s SKELETON, so the two shapes have
     to be bridged, and the bridge at CHECK mode needs local closure. *)
 
-(* --- §8a  local closure of a consistency's target -------------------- *)
-
-(** [prop_eq_var.ad_pat_consis_target_lc] (algo/sub/look/prop_eq_var.v). *)
-
-(* --- §8b  the two [btyp] / [bskl] shape bridges ---------------------- *)
+(* --- §8a  the two [btyp] / [bskl] shape bridges ---------------------- *)
 
 (** Erasing to the skeleton reflects local closure. *)
 Lemma degree_btyp_of_degree_bskl_erase : forall B k,
@@ -648,12 +644,13 @@ Proof.
     rewrite H2. reflexivity.
 Qed.
 
-(* --- §8c  the SK-sorted [ad_pat_sub_mod_comp_sk]'s TY analogue -------- *)
+(* --- §8b  the SK-sorted [ad_pat_sub_mod_comp_sk]'s TY analogue -------- *)
 
 (** The TY-sorted all-in-one subtyping run's target is mode-compatible —
     the paper's (commented-out) "refinement preserves correspondence" for
     TYPES.  [Infer] and [Check] are the two leaves; [Check]'s local
-    closure comes off its own consistency premise (§8a). *)
+    closure comes off its own consistency premise
+    ([ad_pat_consis_target_lc], algo/sub/look/prop_eq_var.v). *)
 Lemma ad_pat_sub_mod_comp_ty : forall M Ψ Θ R Q,
   {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_ty | M ] R ⩽ Q }}ad ->
   forall Bt, Q = btyp_to_bskl Bt -> mod_comp_ty Bt M.
@@ -688,7 +685,7 @@ Proof.
   - (* flex_mono *) apply (IHad_pat_sub eq_refl Bt); exact HeqB.
 Qed.
 
-(* --- §8d  local closure off an equivalence --------------------------- *)
+(* --- §8c  local closure off an equivalence --------------------------- *)
 
 (** [≡ᵗ]'s [flex_def] row hands back a flexible's DEFINITION, whose local
     closure is only available from the context — hence the [a_wf_aenv]
@@ -718,13 +715,13 @@ Corollary a_tyequiv_lc_r : forall Θ A A',
   {{ Θ ⊢ A ≡ᵗ A' }}a -> {{ ⊢ Θ }}a -> lc_ptyp A'.
 Proof. intros * H Hwf. apply (proj2 (a_tyequiv_lc H Hwf)). Qed.
 
-(* --- §8e  the theorem of this section --------------------------------- *)
+(* --- §8d  the theorem of this section --------------------------------- *)
 
 (** ⭐ The [ad_pat_mod_comp_sk] mirror: a type-inference colouring is
     mode-compatible.  The two Abs rows carry it outright, the three base
-    rows read it off their subtyping premise (§8c), the two check-Abs
+    rows read it off their subtyping premise (§8b), the two check-Abs
     pairs rebuild it from [is_ityp], [Freeze] and [AbsAnnoCheck] take
-    their local closure off the appendix's [≡ᵗ] premise (§8d), and [App]
+    their local closure off the appendix's [≡ᵗ] premise (§8c), and [App]
     inverts its function premise's. *)
 Lemma ad_sd_typing_mod_comp_ty : forall M Θ e B,
   {{ Θ ⊢ˢᵈ[ M ] e ⦂ B }}ad -> {{ ⊢ Θ }}a -> mod_comp_ty B M.
@@ -1063,9 +1060,7 @@ Qed.
 (*  §12  The eleven-row induction's own kit                               *)
 (* ===================================================================== *)
 
-(* --- §12a  reading a PAINTING's skeleton well-formedness as a type's --- *)
-
-(* --- §12b  scoping bounds the suffix-erasure freshness reads off ------ *)
+(* --- §12a  scoping bounds the suffix-erasure freshness reads off ------ *)
 
 (** A well-formed TERM mentions only type variables of its context — the
     "the term is the source program" half of [lemma:suffix-erasure]'s
@@ -1091,7 +1086,7 @@ Proof.
   - (* app *) clear - IHa_wf_exp1 IHa_wf_exp2; fsetdec.
 Qed.
 
-(* --- §12c  a ghost-free bskl IS a colouring -------------------------- *)
+(* --- §12b  a ghost-free bskl IS a colouring -------------------------- *)
 
 (** [a_sub_sound] hands back a [bskl]; the TY-sorted declarative
     judgements want a [btyp].  Whenever the erasure is a painting of a type
@@ -1124,15 +1119,7 @@ Proof.
   inversion Heq; subst. exists B1, B2; repeat split.
 Qed.
 
-(* --- §12d  mode compatibility at the TY sort -------------------------- *)
-
-(* --- §12e  the split is sound: increase, wf, and both components ------ *)
-
-(* --- §12f  guess^TY's block, and the type it produces ----------------- *)
-
-(* --- §12g  the term-entry peel that DROPS the suffix ------------------ *)
-
-(* --- §12h  scoping: reading a scope off, and stripping a suffix ------- *)
+(* --- §12c  scoping: reading a scope off, and stripping a suffix ------- *)
 
 Lemma a_wf_ptyp_of_scope_pskl : forall Θ P,
   a_scope_pskl Θ P -> forall A, P = ptyp_to_pskl A -> a_wf_ptyp Θ A.
@@ -1212,7 +1199,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §12h  A DERIVATION EXHIBITS ITS OWN SUBJECT AS A WELL-FORMED TERM.     *)
+(*  §12d  A DERIVATION EXHIBITS ITS OWN SUBJECT AS A WELL-FORMED TERM.     *)
 (*                                                                        *)
 (*  ⭐ This is what [ad_sd_typing__anno]'s [a_wf_ptyp] premise buys.       *)
 (*  Without it the annotation's type variables are unconstrained — the     *)
@@ -1328,7 +1315,7 @@ Proof.
   - apply lc_exp_app; assumption.
 Qed.
 
-(* --- §12i  odds and ends --------------------------------------------- *)
+(* --- §12e  odds and ends --------------------------------------------- *)
 
 Lemma a_decls_binds_flex : forall Ξ y (b : abind),
   a_decls Ξ -> binds y b Ξ -> b = abind_flex_mono.
