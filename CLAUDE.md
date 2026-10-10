@@ -3,17 +3,32 @@
 Onboarding + ground rules for agents (and humans) touching this Coq
 mechanization.
 
-⚙ This file used to claim it was `AGENTS.md` with `CLAUDE.md` a symlink to it.
-That has not been true for some time — there is no `mechanization/AGENTS.md`;
-this file is the only copy.  (The repo ROOT has its own separate
-[`../AGENTS.md`](../AGENTS.md), which is about the paper, not the
-mechanization.)  Corrected 2026-08-09.
+⭐ **This repository (`jiangsy/proof_fresco`, branch `main`) is the MAIN
+DEVELOPMENT** since 2026-10-10.  It used to be ported from
+`impredicative/mechanization/frost/` (the `mech-faithful-wf-refine` worktree);
+that tree is now frozen at `884cdc3a` and nothing flows from it any more.
+Work here, then sync downward:
+- `public` branch — the outside-reader release: the SAME proofs, comments
+  rewritten (no dates, ⭐/⚠ markers, paper line numbers, docs/ or cex/
+  references), no `cex/`, `test/`, `docs/`.  Port by a per-file 3-way merge
+  (base = previous `main`, ours = `public`, theirs = new `main`), take CODE
+  from `main`, rewrite new comments in public style, and check that every
+  file's comment-stripped code equals `main`'s.
+- the hosted browser <https://jiang.sy/research/popl2027b/> — repo
+  `personal_web`: pin the new `public` commit in `sources.lock.json`
+  (`fresco` entry, `localPath` = the `public` checkout), then
+  `python3 scripts/export-rocq-navigation.py fresco <public checkout>`,
+  `npm run build:fresco && npm test && npm run check`, commit, push.
+
+The paper is NOT in this repository: it lives in the `impredicative`
+repository, expected as a sibling checkout (`../impredicative/paper`;
+override with `make PAPER_DIR=…`).
 
 ## TL;DR
 
 - Rocq mechanization of the **Fresco** calculus from the paper
-  *Haunting Bidirectional Typing* (`paper/frost.tex`, rendered as
-  `paper/frost.pdf`).
+  *Haunting Bidirectional Typing* (`../impredicative/paper/frost.tex`,
+  rendered as `frost.pdf` beside it).
 - Coq namespace: `src` (`-R . src` in `_CoqProject`).
 - Build: `make coq` (full kernel check) — the bar for committing.
 - **Status** (audited 2026-08-05): Phases 1–2 done; **Phase 3 is
@@ -176,10 +191,10 @@ mechanization.)  Corrected 2026-08-09.
 | [`PROGRESS.md`](PROGRESS.md) | **Two parts**: Part 1 — paper → Coq mapping (every paper Lemma / Theorem with status, statement, location); Part 2 — daily progress log |
 | [`README.v`](README.v) | **The compilable paper→Coq HEADLINE index — 34 entries.** Deliberately NOT a catalogue: a paper label is not a reason to appear (the exhaustive map is PROGRESS.md Part 1). Each entry is: the paper's Lemma/Theorem name + label, the statement in the PAPER'S OWN NOTATION (unicode), then `Check` and `Print Assumptions` **together**. So the build tail prints one assumption report per claim and every one must read "Closed under the global context". Adding a claim means adding all three parts. Run via `make coq`. |
 | [`Makefile`](Makefile) | ott + lngen + coq pipeline; `coq` / `quick` / `clean` / `sync-paper-refs` targets |
-| [`scripts/sync_paper_refs.py`](scripts/sync_paper_refs.py) | Sync paper Lemma / Theorem numbers from `paper/frost.aux` into .v comments and the auto-managed reference-link block in `PROGRESS.md`. Run via `make sync-paper-refs` or `make sync-paper-refs-md`. |
+| [`scripts/sync_paper_refs.py`](scripts/sync_paper_refs.py) | Sync paper Lemma / Theorem numbers from `$(PAPER_DIR)/frost.aux` into .v comments and the auto-managed reference-link block in `PROGRESS.md`. Run via `make sync-paper-refs` or `make sync-paper-refs-md`. |
 | [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md) | Canonical registry of everything the paper's authors should see (gaps, prose-completions, refuted statements) |
 | [`docs/ghost-capture.tex`](docs/ghost-capture.tex) | **Author-facing note, in the paper's own notation**: the ghost-capture configuration — the consistency rules derive a pair that refinement rejects, so the paper's prose presupposition on skeleton consistency (`declarative.tex:2074`) is load-bearing and not derivable. Two refutations it forced (both since retracted BY the repair, and kept as its justification), and what the repair costs. Build: `make -f Makefile.ghost-capture` from `docs/` |
-| [`docs/refutations.tex`](docs/refutations.tex) | **Author-facing note, in the paper's own notation**: the two machine-checked refutations (Lemma E.17 Look completeness; Theorem 4.6 Completeness of subtyping), the shared configuration, the diagnosis (`SolE-FlexR` discards the accumulated pattern) and the suggested repair. Build: `make -f Makefile.refutations` from `docs/`, or `TEXINPUTS=../../paper: pdflatex refutations.tex` |
+| [`docs/refutations.tex`](docs/refutations.tex) | **Author-facing note, in the paper's own notation**: the two machine-checked refutations (Lemma E.17 Look completeness; Theorem 4.6 Completeness of subtyping), the shared configuration, the diagnosis (`SolE-FlexR` discards the accumulated pattern) and the suggested repair. Build: `make -f Makefile.refutations` from `docs/`, or `TEXINPUTS=../../impredicative/paper: pdflatex refutations.tex` |
 | [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md) | **Read before mechanizing any refinement / consistency / subtyping / skeleton-inference lemma.** The paper states well-formedness (and sometimes a further judgment) as an EXTERNAL requirement in prose, and its rules then omit the side conditions it would supply. Several judgments look FALSE until that condition is restored. |
 | [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md) | **ACTIVE hand-off**: state the closed-program corollaries against `d_sd_typing` / `d_typing` instead of `ad_sd_typing`. ⭐ SOUNDNESS LANDED 2026-08-10 via the conservativity bridge `algo_decl/prop_conserv.v`. ⭐ 2026-08-11 the TAG-HYGIENE blocker is CLOSED — all four subtyping judgements now read the paper's `fresh Ψ'` the same, GLOBAL way. ⛔ COMPLETENESS still open, blocked by ONE thing: the leaf-valid datum at a ghosty subject (`cex/cex_ad_pat_join_not_leaf_valid.v`) |
 | [`docs/HANDOFF-extractable-algo-encoding.md`](docs/HANDOFF-extractable-algo-encoding.md) | **ACTIVE hand-off. ⭐ TODO (1) IS COMPLETE (2026-08-13)** — `fresco/ext_algo/` is a SECOND algorithmic encoding in which no rule's freshness constrains its own output, because a fresh-name SUPPLY is threaded through every component (which is what `type.ml`'s `counter` does). All fourteen judgements are threaded AND bridged to `fresco/algo`'s encoding over the SAME contexts, so the four flagship theorems apply to a threaded run verbatim. ⭐ Two prose-completions became theorems on the way (`AT-Abs`'s and `a_sub__forall_l`'s `uniq` filters on generated blocks). ⭐ **TODO (2) — EXTRACTION — IS COMPLETE (2026-08-14)**: the termination campaign closed (`e_sub_order_total` and `e_consis_order_total`, unconditional, §8b.5–§8b.6), and phase 4 landed a Bove–Capretta runner for EVERY judgement (§8b.7) — `option (sig …)`-shaped, soundness-only, dispatching in the reference implementation's order — so the whole algorithm extracts to clean OCaml. ⚠️ TERMINATION was the paper's own undischarged decidability argument; §7.3 sharpens that into a finding worth sending the authors (filed in PAPER-GAPS) |
@@ -188,7 +203,7 @@ mechanization.)  Corrected 2026-08-09.
 | [`docs/HANDOFF-p7c-finish.md`](docs/HANDOFF-p7c-finish.md) | **ACTIVE hand-off**: TASKS 1, 2a and 3 are DONE (2026-08-03); what is left is TASK 2b — TASK 0's `sub_shield` for a `P0` with a ∀ below its head, the bundle's one hypothesis |
 | [`docs/HANDOFF-section-d.md`](docs/HANDOFF-section-d.md) | **CLOSED 2026-08-08 — HISTORY**: section D (`proofs.tex`) — soundness/completeness of skeleton and type inference.  All four theorems are Qed and axiom-free; the file keeps the exact Coq statement, the design decision and the obstacle found for each of the six lemmas and four theorems, pass by pass.  ⚠️ Three lemmas the paper calls "straightforward induction" are not |
 | [`docs/HANDOFF-typ-all-plain-refactor.md`](docs/HANDOFF-typ-all-plain-refactor.md) | Historical hand-off doc from the 2026-05-15 typ_all_plain removal pass |
-| [`../paper/sections/`](../paper/sections/) | Authoritative paper source (mechanize against `declarative.tex`, `syntax-directed.tex`, `algorithmic.tex`, `proofs.tex` only — `*-old.tex` and `*-quantifier-rows.tex` are abandoned drafts) |
+| [`../impredicative/paper/sections/`](../impredicative/paper/sections/) | Authoritative paper source (mechanize against `declarative.tex`, `syntax-directed.tex`, `algorithmic.tex`, `proofs.tex` only — `*-old.tex` and `*-quantifier-rows.tex` are abandoned drafts) |
 
 ## Phase status (current)
 
@@ -201,7 +216,7 @@ mechanization.)  Corrected 2026-08-09.
 ## Directory map
 
 ```text
-mechanization/
+proof_fresco/   (this repository)
 ├── CLAUDE.md             (this file — ground rules)
 ├── DESIGN.md
 ├── PROGRESS.md
@@ -567,7 +582,7 @@ before changing any of them.
 
 ## Build and workflow
 
-- **Full kernel check**: `make coq` from `mechanization/`. Parallelism
+- **Full kernel check**: `make coq` from the repository root. Parallelism
   on by default (`-j 4`); override with `make NJOBS=8 coq` on bigger
   machines. **This is the bar for committing / pushing.**
 - **Fast dev iteration**: `make quick` runs in `vos` mode (~3–4× faster).
@@ -587,14 +602,14 @@ before changing any of them.
   ...]`-marked comments in .v files and the auto-managed reference-
   link block at the bottom of [`PROGRESS.md`](PROGRESS.md). The Markdown-only
   variant is `make sync-paper-refs-md`. Run after editing
-  `paper/sections/*.tex` or `paper/frost.aux`.
+  the paper's `sections/*.tex` or `frost.aux`.
 - Regenerate ott/lngen: `make ott && make lngen` (runs automatically
   as part of `make coq`).
 - Clean: `make clean`. Removes `*/def_ott.v`, `*/prop_ln.v`,
   `CoqMakefile`, `.FILE_LIST`.
-- `_CoqProject` lists module roots; `coq_makefile` is regenerated
-  from `tree -if` output, so just adding `.v` files in the right
-  place is enough.
+- `_CoqProject` lists module roots; `CoqMakefile` is regenerated
+  from a `find` over the `.v` files whenever that set changes, so just
+  adding `.v` files in the right place is enough.
 
 ## Tooling
 
@@ -788,13 +803,13 @@ before changing any of them.
   `algorithmic.tex`, `proofs.tex` directly when in doubt — they are
   the authoritative specs. PDF is fine for human reading; LaTeX is
   fine for grep.
-- Keep `mechanization/fresco/language.ott` minimal. Resist the
+- Keep `fresco/language.ott` minimal. Resist the
   temptation to put rules into ott just because ott has `defns`
   syntax; we want the rules in Coq where they can be edited /
   debugged interactively.
 - After editing `language.ott`, run `make` so `def_ott.v` and
   `prop_ln.v` regenerate. `_CoqProject` and `Makefile.coq` pick up
-  new `.v` files automatically via the `tree`-based file list.
+  new `.v` files automatically via the `find`-based file list.
 - Run `git status --short --branch` before and after significant
   edits.
 - Do not edit `def_ott.v` or `prop_ln.v` by hand. If a generated
@@ -825,9 +840,8 @@ before changing any of them.
 
 ## References
 
-- Paper: [`../paper/frost.tex`](../paper/frost.tex) (rendered as
-  [`../paper/frost.pdf`](../paper/frost.pdf) and the paper-root
-  [`../impredicative.pdf`](../impredicative.pdf)).
+- Paper: [`../impredicative/paper/frost.tex`](../impredicative/paper/frost.tex)
+  (rendered as [`frost.pdf`](../impredicative/paper/frost.pdf) beside it).
 - Reference repo for file-organization patterns:
   <https://github.com/jiangsy/proof_worklist_remechnization>
   (different calculus — copy the structure, not the rules).

@@ -20,7 +20,8 @@ else
 	SED_FLAG := -i
 endif
 
-PAPER_AUX := ../paper/frost.aux
+PAPER_DIR ?= ../impredicative/paper
+PAPER_AUX := $(PAPER_DIR)/frost.aux
 
 # Use `make NJOBS=N coq` (or quick) for parallel compilation. Default 4.
 NJOBS ?= 4
@@ -70,16 +71,11 @@ ott : ${OTT_OUTS}
 
 lngen : ${LNGEN_OUTS}
 
-# a hack to force makefile to detect source file changes
-.FILE_LIST : ${LNGEN_OUTS} FORCE
-	tree . -if -I ${IGNORE_DIRS} | grep -E "v$$" | cut -c3- | sort -s > .FILE_LIST.tmp
-	diff $@ .FILE_LIST.tmp || cp .FILE_LIST.tmp $@
-	rm .FILE_LIST.tmp
+# The CoqMakefile is regenerated whenever the set of .v files changes.
+VFILES := $(shell find . -name '*.v' | sed 's|^\./||' | sort)
 
-FORCE:
-
-${COQ_MAKEFILE} : ${COQ_PROJECT} .FILE_LIST ${LNGEN_OUTS}
-	tree . -if -I ${IGNORE_DIRS} | grep -E "v$$" | cut -c3- | xargs coq_makefile -o $@ -f ${COQ_PROJECT}
+${COQ_MAKEFILE} : ${COQ_PROJECT} ${LNGEN_OUTS} $(VFILES)
+	printf '%s\n' $(VFILES) | xargs coq_makefile -o $@ -f ${COQ_PROJECT}
 
 # The extraction driver (fresco/ext_algo/extraction/Extract.v) writes its OCaml
 # into a fixed directory, and `Set Extraction Output Directory` does NOT create
@@ -101,7 +97,7 @@ quick : ${COQ_MAKEFILE}
 
 clean : tidy
 	${MAKE} -f ${COQ_MAKEFILE} clean
-	rm */prop_ln.v */def_ott.v ${COQ_MAKEFILE} ${COQ_MAKEFILE}.conf .FILE_LIST
+	rm -f */prop_ln.v */def_ott.v ${COQ_MAKEFILE} ${COQ_MAKEFILE}.conf .FILE_LIST
 	# Litter coq_makefile's own `clean` does not know about: the .aux
 	# per-proof timing files, and .DS_Store.  `find` rather than a glob
 	# list, because the tree is three levels deep (algo/completeness_look/)
@@ -134,10 +130,10 @@ tidy :
 #   - `[paper-ref: ...]`-marked comments in .v files
 #   - the auto-managed `<!-- BEGIN paper-refs -->`..`END` block in
 #     PROGRESS.md (label → file:line reference-link definitions)
-# Requires paper to be built first (`make -C ../paper` or similar).
+# Requires paper to be built first (`make -C $(PAPER_DIR)` or similar; PAPER_DIR defaults to the sibling `impredicative/paper` checkout).
 sync-paper-refs : ${PAPER_AUX}
-	python3 scripts/sync_paper_refs.py
+	FRESCO_PAPER_DIR=$(PAPER_DIR) python3 scripts/sync_paper_refs.py
 
 # Same, but only the Markdown block (no .v file edits) — fast.
 sync-paper-refs-md : ${PAPER_AUX}
-	python3 scripts/sync_paper_refs.py --md
+	FRESCO_PAPER_DIR=$(PAPER_DIR) python3 scripts/sync_paper_refs.py --md

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sync paper Lemma/Theorem numbers from fresco.aux into Rocq + Markdown.
+"""Sync paper Lemma/Theorem numbers from frost.aux into Rocq + Markdown.
 
 Two responsibilities:
 
@@ -23,15 +23,21 @@ Usage: `python3 scripts/sync_paper_refs.py [--coq | --md | --all]`
 """
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-PAPER_AUX = REPO_ROOT / "paper" / "fresco.aux"
-PAPER_SECTIONS = REPO_ROOT / "paper" / "sections"
-ROCQ_ROOT = REPO_ROOT / "mechanization" / "fresco"
-MECH_ROOT = REPO_ROOT / "mechanization"
+# This repository is the mechanization; the paper lives in a separate checkout
+# (the `impredicative` repository), by default next to this one.  Override with
+# FRESCO_PAPER_DIR=/path/to/paper.
+MECH_ROOT = Path(__file__).resolve().parents[1]
+PAPER_DIR = Path(
+    os.environ.get("FRESCO_PAPER_DIR", MECH_ROOT.parent / "impredicative" / "paper")
+).resolve()
+PAPER_AUX = PAPER_DIR / "frost.aux"
+PAPER_SECTIONS = PAPER_DIR / "sections"
+ROCQ_ROOT = MECH_ROOT / "fresco"
 
 # Markdown files whose paper-refs block should be regenerated.
 MARKDOWN_TARGETS = [
@@ -91,7 +97,7 @@ def parse_tex_label_lines(sections_dir):
     for tex in sorted(sections_dir.glob("*.tex")):
         if any(tex.name.endswith(suffix) for suffix in TEX_SECTIONS_SKIP):
             continue
-        rel = tex.relative_to(REPO_ROOT)
+        rel = tex
         for lineno, line in enumerate(tex.read_text().splitlines(), start=1):
             m = LABEL_LINE_RE.search(line)
             if not m:
@@ -150,7 +156,7 @@ def rewrite_v_file(path, label_map, name_map):
     new_text = REF_PATTERN.sub(replace, text)
     if changed:
         path.write_text(new_text)
-        print(f"  updated {path.relative_to(REPO_ROOT)}")
+        print(f"  updated {path.relative_to(MECH_ROOT)}")
 
 
 # --- Markdown auto-managed block ------------------------------------------
@@ -168,7 +174,7 @@ def build_markdown_block(label_lines, label_map):
     Each line is a markdown reference-link definition:
         [lemma:foo]: ../paper/sections/bar.tex#L52 "Lemma 3.2: Foo"
 
-    Labels present in .tex sources but missing from fresco.aux still get a
+    Labels present in .tex sources but missing from frost.aux still get a
     link with the file:line; the title falls back to the label itself.
     """
     lines = []
@@ -178,9 +184,9 @@ def build_markdown_block(label_lines, label_map):
         key=lambda kv: (str(kv[1][0]), kv[1][1]),
     )
     for label, (rel_path, lineno) in items:
-        # Build the link target relative to the markdown file's location.
-        # PROGRESS.md lives at mechanization/PROGRESS.md → ../paper/...
-        link_target = f"../{rel_path}#L{lineno}"
+        # Build the link target relative to the markdown file's location
+        # (PROGRESS.md at the repository root).
+        link_target = f"{os.path.relpath(rel_path, MECH_ROOT)}#L{lineno}"
         entry = label_map.get(label)
         if entry is not None:
             kind, number, name = entry
@@ -204,7 +210,7 @@ def rewrite_md_block(path, body_lines):
         new += "\n".join(body_lines) + "\n"
         new += END_MARKER + "\n"
         path.write_text(new)
-        print(f"  added paper-refs block to {path.relative_to(REPO_ROOT)}")
+        print(f"  added paper-refs block to {path.relative_to(MECH_ROOT)}")
         return
     # Replace existing block.
     pattern = re.compile(
@@ -217,7 +223,7 @@ def rewrite_md_block(path, body_lines):
     new = pattern.sub(new_block, text)
     if new != text:
         path.write_text(new)
-        print(f"  updated paper-refs block in {path.relative_to(REPO_ROOT)}")
+        print(f"  updated paper-refs block in {path.relative_to(MECH_ROOT)}")
 
 
 # --- main ------------------------------------------------------------------
@@ -234,7 +240,7 @@ def main():
     label_map, name_map = parse_aux(PAPER_AUX)
     print(
         f"parsed {len(label_map)} labels + {len(name_map)} titles "
-        f"from {PAPER_AUX.relative_to(REPO_ROOT)}"
+        f"from {PAPER_AUX}"
     )
 
     if do_coq:
@@ -245,7 +251,7 @@ def main():
     if do_md:
         print("rewriting Markdown paper-refs blocks…")
         label_lines = parse_tex_label_lines(PAPER_SECTIONS)
-        print(f"  found {len(label_lines)} labels in paper/sections/")
+        print(f"  found {len(label_lines)} labels in {PAPER_SECTIONS}")
         body = build_markdown_block(label_lines, label_map)
         for md_file in MARKDOWN_TARGETS:
             rewrite_md_block(md_file, body)
