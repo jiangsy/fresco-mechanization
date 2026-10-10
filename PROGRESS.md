@@ -181,6 +181,27 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Derivation induction for guess determinism
+
+Replaced the size-bounded `e_guess_mono_rel_n` proof plus its corollary with
+one direct proof of `e_guess_mono_rel`. Induct on the second derivation and
+leave the first arbitrary. The existing arrow and binder renamings already
+align the first derivation with the second's fixed recursive input, so
+ordinary hypotheses apply directly. This removes the numeric bound, size
+arithmetic, and inversions of the derivation being inducted on. Removed the
+unused arithmetic import and corrected the explanation in extraction
+determinism's header.
+
+**Reduction:** 21 nonblank, noncomment Coq lines, with no new helpers.
+The combined logical proof bodies shrink from 117 to 109 lines.
+`e_guess_mono_rel` retains exactly its original mathematical statement;
+`e_guess_mono_rel_n` had no other proof consumers. Computational definitions
+and every other retained statement are unchanged.
+
+**Validation:** full `make coq`; all 34 headline assumption checks closed
+under the global context. Extracted OCaml unchanged.
+
+
 ## 2026-10-11 — Use caller orders at inference entry points
 
 The skeleton- and type-inference completeness entry points now invoke

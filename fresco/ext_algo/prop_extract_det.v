@@ -29,10 +29,9 @@
     domain plus the openers" invariant per judgement, with three DIFFERENT
     fates for an opener (LEAKED into 𝒞 by [LS-ForallR], LEAKED into the
     output by [SS-ForallR], CLOSED by [SS-ForallL]).  ⚙ The template is
-    prop_consis_complete.v §3/§3b — [e_guess_mono_rel_n] / [e_guess_mono_rel],
-    already Qed and already a SIZE induction for the reason this level needs
-    one (the arrow rows thread, so the second halves sit at DIFFERENT input
-    supplies and a derivation-indexed IH would be pinned to one).
+    prop_consis_complete.v §3/§3b — [e_guess_mono_rel],
+    proved by induction on the second derivation: each renaming aligns the
+    first derivation with the second's fixed input supply before recursion.
 
     ⚙ TWO CONVENTIONS THIS FILE KEEPS THROUGHOUT.  (1) Every [_rel_stmt]
     puts the DERIVATION before its size and coverage premises, so that

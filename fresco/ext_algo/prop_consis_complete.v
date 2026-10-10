@@ -10,7 +10,6 @@
     docs/HANDOFF-close-consis-unrestricted.md). *)
 
 Require Import Coq.Lists.List.
-Require Import Coq.micromega.Lia.
 Require Import Coq.Bool.Bool.
 Require Import Coq.Bool.Sumbool.
 Require Import Metalib.Metatheory.
@@ -214,44 +213,64 @@ Qed.
 (*  [guess^TY] is syntax-directed (prop_guess.v §9's inversions are        *)
 (*  unconditional), so the runner-sided doctrine has nothing to protect.   *)
 (*                                                                        *)
-(*  ⚙ SIZE induction, not induction on either derivation: the arrow row    *)
-(*  threads, so its second halves sit at DIFFERENT input supplies, and a   *)
-(*  derivation-indexed IH would be pinned to one of them.  With the size   *)
-(*  the second call is made after the first half's renaming has already    *)
-(*  moved one side onto the other's rails.                                 *)
+(*  Induct on the SECOND derivation, leaving the first arbitrary.         *)
+(*  Each renaming aligns the first derivation with the second's fixed     *)
+(*  input supply, so the ordinary recursive hypothesis applies directly.  *)
 (* --------------------------------------------------------------------- *)
 
-Lemma e_guess_mono_rel_n : forall n S0 P S1 Ξ A,
-  size_pskl P <= n ->
+Lemma e_guess_mono_rel : forall S0 P S1 Ξ A S1' Ξ' A',
   e_guess_mono S0 P S1 Ξ A ->
+  e_guess_mono S0 P S1' Ξ' A' ->
   ftvar_in_pskl P [<=] S0 ->
-  forall S1' Ξ' A', e_guess_mono S0 P S1' Ξ' A' ->
   exists ps,
     (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0) /\
     swaps_atoms ps S1 [=] S1' /\
     swaps_aenv ps Ξ = Ξ' /\
     swaps_ptyp ps A = A'.
 Proof.
-  induction n as [ | n IH ]; intros S0 P S1 Ξ A Hsz Hd Hcov S1' Ξ' A' Hd'.
-  { destruct P; simpl in Hsz; lia. }
-  destruct P.
-  - (* unit *)
-    destruct (e_guess_mono_inv_unit Hd) as [-> [-> ->]].
-    destruct (e_guess_mono_inv_unit Hd') as [-> [-> ->]].
-    exists nil. repeat apply conj; simpl; try reflexivity. intros ? ? [].
-  - (* var_b — no rule *) destruct (e_guess_mono_inv_var_b Hd).
+  intros S0 P S1 Ξ A S1' Ξ' A' Hd Hd'.
+  revert S1 Ξ A Hd.
+  induction Hd' as
+    [S0 α' Hα'
+    |S0 S1' P Ξ' A' Dp' IH
+    |S0 α
+    |S0
+    |S0 Sa' S1' P1 P2 Xa' Xb' Aa' Ab' D1' IH1 D2' IH2
+    |S0 S1' P Ξ' Aa' β' Hβ' Dp' IH];
+    intros S1 Ξ A Hd Hcov.
+  - (* ghost — the row that INVENTS *)
+    destruct (e_guess_mono_inv_ghost Hd) as [α [Hα [-> [-> ->]]]].
+    exists ((α, α') :: nil). repeat apply conj.
+    + intros ? ? [Heqp | []]. inversion Heqp; subst. split; assumption.
+    + cbn [swaps_atoms]. rewrite swap_atoms_add.
+      rewrite (swap_atoms_notin α α' S0 Hα Hα').
+      replace (swap_atom α α' α) with α'
+        by (unfold swap_atom; destruct (α == α); congruence).
+      reflexivity.
+    + rewrite swaps_aenv_app_dist, swaps_aenv_one_flex, swaps_aenv_nil.
+      cbn [swaps_atom].
+      replace (swap_atom α α' α) with α'
+        by (unfold swap_atom; destruct (α == α); congruence).
+      reflexivity.
+    + rewrite swaps_ptyp_var_f. cbn [swaps_atom].
+      replace (swap_atom α α' α) with α'
+        by (unfold swap_atom; destruct (α == α); congruence).
+      reflexivity.
+  - (* univ_ghost *)
+    pose proof (e_guess_mono_inv_univ_ghost Hd) as Dp.
+    simpl in Hcov.
+    exact (IH S1 Ξ A Dp Hcov).
   - (* var_f *)
     destruct (e_guess_mono_inv_var Hd) as [-> [-> ->]].
-    destruct (e_guess_mono_inv_var Hd') as [-> [-> ->]].
+    exists nil. repeat apply conj; simpl; try reflexivity. intros ? ? [].
+  - (* unit *)
+    destruct (e_guess_mono_inv_unit Hd) as [-> [-> ->]].
     exists nil. repeat apply conj; simpl; try reflexivity. intros ? ? [].
   - (* arrow — the threading row *)
     destruct (e_guess_mono_inv_arrow Hd)
       as [Sa [Xa [Xb [Aa [Ab [-> [-> [D1 D2]]]]]]]].
-    destruct (e_guess_mono_inv_arrow Hd')
-      as [Sa' [Xa' [Xb' [Aa' [Ab' [-> [-> [D1' D2']]]]]]]].
-    simpl in Hsz, Hcov.
-    destruct (IH S0 P1 Sa Xa Aa ltac:(lia) D1
-                 ltac:(clear - Hcov; fsetdec) Sa' Xa' Aa' D1')
+    simpl in Hcov.
+    destruct (IH1 Sa Xa Aa D1 ltac:(clear - Hcov; fsetdec))
       as [ps1 [Hav1 [HS1 [HX1 HA1]]]].
     assert (HP2 : swaps_pskl ps1 P2 = P2)
       by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
@@ -261,9 +280,8 @@ Proof.
     destruct (e_guess_mono_swaps ps1 D2 Heq2) as [S2t [HS2t D2t]].
     rewrite HP2 in D2t.
     pose proof (e_guess_mono_supply_grows D1') as Hgr1'.
-    destruct (IH Sa' P2 S2t (swaps_aenv ps1 Xb) (swaps_ptyp ps1 Ab)
-                 ltac:(lia) D2t ltac:(clear - Hcov Hgr1'; fsetdec)
-                 S1' Xb' Ab' D2')
+    destruct (IH2 S2t (swaps_aenv ps1 Xb) (swaps_ptyp ps1 Ab)
+                  D2t ltac:(clear - Hcov Hgr1'; fsetdec))
       as [ps2 [Hav2 [HS2 [HX2 HA2]]]].
     (* what the SECOND renaming must leave alone: the first half's yield *)
     pose proof (e_guess_mono_generated_in_supply D1') as Hdom1'.
@@ -290,8 +308,7 @@ Proof.
       reflexivity.
   - (* all_syn — the two openers are paired first, by ONE transposition *)
     destruct (e_guess_mono_inv_all_syn Hd) as [β [Aa [Hβ [-> Dp]]]].
-    destruct (e_guess_mono_inv_all_syn Hd') as [β' [Aa' [Hβ' [-> Dp']]]].
-    simpl in Hsz, Hcov.
+    simpl in Hcov.
     assert (Heqs : add β' S0 [=] swap_atoms β β' (add β S0)).
     { rewrite swap_atoms_add. rewrite (swap_atoms_notin β β' S0 Hβ Hβ').
       unfold swap_atom. destruct (β == β); [ | congruence ]. reflexivity. }
@@ -303,11 +320,8 @@ Proof.
       by (unfold swap_atom; destruct (β == β); congruence).
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β'))
       as Hup.
-    destruct (IH (add β' S0) (open_pskl_wrt_pskl P (pskl_var_f β'))
-                 S1t (swap_aenv β β' Ξ) (swap_ptyp β β' Aa)
-                 ltac:(rewrite size_pskl_open_pskl_wrt_pskl_var; lia)
-                 Dpt ltac:(clear - Hup Hcov; simpl in *; fsetdec)
-                 S1' Ξ' Aa' Dp')
+    destruct (IH S1t (swap_aenv β β' Ξ) (swap_ptyp β β' Aa)
+                 Dpt ltac:(clear - Hup Hcov; simpl in *; fsetdec))
       as [ps' [Hav' [HS' [HX' HA']]]].
     exists ((β, β') :: ps'). repeat apply conj.
     + intros a0 b0 [Heqp | Hin];
@@ -324,44 +338,6 @@ Proof.
       f_equal. f_equal. apply swaps_atom_notin.
       intros a0 b0 Hin. destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
       split; [ clear - Ha0 | clear - Hb0 ]; fsetdec.
-  - (* ghost — the row that INVENTS *)
-    destruct (e_guess_mono_inv_ghost Hd) as [α [Hα [-> [-> ->]]]].
-    destruct (e_guess_mono_inv_ghost Hd') as [α' [Hα' [-> [-> ->]]]].
-    exists ((α, α') :: nil). repeat apply conj.
-    + intros ? ? [Heqp | []]. inversion Heqp; subst. split; assumption.
-    + cbn [swaps_atoms]. rewrite swap_atoms_add.
-      rewrite (swap_atoms_notin α α' S0 Hα Hα').
-      replace (swap_atom α α' α) with α'
-        by (unfold swap_atom; destruct (α == α); congruence).
-      reflexivity.
-    + rewrite swaps_aenv_app_dist, swaps_aenv_one_flex, swaps_aenv_nil.
-      cbn [swaps_atom].
-      replace (swap_atom α α' α) with α'
-        by (unfold swap_atom; destruct (α == α); congruence).
-      reflexivity.
-    + rewrite swaps_ptyp_var_f. cbn [swaps_atom].
-      replace (swap_atom α α' α) with α'
-        by (unfold swap_atom; destruct (α == α); congruence).
-      reflexivity.
-  - (* univ_ghost *)
-    pose proof (e_guess_mono_inv_univ_ghost Hd) as Dp.
-    pose proof (e_guess_mono_inv_univ_ghost Hd') as Dp'.
-    simpl in Hsz, Hcov.
-    exact (IH S0 P S1 Ξ A ltac:(lia) Dp Hcov S1' Ξ' A' Dp').
-Qed.
-
-Corollary e_guess_mono_rel : forall S0 P S1 Ξ A S1' Ξ' A',
-  e_guess_mono S0 P S1 Ξ A ->
-  e_guess_mono S0 P S1' Ξ' A' ->
-  ftvar_in_pskl P [<=] S0 ->
-  exists ps,
-    (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0) /\
-    swaps_atoms ps S1 [=] S1' /\
-    swaps_aenv ps Ξ = Ξ' /\
-    swaps_ptyp ps A = A'.
-Proof.
-  intros * Hd Hd' Hcov.
-  exact (e_guess_mono_rel_n (le_n _) Hd Hcov Hd').
 Qed.
 
 (* ===================================================================== *)
