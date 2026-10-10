@@ -355,8 +355,9 @@ Qed.
 
 
 (** [dom] and [ftvar_in_aenv] normalisation, in the one direction every case
-    below wants: everything spelled out over [++] and a cons. *)
-#[local] Ltac env_simp :=
+    below wants: everything spelled out over [++] and a cons.  Exported:
+    prop_sub.v, prop_pat.v and prop_typing.v use it too. *)
+Ltac env_simp :=
   simpl_env in *;
   repeat (rewrite ftvar_in_aenv_app in * );
   repeat (rewrite dom_app in * );
@@ -1044,10 +1045,7 @@ Qed.
 (*  the supply) IS NOT HERE.  Its hypothesis is [aenv_defs_mono], the      *)
 (*  runner's own context discipline, whose definition sits above this file *)
 (*  (prop_termination.v); the fact lives in prop_consis_complete.v §5,     *)
-(*  where that is in scope.  ⚠️ An earlier, weaker version stated here —   *)
-(*  context-only, hypothesis-free on the payload's sort — was DELETED      *)
-(*  2026-08-17: the runner's [Flex-Flex-Id] arm needs the SUPPLY too, and  *)
-(*  the supply moves unless the payload is a monotype.                     *)
+(*  where that is in scope.                                                *)
 (*                                                                        *)
 (*  ⚙ The two helpers below are [fresco/algo]-side facts kept here, like    *)
 (*  prop_run_complete.v §2b's, only because this campaign leaves fresco/    *)
@@ -1056,13 +1054,7 @@ Qed.
 (* ===================================================================== *)
 
 (** A flexible variable, as a [a_flex] SUBJECT — what the [FlexL]/[FlexR]
-    refutations turn [e_assign_target_flex] into.
-
-    ⚙ [ptyp_to_pskl_not_univ_ghost] used to sit here as well and was DELETED
-    2026-08-17: it duplicated algo/sub/prop_completeness_sub_gen.v:1781
-    verbatim (a duplicate top-level name is a resolution hazard, CLAUDE.md),
-    and its only consumer here was the reflexivity proof that moved to
-    prop_consis_complete.v §5. *)
+    refutations turn [e_assign_target_flex] into. *)
 Lemma a_flex_tvar_flex : forall Θ α,
   a_flex_tvar Θ α -> a_flex Θ (pskl_var_f α).
 Proof.

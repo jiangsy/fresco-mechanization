@@ -104,7 +104,13 @@ Proof.
     look_grow_facts;
     repeat (rewrite dom_app in * || rewrite ftvar_in_aenv_app in * );
     simpl in *;
-    repeat split;
+    repeat match goal with |- _ /\ _ => split end;
+    (* ⚙ the rows that pass a premise's block through: its freshness at a
+       LARGER supply is a two-set fact, and [fsetdec] over the whole context
+       costs ~2 s a call here — so try it alone first *)
+    try solve [ match goal with
+                | H : ?X ∩ _ [=] empty |- ?X ∩ _ [=] empty => clear - H; fsetdec
+                end ];
     try solve [ fsetdec ];
     try solve [ solve_uniq ];
     (* the two ARROW rows: the blocks are disjoint because the right one is
@@ -209,16 +215,6 @@ Proof.
     repeat rewrite ftvar_in_a_cstrs_app in *;
     simpl in *; fsetdec.
 Qed.
-
-Corollary e_looksub_cstr_old : forall S0 Θ α m P P' S1 Ξ C,
-  {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-  ftvar_in_a_cstrs C ∩ S0 [<=] ftvar_in_pskl P ∪ ftvar_in_pskl P'.
-Proof. apply e_looksub_lookeq_cstr_old. Qed.
-
-Corollary e_lookeq_cstr_old : forall S0 Θ α P P' S1 Ξ C,
-  {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-  ftvar_in_a_cstrs C ∩ S0 [<=] ftvar_in_pskl P ∪ ftvar_in_pskl P'.
-Proof. apply e_looksub_lookeq_cstr_old. Qed.
 
 (** The two conjuncts of the a-side CROSS-HALF GUARD, packaged for the two
     arrow rows of [e_looksub_sound] — which are the only consumers, and
@@ -416,7 +412,7 @@ Proof.
     { pose proof Hs as Hs'.
       apply (proj1 e_looksub_lookeq_block) in Hs'. tauto. }
     assert (Hold2 : ftvar_in_a_cstrs C2 ∩ S1 [<=] S0)
-      by (pose proof (e_looksub_cstr_old Hs) as Ho;
+      by (pose proof (proj1 e_looksub_lookeq_cstr_old _ _ _ _ _ _ _ _ _ Hs) as Ho;
           clear - Ho HcovB; fsetdec).
     destruct (e_look_cross_half_guard Ξ2 C2 He HcovA Hd2 Hold2)
       as [Hg1 Hg2].
@@ -460,7 +456,7 @@ Proof.
     { pose proof He2 as He2'.
       apply (proj2 e_looksub_lookeq_block) in He2'. tauto. }
     assert (Hold2 : ftvar_in_a_cstrs C2 ∩ S1 [<=] S0)
-      by (pose proof (e_lookeq_cstr_old He2) as Ho;
+      by (pose proof (proj2 e_looksub_lookeq_cstr_old _ _ _ _ _ _ _ _ He2) as Ho;
           clear - Ho HcovB; fsetdec).
     destruct (e_look_cross_half_guard Ξ2 C2 He1 HcovA Hd2 Hold2)
       as [Hg1 Hg2].
@@ -517,7 +513,7 @@ Proof. intros. eapply (proj1 e_looksub_lookeq_sound); eassumption. Qed.
 (* ===================================================================== *)
 (*  §5  SUPPLY RESPECT — the two supply indexes transport along [=]       *)
 (*                                                                        *)
-(*  ⚙ MOVED here 2026-08-17 from prop_look_pair.v §1b: prop_solve.v and    *)
+(*  ⚙ Here rather than in prop_look_pair.v because prop_solve.v and       *)
 (*  prop_extract.v need it for their own supply-respect statements, and    *)
 (*  they are BELOW prop_look_pair.v in the [Require] graph.               *)
 (* ===================================================================== *)

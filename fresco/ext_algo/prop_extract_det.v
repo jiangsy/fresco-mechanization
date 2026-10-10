@@ -14,7 +14,7 @@
     §7  [e_solve_sub_rel]   — the solve layer's SUB half (⭐ this is what
         GUARD 5 bought: before it the statement was FALSE, §8c.18)
     §8  [e_solve_cstr_rel]  — the constraint fold
-    §9  ⭐⭐⭐ [e_extract_rel] / [e_extract_det] — the composition
+    §9  ⭐⭐⭐ [e_extract_det] — the composition
 
     ⭐ WHY A CHAIN AND NOT A PAIRING.  The statement STEP 2 has to hit is
 
@@ -2262,7 +2262,11 @@ Proof.
   repeat split; assumption.
 Qed.
 
-Lemma e_extract_rel : forall S0 Θ0 NM α m P P' S3 Ξt Y S3' Ξt' Y',
+(** ⭐⭐⭐ THE HEADLINE, in the shape §8c.16 §D pinned it — and the shape
+    [cex/probe_extract_supply_drift.v], [cex/probe_extract_flexr_ug2_drift.v]
+    and [cex/probe_solve_sub_forall_r_drift.v] each refuted in turn, before
+    the absence-first, FlexR-priority and solve-dispatch guards. *)
+Theorem e_extract_det : forall S0 Θ0 NM α m P P' S3 Ξt Y S3' Ξt' Y',
   {{ S0 ↝ S3 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξt ↪ Y }}e ->
   {{ S0 ↝ S3' ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξt' ↪ Y' }}e ->
   add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
@@ -2339,17 +2343,3 @@ Proof.
   - rewrite ! swaps_pskl_app, HYg. reflexivity.
 Qed.
 
-(** ⭐⭐⭐ THE HEADLINE, in the shape §8c.16 §D pinned it — and the shape
-    [cex/probe_extract_supply_drift.v], [cex/probe_extract_flexr_ug2_drift.v]
-    and [cex/probe_solve_sub_forall_r_drift.v] each refuted in turn, before
-    the absence-first, FlexR-priority and solve-dispatch guards. *)
-Theorem e_extract_det : forall S0 Θ0 NM α m P P' S1 Ξ Q S1' Ξ' Q',
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}e ->
-  {{ S0 ↝ S1' ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ' ↪ Q' }}e ->
-  add α (ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
-  exists ps,
-    (forall x y, In (x, y) ps -> x `notin` S0 /\ y `notin` S0)
-    /\ swaps_atoms ps S1 [=] S1'
-    /\ swaps_aenv ps Ξ = Ξ'
-    /\ swaps_pskl ps Q = Q'.
-Proof. intros. eapply e_extract_rel; eassumption. Qed.

@@ -723,16 +723,6 @@ Proof.
     split; [ exact (proj2 (lc_pskl_arrow_inv HPQlc)) | exact HΘ2 ].
 Qed.
 
-Corollary e_pat_lc : forall S0 m Θ0 P0 e Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e ->
-  lc_pskl P0 -> lc_exp e -> lc_aenv Θ0 -> aenv_defs_mono Θ0 -> lc_pskl Q.
-Proof. intros. eapply e_pat_lc_env; eassumption. Qed.
-
-Corollary e_pat_env_lc : forall S0 m Θ0 P0 e Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e ->
-  lc_pskl P0 -> lc_exp e -> lc_aenv Θ0 -> aenv_defs_mono Θ0 -> lc_aenv Θ1.
-Proof. intros. eapply e_pat_lc_env; eassumption. Qed.
-
 (* --- §4d  TYPE INFERENCE — the output type and the context ------------- *)
 
 (** ⭐ Every row whose subtyping or splitting premise is PINNED to a
@@ -870,8 +860,8 @@ Proof.
     split; [ apply lc_ptyp_arrow; assumption | drop_binder HΘout ].
   - (* AT-App *)
     inversion He; subst.
-    pose proof (e_pat_lc H lc_pskl_ghost ltac:(assumption) HΘ Hdm) as HPlc.
-    pose proof (e_pat_env_lc H lc_pskl_ghost ltac:(assumption) HΘ Hdm) as HΘ1.
+    destruct (e_pat_lc_env H lc_pskl_ghost ltac:(assumption) HΘ Hdm)
+      as [HPlc HΘ1].
     pose proof (e_pat_defs_mono H Hdm) as Hdm1.
     destruct (IHe_typing1 ltac:(apply lc_pskl_arrow; assumption)
                 ltac:(assumption) HΘ1 Hdm1) as [HABlc HΘ2].

@@ -121,44 +121,6 @@ Definition looksub_spec (S0 : supply) (Θ : aenv) (α : atom) (m : mode)
         | apply forall_r_off_nonall; intros ?; discriminate
         | apply forall_r_off_ck; assumption ] : lookdec.
 
-#[local] Ltac select_shape_premises :=
-  repeat match goal with
-         | Hp : forall _ _ _ _ _, _ = _ -> _ = _ -> _ = _ -> _ |- _ =>
-             first [ specialize (Hp _ _ _ _ _ eq_refl eq_refl eq_refl)
-                   | clear Hp ]
-         | Hp : forall _ _ _ _, _ = _ -> _ = _ -> _ |- _ =>
-             first [ specialize (Hp _ _ _ _ eq_refl eq_refl) | clear Hp ]
-         | Hp : forall _ _, _ = _ -> _ = _ -> _ |- _ =>
-             first [ specialize (Hp _ _ eq_refl eq_refl) | clear Hp ]
-         | Hp : forall _, _ = _ -> _ = _ -> _ |- _ =>
-             first [ specialize (Hp _ eq_refl eq_refl) | clear Hp ]
-         | Hp : forall _, _ = _ -> _ |- _ =>
-             first [ specialize (Hp _ eq_refl) | clear Hp ]
-         | Hp : _ = _ -> _ |- _ =>
-             first [ specialize (Hp eq_refl) | clear Hp ]
-         | Hp : _ /\ _ |- _ => destruct Hp
-         end.
-
-(** Non-destructive: the originals stay (Equations' catch-all splitting
-    let-binds aliases of the scrutinees, whose lc goals close by conversion
-    against the ORIGINAL hypotheses), the components are added beside. *)
-#[local] Ltac saturate_lc :=
-  repeat match goal with
-         | Hlc : lc_pskl (pskl_arrow ?a ?b) |- _ =>
-             lazymatch goal with
-             | _ : lc_pskl a, _ : lc_pskl b |- _ => fail
-             | _ => let Hx := fresh "Hlc0" in
-                    assert (Hx := Hlc); apply lc_pskl_arrow_inv in Hx;
-                    destruct Hx
-             end
-         | Hlc : lc_pskl (pskl_univ_ghost ?a) |- _ =>
-             lazymatch goal with
-             | _ : lc_pskl a |- _ => fail
-             | _ => let Hx := fresh "Hlc0" in
-                    assert (Hx := Hlc); apply lc_pskl_univ_ghost_inv in Hx
-             end
-         end.
-
 (** ⭐ THE ForallR-PRIORITY GUARD, discharged from the dispatch itself and
     BEFORE [intros] — the guard is a [Definition] that unfolds to a product,
     so [intros] would strip it to [~ pskl_ghost_free …] and lose the shape

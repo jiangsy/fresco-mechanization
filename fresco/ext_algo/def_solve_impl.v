@@ -102,46 +102,6 @@ Definition solve_cstr_spec (S0 : supply) (Θ : aenv) (C : a_cstrs) (P : pskl)
   peel_l_off_arrow peel_l_off_ghost solve_l_off_unit solve_l_off_var_b
   solve_l_off_arrow solve_l_off_ghost : solvedec.
 
-#[local] Ltac select_shape_premises :=
-  repeat match goal with
-         | Hp : forall _ _ _ _ _, _ = _ -> _ = _ -> _ = _ -> _ |- _ =>
-             first [ specialize (Hp _ _ _ _ _ eq_refl eq_refl eq_refl)
-                   | clear Hp ]
-         | Hp : forall _ _ _, _ = _ -> _ = _ -> _ = _ -> _ |- _ =>
-             first [ specialize (Hp _ _ _ eq_refl eq_refl eq_refl)
-                   | clear Hp ]
-         | Hp : forall _ _ _ _, _ = _ -> _ = _ -> _ |- _ =>
-             first [ specialize (Hp _ _ _ _ eq_refl eq_refl) | clear Hp ]
-         | Hp : forall _ _, _ = _ -> _ = _ -> _ |- _ =>
-             first [ specialize (Hp _ _ eq_refl eq_refl) | clear Hp ]
-         | Hp : forall _, _ = _ -> _ = _ -> _ |- _ =>
-             first [ specialize (Hp _ eq_refl eq_refl) | clear Hp ]
-         | Hp : forall _ _, _ = _ -> _ |- _ =>
-             first [ specialize (Hp _ _ eq_refl) | clear Hp ]
-         | Hp : forall _, _ = _ -> _ |- _ =>
-             first [ specialize (Hp _ eq_refl) | clear Hp ]
-         | Hp : _ = _ -> _ |- _ =>
-             first [ specialize (Hp eq_refl) | clear Hp ]
-         | Hp : _ /\ _ |- _ => destruct Hp
-         end.
-
-#[local] Ltac saturate_lc :=
-  repeat match goal with
-         | Hlc : lc_pskl (pskl_arrow ?a ?b) |- _ =>
-             lazymatch goal with
-             | _ : lc_pskl a, _ : lc_pskl b |- _ => fail
-             | _ => let Hx := fresh "Hlc0" in
-                    assert (Hx := Hlc); apply lc_pskl_arrow_inv in Hx;
-                    destruct Hx
-             end
-         | Hlc : lc_pskl (pskl_univ_ghost ?a) |- _ =>
-             lazymatch goal with
-             | _ : lc_pskl a |- _ => fail
-             | _ => let Hx := fresh "Hlc0" in
-                    assert (Hx := Hlc); apply lc_pskl_univ_ghost_inv in Hx
-             end
-         end.
-
 #[local] Ltac solve_impl_tac :=
   intros;
   try match goal with

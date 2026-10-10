@@ -175,7 +175,15 @@ Proof.
        hand: their IH is one or two [add]s too strong, and what pays for the
        drawn atom is that the rule picked it OUT of [S0] while growth put it
        IN [S1]. *)
-    simpl_env in *; repeat rewrite dom_app in *; simpl dom in *; fsetdec.
+    simpl_env in *; repeat rewrite dom_app in *; simpl dom in *;
+    (* ⚙ go through the IH POINTWISE and drop it: [fsetdec] with the IH's
+       nested [∖ add] still in context spent ~10 s on [Flex-Solve] *)
+    first [ match goal with
+            | H : dom ?T [<=] _ |- dom ?T [<=] _ =>
+                let z := fresh "z" in let Hz := fresh "Hz" in
+                intros z Hz; apply H in Hz; clear H; fsetdec
+            end
+          | fsetdec ].
 Qed.
 
 Corollary e_sub_dom_upper : forall S0 NM M P0 Θ0 P Q S1 Θ1,
@@ -215,13 +223,6 @@ Proof. apply e_sub_sub_flex_dom_upper. Qed.
                | apply uniq_one_1 | apply uniq_nil ];
   try unfold disjoint in *; simpl_env in *;
   solve [ assumption | fsetdec ].
-
-(** [dom] / [ftvar_in_aenv] normalisation — prop_consis.v §3's, verbatim. *)
-#[local] Ltac env_simp :=
-  simpl_env in *;
-  repeat (rewrite ftvar_in_aenv_app in * );
-  repeat (rewrite dom_app in * );
-  simpl ftvar_in_aenv in *; simpl dom in *; simpl_env in *.
 
 Lemma e_sub_sub_flex_sound :
   (forall S0 NM M P0 Θ0 P Q S1 Θ1,

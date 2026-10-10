@@ -130,7 +130,7 @@ Proof.
 Qed.
 
 (* Use the shared embedding's injectivity with the equation explicit. *)
-Arguments ptyp_to_pskl_inj {A B} _.
+#[local] Arguments ptyp_to_pskl_inj {A B} _.
 
 Lemma swaps_aenv_one_tvar : forall ps x,
   swaps_aenv ps (x ~ abind_tvar) = (swaps_atom ps x ~ abind_tvar).
@@ -610,17 +610,8 @@ Local Ltac ck_leaf_ty :=
         | apply ptyp_eqb_complete; congruence
         | apply inter_is_empty_complete; assumption ].
 
-Local Ltac ck_true_ty :=
-  repeat (ck_leaf_ty || (apply andb_true_intro; split)).
-
-Local Ltac bool_true_ty :=
-  match goal with
-  | |- context [ sumbool_of_bool ?b ] =>
-      let Hbt := fresh "Hbt" in let Hb := fresh "Hb" in
-      assert (Hbt : b = true) by ck_true_ty;
-      destruct (sumbool_of_bool b) as [Hb | Hb];
-      [ cbv beta iota | congruence ]
-  end.
+Local Ltac ck_true_ty := ck_true_with ltac:(idtac; ck_leaf_ty).
+Local Ltac bool_true_ty := bool_true_with ltac:(idtac; ck_leaf_ty).
 
 Local Ltac kill_sub Hder Hu0 Hcov0 r Hr ps Hav HS HT HQ :=
   match goal with
@@ -668,20 +659,6 @@ Local Ltac kill_pat_call Hp0 He0 HΘ0 HD0 Hu0 Hcov0 Hder r Hr ps
           by congruence;
         subst r0; cbn [proj1_sig] in HS, HT, HQ;
         clear Hx Hcl; cbv beta iota
-      | discriminate ]
-  end.
-
-Local Ltac kill_dec Hcomp t Ht :=
-  let t0 := fresh "t0" in let Hs := fresh "Hs" in
-  let Hpr := fresh "Hpr" in let Hcl := fresh "Hcl" in
-  let Heq0 := fresh "Heq0" in
-  destruct Hcomp as [t0 [Hs Hpr]];
-  match type of Hs with
-  | ?f = Some _ =>
-      destruct f as [ [t Ht] | ] eqn:Hcl;
-      try rewrite Hcl in Hs;
-      [ injection Hs; intro Heq0; subst t0;
-        cbn [proj1_sig] in Hpr; subst t; clear Hs Hcl; cbv beta iota
       | discriminate ]
   end.
 
