@@ -1348,6 +1348,42 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
+(*  A refinement at [κ] moves to the second stage's [ζb] when the first   *)
+(*  stage's increase [κb] is the IDENTITY and [κ ≈ ζb ∘ κb].  The          *)
+(*  optimality IH hands back exactly that factoring; precision along the   *)
+(*  equivalence (flipped) preserves the refinement, and composing with an  *)
+(*  identity is invisible on a source-scoped skeleton.  Every row that      *)
+(*  threads a refinement through a sub-run uses it (skeleton inference's   *)
+(*  Abs/App, type inference's Anno/Freeze/App/AbsAnno/AnnoCheck).          *)
+(* ===================================================================== *)
+
+Lemma ad_refine_msubst_compose_id : forall Θ0 Θmid Θ κ κb ζb P0 Q,
+  {{ ⊢ Θ0 }}a -> {{ ⊢ Θmid }}a -> {{ ⊢ Θ }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  κ ∷ Θ0 ⊑ Θ ->
+  is_id_msubst κb -> κb ∷ Θ0 ⊑ Θmid ->
+  ζb ∷ Θmid ⊑ Θ ->
+  a_inc_equiv Θ0 κ (msubst_compose ζb κb) Θ ->
+  {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
+  {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
+  {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl ζb P0)) ⊳ Q }}ad.
+Proof.
+  intros Θ0 Θmid Θ κ κb ζb P0 Q Hwf0 Hwfmid HwfΘ HwfP0 Hinc Hidb Hincb
+         Hζb Heqvb HwfQ Href.
+  assert (Hσ : msubst_compose ζb κb ∷ Θ0 ⊑ Θ)
+    by (eapply a_inc_compose;
+        [ exact Hincb | exact Hwf0 | exact Hwfmid | exact Hζb ]).
+  rewrite <- (@msubst_compose_id_pskl Θ0 κb Θmid ζb Θ P0 Hwf0 Hwfmid Hidb
+                Hincb Hζb (a_scope_pskl_of_wf HwfP0)).
+  eapply ad_precise_preserves_refine;
+    [ eapply a_inc_equiv_precise_msubst_flip with (Θ0 := Θ0) (Δ0 := empty);
+        [ exact HwfP0 | exact Hwf0 | exact HwfΘ | exact Hinc | exact Hσ
+        | exact Heqvb ]
+    | exact Href | exact HwfΘ
+    | intros α Hα; clear - Hα; fsetdec | exact HwfQ ].
+Qed.
+
+(* ===================================================================== *)
 (*  P-Abs, the step lemma.                                                *)
 (* ===================================================================== *)
 
@@ -1783,25 +1819,8 @@ Proof.
     eapply a_wf_pskl_mono;
       [ exact Hw
       | apply (@aenv_tbinds_le_strip_tm nil x bA Θ); intros h; exact h ]. }
-  assert (Hσc : msubst_compose ζc0 κc ∷ Θ0 ⊑ Θ)
-    by (eapply a_inc_compose;
-        [ exact Hincc | exact Hwf0 | exact Hwfmid | exact Hζc0 ]).
-  assert (Hpp : {{ Θ ⨟ empty ⊢ₚᵣ
-                  (msubst_pskl (msubst_compose ζc0 κc) Q1) ⊑ (msubst_pskl κ Q1) }}ad).
-  { eapply a_inc_equiv_precise_msubst_flip with (Θ0 := Θ0) (Δ0 := empty);
-      [ exact HwfQ1 | exact Hwf0 | exact HwfΘ | exact Hinc | exact Hσc
-      | exact Heqvc ]. }
-  assert (Href14σ : {{ Θ ⨟ empty ⊢ᵣ
-                      (pskl_to_bskl_inh (msubst_pskl (msubst_compose ζc0 κc) Q1))
-                      ⊳ Q0 }}ad).
-  { eapply ad_precise_preserves_refine;
-      [ exact Hpp | exact Href14 | exact HwfΘ
-      | intros α Hα; clear - Hα; fsetdec | exact HwfQb ]. }
-  assert (Hmsc : msubst_pskl (msubst_compose ζc0 κc) Q1 = msubst_pskl ζc0 Q1).
-  { eapply msubst_compose_id_pskl;
-      [ exact Hwf0 | exact Hwfmid | exact Hidc | exact Hincc | exact Hζc0
-      | exact (a_scope_pskl_of_wf HwfQ1) ]. }
-  rewrite Hmsc in Href14σ.
+  pose proof (ad_refine_msubst_compose_id Hwf0 Hwfmid HwfΘ HwfQ1 Hinc Hidc
+                Hincc Hζc0 Heqvc HwfQb Href14) as Href14σ.
   (* ---- 6. the extended side data and the IH ---- *)
   assert (Hrigx : forall α,
              α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
@@ -2172,24 +2191,8 @@ Proof.
       [ exact Hprec1 | exact Hrefb | exact HwfΘ
       | intros α Hα; clear - Hα; fsetdec | exact HwfQdom ]. }
   (* (i) : the codomain, transported along the equivalence *)
-  assert (Hσ1 : msubst_compose ζ1 κa ∷ Θ0 ⊑ Θ)
-    by (eapply a_inc_compose;
-        [ exact Hinca | exact Hwf0 | exact Hwf1 | exact Hζ1 ]).
-  assert (Hpp : {{ Θ ⨟ empty ⊢ₚᵣ
-                  (msubst_pskl (msubst_compose ζ1 κa) P0) ⊑ (msubst_pskl κ P0) }}ad).
-  { eapply a_inc_equiv_precise_msubst_flip with (Θ0 := Θ0) (Δ0 := empty);
-      [ exact HwfP0 | exact Hwf0 | exact HwfΘ | exact Hinc | exact Hσ1
-      | exact Heqv1 ]. }
-  assert (Hi : {{ Θ ⨟ empty ⊢ᵣ
-                 (pskl_to_bskl_inh (msubst_pskl (msubst_compose ζ1 κa) P0)) ⊳ Q }}ad).
-  { eapply ad_precise_preserves_refine;
-      [ exact Hpp | exact Href | exact HwfΘ
-      | intros α Hα; clear - Hα; fsetdec | exact HwfQcod ]. }
-  assert (Hms1 : msubst_pskl (msubst_compose ζ1 κa) P0 = msubst_pskl ζ1 P0).
-  { eapply msubst_compose_id_pskl;
-      [ exact Hwf0 | exact Hwf1 | exact Hida | exact Hinca | exact Hζ1
-      | exact (a_scope_pskl_of_wf HwfP0) ]. }
-  rewrite Hms1 in Hi.
+  pose proof (ad_refine_msubst_compose_id Hwf0 Hwf1 HwfΘ HwfP0 Hinc Hida
+                Hinca Hζ1 Heqv1 HwfQcod Href) as Hi.
   (* ---- 3. the function's run (e1 at FN M, P1 → P0) ---- *)
   assert (HwfP1 : {{ Θ1 ⨟ empty ⊢ₚₛ P1 }}a)
     by (eapply a_pat_output_wf;
