@@ -83,20 +83,6 @@ Qed.
 (*  and ∀◇-fill-rows fold their bodies at (add α Δ).  The paper's         *)
 (*  statement is the Θtv := [] / R := ∅ corollary.                        *)
 (* ===================================================================== *)
-(*  ForallSyn kit: flex_apart TARGET descent through an all_tag binder    *)
-(*  (the ∀◇-body is guarded, which excludes the all_syn source that would  *)
-(*  otherwise block the descent).  [MECH-ONLY: maintenance lemmas for the  *)
-(*  mech-only flex_apart premise — the paper has no counterpart because    *)
-(*  its proof never states the FlexR-freshening reachability invariant.]   *)
-(* ===================================================================== *)
-
-(* RESTART NOTE (no-ghost removal rework): the "ForallSyn kit (2)" that
-   lived here — [bskl_no_ghost] + [ad_refine_syn_aenv_to_delta(_mid)], the
-   aenv→Δr transport of the refinement premise, valid only for ghost-free
-   sources — was DELETED as dead.  The bag split [aenv_split] lets the
-   ForallSyn binder join Θr, so the univ_ghost_fill body is the IH's
-   refinement premise VERBATIM and no transport (hence no pskl_no_ghost
-   premise) is needed. *)
 
 (* ===================================================================== *)
 (*  ForallSyn kit (4): rename a tvar α2↦β2 in the AENV of a precision       *)
@@ -760,13 +746,9 @@ Proof.
                 [ exact Hconsis2 | exact HwfΘ | exact HskQ2 ]).
         clear - Hsubeq2 H HΨ1e HΨ2e; fsetdec. }
       (* the repaired flexible-P0 discharge chain, Δ-universal via B2 *)
-      (* ⚙️ (2026-08-05) the first premise WAS
-         [flex_apart Θ0 Δρ β̂ (ψa1 → ψa2)].  At a FLEXIBLE P0 against an ARROW
-         guess that predicate has exactly one satisfiable row — [fa_clean] —
-         so its whole content is "the guess is Δρ-clean", and taking THAT
-         directly is what frees the block.  The one row that still calls
-         [FLEX] is SE-GhostL, where [Pi = ◇] and [ad_ppre__ghost]'s own side
-         condition supplies the cleanliness for nothing. *)
+      (* The first premise is "the guess is Δρ-clean".  The one row that
+         calls [FLEX] is SE-GhostL, where [Pi = ◇] and [ad_ppre__ghost]'s own
+         side condition supplies the cleanliness for nothing. *)
       assert (FLEX : forall β,
         (ftvar_in_uskl (uskl_arrow ψa1 ψa2)) ∩ Δρ [=] empty ->
         a_flex_tvar Θ0 β ->
@@ -862,8 +844,7 @@ Proof.
       (* ⭐⭐ THE ρ-DIRTY COMPANION OF [FLEX] (2026-08-05, the SolE-FlexR
          repair).  Everything the SE-FlexR row below actually needs — the
          counterpart monotype, its well-formedness and its scope — is
-         available WITHOUT [FLEX]'s cleanliness step, hence without reading
-         the [flex_apart] premise at all.
+         available WITHOUT [FLEX]'s cleanliness step.
 
          [FLEX] argues "the guess is Δρ-CLEAN, so ρ is the identity on it, so
          the consistency SUBJECT *is* the guess".  That detour existed because
@@ -1038,7 +1019,7 @@ Proof.
             * (* flexible: SE-FlexR + the discharge chain *)
               (* ⭐⭐ [FLEXMONO], not [FLEX] (2026-08-05): this row needs the
                  counterpart monotype and its SCOPE, and neither needs the
-                 [flex_apart] cleanliness step.  See the block's header. *)
+                 cleanliness step.  See the block's header. *)
               destruct (FLEXMONO β Hflx Hrefine1)
                 as (HΨae
                     & (τa1 & τa2 & Hma1 & Hma2 & Heq1 & Heq2 & Hwfar
@@ -3474,16 +3455,7 @@ Qed.
 (*   2. delta_def_fresh Δ Θ — the paper's implicit wf of the Δ-extended   *)
 (*      context; machine-checked necessary; free at call sites            *)
 (*      (WF-SIDE-CONDITIONS §7: binders postdate definitions).            *)
-(*   3. flex_apart Θ0 Δρ P0 ψa — the LE-FlexR freshening invariant (a     *)
-(*      raw Θ0-flex of P0 never faces a ρ-replaced part of ψa); NOT       *)
-(*      derivable from the other premises (cex_p6_flex_freshened.v);      *)
-(*      ⭕ and, since 2026-08-05, NOT CONSUMED BY THIS PROOF EITHER —     *)
-(*      see the annotation on the premise itself.  The witness that       *)
-(*      motivated it (cex_p6_flex_counterpart.v) is RETRACTED, killed by  *)
-(*      the repaired SolE-FlexR (cex/probe_flexr_neutralises_p6.v).       *)
-(*      vacuous (fa_clean) at every ρ = id call site, e.g. P6-Cs's,       *)
-(*      since Δρ = ∅ — only the P6-Rv ForallL descent maintains it.       *)
-(*   4. the rsubst_fresh / Δρ ⊆ Δ / shielded pack — replaces the paper's     *)
+(*   3. the rsubst_fresh / Δρ ⊆ Δ / shielded pack — replaces the paper's     *)
 (*      positional "Pi has the same rigid variable at every ρ-position"   *)
 (*      side condition ([paper-gap], see the sub/look/prop_rsubst.v         *)
 (*      header); established at the one leaf-creating call site, P6-Rv    *)

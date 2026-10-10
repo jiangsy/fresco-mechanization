@@ -1075,10 +1075,6 @@ Proof.
   intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR
          Htags Hdisj HΔψ Hψaw Hwfψ Hdfresh HΨsubU HΨsubL Hsubty
          HwfSubj Hrefine.
-  (* ⭐⭐⭐ (2026-08-05) TASK 0's shield supply is GONE from both statements:
-     P6-Ss's repair premise is [flex_apart_deep Θ0 Δρ P0 ψa], and at the Δρ = ∅
-     this row uses it is [fa_clean] at every reachable state, so P6-Ss's own
-     corollary discharges it and P6-L never sees it. *)
   (* ---- (a)-(f) : P6-Ss at [Pi := □], [Ψi := ∅] ---- *)
   (* ⭐ THE SOLVE'S OWN BLOCK [Ξs] (2026-08-05, the SolE-FlexR repair).  The
      look's suffix is now three blocks, [Ξc ++ Ξs ++ Ξ'] — collection,
@@ -1291,10 +1287,7 @@ Qed.
 (*  tracks the counterpart's ∀-binders, so it is empty at the top of a run *)
 (*  and grows only inside the precision derivation.                       *)
 (*                                                                        *)
-(*  ⚠️ What does NOT absorb is [sub_shield] — that is P6-Sv's REPAIR, and  *)
-(*  the paper's statement WITHOUT it is machine-checked FALSE              *)
-(*  (cex/cex_p6sv_forall_flex.v).  It can only ever be DISCHARGED at a     *)
-(*  call site where it is derivable, never dropped.  The remaining         *)
+(*  The remaining                                                         *)
 (*  premises are the paper's own EXTERNAL well-formedness side conditions  *)
 (*  (docs/WF-SIDE-CONDITIONS.md), and α's freshness is Barendregt.         *)
 (* ===================================================================== *)

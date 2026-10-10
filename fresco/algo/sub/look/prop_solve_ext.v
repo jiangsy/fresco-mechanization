@@ -56,8 +56,7 @@ Require Import src.fresco.algo.prop_metasubst.
 Require Import src.fresco.algo.prop_compose.   (* a_inc_dom_flex, a_inc_lookup_mono *)
 Require Import src.fresco.algo.sub.look.prop_rsubst.
 
-(* ⚠️ Per-FILE flag — see prop_flex_apart.v's note.  It was line 84 of the old
-   prop_kit.v, so each half of the split needs its own copy. *)
+(* ⚠️ Per-FILE flag — see prop_flex_apart.v's note. *)
 Set Implicit Arguments.
 
 (* ===================================================================== *)

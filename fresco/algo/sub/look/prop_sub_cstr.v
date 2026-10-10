@@ -3,26 +3,9 @@
     subtyping-proofs.tex:2202).  The subtyping twin of the closed P6-Cs
     ([a_lookeq_solve_complete], sub/look/prop_eq_cstr.v).
 
-    ⚠️ THE PAPER'S STATEMENT INHERITS P6-Sv'S FALSITY.  Its first special
-    case ("if P = α then S = α") applies P6-Sv WITH THE IDENTITY
-    substitution, i.e. at Δρ = ∅ — exactly the configuration of
-    [cex/cex_p6sv_forall_flex.v].  The witness transports directly: with
-    the lookup variable α and S = R' = α the subject (κS)[ψa/α] IS ψa, and
-    since [a_looksub] has NO FlexR rule, LS-Var is FORCED, so 𝒞 is the
-    single subtyping constraint whose solving the counterexample refutes.
-    This file therefore carries the SAME repair as P6-Sv; see
-    docs/PAPER-GAPS.md and DESIGN-completeness-subtyping.md §8.
-
-    THE REPAIR HERE IS A P0-ONLY WALK.  P6-Sv's [flex_shield] pairs P0 and
-    ψa positionally, both descending together.  P6-Ss's recursion is
-    different: ψa is FIXED (it is the single guess for α) while P0
-    descends, so the pairing at a leaf is (P0-subterm, the WHOLE ψa).  Only
-    two cases move P0 — Sub-Arrow takes the RIGHT component (the left one
-    goes to P6-Cs, which needs no shield: consistency has no ForallL, so
-    tags never become dirt there) and Sub-ForallR opens the body — and
-    [flex_shield] supports only the second ([fsh_all_l]); [fsh_arrow]
-    descends BOTH sides at once.  So the closure under those two descents
-    is threaded, exactly as P6-Sv threads [flex_apart_walk]. *)
+    The paper's statement is the ρ = identity corollary
+    [a_looksub_solve_complete] at the end of this file; the induction runs
+    over a ρ-GENERALIZED motive, for the reason recorded at its ForallL row. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -70,41 +53,6 @@ Set Implicit Arguments.
 
 Require Import src.fresco.algo.sub.look.prop_eq_cstr.
 Require Import src.fresco.algo.sub.look.prop_sub_var.
-
-(* ===================================================================== *)
-(*  ⭕⭕ [ss_step] / [ss_walk] / [sub_shield] AND THEIR KIT DELETED          *)
-(*     (2026-08-05) — P6-Ss TAKES [flex_apart_deep] DIRECTLY                  *)
-(*                                                                        *)
-(*  [sub_shield] was the mech's repair of [lemma:complete-look]: P6-Cv's   *)
-(*  [flex_apart] premise, indexed along an [ss_walk] that stepped [P0] and *)
-(*  the SUBJECT in lockstep, with a positional guard on the guess-         *)
-(*  descending half.  Under the authors' repaired [SolE-FlexR] the guarded *)
-(*  half died (P6-Cv stopped consuming [flex_apart] at all), and what      *)
-(*  remained was a SYNONYM for [flex_apart_deep]: derivable from it by       *)
-(*  [flex_apart_deep_sub_shield] and yielding it back by                     *)
-(*  [sub_shield_here_p0].  A synonym carrying its own walk index is pure   *)
-(*  bookkeeping, so P6-Ss now takes [flex_apart_deep] itself.                *)
-(*                                                                        *)
-(*  ⚙ How each descent re-establishes it, for the record:                  *)
-(*    · Sub-Arrow's right branch — [flex_apart_deep_step] at                 *)
-(*      [p0step_arrow_r], then [flex_apart_deep_weaken_flex_prefix] twice.   *)
-(*    · Sub-ForallR — [p0step_all] at the row's fresh binder, then         *)
-(*      [flex_apart_deep_weaken_tvar].                                       *)
-(*    · Sub-ForallL — P0 does NOT move; only Δρ grows, by a rigid fresh    *)
-(*      for the guess, which is [flex_apart_deep_delta_grow].                *)
-(*    · Sub-UnivGhostL/LG and every other row — neither P0 nor Δρ moves,   *)
-(*      so the premise passes through unchanged.                           *)
-(*                                                                        *)
-(*  ⚠️ The ONE thing the walk bought that a plain closure does not: the     *)
-(*  guarded conjunct's [fa_walk] had no guess-fixed arrow descent (it made *)
-(*  the walk unsatisfiable), so THAT half could never be derived and had   *)
-(*  to be assumed.  [flex_apart_deep] closes over [p0_step], which DOES have *)
-(*  the arrow rows — which is why this collapse is possible at all.        *)
-(*                                                                        *)
-(*  Also deleted with it: [prop_sub_shield_supply.v] in full (its seven    *)
-(*  supplies had no consumers once the premise became free at Δρ = ∅), and *)
-(*  [sub_shield_empty].  Coq text at commit `4351531`.                     *)
-(* ===================================================================== *)
 
 (* ===================================================================== *)
 (*  Δ-SHRINKING for partial precision                                     *)
@@ -385,7 +333,6 @@ Lemma a_looksub_solve_complete_leaf :
   (ftag_in_uskl R') ∩ Ψ' [=] empty ->       (* the paper's "Ψ disjoint from Ψ'" *)
   Ψi `union` Ψa [=] Ψ' ->                   (* the paper's Ψi,Ψa = Ψ' *)
   delta_def_fresh Δ Θ ->
-  flex_apart_deep Θ0 Δρ P0 ψa ->              (* ⇐ THE REPAIR (see the header) *)
   {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad ->
   Ψsub [<=] ftag_in_uskl R' `union` Ψρ `union` Ψa ->
   Ψa [<=] Ψsub ->
@@ -470,7 +417,7 @@ Proof.
   intros n NM M Θ0 Θs Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α.
   intros HwfΘ HwfΘ0 HwfΘw Hmon Hnr Hκw Hψaw HΔρw
          HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
-         HscopeR HlcR Htags Hdisj Hsub Hdfresh Hapart Hpre HΨs1 HΨs2
+         HscopeR HlcR Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2
          Hsubty HwfSubj Hrefine Hrho HΨρ Hrfr HΔρΔ HΔρPi Hspecial Hext L HL.
   destruct Hspecial as [Hnin | Heqα].
   - (* α ∉ ftv P : LS-Absent *)
@@ -536,12 +483,6 @@ Proof.
     cbn in HΨs1.        (* ftag_in_uskl (uskl_var_f α) = empty *)
     assert (Hlcψa : lc_uskl ψa)
       by (apply is_dskl_lc; inversion Htags; assumption).
-    (* ⭕ (2026-08-05) THE GUESS-DESCENDING HALF IS GONE.  This was the ONLY
-       row that consumed it — [R'] is pinned to [uskl_var_f α] here, the very
-       position the guess replaces, so the positional guard was free.  P6-Sv
-       no longer takes [flex_apart_walk] at all (under the repaired rule P6-Cv
-       does not consume [flex_apart], and every use in P6-Sv was a relay into
-       that premise), so nothing is read off the shield here. *)
     (* ⭐ P6-Sv now returns the whole [solve_sub_ext] package, at the SAME
        [Θw] and the SAME avoid-set [L] — the collection generates nothing on
        this row, so the solve's block IS the conclusion's. *)
@@ -612,7 +553,7 @@ Qed.
 (* ===================================================================== *)
 
 (** The premise set is P6-Cs's, plus the mode data ([M], [skmod]) that the
-    subtyping side carries and the [sub_shield] repair.  Everything else —
+    subtyping side carries.  Everything else —
     the erase-tie [⌊R'⌋ˢ = P], the scoping and tag-flow bounds, the
     subject's well-formedness (load-bearing: without it P6-Cs is FALSE,
     cex/cex_p6cs_subject_wf.v), and the conclusion's
@@ -959,7 +900,6 @@ Theorem a_looksub_solve_complete_gen :
   (ftag_in_uskl R') ∩ Ψ' [=] empty ->       (* the paper's "Ψ disjoint from Ψ'" *)
   Ψi `union` Ψa [=] Ψ' ->                   (* the paper's Ψi,Ψa = Ψ' *)
   delta_def_fresh Δ Θ ->
-  flex_apart_deep Θ0 Δρ P0 ψa ->              (* ⇐ THE REPAIR (see the header) *)
   {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad ->
   Ψsub [<=] ftag_in_uskl R' `union` Ψρ `union` Ψa ->
   Ψa [<=] Ψsub ->
@@ -1054,7 +994,7 @@ Proof.
   intros n NM M Θ0 Θs Θ Θw κ Δ Δρ Ψρ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' Rsub α.
   intros HwfΘ HwfΘ0 HwfΘw Hmon Hnr Hκw Hψaw HΔρw
          HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
-         HscopeR HlcR Htags Hdisj Hsub Hdfresh Hapart Hpre HΨs1 HΨs2
+         HscopeR HlcR Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2
          Hsubty HwfSubj Hrefine Hrho HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hext Hψaap
          L HL.
   (* ---------------------------------------------------------------- *)
@@ -1098,7 +1038,7 @@ Proof.
   revert Θ Θ0 κ Δ Δρ Ψρ R' P P0 Pi Ψi Ψa
          HwfΘ HwfΘ0 Hmon Hnr Hκw HΔρw
          HαΘ0 Hκ Hακdom Hκav HeraseR HscopeR HlcR Hdisj
-         HwfP0 HwfPi HmodSK HmodTY HαΘ Hsub HΨs1 HΨs2 Hdfresh Hapart Hpre
+         HwfP0 HwfPi HmodSK HmodTY HαΘ Hsub HΨs1 HΨs2 Hdfresh Hpre
          Hrefine Hrho HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hext
          HPnα Hin HαR HwfSubj Hψaap L HL.
   (* the lemma's [P] comes back as [P''] and its [Θ] as [Θe]: both are BINDER
@@ -1110,7 +1050,7 @@ Proof.
     Θe Θ0 κ Δ Δρ Ψρ R' P'' P0 Pi Ψi Ψa
     HwfΘ HwfΘ0 Hmon Hnr Hκw HΔρw
     HαΘ0 Hκ Hακdom Hκav HeraseR HscopeR HlcR Hdisj
-    HwfP0 HwfPi HmodSK HmodTY HαΘ Hsub HΨs1 HΨs2 Hdfresh Hapart Hpre
+    HwfP0 HwfPi HmodSK HmodTY HαΘ Hsub HΨs1 HΨs2 Hdfresh Hpre
     Hrefine Hrho HΨρ Hrfr HΔρΔ HΔρftv HΔρPi Hext
     HPnα Hin HαR HwfSubj Hψaap Lav HLav;
     rename Θ into Θsm; rename Θe into Θ.
@@ -1224,8 +1164,6 @@ Proof.
        an ftv-𝒞 conclusion this statement does not carry. *)
     (* the guess-FIXED conjunct, straight off the shield: no guard, since
        this closure never descends ψa (DESIGN §14.3) *)
-    assert (Hfawp0 : flex_apart_deep Θ0 Δρ P0 ψa)
-      by exact Hapart.
     edestruct (@a_lookeq_solve_complete_gen
                  (size_uskl R' + size_pskl P0)
                  a_sub_mode_ty Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψ ψa (pskl_to_bskl_inh B)
@@ -1243,7 +1181,7 @@ Proof.
       | exact HΨs2 | exact (ad_consis_join_consis H1) | exact HwfSubj
       | exact Hrefine
       | exact Hrho | intros x b Hb; exact Hb | exact HΨρ | exact Hrfr
-      | exact HΔρΔ | exact HΔρw | exact HΔρftv | exact HΔρPi | exact Hfawp0
+      | exact HΔρΔ | exact HΔρw | exact HΔρftv | exact HΔρPi
       | exact Hψaap | exact HLav | ].
     (* P6-Cs's generated-names conjunct is STRONGER since cluster 3 (it also
        avoids [ftvar_in_uskl ψa]); P6-Ss states the weaker form, so drop the
@@ -1259,7 +1197,7 @@ Proof.
        why the Check row needed P6-Cs's bound to name no context *)
     intros _; left; exact Hftv.
   - (* ForallR : the refinement premise forces P0 = ∀β.P0'; descend with
-       [sss_all] + [sub_shield_step], run the IH at Θ,β, rebuild with
+       its fresh binder, run the IH at Θ,β, rebuild with
        LS-ForallR, then strip β.
 
        THE β ∉ ftv 𝒞 OBLIGATION IS A MECH-ENCODING ARTEFACT, NOT A PAPER
@@ -1312,7 +1250,7 @@ Proof.
     pose proof (HmodTY eq_refl) as Hmod.
     inversion Hmod as [ | A HeqA | ]; subst.
     destruct A as [ | nA | αA | A1 A2 | A0 ];
-      cbn [ptyp_to_pskl] in HwfP0, Hrefine, Hapart, Hpre, HΔρftv |- *.
+      cbn [ptyp_to_pskl] in HwfP0, Hrefine, Hpre, HΔρftv |- *.
     + (* ⟨⟩ : guarded *)
       exfalso;
         assert (Hbad : guarded_bskl (bskl_all_inh B));
@@ -1403,12 +1341,7 @@ Proof.
         eapply ad_refine_syn_delta_mono;
           [ apply (Hrbody β ltac:(clear - Fr; solve_notin))
           | clear; fsetdec ]. }
-      (* Sub-ForallR OPENS P0, which is a [p0_step]; then weaken to Θ0,β *)
-      assert (Hapartβ : flex_apart_deep ((β ~ abind_tvar) ++ Θ0) Δρ
-                (open_pskl_wrt_pskl (ptyp_to_pskl A0) (pskl_var_f β)) ψa).
-      { apply flex_apart_deep_weaken_tvar.
-        eapply flex_apart_deep_step;
-          [ exact Hapart | apply p0step_all; clear - Fr; solve_notin ]. }
+      (* Sub-ForallR OPENS P0; the IH runs at Θ0,β *)
       assert (Hrhoβ : uskl_rsubst a_sub_mode_ty ((β ~ abind_tvar) ++ Θ) Δρ Ψρ T
                 (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')))
         by (eapply uskl_rsubst_weaken; [ exact Hrho | exact Hweak ]).
@@ -1463,7 +1396,7 @@ Proof.
                    ltac:(intro Hc; discriminate Hc)
                    ltac:(intros _; rewrite <- ptyp_to_pskl_open;
                          apply a_ty_mode_compat__tc)
-                   HαΘβ Hsub HΨs1 HΨs2 Hdfreshβ Hapartβ Hpreβ Hrefβ
+                   HαΘβ Hsub HΨs1 HΨs2 Hdfreshβ Hpreβ Hrefβ
                    Hrhoβ HΨρ Hrfrβ HΔρΔ HΔρftvβ HΔρPi Hextβ
                    HPnα Hin HαR HwfSubjβ Hψaap (add β Lav) HLavβ)
         as (𝒞 & Ξc & Ξs & Pa & κc & κs
@@ -1795,7 +1728,7 @@ Proof.
       intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
   - (* Arrow : [skmod] forces P0 = P01→P02 and the refinement splits.  The
        LEFT premise is a consistency judgment and goes to P6-Cs; the RIGHT
-       one is the IH, with [sss_arrow_r] + [sub_shield_step].  The two
+       one is the IH at the right component.  The two
        constraint sets concatenate (LS-Arrow) and the two solves compose —
        note P6-Cs's 𝒞1 holds no SUBTYPING constraint, which is what lets
        [a_solve_cstr] run them in sequence. *)
@@ -1861,10 +1794,6 @@ Proof.
     assert (HΨs1L : Ψ1 [<=] union (ftag_in_uskl Ra) (union Ψρ1 (Ψ1 ∩ Ψ')))
       by (clear - HΨ1sub; fsetdec).
     assert (HΨs2L : Ψ1 ∩ Ψ' [<=] Ψ1) by (clear; fsetdec).
-    assert (Hfawa : flex_apart_deep Θ0 Δρ P01 ψa)
-      by (eapply flex_apart_deep_step;
-            [ exact Hapart
-            | apply p0step_arrow_l ]).
     assert (HΔρftvL : forall α0, α0 `in` Δρ ->
               α0 `notin` ftvar_in_pskl P01 `union` ftvar_in_pskl Pi)
       by (intros α0 Hα0; pose proof (HΔρftv α0 Hα0) as Hd0;
@@ -1896,7 +1825,7 @@ Proof.
       | exact HsubL | exact Hdfresh | exact Hpre | exact HΨs1L | exact HΨs2L
       | exact (ad_consis_join_consis H) | exact HwfSubjA | exact Href1
       | exact Hrhoa | intros x b Hb; exact Hb | exact HΨρ1e | exact Hrfr
-      | exact HΔρΔ | exact HΔρw | exact HΔρftvL | exact HΔρPi | exact Hfawa
+      | exact HΔρΔ | exact HΔρw | exact HΔρftvL | exact HΔρPi
       | exact Hψaap
       (* ⭐ the LEFT branch's avoid-set is WIDENED by [α] and [dom Θ]: the row
          needs [α ∉ dom Ξs1] to rebuild [α ∉ dom (Ξs1 ++ Ξc1 ++ Θ0)], and the
@@ -2000,7 +1929,7 @@ Proof.
     assert (Href2' : {{ Θ ⨟ empty ⊢ᵣ
               (pskl_to_bskl_inh (msubst_pskl (κs1 ++ κc1 ++ κ) P02)) ⊳ Q2 }}ad)
       by (rewrite Htr_r; exact Href2).
-    (* the shield descends with [sss_arrow_r] and then crosses BOTH blocks *)
+    (* the right component's ftvs miss BOTH generated blocks *)
     assert (HfrΞ1 : (ftvar_in_pskl P02) ∩ (dom Ξc1) [=] empty).
     { pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd.
       intros x; split; intros Hx; [ exfalso | clear - Hx; fsetdec ].
@@ -2015,10 +1944,6 @@ Proof.
       assert (Hx2 : x `in` dom Ξs1) by (clear - Hx; fsetdec).
       pose proof (Hfrs1 x Hx2) as Hf.
       clear - Hf Hfd HLav Hdf0 Hx1; fsetdec. }
-    assert (HapartR : flex_apart_deep (Ξs1 ++ Ξc1 ++ Θ0) Δρ P02 ψa).
-    { apply flex_apart_deep_weaken_flex_prefix; [ | exact HfrΞs1 ].
-      apply flex_apart_deep_weaken_flex_prefix; [ | exact HfrΞ1 ].
-      eapply flex_apart_deep_step; [ exact Hapart | apply p0step_arrow_r ]. }
     assert (HsubR : (Ψi `union` (Ψ1 ∩ Ψ')) `union` (Ψ2 ∩ Ψ') [=] Ψ')
       by (clear - Hsub HΨa; fsetdec).
     assert (HΨs1R : Ψ2 [<=] union (ftag_in_uskl Rb) (union Ψρ2 (Ψ2 ∩ Ψ')))
@@ -2140,7 +2065,7 @@ Proof.
                     HwfΘ HwfΞs1 HwfΘw Hmon Hnr Hκw1 Hψaw HΔρw
                     HwfP02R HwfPa1 HmodSK2 HmodTY2 Hinc1'
                     HαΘ Hαr eq_refl HscopeRb HlcRb Htags HdisjRb HsubR
-                    Hdfresh HapartR Hpre1 HΨs1R HΨs2R
+                    Hdfresh Hpre1 HΨs1R HΨs2R
                     Hsubty HwfSubjB Href2'
                     Hrhob HΨρ2e HrfrR HΔρΔ HΔρPa1);
             [ right; exact Heq0 | exact Hext | exact HLavR ].
@@ -2154,7 +2079,7 @@ Proof.
                     HwfΘ HwfΞs1 Hmon Hnr Hκw1 HΔρw
                     Hαr Hinc1' Hακdom' Hκav'
                     eq_refl HscopeRb HlcRb HdisjRb HwfP02R HwfPa1
-                    HmodSK2 HmodTY2 HαΘ HsubR HΨs1R HΨs2R Hdfresh HapartR
+                    HmodSK2 HmodTY2 HαΘ HsubR HΨs1R HΨs2R Hdfresh
                     Hpre1 Href2' Hrhob HΨρ2e HrfrR HΔρΔ HΔρftvR HΔρPa1 Hext
                     Hne0 Hin0 HαRb HwfSubjB Hψaap
                     (add α (union (union Lav (union (dom Ξs1) (dom Ξc1)))
@@ -2168,7 +2093,7 @@ Proof.
                   HwfΘ HwfΞs1 HwfΘw Hmon Hnr Hκw1 Hψaw HΔρw
                   HwfP02R HwfPa1 HmodSK2 HmodTY2 Hinc1'
                   HαΘ Hαr eq_refl HscopeRb HlcRb Htags HdisjRb HsubR
-                  Hdfresh HapartR Hpre1 HΨs1R HΨs2R
+                  Hdfresh Hpre1 HΨs1R HΨs2R
                   Hsubty HwfSubjB Href2'
                   Hrhob HΨρ2e HrfrR HΔρΔ HΔρPa1);
           [ left; exact Hnin0 | exact Hext | exact HLavR ]. }
@@ -2479,55 +2404,20 @@ Proof.
          [def_subst_theta_is_legit]).  The written step holds essentially
          only at ι-like κ; the lemma quantifies over general κ.
 
-       REPAIR (decided after review; NOT yet built): PROOF-side, statement
-       UNCHANGED — restructure the induction the way P6-Sv already does.
-       Generalize the motive over an accumulated rigid substitution ρ: each
+       THE REPAIR — PROOF-side, statement UNCHANGED, as P6-Sv does it.  The
+       motive is generalized over an accumulated rigid substitution ρ: each
        ForallL opens with a FRESH RIGID β and the guess rides OUTSIDE κ as
        ρ := ρ ∘ [ψ/β], so the subject is ρ((κR'')[ψa/α]) with β ∉ dom κ ∪
        dom Θ0 and κ's images β-free — no κ/ψ commutation ever arises.  The
-       theorem is the ρ = identity instance.  The looksub side then runs on
+       theorem is the ρ = identity instance.  The looksub side runs on
        var-opened subjects, so LS-ForallL rebuilds via its cofinite family
-       directly ([a_looksub_lookeq_rename_tvar]); the reverse-substitution
-       lemma [a_looksub_subst_stable_rev] is NOT needed on this route (it
-       stays in prop_looksub.v as a true, independently useful fact).  The
-       [P = α] leaf calls [a_solve_sub_complete_var] at the ACCUMULATED ρ —
-       the general-ρ interface P6-Sv was built with, which the current
-       identity-ρ leaf leaves unused.  Cost: the aux lemma carries P6-Sv's
-       ρ premise kit ([uskl_rsubst], [rsubst_fresh] via the binds-monotone
-       Θs-generalization, [flex_apart_walk]/[flex_shield] at Δρ — so
-       [sub_shield] generalizes to carry Δρ) and the eight closed rows are
-       re-dispatched under the generalized motive (mechanical).  The tag
-       bookkeeping (the instantiated binder's ε, previously an open
-       sub-question) is expected to follow P6-Sv's Ψρ treatment — the
-       guesses' tags accumulate in Ψρ, with [Ψρ ∩ Ψ' = ∅] from the rule's
-       own freshness premises; verify when executing.
-
-       The SCOPE-premise relaxation ([ftv R' ⊆ add α (dom Θ0 ∪ dom Θ)],
-       done here and in P6-Cs with the dual κc-freshness conclusion
-       strengthened) predates this decision and is kept: it is harmless,
-       and the Arrow row wants the strengthened conclusion anyway.  (It is
-       also all that is needed on the scope side: β enters Θ0 AND Θ as a
+       directly ([a_looksub_lookeq_rename_tvar]).  β enters Θ0 AND Θ as a
        rigid — [rsubst_fresh] insists every ρ-replaced variable be a rigid of
-       the context — so [ftv (open R0 (var β))] stays inside the bound.)
-
-       SCOPE OF THE REPAIR, MEASURED.  The Check row hands its WHOLE
-       subject to P6-Cs, and a ForallL can sit above a Check, so **P6-Cs
-       must be ρ-generalized too**.  That is threading, not new theory:
-       P6-Cv ([a_solve_eq_complete_var_gen], sub/look/prop_eq_var.v:505)
-       ALREADY takes [uskl_rsubst NM Θ Δρ Ψρ ψsub ψa]; the [uskl_rsubst_*_l_inv]
-       kit exists; P6-Cs's measure ([size R' + size P0], on the ρ-FREE
-       ideal subject) is unaffected; its ∀ rows open with fresh VARIABLES
-       so ρ never grows inside it; and its leaf passes the real ρ down
-       instead of [ursubst__refl].
-
-       READY HERE for that step: [sub_shield] already carries Δρ (the
-       statement below instantiates it at [empty], so nothing has moved
-       yet) with [sub_shield_add_fresh] / [_weaken_tvar], and
-       [ad_partial_precise_delta_shrink] is the Δ-return the row
-       needs.  P6-Sv's ForallL row (sub/look/prop_sub_var.v:2308) is
-       the line-by-line template for the rest — with one simplification:
-       P6-Ss's ∀ comes from the SUBJECT, so ψa, P0, Pi, Ψi and Ψa do NOT
-       move, and only Θ0/Θ/Δ/Δρ grow by β. *)
+       the context — so [ftv (open R0 (var β))] stays inside the scope bound.
+       The Check row hands its WHOLE subject to P6-Cs, and a ForallL can sit
+       above a Check, so P6-Cs is ρ-generalized too.  Here ψa, P0, Pi, Ψi
+       and Ψa do NOT move; only Θ0/Θ/Δ/Δρ grow by β, and
+       [ad_partial_precise_delta_shrink] is the Δ-return. *)
     (* --- the ρ-inversion: the ideal is a ∀^ε too, and its body's ρ-family is
        what Sub-ForallL extends --- *)
     destruct R' as [ | rn | β | Ra Rb | R0 | εr R0 | | R0 | | R0 ];
@@ -2638,14 +2528,8 @@ Proof.
       pose proof (a_wf_ptyp_ftv_dom
                     (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
       clear - Hd HβΘ; fsetdec. }
-    (* the SHIELD steps the SUBJECT by [sss_forall_l_tag] — Sub-ForallL is
-       so P0 does NOT move — only Δρ grows, by a rigid β fresh for the guess,
+    (* Sub-ForallL steps the SUBJECT only, so P0 does NOT move — only Δρ grows, by a rigid β fresh for the guess,
        and the context gains it too *)
-    assert (Hapartβ : flex_apart_deep ((β ~ abind_tvar) ++ Θ0) (add β Δρ) P0 ψa)
-      by (apply flex_apart_deep_weaken_tvar;
-          eapply flex_apart_deep_delta_grow;
-            [ exact Hapart | clear; fsetdec
-            | clear - Hβψa; fsetdec ]).
     assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
               ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad).
     { (* the Δ-congruence's set argument is PINNED by a named [assert] —
@@ -2776,7 +2660,7 @@ Proof.
                     Hwfβ Hwfβ0 HwfΘw Hmonβ Hnrβ Hκwβ Hψaw HΔρwβ
                     HwfP0β HwfPiβ HmodSK HmodTY Hκβ HαΘβ HαΘ0β
                     eq_refl HscopeRβ HlcR0β Htags Hdisjβ Hsub Hdfreshβ
-                    Hapartβ Hpreβ HΨs1β HΨs2β Hsubty HwfSubjβ Hrefβ
+                    Hpreβ HΨs1β HΨs2β Hsubty HwfSubjβ Hrefβ
                     Hrhoβ HΨρβ Hrfrβ HΔρΔβ HΔρPiβ);
             [ right; exact Heq0 | exact Hextβ | exact HLavβ ].
         + (* recurse *)
@@ -2790,7 +2674,7 @@ Proof.
                     Hwfβ Hwfβ0 Hmonβ Hnrβ Hκwβ HΔρwβ
                     HαΘ0β Hκβ Hακdom Hκav eq_refl HscopeRβ
                     HlcR0β Hdisjβ HwfP0β HwfPiβ HmodSK HmodTY HαΘβ Hsub
-                    HΨs1β HΨs2β Hdfreshβ Hapartβ Hpreβ Hrefβ Hrhoβ HΨρβ
+                    HΨs1β HΨs2β Hdfreshβ Hpreβ Hrefβ Hrhoβ HΨρβ
                     Hrfrβ HΔρΔβ HΔρftvβ HΔρPiβ Hextβ Hne0 Hin0 HαRβ
                     HwfSubjβ
                     (* ρ-apartness survives the fresh binder: β ∉ ftv ψa *)
@@ -2806,7 +2690,7 @@ Proof.
                   Hwfβ Hwfβ0 HwfΘw Hmonβ Hnrβ Hκwβ Hψaw HΔρwβ
                   HwfP0β HwfPiβ HmodSK HmodTY Hκβ HαΘβ HαΘ0β
                   eq_refl HscopeRβ HlcR0β Htags Hdisjβ Hsub Hdfreshβ
-                  Hapartβ Hpreβ HΨs1β HΨs2β Hsubty HwfSubjβ Hrefβ
+                  Hpreβ HΨs1β HΨs2β Hsubty HwfSubjβ Hrefβ
                   Hrhoβ HΨρβ Hrfrβ HΔρΔβ HΔρPiβ);
           [ left; exact Hnin0 | exact Hextβ | exact HLavβ ]. }
     eapply looksub_solve_forall_l_close;
@@ -2926,14 +2810,8 @@ Proof.
       pose proof (a_wf_ptyp_ftv_dom
                     (@a_wf_aenv_binds_def_wf Θ α3 τ3 HwfΘ Hb')) as Hd.
       clear - Hd HβΘ; fsetdec. }
-    (* the SHIELD steps the SUBJECT by [sss_forall_l_syn] — Sub-ForallL is
-       so P0 does NOT move — only Δρ grows, by a rigid β fresh for the guess,
+    (* Sub-ForallL steps the SUBJECT only, so P0 does NOT move — only Δρ grows, by a rigid β fresh for the guess,
        and the context gains it too *)
-    assert (Hapartβ : flex_apart_deep ((β ~ abind_tvar) ++ Θ0) (add β Δρ) P0 ψa)
-      by (apply flex_apart_deep_weaken_tvar;
-          eapply flex_apart_deep_delta_grow;
-            [ exact Hapart | clear; fsetdec
-            | clear - Hβψa; fsetdec ]).
     assert (Hpreβ : {{ ((β ~ abind_tvar) ++ Θ) ⨟ (add β Δ)
               ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad).
     { (* the Δ-congruence's set argument is PINNED by a named [assert] —
@@ -3064,7 +2942,7 @@ Proof.
                     Hwfβ Hwfβ0 HwfΘw Hmonβ Hnrβ Hκwβ Hψaw HΔρwβ
                     HwfP0β HwfPiβ HmodSK HmodTY Hκβ HαΘβ HαΘ0β
                     eq_refl HscopeRβ HlcR0β Htags Hdisjβ Hsub Hdfreshβ
-                    Hapartβ Hpreβ HΨs1β HΨs2β Hsubty HwfSubjβ Hrefβ
+                    Hpreβ HΨs1β HΨs2β Hsubty HwfSubjβ Hrefβ
                     Hrhoβ HΨρβ Hrfrβ HΔρΔβ HΔρPiβ);
             [ right; exact Heq0 | exact Hextβ | exact HLavβ ].
         + (* recurse *)
@@ -3078,7 +2956,7 @@ Proof.
                     Hwfβ Hwfβ0 Hmonβ Hnrβ Hκwβ HΔρwβ
                     HαΘ0β Hκβ Hακdom Hκav eq_refl HscopeRβ
                     HlcR0β Hdisjβ HwfP0β HwfPiβ HmodSK HmodTY HαΘβ Hsub
-                    HΨs1β HΨs2β Hdfreshβ Hapartβ Hpreβ Hrefβ Hrhoβ HΨρβ
+                    HΨs1β HΨs2β Hdfreshβ Hpreβ Hrefβ Hrhoβ HΨρβ
                     Hrfrβ HΔρΔβ HΔρftvβ HΔρPiβ Hextβ Hne0 Hin0 HαRβ
                     HwfSubjβ
                     (* ρ-apartness survives the fresh binder: β ∉ ftv ψa *)
@@ -3094,7 +2972,7 @@ Proof.
                   Hwfβ Hwfβ0 HwfΘw Hmonβ Hnrβ Hκwβ Hψaw HΔρwβ
                   HwfP0β HwfPiβ HmodSK HmodTY Hκβ HαΘβ HαΘ0β
                   eq_refl HscopeRβ HlcR0β Htags Hdisjβ Hsub Hdfreshβ
-                  Hapartβ Hpreβ HΨs1β HΨs2β Hsubty HwfSubjβ Hrefβ
+                  Hpreβ HΨs1β HΨs2β Hsubty HwfSubjβ Hrefβ
                   Hrhoβ HΨρβ Hrfrβ HΔρΔβ HΔρPiβ);
           [ left; exact Hnin0 | exact Hextβ | exact HLavβ ]. }
     eapply looksub_solve_forall_l_close;
@@ -3117,8 +2995,8 @@ Proof.
       solve [ contradiction (HRnv _ eq_refl)
             | clear - HαR; fsetdec
             | inversion Hrho ].
-  - (* UnivGhostL : R' = ∀◇R0; the IH runs at the body with P0 UNCHANGED
-       (so [sub_shield] is threaded as is), then LS-UnivGhostL rebuilds.
+  - (* UnivGhostL : R' = ∀◇R0; the IH runs at the body with P0 UNCHANGED,
+       then LS-UnivGhostL rebuilds.
 
        RECIPE (the structural point that used to block this is SOLVED —
        [a_looksub_solve_complete_leaf] above).  A recursive row can land on
@@ -3137,8 +3015,8 @@ Proof.
 
        Then rebuild with LS-UnivGhostL: the conclusion at R0 is about
        [⌊R0⌋ˢ], and [a_looksub__univ_ghost_l] lifts it to [∀◇⌊R0⌋ˢ] = ⌊R'⌋ˢ
-       with 𝒞, Ξc, Pa, κc ALL UNCHANGED — P0 does not move, so [sub_shield]
-       threads as is and every other conjunct of the conclusion is
+       with 𝒞, Ξc, Pa, κc ALL UNCHANGED — P0 does not move, so every
+       other conjunct of the conclusion is
        literally the recursive one.  R''s shape comes from [HeqSub] by
        [destruct R']: every branch but [univ_ghost] discriminates, and the
        variable branch is [HRnv]. *)
@@ -3150,9 +3028,7 @@ Proof.
        inversion's equation is an injection and the sub-ρ is at the SAME Ψρ *)
     destruct (uskl_rsubst_univ_ghost_r_inv Hrho) as (Rb0 & HeqRs & Hrho0).
     injection HeqRs as HeqRs. rewrite <- HeqRs in Hrho0. clear HeqRs.
-    (* the SUBJECT moves, so the shield steps with [sss_univ_ghost_l] —
-       P0 stands still *)
-    assert (Hapart0 : flex_apart_deep Θ0 Δρ P0 ψa) by exact Hapart.
+    (* the SUBJECT moves; P0 stands still *)
     assert (REC : exists 𝒞 Ξc Ξs Pa κc κs,
       ({{ Θ0 ⊢ ⌊ R0 ⌋ˢ ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\
       {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\
@@ -3306,9 +3182,7 @@ Proof.
        inversion's equation is an injection and the sub-ρ is at the SAME Ψρ *)
     destruct (uskl_rsubst_dot_univ_ghost_r_inv Hrho) as (Rb0 & HeqRs & Hrho0).
     injection HeqRs as HeqRs. rewrite <- HeqRs in Hrho0. clear HeqRs.
-    (* the SUBJECT moves, so the shield steps with [sss_univ_ghost_lg] —
-       P0 stands still *)
-    assert (Hapart0 : flex_apart_deep Θ0 Δρ P0 ψa) by exact Hapart.
+    (* the SUBJECT moves; P0 stands still *)
     assert (REC : exists 𝒞 Ξc Ξs Pa κc κs,
       ({{ Θ0 ⊢ ⌊ R0 ⌋ˢ ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\
       {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\
@@ -3494,9 +3368,8 @@ Qed.
 (*  Every added premise is discharged here, with no residue: [uskl_rsubst]    *)
 (*  degenerates to [ursubst__refl] (local closure comes from the subject-wf   *)
 (*  premise the paper already owes), [Θs := Θ], and [rsubst_fresh] / [Δρ ⊆ Δ] *)
-(*  / the two ftv conditions are vacuous over an empty Δρ — which also     *)
-(*  collapses [sub_shield]'s Δρ to [empty], i.e. the pre-generalization     *)
-(*  premise.  Use THIS one unless you are threading a ρ down from a         *)
+(*  / the ftv and guess-apartness conditions are vacuous over an empty Δρ. *)
+(*  Use THIS one unless you are threading a ρ down from a                  *)
 (*  Sub-ForallL.                                                           *)
 (* ===================================================================== *)
 
@@ -3522,9 +3395,6 @@ Theorem a_looksub_solve_complete :
      [paper-external wf side condition — docs/WF-SIDE-CONDITIONS.md] *)
   ftvar_in_uskl ψa [<=] dom Θ ->
   delta_def_fresh Δ Θ ->
-  (* ⭕ (2026-08-05) the repair premise [flex_apart_deep Θ0 ∅ P0 ψa] is GONE:
-     at Δρ = ∅ it is [fa_clean] at every reachable state, so the corollary
-     discharges it internally ([flex_apart_deep_clean]). *)
   {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] ψa }}ad ->
   Ψsub [<=] ftag_in_uskl R' `union` Ψa ->
   Ψa [<=] Ψsub ->
@@ -3588,10 +3458,6 @@ Proof.
   intros HwfΘ HwfΘ0 HwfP0 HwfPi HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR
          HscopeR HlcR Htags Hdisj Hsub Hψaw Hdfresh Hpre HΨs1 HΨs2
          Hsubty HwfSubj Hrefine L HL.
-  (* ⭐ the repair premise, DISCHARGED: at Δρ = ∅ every state the P0-walk
-     reaches is [fa_clean] (the guess cannot meet an empty ρ-replaced set). *)
-  assert (Hapart : flex_apart_deep Θ0 empty P0 ψa)
-    by (apply flex_apart_deep_clean; clear; fsetdec).
   (* [Θw := Θ] collapses the whole Θw pack: the two binds conditions are the
      identity and the κ-image bound is [a_inc_lookup_flex_ftv_dom] on [Hκ]. *)
   edestruct (@a_looksub_solve_complete_gen n NM M Θ0 Θ Θ Θ κ Δ empty empty Ψ'
@@ -3608,7 +3474,7 @@ Proof.
     | exact HwfP0 | exact HwfPi
     | exact HmodSK | exact HmodTY | exact Hκ | exact HαΘ | exact HαΘ0
     | exact HeraseR | exact HscopeR | exact HlcR | exact Htags | exact Hdisj
-    | exact Hsub | exact Hdfresh | exact Hapart | exact Hpre
+    | exact Hsub | exact Hdfresh | exact Hpre
     | clear - HΨs1; fsetdec | exact HΨs2
     | exact Hsubty | exact HwfSubj | exact Hrefine
     | apply ursubst__refl;
