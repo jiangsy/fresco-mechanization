@@ -55,6 +55,54 @@ Require Import src.fresco.algo.sub.look.prop_rsubst.
 (* ⚠️ Per-FILE flag — see prop_flex_apart.v's note. *)
 Set Implicit Arguments.
 
+(** The fixed scope of non-rigid entries and substitution images.  Recursive
+    completeness calls may add rigid binders without moving this scope. *)
+Definition solve_scope (Θ0 Θ Θw : aenv) (κ : metasubst) : Prop :=
+  (forall x b, binds x b Θw -> binds x b Θ) /\
+  (forall x b, binds x b Θ -> binds x b Θw \/ b = abind_tvar) /\
+  (forall α, a_flex_tvar Θ0 α ->
+     ftvar_in_ptyp (msubst_lookup κ α) [<=] dom Θw).
+
+Lemma solve_scope_open_tvar : forall Θ0 Θ Θw κ β,
+  solve_scope Θ0 Θ Θw κ -> β `notin` dom Θ ->
+  β `notin` dom Θw /\
+  solve_scope ((β ~ abind_tvar) ++ Θ0) ((β ~ abind_tvar) ++ Θ) Θw κ.
+Proof.
+  intros * (Hmon & Hnr & Hκw) Hβ.
+  split.
+  - intro Hin. apply binds_In_inv in Hin; destruct Hin as [b Hb].
+    apply Hβ. eapply binds_In; apply Hmon; exact Hb.
+  - unfold solve_scope. repeat split.
+    + intros x b Hb; apply binds_app_3; apply Hmon; exact Hb.
+    + intros x b Hb.
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
+        [ right; exact Heq | exact (Hnr _ _ Hb') ].
+    + intros α Hf; apply Hκw; eapply a_flex_tvar_strip_tvar; exact Hf.
+Qed.
+
+(** Sequential composition preserves the same fixed scope when the new
+    context entries and substitution images are aligned. *)
+Lemma solve_scope_flex_prefix : forall Θ0 Θ Θw κ Ξ κa,
+  solve_scope Θ0 Θ Θw κ ->
+  keys κa = keys Ξ ->
+  (forall p, In p κa -> ftvar_in_ptyp (snd p) [<=] dom Θw) ->
+  solve_scope (Ξ ++ Θ0) Θ Θw (κa ++ κ).
+Proof.
+  intros * (Hmon & Hnr & Hκw) Hkeys Himg.
+  split; [ exact Hmon | ]. split; [ exact Hnr | ].
+  intros α Hf.
+  destruct (AtomSetProperties.In_dec α (dom κa)) as [Hin | Hnin].
+  - rewrite (@msubst_lookup_app_in κa κ α Hin).
+    destruct (msubst_lookup_in_or κa α) as [Hp | [Hni _]];
+      [ exact (Himg _ Hp) | exfalso; clear - Hin Hni; fsetdec ].
+  - rewrite (@msubst_lookup_app_notin κa κ α Hnin). apply Hκw.
+    pose proof (@keys_eq_dom _ _ κa Ξ Hkeys) as Hd.
+    eapply (proj1 (@a_flex_tvar_app_notin Ξ Θ0 α ltac:(clear - Hd Hnin; fsetdec))).
+    exact Hf.
+Qed.
+Arguments solve_scope_flex_prefix [Θ0 Θ Θw κ Ξ κa] _ _ _.
+
+
 (* ===================================================================== *)
 (*  THE FLEX-BLOCK EXTENSION KIT — moved up from                          *)
 (*  sub/look/prop_eq_cstr.v (2026-08-04).                               *)

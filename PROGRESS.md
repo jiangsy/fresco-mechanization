@@ -181,6 +181,20 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Shared scope invariant for completeness recursion
+
+- Name the fixed scope of non-rigid context entries and substitution images
+  as `solve_scope` in `algo/sub/look/prop_solve_ext.v`. Its rigid-binder
+  extension lemma replaces ten repeated scope/freshness proofs in P6-Cs,
+  P6-Sv and P6-Ss (−99 nonblank code lines, including the invariant and lemma).
+- Prove preservation under aligned context/substitution prefixes. Compose this
+  operation for the collection and solve blocks in three arrow cases; remove
+  the superseded `msubst_lookup_ftv_app` helper (−15 including the new lemma).
+- Net: −114 nonblank code lines. Retained theorem statements are unchanged;
+  no new Ltac definitions.
+- Validation: full `make coq` passes; all 34 headline assumption reports are
+  `Closed under the global context`.
+
 ## 2026-10-11 — Second simplification pass: flexibility algebra and equivalence transport
 
 - Normalize flexibility over context appends/singletons in

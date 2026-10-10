@@ -281,23 +281,7 @@ Qed.
    ones below.  (Its pointwise-everywhere twin [msubst_lookup_app_congr] was
    deleted 2026-10-10.) *)
 
-(* ⭐ An IMAGE BOUND transports across an append: a lookup either lands in the
-   prefix — where the pointwise bound applies — or misses the prefix's domain
-   entirely and is the tail's.  The ARROW row applies it TWICE, to peel the
-   left branch's SOLVE block and COLLECTION block off the right IH's κ before
-   falling back on the incoming [Hκw]. *)
-Lemma msubst_lookup_ftv_app : forall κa κb α S,
-  (forall p, In p κa -> ftvar_in_ptyp (snd p) [<=] S) ->
-  (α `notin` dom κa -> ftvar_in_ptyp (msubst_lookup κb α) [<=] S) ->
-  ftvar_in_ptyp (msubst_lookup (κa ++ κb) α) [<=] S.
-Proof.
-  intros κa κb α S Ha Hb.
-  destruct (AtomSetProperties.In_dec α (dom κa)) as [Hin | Hnin].
-  - rewrite (@msubst_lookup_app_in κa κb α Hin).
-    destruct (msubst_lookup_in_or κa α) as [Hp | [Hni _]];
-      [ exact (Ha _ Hp) | exfalso; clear - Hin Hni; fsetdec ].
-  - rewrite (@msubst_lookup_app_notin κa κb α Hnin). exact (Hb Hnin).
-Qed.
+
 
 (* [binds] over an append is plain MEMBERSHIP, so any reordering of the blocks
    preserves it — no disjointness side condition anywhere.  The arrow row moves
@@ -3013,21 +2997,13 @@ Proof.
            looks up in [κs1] — bounded by [HFs1], wf at Θw — or in [κc1] —
            bounded by [Himg1] (⊆ ftv ψa) then [Hψaw] — or, being outside both
            domains, in [κ], where the incoming [Hκw] applies. *)
-        assert (HκwR : forall α0, a_flex_tvar (Ξs1 ++ Ξc1 ++ Θ0) α0 ->
-                  ftvar_in_ptyp (msubst_lookup (κs1 ++ κc1 ++ κ) α0) [<=] dom Θw).
-        { intros α0 Hf. apply msubst_lookup_ftv_app; [ exact HFs1d | ].
-          intros Hn1. apply msubst_lookup_ftv_app.
-          - intros p Hp. pose proof (Himg1F p Hp) as Hb.
-            clear - Hb Hψaw; fsetdec.
-          - intros Hn2. apply Hκw.
-            assert (Hns : α0 `notin` dom Ξs1) by (clear - Hn1 Hd_s1; fsetdec).
-            assert (Hnc : α0 `notin` dom Ξc1) by (clear - Hn2 Hd1'; fsetdec).
-            destruct Hf as [Hb | (τ0 & Hb)]; [ left | right; exists τ0 ];
-              (apply binds_app_1 in Hb; destruct Hb as [Hb | Hb];
-               [ exfalso; apply binds_In in Hb; clear - Hb Hns; fsetdec | ];
-               apply binds_app_1 in Hb; destruct Hb as [Hb | Hb];
-               [ exfalso; apply binds_In in Hb; clear - Hb Hnc; fsetdec
-               | exact Hb ]). }
+        assert (Hκc1w : forall p, In p κc1 ->
+          ftvar_in_ptyp (snd p) [<=] dom Θw)
+          by (intros p Hp; pose proof (Himg1F p Hp) as Hb;
+              clear - Hb Hψaw; fsetdec).
+        destruct (solve_scope_flex_prefix
+                    (solve_scope_flex_prefix (conj Hmon (conj Hnr Hκw)) Hmap1 Hκc1w)
+                    Hks1 HFs1d) as (_ & _ & HκwR).
         (* --- transports for the RIGHT IH (κ → κs1 ++ κc1 ++ κ).  BOTH blocks
            the left branch generated have to be peeled: the collection's [κc1]
            (fresh for α, Θ0, Θ and ψa by [Hκf1]) and the SOLVE's [κs1] (fresh
@@ -3716,17 +3692,8 @@ Proof.
            have to be re-established at [(β ~ tvar) ++ Θ], and each is one
            line: the new entry is a RIGID, so it is on the [b = abind_tvar]
            side of [Hnr] and it is invisible to [a_flex_tvar]. *)
-        assert (Hmonβ : forall x b, binds x b Θw ->
-                  binds x b ((β ~ abind_tvar) ++ Θ))
-          by (intros x b Hb; apply binds_app_3; apply Hmon; exact Hb).
-        assert (Hnrβ : forall x b, binds x b ((β ~ abind_tvar) ++ Θ) ->
-                  binds x b Θw \/ b = abind_tvar).
-        { intros x b Hb.
-          destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
-            [ right; exact Heq | exact (Hnr _ _ Hb') ]. }
-        assert (Hκwβ : forall α0, a_flex_tvar ((β ~ abind_tvar) ++ Θ0) α0 ->
-                  ftvar_in_ptyp (msubst_lookup κ α0) [<=] dom Θw)
-          by (intros α0 Hf; apply Hκw; eapply a_flex_tvar_strip_tvar; exact Hf).
+        destruct (solve_scope_open_tvar (conj Hmon (conj Hnr Hκw)) HβΘ)
+          as (HβΘw & Hmonβ & Hnrβ & Hκwβ).
         (* ⚙️ THE IH's AVOID-SET IS [add β L], not [L].  The block is emitted
            OUTSIDE the ∀ and the fold renames the binder, so the row's own β
            must be dodged — otherwise [β ∉ dom Ξs] is unavailable, and both
@@ -3773,9 +3740,7 @@ Proof.
           specialize (Himg p Hp). clear - Himg Hβψa; fsetdec. }
         (* ⭐ and the SOLVE block's payloads dodge β for a DIFFERENT reason: they
            are well-formed in the FIXED [Θw], which predates the binder. *)
-        assert (HβΘw : β `notin` dom Θw)
-          by (pose proof (@aenv_binds_dom_sub Θw Θ Hmon) as Hdw;
-              clear - Hdw HβΘ; fsetdec).
+
         assert (Hβκs : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κs).
         { rewrite Forall_forall. intros p Hp.
           pose proof (forall_wf_mono_images_dom HFs p Hp) as Hb.
@@ -3978,17 +3943,8 @@ Proof.
                              + size_pskl (pskl_univ_ghost P0s) <= n).
            { rewrite size_uskl_open_uskl_wrt_uskl_var. cbn in Hn |- *; lia. }
            (* the Θw pack under the binder — see the C-ForallInh row above *)
-           assert (Hmonβ : forall x b, binds x b Θw ->
-                     binds x b ((β ~ abind_tvar) ++ Θ))
-             by (intros x b Hb; apply binds_app_3; apply Hmon; exact Hb).
-           assert (Hnrβ : forall x b, binds x b ((β ~ abind_tvar) ++ Θ) ->
-                     binds x b Θw \/ b = abind_tvar).
-           { intros x b Hb.
-             destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
-               [ right; exact Heq | exact (Hnr _ _ Hb') ]. }
-           assert (Hκwβ : forall α0, a_flex_tvar ((β ~ abind_tvar) ++ Θ0) α0 ->
-                     ftvar_in_ptyp (msubst_lookup κ α0) [<=] dom Θw)
-             by (intros α0 Hf; apply Hκw; eapply a_flex_tvar_strip_tvar; exact Hf).
+           destruct (solve_scope_open_tvar (conj Hmon (conj Hnr Hκw)) HβΘ)
+             as (HβΘw & Hmonβ & Hnrβ & Hκwβ).
            assert (HLβ : ftvar_in_aenv ((β ~ abind_tvar) ++ Θ0) [<=] add β L)
              by (rewrite ftvar_in_aenv_cons_tvar; clear - HL; fsetdec).
            edestruct (IHn NM ((β ~ abind_tvar) ++ Θ0) ((β ~ abind_tvar) ++ Θ) Θw
@@ -4030,9 +3986,7 @@ Proof.
            assert (Hβκc : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κc).
            { rewrite Forall_forall in Himg |- *. intros p Hp.
              specialize (Himg p Hp). clear - Himg Fr; fsetdec. }
-           assert (HβΘw : β `notin` dom Θw)
-             by (pose proof (@aenv_binds_dom_sub Θw Θ Hmon) as Hdw;
-                 clear - Hdw HβΘ; fsetdec).
+
            assert (Hβκs : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κs).
            { rewrite Forall_forall. intros p Hp.
              pose proof (forall_wf_mono_images_dom HFs p Hp) as Hb.
@@ -4281,17 +4235,8 @@ Proof.
            have to be re-established at [(β ~ tvar) ++ Θ], and each is one
            line: the new entry is a RIGID, so it is on the [b = abind_tvar]
            side of [Hnr] and it is invisible to [a_flex_tvar]. *)
-        assert (Hmonβ : forall x b, binds x b Θw ->
-                  binds x b ((β ~ abind_tvar) ++ Θ))
-          by (intros x b Hb; apply binds_app_3; apply Hmon; exact Hb).
-        assert (Hnrβ : forall x b, binds x b ((β ~ abind_tvar) ++ Θ) ->
-                  binds x b Θw \/ b = abind_tvar).
-        { intros x b Hb.
-          destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
-            [ right; exact Heq | exact (Hnr _ _ Hb') ]. }
-        assert (Hκwβ : forall α0, a_flex_tvar ((β ~ abind_tvar) ++ Θ0) α0 ->
-                  ftvar_in_ptyp (msubst_lookup κ α0) [<=] dom Θw)
-          by (intros α0 Hf; apply Hκw; eapply a_flex_tvar_strip_tvar; exact Hf).
+        destruct (solve_scope_open_tvar (conj Hmon (conj Hnr Hκw)) HβΘ)
+          as (HβΘw & Hmonβ & Hnrβ & Hκwβ).
         (* ⚙️ THE IH's AVOID-SET IS [add β L], not [L].  The block is emitted
            OUTSIDE the ∀ and the fold renames the binder, so the row's own β
            must be dodged — otherwise [β ∉ dom Ξs] is unavailable, and both
@@ -4338,9 +4283,7 @@ Proof.
           specialize (Himg p Hp). clear - Himg Hβψa; fsetdec. }
         (* ⭐ and the SOLVE block's payloads dodge β for a DIFFERENT reason: they
            are well-formed in the FIXED [Θw], which predates the binder. *)
-        assert (HβΘw : β `notin` dom Θw)
-          by (pose proof (@aenv_binds_dom_sub Θw Θ Hmon) as Hdw;
-              clear - Hdw HβΘ; fsetdec).
+
         assert (Hβκs : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κs).
         { rewrite Forall_forall. intros p Hp.
           pose proof (forall_wf_mono_images_dom HFs p Hp) as Hb.
@@ -4573,17 +4516,8 @@ Proof.
                              + size_pskl (pskl_univ_ghost P0s) <= n).
            { rewrite size_uskl_open_uskl_wrt_uskl_var. cbn in Hn |- *; lia. }
            (* the Θw pack under the binder — see the C-ForallInh row above *)
-           assert (Hmonβ : forall x b, binds x b Θw ->
-                     binds x b ((β ~ abind_tvar) ++ Θ))
-             by (intros x b Hb; apply binds_app_3; apply Hmon; exact Hb).
-           assert (Hnrβ : forall x b, binds x b ((β ~ abind_tvar) ++ Θ) ->
-                     binds x b Θw \/ b = abind_tvar).
-           { intros x b Hb.
-             destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
-               [ right; exact Heq | exact (Hnr _ _ Hb') ]. }
-           assert (Hκwβ : forall α0, a_flex_tvar ((β ~ abind_tvar) ++ Θ0) α0 ->
-                     ftvar_in_ptyp (msubst_lookup κ α0) [<=] dom Θw)
-             by (intros α0 Hf; apply Hκw; eapply a_flex_tvar_strip_tvar; exact Hf).
+           destruct (solve_scope_open_tvar (conj Hmon (conj Hnr Hκw)) HβΘ)
+             as (HβΘw & Hmonβ & Hnrβ & Hκwβ).
            assert (HLβ : ftvar_in_aenv ((β ~ abind_tvar) ++ Θ0) [<=] add β L)
              by (rewrite ftvar_in_aenv_cons_tvar; clear - HL; fsetdec).
            edestruct (IHn NM ((β ~ abind_tvar) ++ Θ0) ((β ~ abind_tvar) ++ Θ) Θw
@@ -4625,9 +4559,7 @@ Proof.
            assert (Hβκc : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κc).
            { rewrite Forall_forall in Himg |- *. intros p Hp.
              specialize (Himg p Hp). clear - Himg Fr; fsetdec. }
-           assert (HβΘw : β `notin` dom Θw)
-             by (pose proof (@aenv_binds_dom_sub Θw Θ Hmon) as Hdw;
-                 clear - Hdw HβΘ; fsetdec).
+
            assert (Hβκs : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κs).
            { rewrite Forall_forall. intros p Hp.
              pose proof (forall_wf_mono_images_dom HFs p Hp) as Hb.
@@ -4905,17 +4837,8 @@ Proof.
            { rewrite size_pskl_open_pskl_wrt_pskl_var. cbn in Hn |- *; lia. }
            (* the Θw pack under the binder — see the C-ForallInh row above.  [Θw] does
               NOT move; keeping it fixed is what lets β be stripped from the [a_inc]. *)
-           assert (Hmonβ : forall x b, binds x b Θw ->
-                     binds x b ((β ~ abind_tvar) ++ Θ))
-             by (intros x b Hb; apply binds_app_3; apply Hmon; exact Hb).
-           assert (Hnrβ : forall x b, binds x b ((β ~ abind_tvar) ++ Θ) ->
-                     binds x b Θw \/ b = abind_tvar).
-           { intros x b Hb.
-             destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
-               [ right; exact Heq | exact (Hnr _ _ Hb') ]. }
-           assert (Hκwβ : forall α0, a_flex_tvar ((β ~ abind_tvar) ++ Θ0) α0 ->
-                     ftvar_in_ptyp (msubst_lookup κ α0) [<=] dom Θw)
-             by (intros α0 Hf; apply Hκw; eapply a_flex_tvar_strip_tvar; exact Hf).
+           destruct (solve_scope_open_tvar (conj Hmon (conj Hnr Hκw)) HβΘ)
+             as (HβΘw & Hmonβ & Hnrβ & Hκwβ).
            (* ⚙️ the IH's avoid-set is [add β L]: the block is emitted OUTSIDE the ∀,
               so the row's own binder must be dodged — [β ∉ dom Ξs] is what [HβPa]
               and the [a_inc] strip need. *)
@@ -4940,9 +4863,7 @@ Proof.
              by (intro Hc; pose proof (Hfrs β Hc) as Hf; clear - Hf; fsetdec).
            (* ⭐ the SOLVE block's payloads dodge β for a DIFFERENT reason: they are
               well-formed in the FIXED [Θw], which predates the binder. *)
-           assert (HβΘw : β `notin` dom Θw)
-             by (pose proof (@aenv_binds_dom_sub Θw Θ Hmon) as Hdw;
-                 clear - Hdw HβΘ; fsetdec).
+
            assert (Hβκs : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κs).
            { rewrite Forall_forall. intros p Hp.
              pose proof (forall_wf_mono_images_dom HFs p Hp) as Hb.

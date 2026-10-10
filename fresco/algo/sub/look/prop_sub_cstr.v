@@ -1323,20 +1323,9 @@ Proof.
       (* the Θw pack under the binder — [Θw] does NOT move; keeping it fixed
          is what lets β be stripped out of the increase.  Δρ does not grow on
          this row, so [HΔρw] rides through unchanged. *)
-      assert (HβΘw : β `notin` dom Θw)
-        by (pose proof (@aenv_binds_dom_sub Θw Θ Hmon) as Hdw;
-            clear - Hdw HβΘ; fsetdec).
-      assert (Hmonβ : forall x b, binds x b Θw ->
-                binds x b ((β ~ abind_tvar) ++ Θ))
-        by (intros x b Hb; apply binds_app_3; apply Hmon; exact Hb).
-      assert (Hnrβ : forall x b, binds x b ((β ~ abind_tvar) ++ Θ) ->
-                binds x b Θw \/ b = abind_tvar).
-      { intros x b Hb.
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
-          [ right; exact Heq | exact (Hnr _ _ Hb') ]. }
-      assert (Hκwβ : forall α0, a_flex_tvar ((β ~ abind_tvar) ++ Θ0) α0 ->
-                ftvar_in_ptyp (msubst_lookup κ α0) [<=] dom Θw)
-        by (intros α0 Hf; apply Hκw; eapply a_flex_tvar_strip_tvar; exact Hf).
+
+      destruct (solve_scope_open_tvar (conj Hmon (conj Hnr Hκw)) HβΘ)
+        as (HβΘw & Hmonβ & Hnrβ & Hκwβ).
       assert (HLavβ : ftvar_in_aenv ((β ~ abind_tvar) ++ Θ0) [<=] add β Lav)
         by (rewrite ftvar_in_aenv_cons_tvar; clear - HLav; fsetdec).
       edestruct (H0 β ltac:(clear - Fr; solve_notin) Htags
@@ -1828,20 +1817,13 @@ Proof.
               α `notin` ftvar_in_ptyp (snd p)).
     { intros p Hp. pose proof (a_inc_image_ftv_dom Hinc1' p Hp) as Hb.
       clear - HαΘ Hb; fsetdec. }
-    assert (Hκw1 : forall α0, a_flex_tvar (Ξs1 ++ Ξc1 ++ Θ0) α0 ->
-              ftvar_in_ptyp (msubst_lookup (κs1 ++ κc1 ++ κ) α0) [<=] dom Θw).
-    { intros α0 Hf. apply msubst_lookup_ftv_app; [ exact HFs1d | ].
-      intros Hn1. apply msubst_lookup_ftv_app.
-      - intros p Hp. pose proof (Himg1F p Hp) as Hb. clear - Hb Hψaw; fsetdec.
-      - intros Hn2. apply Hκw.
-        assert (Hns : α0 `notin` dom Ξs1) by (clear - Hn1 Hd_s1; fsetdec).
-        assert (Hnc : α0 `notin` dom Ξc1) by (clear - Hn2 Hd1; fsetdec).
-        destruct Hf as [Hb | (τ0 & Hb)]; [ left | right; exists τ0 ];
-          (apply binds_app_1 in Hb; destruct Hb as [Hb | Hb];
-           [ exfalso; apply binds_In in Hb; clear - Hb Hns; fsetdec | ];
-           apply binds_app_1 in Hb; destruct Hb as [Hb | Hb];
-           [ exfalso; apply binds_In in Hb; clear - Hb Hnc; fsetdec
-           | exact Hb ]). }
+    assert (Hκc1w : forall p, In p κc1 ->
+      ftvar_in_ptyp (snd p) [<=] dom Θw)
+      by (intros p Hp; pose proof (Himg1F p Hp) as Hb;
+          clear - Hb Hψaw; fsetdec).
+    destruct (solve_scope_flex_prefix
+                (solve_scope_flex_prefix (conj Hmon (conj Hnr Hκw)) Hmap1 Hκc1w)
+                Hks1 HFs1d) as (_ & _ & Hκw1).
     assert (HscopeRb : ftvar_in_uskl Rb
               [<=] add α (dom (Ξs1 ++ Ξc1 ++ Θ0) `union` dom Θ))
       by (repeat rewrite dom_app; clear - HscopeR; cbn in HscopeR; fsetdec).
@@ -2568,20 +2550,9 @@ Proof.
        what lets β be stripped out of the increase.  Δρ DOES grow here (β is a
        ρ-replaced variable on this row), and [HΔρw] survives because β is
        picked fresh for Θ ⊇ Θw. *)
-    assert (HβΘw : β `notin` dom Θw)
-      by (pose proof (@aenv_binds_dom_sub Θw Θ Hmon) as Hdw;
-          clear - Hdw HβΘ; fsetdec).
-    assert (Hmonβ : forall x b, binds x b Θw ->
-              binds x b ((β ~ abind_tvar) ++ Θ))
-      by (intros x b Hb; apply binds_app_3; apply Hmon; exact Hb).
-    assert (Hnrβ : forall x b, binds x b ((β ~ abind_tvar) ++ Θ) ->
-              binds x b Θw \/ b = abind_tvar).
-    { intros x b Hb.
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
-        [ right; exact Heq | exact (Hnr _ _ Hb') ]. }
-    assert (Hκwβ : forall α0, a_flex_tvar ((β ~ abind_tvar) ++ Θ0) α0 ->
-              ftvar_in_ptyp (msubst_lookup κ α0) [<=] dom Θw)
-      by (intros α0 Hf; apply Hκw; eapply a_flex_tvar_strip_tvar; exact Hf).
+
+    destruct (solve_scope_open_tvar (conj Hmon (conj Hnr Hκw)) HβΘ)
+      as (HβΘw & Hmonβ & Hnrβ & Hκwβ).
     assert (HΔρwβ : (add β Δρ) ∩ dom Θw [=] empty)
       by (clear - HΔρw HβΘw; fsetdec).
     assert (HLavβ : ftvar_in_aenv ((β ~ abind_tvar) ++ Θ0) [<=] add β Lav)
@@ -2850,20 +2821,9 @@ Proof.
        what lets β be stripped out of the increase.  Δρ DOES grow here (β is a
        ρ-replaced variable on this row), and [HΔρw] survives because β is
        picked fresh for Θ ⊇ Θw. *)
-    assert (HβΘw : β `notin` dom Θw)
-      by (pose proof (@aenv_binds_dom_sub Θw Θ Hmon) as Hdw;
-          clear - Hdw HβΘ; fsetdec).
-    assert (Hmonβ : forall x b, binds x b Θw ->
-              binds x b ((β ~ abind_tvar) ++ Θ))
-      by (intros x b Hb; apply binds_app_3; apply Hmon; exact Hb).
-    assert (Hnrβ : forall x b, binds x b ((β ~ abind_tvar) ++ Θ) ->
-              binds x b Θw \/ b = abind_tvar).
-    { intros x b Hb.
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
-        [ right; exact Heq | exact (Hnr _ _ Hb') ]. }
-    assert (Hκwβ : forall α0, a_flex_tvar ((β ~ abind_tvar) ++ Θ0) α0 ->
-              ftvar_in_ptyp (msubst_lookup κ α0) [<=] dom Θw)
-      by (intros α0 Hf; apply Hκw; eapply a_flex_tvar_strip_tvar; exact Hf).
+
+    destruct (solve_scope_open_tvar (conj Hmon (conj Hnr Hκw)) HβΘ)
+      as (HβΘw & Hmonβ & Hnrβ & Hκwβ).
     assert (HΔρwβ : (add β Δρ) ∩ dom Θw [=] empty)
       by (clear - HΔρw HβΘw; fsetdec).
     assert (HLavβ : ftvar_in_aenv ((β ~ abind_tvar) ++ Θ0) [<=] add β Lav)

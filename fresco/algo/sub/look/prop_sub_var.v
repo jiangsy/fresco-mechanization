@@ -1689,20 +1689,9 @@ Proof.
         by (intros x b Hb; apply binds_app_3; exact Hb).
       (* the Θw pack under the binder: [Θw] itself does NOT move — keeping it
          fixed is what lets β be stripped out of the package's payloads *)
-      assert (Hmonβ : forall x b, binds x b Θw ->
-                binds x b ((β ~ abind_tvar) ++ Θ))
-        by (intros x b Hb; apply binds_app_3; apply Hmon; exact Hb).
-      assert (Hnrβ : forall x b, binds x b ((β ~ abind_tvar) ++ Θ) ->
-                binds x b Θw \/ b = abind_tvar).
-      { intros x b Hb.
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
-          [ right; exact Heq | exact (Hnr _ _ Hb') ]. }
-      assert (Hκwβ : forall α0, a_flex_tvar ((β ~ abind_tvar) ++ Θ0) α0 ->
-                ftvar_in_ptyp (msubst_lookup κ α0) [<=] dom Θw)
-        by (intros α0 Hf; apply Hκw; eapply a_flex_tvar_strip_tvar; exact Hf).
-      assert (HβΘw : β `notin` dom Θw)
-        by (pose proof (@aenv_binds_dom_sub Θw Θ Hmon) as Hdw;
-            clear - Hdw HβΘ; fsetdec).
+      destruct (solve_scope_open_tvar (conj Hmon (conj Hnr Hκw)) HβΘ)
+        as (HβΘw & Hmonβ & Hnrβ & Hκwβ).
+
       (* the IH's avoid-set is [add β Lav]: the block is emitted OUTSIDE the ∀
          and the rule LEAKS β, so [β ∉ dom Ξ] is what removes β from the
          output's ftv bound *)
@@ -1961,15 +1950,8 @@ Proof.
         by (apply a_inc_flex_prefix_build;
               [ exact Hfm1 | exact Hk1 | exact HF1Θ | exact Hκ ]).
       pose proof (forall_wf_mono_images_dom HF1) as HF1d.
-      assert (Hκw1 : forall α0, a_flex_tvar (Ξ1 ++ Θ0) α0 ->
-                ftvar_in_ptyp (msubst_lookup (κ1 ++ κ) α0) [<=] dom Θw).
-      { intros α0 Hf. apply msubst_lookup_ftv_app; [ exact HF1d | ].
-        intros Hn1. apply Hκw.
-        assert (Hns : α0 `notin` dom Ξ1) by (clear - Hn1 Hd1; fsetdec).
-        destruct Hf as [Hb | (τ0 & Hb)]; [ left | right; exists τ0 ];
-          (apply binds_app_1 in Hb; destruct Hb as [Hb | Hb];
-           [ exfalso; apply binds_In in Hb; clear - Hb Hns; fsetdec
-           | exact Hb ]). }
+      destruct (solve_scope_flex_prefix (conj Hmon (conj Hnr Hκw)) Hk1 HF1d)
+        as (_ & _ & Hκw1).
       (* the LEFT block misses Pi2 and P02 (both Θ0-scoped), so prefixing κ1
          moves neither the precision nor the refinement premise *)
       assert (Htr2 : msubst_pskl (κ1 ++ κ) Pi2 = msubst_pskl κ Pi2).
@@ -2349,20 +2331,9 @@ Proof.
         (* the Θw pack under the binder: [Θw] itself does NOT move, and the
            only condition Δρ's growth touches is [HΔρw] — β is a rigid picked
            fresh for Θ ⊇ Θw *)
-        assert (HβΘw : β `notin` dom Θw)
-          by (pose proof (@aenv_binds_dom_sub Θw Θ Hmon) as Hdw;
-              clear - Hdw HβΘ; fsetdec).
-        assert (Hmonβ : forall x b, binds x b Θw ->
-                  binds x b ((β ~ abind_tvar) ++ Θ))
-          by (intros x b Hb; apply binds_app_3; apply Hmon; exact Hb).
-        assert (Hnrβ : forall x b, binds x b ((β ~ abind_tvar) ++ Θ) ->
-                  binds x b Θw \/ b = abind_tvar).
-        { intros x b Hb.
-          destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'];
-            [ right; exact Heq | exact (Hnr _ _ Hb') ]. }
-        assert (Hκwβ : forall α0, a_flex_tvar ((β ~ abind_tvar) ++ Θ0) α0 ->
-                  ftvar_in_ptyp (msubst_lookup κ α0) [<=] dom Θw)
-          by (intros α0 Hf; apply Hκw; eapply a_flex_tvar_strip_tvar; exact Hf).
+
+        destruct (solve_scope_open_tvar (conj Hmon (conj Hnr Hκw)) HβΘ)
+          as (HβΘw & Hmonβ & Hnrβ & Hκwβ).
         assert (HΔρwβ : (add β Δρ) ∩ dom Θw [=] empty)
           by (clear - HΔρw HβΘw; fsetdec).
         assert (HLavβ : ftvar_in_aenv ((β ~ abind_tvar) ++ Θ0) [<=] add β Lav)
