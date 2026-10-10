@@ -272,13 +272,3 @@ Fixpoint uskl_to_utyp (R : uskl) : utyp :=
   | uskl_dot_univ_ghost _ => utyp_unit
   end.
 
-(* RESTART NOTE (deleted 2026-08-09, cleanup audit §5.2) — [pskl_to_dskl],
-   the DOTTED witness conversion, plus its [_open_rec] / [_open] lemmas.  It
-   sent a pskl's ghosts to DOTTED ghosts ([dot_ghost] / [dot_univ_ghost], which are
-   [is_dskl]) and was written for the ∀-instantiation in the pattern producer.
-   It had ZERO uses outside this file; whatever consumed it is gone.
-
-   ⚠️ It is NOT the same map as [pskl_to_uskl] (deco_algo/def_decorated.v),
-   which is live: that one sends [pskl_ghost] to the PLAIN [uskl_ghost] and
-   [pskl_univ_ghost] to [uskl_univ_ghost].  If a dotted witness is ever needed again,
-   re-derive it here — the two lemmas were three-line inductions. *)

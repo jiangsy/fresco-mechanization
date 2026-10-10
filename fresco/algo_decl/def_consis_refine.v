@@ -9,9 +9,8 @@
     by the soundness lemmas of appendix B (consistency-proofs.tex); the
     subtyping/typing layer follows with appendix C/D.
 
-    Naming: [ad_*] = the [d_*] judgment over an [aenv].  Notations mirror
-    the declarative ones (decl/notations.v legend) with an [ᵃ] mark on the
-    turnstile. *)
+    Naming: [ad_*] = the [d_*] judgment over an [aenv].  Notations are the
+    declarative ones with the [}}ad] delimiter (legend: fresco/notations.v). *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.

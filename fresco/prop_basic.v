@@ -13,7 +13,7 @@ Require Export src.fresco.prop_coercions.
 
 (** * Ghost-freeness — the TYPE sub-universe of [pskl] / [bskl].
 
-    [pskl_ghost_free] (fresco/predicates.v) is how the algorithmic rules say
+    [pskl_ghost_free] (fresco/def_shapes.v) is how the algorithmic rules say
     "this position is one of the paper's [A] / [B], not one of its [P] / [Q]".
     The purely syntactic half of its kit lives here, where the RULE
     definitions (algo/def_rules.v) and the proofs that CONSTRUCT them can
@@ -42,19 +42,6 @@ Proof.
   - destruct (IHP Hg) as [A ->]. exists (ptyp_all A); reflexivity.
 Qed.
 
-Lemma pskl_ghost_free_open_rec : forall P α' k,
-  pskl_ghost_free P ->
-  pskl_ghost_free (open_pskl_wrt_pskl_rec k (pskl_var_f α') P).
-Proof.
-  induction P; intros α' k Hg; simpl in *; intuition.
-  destruct (lt_eq_lt_dec n k) as [[?|?]|?]; simpl; auto.
-Qed.
-
-Lemma pskl_ghost_free_open : forall P α',
-  pskl_ghost_free P ->
-  pskl_ghost_free (open_pskl_wrt_pskl P (pskl_var_f α')).
-Proof. intros P α' Hg; apply pskl_ghost_free_open_rec; exact Hg. Qed.
-
 (** Opening by an arbitrary GHOST-FREE skeleton — what [Sub-ForallL]'s
     instantiation needs ([guess^TY]'s output is a painted monotype). *)
 Lemma pskl_ghost_free_open_rec_gen : forall P P' k,
@@ -69,6 +56,17 @@ Lemma pskl_ghost_free_open_gen : forall P P',
   pskl_ghost_free P -> pskl_ghost_free P' ->
   pskl_ghost_free (open_pskl_wrt_pskl P P').
 Proof. intros P P' Hg Hg'; apply pskl_ghost_free_open_rec_gen; assumption. Qed.
+
+(** The variable instances. *)
+Lemma pskl_ghost_free_open_rec : forall P α' k,
+  pskl_ghost_free P ->
+  pskl_ghost_free (open_pskl_wrt_pskl_rec k (pskl_var_f α') P).
+Proof. intros; apply pskl_ghost_free_open_rec_gen; simpl; auto. Qed.
+
+Lemma pskl_ghost_free_open : forall P α',
+  pskl_ghost_free P ->
+  pskl_ghost_free (open_pskl_wrt_pskl P (pskl_var_f α')).
+Proof. intros; apply pskl_ghost_free_open_gen; simpl; auto. Qed.
 
 Lemma pskl_ghost_free_close_rec : forall P α k,
   pskl_ghost_free P ->
@@ -167,24 +165,15 @@ Proof.
   - exact IHP.
 Qed.
 
-(** * Mode/type compatibility.
-
-    ⚙ LIFTED here 2026-08-09: it was proved identically in
-    [algo/typing/prop_soundness_typing.v] and [decl/prop_syntax_directed.v],
-    which do not see each other.  [mod_comp_ty] is declared in
-    [fresco/def_shapes.v], so its properties belong in this file. *)
+(** * Mode/type compatibility ([mod_comp_ty], fresco/def_shapes.v). *)
 Lemma mod_comp_ty_tc_inv : forall B, mod_comp_ty B mode_tc -> is_ityp B.
 Proof. intros B H. inversion H; subst; assumption. Qed.
 
 (* ===================================================================== *)
 (*  HOLE-FREENESS is stable under the operations the rules perform         *)
 (*                                                                        *)
-(*  ⚙ The [_open] pair MOVED here 2026-08-16 from                          *)
-(*  algo/sub/look/prop_flex_apart.v, following the predicate itself        *)
-(*  (fresco/def_shapes.v): a consumer that needs ghost-freeness cannot be    *)
-(*  asked to import the subtyping-completeness chain.  [_subst] is new —   *)
-(*  ext_algo §8c.10 needs it for [Assign-Assign] / [Flex-Flex-Assign],     *)
-(*  whose recursion substitutes a definition PAYLOAD into the skeletons.   *)
+(*  [_subst] serves ext_algo §8c.10 ([Assign-Assign] / [Flex-Flex-Assign], *)
+(*  whose recursion substitutes a definition PAYLOAD into the skeletons).  *)
 (* ===================================================================== *)
 
 Lemma pskl_no_ghost_open_rec : forall P P' k,

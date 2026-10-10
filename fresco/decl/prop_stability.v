@@ -34,7 +34,7 @@ Lemma d_typing_var_ti_consis : forall Γ x A B1,
     d_wf_denv Γ ->
     binds x (dbind_typ A) Γ ->
     {{ Γ ⊢[ mode_ti ] (exp_var_f x) ⦂ B1 }}d ->
-    is_styp B1 /\ exists Δt, {{ Δt ⨟ Γ ⊢ ptyp_to_utyp_syn A ∼ B1 }}d.
+    is_styp B1 /\ exists Ψt, {{ Ψt ⨟ Γ ⊢ ptyp_to_utyp_syn A ∼ B1 }}d.
 Proof.
   intros Γ x A B1 Hwf Hb Htyp.
   assert (Huniq : uniq Γ) by (apply d_wf_denv_uniq; exact Hwf).
@@ -54,15 +54,15 @@ Proof.
       rename H into Hsub end.
     inversion Hsub as [ Ψ0 Γ0 C0 B0 Hcons0 Hstyp0 HΨ0 | | | | | ]; subst;
       try congruence.
-    edestruct IHHtyp as [Hstyp1 [Δt Hcons1]]; auto.
+    edestruct IHHtyp as [Hstyp1 [Ψt Hcons1]]; auto.
     split; [ exact Hstyp0 | ].
-    (* Hcons1 : Δt ⊢ ptyp_to_utyp_syn A ∼ ptyp_to_btyp_syn A0  (inner syn type)
+    (* Hcons1 : Ψt ⊢ ptyp_to_utyp_syn A ∼ ptyp_to_btyp_syn A0  (inner syn type)
        Hcons0 : Ψ0 ⊢ ptyp_to_utyp_syn A0 ∼ B                  (sub premise, infer)
        compose at the common middle [A0]. *)
-    edestruct d_consis_compose as [Δc [_ Hc]].
+    edestruct d_consis_compose as [Ψc [_ Hc]].
     + exact Hcons1.
     + exact Hcons0.
-    + exists Δc. exact Hc.
+    + exists Ψc. exact Hc.
 Qed.
 
 (** A curried function type [A1 → … → An → R] built from a list of
@@ -246,11 +246,11 @@ Definition spine_btyp (Rb : btyp) (sp : list (utyp * btyp)) : btyp :=
     commute the two without reproving disjointness). *)
 Lemma d_sub_arrow_spine_perm : forall sp sp',
     Permutation sp sp' ->
-    forall Δ Γ Ct Bb m,
-      {{ Δ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] spine_utyp Ct sp ⩽ spine_btyp Bb sp }}d ->
-      {{ Δ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] spine_utyp Ct sp' ⩽ spine_btyp Bb sp' }}d.
+    forall Ψ Γ Ct Bb m,
+      {{ Ψ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] spine_utyp Ct sp ⩽ spine_btyp Bb sp }}d ->
+      {{ Ψ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] spine_utyp Ct sp' ⩽ spine_btyp Bb sp' }}d.
 Proof.
-  intros sp sp' Hperm. induction Hperm; intros Δ Γ Ct Bb m Hsub.
+  intros sp sp' Hperm. induction Hperm; intros Ψ Γ Ct Bb m Hsub.
   - (* nil *) exact Hsub.
   - (* skip x : sp = x::l, sp' = x::l' *)
     simpl in Hsub |- *.
@@ -259,11 +259,11 @@ Proof.
       [ exact Hcons | apply IHHperm; exact Hrest | exact HΔ ].
   - (* swap x y : sp = y::x::l, sp' = x::y::l *)
     simpl in Hsub |- *.
-    inversion Hsub as [ | | | Ψ0 Δy Δyr Γ0 m0 Cy C2 By B2 Hcy Hyr HΔyr | | ]; subst.
-    inversion Hyr as [ | | | Ψ0' Δx Δl Γ0' m0' Cx C2' Bx B2' Hcx Hl HΔl | | ]; subst.
-    apply d_sub__arg with (Ψ1 := Δx) (Ψ2 := (Δy `union` Δl));
+    inversion Hsub as [ | | | Ψ0 Ψy Ψyr Γ0 m0 Cy C2 By B2 Hcy Hyr HΔyr | | ]; subst.
+    inversion Hyr as [ | | | Ψ0' Ψx Ψl Γ0' m0' Cx C2' Bx B2' Hcx Hl HΔl | | ]; subst.
+    apply d_sub__arg with (Ψ1 := Ψx) (Ψ2 := (Ψy `union` Ψl));
       [ exact Hcx
-      | apply d_sub__arg with (Ψ1 := Δy) (Ψ2 := Δl);
+      | apply d_sub__arg with (Ψ1 := Ψy) (Ψ2 := Ψl);
           [ exact Hcy | exact Hl | reflexivity ]
       | fsetdec ].
   - (* trans *)
@@ -344,15 +344,15 @@ Proof. destruct n; intros m H; [ lia | exists (mode_fn_n n m); reflexivity ]. Qe
 
 (** At a function mode, a [utyp_all_syn] LHS can only be subtyped via the
     untagged [∀]-left rule. *)
-Lemma d_sub_fn_all_syn_inv : forall Δ Γ m C B,
-    {{ Δ ⨟ Γ ⊢[ mode_fn m ] (utyp_all_syn C) ⩽ B }}d ->
+Lemma d_sub_fn_all_syn_inv : forall Ψ Γ m C B,
+    {{ Ψ ⨟ Γ ⊢[ mode_fn m ] (utyp_all_syn C) ⩽ B }}d ->
     exists Ψ' C',
-      Ψ' ∩ Δ [=] empty /\
+      Ψ' ∩ Ψ [=] empty /\
       Ψ' ∩ (ftag_in_utyp (utyp_all_syn C)) [=] empty /\
       d_tags Ψ' C' /\ {{ Γ ⊢ᵤ C' }}d /\ is_dtyp C' /\
-      {{ (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn m ] (open_utyp_wrt_utyp C C') ⩽ B }}d.
+      {{ (Ψ `union` Ψ') ⨟ Γ ⊢[ mode_fn m ] (open_utyp_wrt_utyp C C') ⩽ B }}d.
 Proof.
-  intros Δ Γ m C B Hsub.
+  intros Ψ Γ m C B Hsub.
   inversion Hsub as [ | | | | | Ψ0 Ψ' Γ0 m0 C0 C' B0 Hm Hfresh Hhyg Htags Hwfph Httyp Hpre ];
     subst.
   exists Ψ', C'.
@@ -361,16 +361,16 @@ Proof.
 Qed.
 
 (** Same, at the [k]-fold function mode. *)
-Lemma d_sub_fnn_all_syn_inv : forall n m Δ Γ C B,
+Lemma d_sub_fnn_all_syn_inv : forall n m Ψ Γ C B,
     1 <= n ->
-    {{ Δ ⨟ Γ ⊢[ mode_fn_n n m ] (utyp_all_syn C) ⩽ B }}d ->
+    {{ Ψ ⨟ Γ ⊢[ mode_fn_n n m ] (utyp_all_syn C) ⩽ B }}d ->
     exists Ψ' C',
-      Ψ' ∩ Δ [=] empty /\
+      Ψ' ∩ Ψ [=] empty /\
       Ψ' ∩ (ftag_in_utyp (utyp_all_syn C)) [=] empty /\
       d_tags Ψ' C' /\ {{ Γ ⊢ᵤ C' }}d /\ is_dtyp C' /\
-      {{ (Δ `union` Ψ') ⨟ Γ ⊢[ mode_fn_n n m ] (open_utyp_wrt_utyp C C') ⩽ B }}d.
+      {{ (Ψ `union` Ψ') ⨟ Γ ⊢[ mode_fn_n n m ] (open_utyp_wrt_utyp C C') ⩽ B }}d.
 Proof.
-  intros n m Δ Γ C B Hpos Hsub.
+  intros n m Ψ Γ C B Hpos Hsub.
   destruct (mode_fn_n_ge1_fn m Hpos) as [m' Hm']. rewrite Hm' in Hsub.
   apply d_sub_fn_all_syn_inv in Hsub as [Ψ' [C' [Hf [Hh [Ht [Hw [Hi Hp]]]]]]].
   exists Ψ', C'. rewrite Hm'.
@@ -415,11 +415,11 @@ Qed.
 Lemma d_sub_prefix_spine_perm : forall j sp sp',
     Permutation sp sp' ->
     1 <= length sp ->
-    forall Δ Γ Ct Bb m,
-      {{ Δ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] (utyp_all_syn_n j (spine_utyp Ct sp)) ⩽ spine_btyp Bb sp }}d ->
-      {{ Δ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] (utyp_all_syn_n j (spine_utyp Ct sp')) ⩽ spine_btyp Bb sp' }}d.
+    forall Ψ Γ Ct Bb m,
+      {{ Ψ ⨟ Γ ⊢[ mode_fn_n (length sp) m ] (utyp_all_syn_n j (spine_utyp Ct sp)) ⩽ spine_btyp Bb sp }}d ->
+      {{ Ψ ⨟ Γ ⊢[ mode_fn_n (length sp') m ] (utyp_all_syn_n j (spine_utyp Ct sp')) ⩽ spine_btyp Bb sp' }}d.
 Proof.
-  induction j as [ | j IHj ]; intros sp sp' Hperm Hpos Δ Γ Ct Bb m Hsub.
+  induction j as [ | j IHj ]; intros sp sp' Hperm Hpos Ψ Γ Ct Bb m Hsub.
   - simpl in Hsub |- *. eapply d_sub_arrow_spine_perm; eassumption.
   - assert (Hle : length sp = length sp') by (apply Permutation_length; assumption).
     assert (Hpos' : 1 <= length sp') by (rewrite <- Hle; exact Hpos).

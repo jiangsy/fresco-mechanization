@@ -1,13 +1,14 @@
 (** Fresco — paper-faithful scoped notations (cross-system).
 
-    This file exports notations that depend ONLY on the cross-system
-    definitions (def_ott / prop_ln / def_extra). Notations for declarative
-    judgments live in `fresco/decl/notations.v` to avoid a circular import
-    (decl/def_rules.v → fresco/notations.v).
+    This file declares the notation scopes and the notations that depend ONLY
+    on the generated syntax (def_ott / prop_ln).  Each judgement's own
+    notation is bound on its `Inductive` by a `where` clause in the matching
+    `def_*.v`, following the legend below.
 
     Conventions:
     - Greek letters in the paper map to the same letters here (Γ, Δ, Ψ, ε, φ, ψ).
-    - Mode subscripts are written as `⊢[ M ]`; subtyping writes the tag context first as `Δ ⨟ Γ ⊢[ M ]`.
+    - Mode subscripts are written as `⊢[ M ]`; subtyping writes the tag
+      context first, as `Ψ ⨟ Γ ⊢[ M ]`.
 
     ** THE JUDGEMENT LEGEND — the system is the DELIMITER, not the turnstile.
 
@@ -205,24 +206,7 @@ Notation "X ∖ Y" := (AtomSetImpl.diff X Y)
 
 Notation "x ∉ L" := (x `notin` L) (at level 70, no associativity).
 
-Notation "` α" := (ptyp_var_f α)
-  (at level 0, α at level 0, no associativity) : type_scope.
-
 Notation "⌈ e ⌉" := (exp_freeze e) (at level 0, e at level 0) : type_scope.
-
-(** ** Substitution. *)
-
-Notation "{ A' ᵗ/ₜ α } A" :=
-  (subst_ptyp_in_ptyp A' α A)
-    (at level 49, A' at level 50, α at level 0, right associativity) : type_scope.
-
-Notation "{ e' ᵉ/ₑ x } e" :=
-  (subst_exp_in_exp e' x e)
-    (at level 49, e' at level 50, x at level 0, right associativity) : type_scope.
-
-Notation "{ A ᵉ/ₜ α } e" :=
-  (subst_ptyp_in_exp A α e)
-    (at level 49, A at level 50, α at level 0, right associativity) : type_scope.
 
 Lemma inter_empty_pointwise : forall Δ Δ',
   (forall α, α `in` Δ -> α `notin` Δ') ->

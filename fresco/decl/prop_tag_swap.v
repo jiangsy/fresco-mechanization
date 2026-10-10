@@ -10,7 +10,7 @@
     fuel mirror [ad_pat_sub_fuel] — now render it that way, and THIS FILE
     is what pays for it: the one place the strong reading is not free is
     [d_consis_sub_trans_mid] (CST, prop_general_subsumption.v), whose ForallL
-    case transports along [utyp_tag_refines], where the subject GAINS tags.
+    case transports along [utyp_tag_refines_in], where the subject GAINS tags.
     See docs/PAPER-GAPS.md and docs/HANDOFF-closed-corollaries-declarative.md.
 
     ⭐ THE PRIMITIVE IS A SWAP, NOT A ONE-WAY RENAME.  A rename [ε1 ↦ ε2] is
@@ -43,18 +43,9 @@
     derivation runs at the empty tag context with a PAINTED (hence tag-free)
     subject.
 
-    ⚙ RESTART NOTE (2026-08-11) — three statements were DELETED as
-    consumer-less once §3-§4 landed, and each is cheap to re-derive:
-    [d_sub_swap_tag] and [d_pat_sub_swap_tag] (§3's [d_sub_tagsin_swap_tag]
-    is the same proof with the [Ψ' ⊆ U] row carried, and [d_sub_to_tagsin]
-    recovers the plain statement from it), together with [d_pat_consis_swap_tag]
-    / [d_tags_skl_swap_tag] / [d_wf_uskl_swap_tag], which served only the
-    skeleton one; [d_sub_freshen_forall_l], the per-node freshening the
-    paragraph above explains cannot be chained; and [d_sub_tagsin_of], the
-    twin's forgetful direction — CST goes the other way, and it was here only
-    as the round-trip certificate (its one non-trivial step is regenerating
-    [d_sub]'s cofinite [ForallR] from the twin's exists-fresh one, which is
-    [d_sub_rename_tvar]).
+    ⚙ Not provided, as consumer-less: the plain [d_sub_swap_tag] (it is
+    [d_sub_tagsin_swap_tag] with the [Ψ' ⊆ U] row dropped) and its skeleton
+    twins, and the twin's forgetful direction [d_sub_tagsin -> d_sub].
 
     ⚙ Each equivariance statement threads its tag context as [Ψs [=] swap Ψ]
     rather than substituting, because the rules state their contexts up to

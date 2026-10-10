@@ -38,18 +38,10 @@
 
     ⚙ WHY IT LIVES HERE.  It relates the DECLARATIVE system to the
     decl-in-algo one, and [algo_decl/] is where the decl-in-algo layer lives,
-    so this is its home.  ⚠️ It was filed under [algo/typing/] when it was
-    written, on the theory that needing [btyp_to_bskl_open]
-    (algo/pat/prop_soundness_pat.v) and [guarded_pskl_lc]
-    (algo/sub/prop_solve_sub.v) would invert the layering.  It does not: the
-    DEFINITION layers point one way ([algo/def_*] -> [algo_decl/def_*] and
-    [deco_algo/def_*], never back), while the PROOF layers already interleave —
-    [deco_algo/prop_soundness_sub.v] reaches into
-    [algo/consis/prop_soundness_consis.v], [algo/prop_pat_sub.v],
-    [algo/prop_refine.v] and [algo/prop_stability.v].  Moved to the (then
-    undivided) decorated-algo layer 2026-08-11, and to [algo_decl/] when that
-    layer was split into [algo_decl/] (the `ad_*` decl-in-algo judgements) and
-    [deco_algo/] (the paper's `da` decorated-algorithmic system).
+    so this is its home.  Importing [algo/] PROOF files does not invert the
+    layering: the DEFINITION layers point one way ([algo/def_*] ->
+    [algo_decl/def_*] and [deco_algo/def_*], never back), while the PROOF
+    layers already interleave.
 
     ⚙ NO [Set Implicit Arguments] HERE, deliberately.  Every translation
     threads its context as an EQUATION ([Θ = denv_to_aenv Γ]) so that the
@@ -91,9 +83,8 @@ Require Import src.fresco.algo.prop_basic.
 (* ===================================================================== *)
 (*  §0  THE CONTEXT EMBEDDING                                             *)
 (*                                                                        *)
-(*  ⚙ No notation, deliberately — like [ad_pat_sub_v] this is a           *)
-(*  mech-internal device, not a paper judgement, and the paper's own       *)
-(*  ⌈·⌉ brackets are already taken.                                        *)
+(*  ⚙ No notation, deliberately — this is a mech-internal device, not a   *)
+(*  paper judgement, and the paper's own ⌈·⌉ brackets are already taken.   *)
 (* ===================================================================== *)
 
 Definition abind_of_dbind (d : dbind) : abind :=
@@ -227,7 +218,7 @@ Qed.
 (** ⭐ The DECLARATIVE side of the problem definition's "M wf" — the
     [a_wf_exp] judgement (algo/pat/prop_soundness_pat.v §1) verbatim, with
     [d_wf_ptyp] reading the annotations.  It exists so the paper-facing
-    corollaries (prop_run_corollaries.v §5/§6) can state their subject
+    corollaries (ext_algo/prop_run_corollaries.v §5/§6) can state their subject
     hypothesis in the DECLARATIVE system; the two bridges below make it
     interchangeable with [{{ denv_to_aenv Γ ⊢ᵉ e }}a] — at the closed
     entry point, with [{{ nil ⊢ᵉ e }}a]. *)
@@ -555,14 +546,7 @@ Proof.
   - apply ad_refine_pskl__univ_ghost_keep; auto.
 Qed.
 
-(** the two shapes the subtyping rows actually use: Δ empty on both sides *)
-Lemma ad_refine_pskl_to_d_closed : forall Γ P P',
-  ad_refine_pskl (denv_to_aenv Γ) empty P P' -> d_refine_pskl Γ empty P P'.
-Proof.
-  intros Γ P P' H.
-  exact (ad_refine_pskl_to_d (denv_to_aenv Γ) empty P P' H Γ eq_refl).
-Qed.
-
+(** the shape the subtyping rows actually use: Δ empty *)
 Lemma d_refine_pskl_to_ad_closed : forall Γ P P',
   d_refine_pskl Γ empty P P' -> ad_refine_pskl (denv_to_aenv Γ) empty P P'.
 Proof.
@@ -575,7 +559,7 @@ Lemma ad_consis_join_to_d : forall Ψ Θ R Q,
 Proof.
   intros Ψ Θ R Q [Hc Hr] Γ0 HΘ; subst. split.
   - exact (ad_pat_consis_to_d Ψ (denv_to_aenv Γ0) R Q Hc Γ0 eq_refl).
-  - apply ad_refine_pskl_to_d_closed; assumption.
+  - eapply ad_refine_pskl_to_d; [ eassumption | reflexivity ].
 Qed.
 
 Lemma d_consis_join_to_ad : forall Ψ Γ R Q,
@@ -737,13 +721,10 @@ Qed.
 (*  §7  SKELETON SUBTYPING  [ad_pat_sub] at N = SK ⇄ [d_pat_sub].         *)
 (* ===================================================================== *)
 
-(** ⚠️⚠️ THE SOURCE IS THE LEAF-VALID MIRROR, not the plain join, and it has to
-    be.  Since 2026-08-11 [d_pat_sub]'s three consistency-bearing rows carry the
-    paper's presupposition on skeleton consistency (declarative.tex:2074), which
-    [ad_pat_sub] itself supplies since 2026-08-12, at exactly those rows.  ⚙ It
-    used to be statable only over the fuelled mirror, because the plain
-    relation did not carry the datum (cex/cex_ad_pat_join_not_leaf_valid.v)
-    — the fuel was never what the proof needed, only the datum was. *)
+(** [d_pat_sub]'s three consistency-bearing rows carry the paper's
+    presupposition on skeleton consistency (declarative.tex:2074), which
+    [ad_pat_sub] supplies at exactly those rows.  Without it the plain join
+    would not carry the datum (cex/cex_ad_pat_join_not_leaf_valid.v). *)
 Lemma ad_pat_sub_sk_to_d : forall NM M Ψ Θ R Q,
   ad_pat_sub NM M Ψ Θ R Q -> NM = a_sub_mode_sk ->
   forall Γ, Θ = denv_to_aenv Γ -> d_pat_sub M Ψ Γ R Q.
@@ -789,14 +770,9 @@ Proof.
 Qed.
 
 (** ⭐ THE DIRECTION THE COMPLETENESS BRIDGE NEEDS, at the SK sort: a
-    declarative skeleton join IS a LEAF-VALID one.  Since 2026-08-11 there is
-    nothing to recover — the leaf datum is the paper's presupposition, carried
-    on the rule, so it crosses by [d_refine_pskl_to_ad_closed] and the only
-    work left is COLLECTING the fuel.
-
-    ⚙ And the fuel is easy HERE, unlike §13's type-sorted twin: [d_pat_sub] has
-    no cofinite row (its ForallR is a TY-only rule), so one [n] per premise
-    suffices and no renaming is needed. *)
+    declarative skeleton join IS a LEAF-VALID one.  There is nothing to
+    recover — the leaf datum is the paper's presupposition, carried on the
+    rule, so it crosses by [d_refine_pskl_to_ad_closed]. *)
 
 Lemma d_pat_sub_to_ad : forall M Ψ Γ R Q,
   d_pat_sub M Ψ Γ R Q -> ad_pat_sub a_sub_mode_sk M Ψ (denv_to_aenv Γ) R Q.
@@ -850,34 +826,6 @@ Proof.
   - apply is_ityp__all with (L := L). intros α Hα.
     apply (H0 α Hα (open_btyp_wrt_btyp B0 (btyp_var_f α))).
     rewrite btyp_to_bskl_open; reflexivity.
-Qed.
-
-Lemma lc_utyp_of_lc_uskl_incl : forall R,
-  lc_uskl R -> forall C, R = utyp_to_uskl C -> lc_utyp C.
-Proof.
-  intros R H; induction H; intros C0 HR;
-    destruct C0; simpl in HR; try discriminate HR; inversion HR; subst;
-    try solve [ constructor ].
-  - apply lc_utyp_arrow; [ apply IHlc_uskl1 | apply IHlc_uskl2 ]; reflexivity.
-  - apply lc_utyp_all_syn. intros α.
-    apply (H0 α (open_utyp_wrt_utyp C0 (utyp_var_f α))).
-    symmetry; apply utyp_to_uskl_open_var.
-  - apply lc_utyp_all_tag. intros α.
-    apply (H0 α (open_utyp_wrt_utyp C0 (utyp_var_f α))).
-    symmetry; apply utyp_to_uskl_open_var.
-Qed.
-
-Lemma guarded_utyp_of_guarded_uskl_incl : forall C,
-  guarded_uskl (utyp_to_uskl C) -> guarded_utyp C.
-Proof.
-  intros C H; destruct C; simpl in H; inversion H; subst.
-  - apply guarded_utyp__unit.
-  - apply guarded_utyp__var.
-  - apply guarded_utyp__arrow;
-      [ apply (lc_utyp_of_lc_uskl_incl (utyp_to_uskl C1));
-          [ assumption | reflexivity ]
-      | apply (lc_utyp_of_lc_uskl_incl (utyp_to_uskl C2));
-          [ assumption | reflexivity ] ].
 Qed.
 
 (** [Check]'s target: an inherited painting that is also a [btyp]'s skeleton
@@ -1007,10 +955,6 @@ Proof.
   - (* FlexMono *) exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
 Qed.
 
-(** The two forms in which the base rows of [ad_pat] / [ad_sd_typing] carry
-    their join: the LEAF-VALID [ad_pat_sub_v], whose extra data the plain
-    declarative rules do not ask for and which is therefore simply forgotten
-    ([ad_pat_sub_of_fuel]). *)
 (* ===================================================================== *)
 (*  §9  SKELETON INFERENCE  [ad_pat] -> [d_pat].                          *)
 (* ===================================================================== *)
@@ -1288,64 +1232,26 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §12  THE COMPLETENESS DIRECTION: how far it reaches, and where it     *)
-(*  stops.                                                                *)
+(*  §12  THE COMPLETENESS DIRECTION  [d_] → [ad_].                        *)
 (*                                                                        *)
-(*  ⚠️ [paper-gap] The [d_] → [ad_] direction — what a completeness        *)
-(*  corollary stated over [d_sd_typing] would need — is NOT closed.  Two  *)
-(*  obstructions were recorded here; ⭐ (B) IS NOW GONE (2026-08-11), so   *)
-(*  what remains is (A) alone:                                            *)
-(*                                                                        *)
-(*  (A) THE LEAF-VALID DATUM.  [ad_pat] / [ad_sd_typing] embed            *)
-(*      [ad_pat_sub_v], whose consistency leaves additionally carry the   *)
-(*      subject's refinement [{{ Θ ⨟ ∅ ⊢ᵣₚ ⌊R⌋ˢ ⊳ ⌊Q⌋ }}ad]; [d_pat] /    *)
-(*      [d_sd_typing] embed the PLAIN join, from which the datum is not   *)
-(*      recoverable in general — the capture configuration (subject       *)
-(*      [∀X.◇], counterpart [∀ˢX.X]) has a plain join and provably no     *)
-(*      leaf-valid one (cex/cex_ad_pat_join_not_leaf_valid.v).            *)
-(*      ⭐ The OPEN half of that question is settled positively: at a     *)
-(*      GHOST-FREE subject the datum IS                                   *)
-(*      derivable, from consistency alone.  Since [ad_sd_typing]'s three  *)
-(*      base rows join [ptyp_to_uskl_syn A] — the painting of a [ptyp],   *)
-(*      which has no ghosts — TYPING's own base rows are never the        *)
-(*      obstruction.  What is left is exactly [ad_pat]'s P-Var at a       *)
-(*      SKELETON entry [x : P] with a ghost under a ∀, which [ad_pat__abs]*)
-(*      may introduce with any well-formed [P] and which [d_sd_typing]    *)
-(*      reaches through its App rule's [d_pat] premise.                   *)
-(*                                                                        *)
-(*  (B) TAG HYGIENE — ✅ RESOLVED 2026-08-11, and it used to be the       *)
-(*      DEEPER of the two.  The paper's prose "fresh Ψ'" means GLOBAL     *)
-(*      freshness (fresh from the SUBJECT's syntactic tags, not only from *)
-(*      the tag context — the two come apart at the Arrow split, and      *)
-(*      precision-substitution is FALSE over the weak reading).  Only the *)
-(*      fuel mirrors used to say so; now [d_sub], [d_pat_sub] and         *)
-(*      [ad_pat_sub] carry the same premise, so both sorts line up and    *)
-(*      the [ad_pat_sub_sk_to_d] / [ad_pat_sub_ty_to_d] rows above        *)
-(*      transport it verbatim (across the sorts via [ftag_utyp_to_uskl]). *)
-(*      What paid for it: decl/prop_tag_swap.v §4-§5 — collect a         *)
-(*      derivation's instantiation tags into ONE bound, then move them    *)
-(*      wholesale by transposition — which is what CST                    *)
-(*      ([d_consis_sub_trans_mid]) needs, its ForallL case transporting   *)
-(*      along [utyp_tag_refines] where the subject GAINS tags.            *)
-(*      ⚠️ WHAT IS STILL OWED in this neighbourhood is a FUEL question,    *)
-(*      not a hygiene one: [ad_pat_sub] → [ad_pat_sub_fuel].                *)
-(* ===================================================================== *)
-
-(* ===================================================================== *)
-(*  §13  THE LEAF-VALID UPGRADE.                                          *)
-(*                                                                        *)
-(*  ⚙ RETIRED 2026-08-12.  This section used to hold [ad_pat_sub_ty_to_v], *)
-(*  which upgraded a plain join to the leaf-valid one at [N = TY] over a   *)
-(*  DECLARATIVE context and a GHOST-FREE subject — three hypotheses it     *)
-(*  needed only because it had to RECOVER the leaf datum at every leaf     *)
-(*  ([d_pat_consis_subject_refine_closed]), and the SK sort was left open  *)
-(*  (obstruction (A) of docs/HANDOFF-closed-corollaries-declarative.md).   *)
-(*                                                                        *)
-(*  ⭐ ALL THREE HYPOTHESES ARE GONE, and with them the obstruction: since  *)
-(*  [ad_pat_sub] carries the leaf presupposition itself, the datum is a    *)
-(*  PREMISE of the row that needs it, and the upgrade is                   *)
-(*  [ad_pat_sub_to_fuel] (algo/sub/prop_soundness_subtag.v) — UNCONDITIONAL, at  *)
-(*  either sort, over any Θ.  Only the fuel is left to collect.            *)
+(*  Both obstructions this direction used to have are gone:               *)
+(*  (A) THE LEAF-VALID DATUM — [d_consis_join] and [ad_pat_sub] both      *)
+(*      carry the paper's presupposition on skeleton consistency          *)
+(*      (declarative.tex:2074) on the rule, so the datum crosses as a     *)
+(*      premise; the upgrade to the fuelled relation is                   *)
+(*      [ad_pat_sub_to_fuel] (algo/sub/prop_soundness_subtag.v),          *)
+(*      unconditional at either sort over any Θ.  Without the             *)
+(*      presupposition the datum is not recoverable: the capture          *)
+(*      configuration (subject [∀X.◇], counterpart [∀ˢX.X]) has a plain   *)
+(*      join and provably no leaf-valid one                               *)
+(*      (cex/cex_ad_pat_join_not_leaf_valid.v).                           *)
+(*  (B) TAG HYGIENE — the paper's "fresh Ψ'" means GLOBAL freshness       *)
+(*      (fresh from the SUBJECT's syntactic tags too; the two readings    *)
+(*      come apart at the Arrow split, and precision-substitution is      *)
+(*      FALSE over the weak one).  [d_sub], [d_pat_sub] and [ad_pat_sub]  *)
+(*      all carry it, so the rows transport it verbatim (across the sorts *)
+(*      via [ftag_utyp_to_uskl]); CST pays for it in                      *)
+(*      decl/prop_tag_swap.v §4-§5.                                       *)
 (* ===================================================================== *)
 
 (* ===================================================================== *)
@@ -1433,47 +1339,6 @@ Proof.
   intros α Hb. exact Hb.
 Qed.
 
-
-Lemma lc_pskl_of_lc_btyp : forall B,
-  lc_btyp B -> lc_pskl (bskl_to_pskl (btyp_to_bskl B)).
-Proof.
-  intros B H; induction H; simpl;
-    try solve [ constructor; assumption ].
-  - apply lc_pskl_all_syn. intro α.
-    rewrite <- bskl_to_pskl_open.
-    change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
-    rewrite <- btyp_to_bskl_open. auto.
-  - apply lc_pskl_all_syn. intro α.
-    rewrite <- bskl_to_pskl_open.
-    change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
-    rewrite <- btyp_to_bskl_open. auto.
-Qed.
-
-(** An INHERITED [btyp] paints as an inherited [pskl]: every ∀ it has is
-    [btyp_all_inh], and [pskl_to_bskl_inh] paints every ∀ that way. *)
-Lemma inh_paint_bskl : forall B,
-  is_ityp B ->
-  btyp_to_bskl B = pskl_to_bskl_inh (bskl_to_pskl (btyp_to_bskl B)).
-Proof.
-  intros B H; induction H; simpl; try reflexivity.
-  - f_equal; assumption.
-  - (* ⚙ the ∀ row's binder is the RULE's [A], not the statement's [B] *)
-    f_equal.
-    pick fresh α for (L `union` ftvar_in_btyp A
-                      `union` ftvar_in_bskl
-                                (pskl_to_bskl_inh
-                                   (bskl_to_pskl (btyp_to_bskl A)))).
-    apply open_bskl_wrt_bskl_inj with (α1 := α);
-      [ rewrite ftvar_btyp_to_bskl; clear - Fr; fsetdec
-      | clear - Fr; fsetdec | ].
-    (* push the opening through the two paintings on the RIGHT, then the
-       goal IS the cofinite hypothesis *)
-    rewrite <- pskl_to_bskl_inh_open, <- bskl_to_pskl_open.
-    change (bskl_var_f α) with (btyp_to_bskl (btyp_var_f α)).
-    rewrite <- btyp_to_bskl_open.
-    exact (H0 α ltac:(clear - Fr; fsetdec)).
-Qed.
-
 (** [Check]'s target on the [ad] side is spelt [inh{B'}] for a [pskl] [B'];
     an INHERITED, GUARDED [btyp] is exactly such a painting. *)
 Lemma guarded_ityp_inh_paint : forall B,
@@ -1494,7 +1359,7 @@ Qed.
     [uskl_ghost_free_incl] — the last of which is what [a_tags_sort__ty]
     demands and what makes this sort easy. *)
 (** ⭐ THE LEAF PRESUPPOSITION AT THE TY SORT IS REFLEXIVITY.  [ad_pat_sub]
-    demands the refinement at every consistency leaf (2026-08-12), and at
+    demands the refinement at every consistency leaf, and at
     [N = TY] it costs nothing: consistency preserves the plain erasure
     ([d_consis_btyp_erase]) and both sort inclusions agree with it
     (prop_coercions.v), so the two sides of the refinement are the SAME
@@ -1546,8 +1411,8 @@ Proof.
   - eapply d_consis_refine_ty; eassumption.
 Qed.
 
-(** ⚙ The [d_wf_utyp] premise is new with the leaf presupposition
-    (2026-08-12): §14's leaf rows now owe the refinement, and
+(** ⚙ The [d_wf_utyp] premise pays for the leaf presupposition: §14's
+    leaf rows owe the refinement, and
     [d_consis_refine_ty] discharges it by reflexivity given SCOPE.  It is the
     paper's usual external well-formedness, and the one call site
     ([base_row] below) has it — its subjects are paintings. *)
@@ -1623,7 +1488,7 @@ Qed.
 (*                                                                        *)
 (*  ⭐ Every rule but App goes through.  What the algorithmic rules ask    *)
 (*  for beyond the declarative ones is:                                   *)
-(*   - the LEAF-VALID join, which §13-§14 supply at [N = TY];             *)
+(*   - the LEAF-VALID join, which §14 supplies at [N = TY];               *)
 (*   - the appendix's four type-EQUIVALENCE premises, which are           *)
 (*     [a_tyequiv__refl] over a flexible-free Θ (§1) and so need only     *)
 (*     [lc_ptyp] — [d_sd_typing_target_lc], decl/prop_syntax_directed.v;  *)
@@ -1639,17 +1504,13 @@ Qed.
 (*  them — and the [sd-Anno] one is a real finding about the paper's      *)
 (*  §declarative figure, not bookkeeping.                                 *)
 (*                                                                        *)
-(*  ⭐ App WAS THE ONE HOLE, and it is now closed.  It used to carry the    *)
-(*  pointwise [d_pat] -> [ad_pat] bridge as a HYPOTHESIS, which is FALSE   *)
-(*  (cex/cex_d_pat_bridges_false.v at commit 09a1f0b) — so the lemma it    *)
-(*  guarded was vacuous.  What made the bridge false was the mechanisation *)
-(*  deferring the paper's presupposition on skeleton consistency; with     *)
-(*  that presupposition on the rules (decl/def_rules.v, 2026-08-11) the    *)
-(*  bridge is a rule-for-rule induction — [d_pat_to_ad] below.             *)
+(*  ⭐ App needs the pointwise [d_pat] -> [ad_pat] bridge.  It is FALSE    *)
+(*  without the paper's presupposition on skeleton consistency            *)
+(*  (cex/cex_d_pat_bridges_false.v); with that presupposition on the      *)
+(*  rules it is a rule-for-rule induction — [d_pat_to_ad] below.          *)
 (* ===================================================================== *)
 
-(** ⭐ THE BRIDGE THAT USED TO BE ASSUMED.  No hypothesis: with both of the
-    paper's presuppositions on the rules, [d_pat]'s rows and [ad_pat]'s match
+(** ⭐ No hypothesis: with both of the paper's presuppositions on the rules, [d_pat]'s rows and [ad_pat]'s match
     one for one, and each premise crosses by the §0-§7 translations. *)
 Lemma d_pat_to_ad : forall M Γ e Q,
   d_pat M Γ e Q -> ad_pat M (denv_to_aenv Γ) e Q.
@@ -1692,15 +1553,11 @@ Lemma aenv_tbinds_le_weaken_cons : forall Θ x (b : abind),
 Proof. intros Θ x b y c Hc Hy. apply binds_app_3; exact Hy. Qed.
 
 (** The three base rows all read the same way: the embedded [d_sub] becomes an
-    [ad_pat_sub] at the TY sort (§14), and its subject is a PAINTING, hence
-    ghost-free — but that no longer matters: [ad_pat_sub_to_fuel] collects the
-    fuel with no side condition at all (§13).
+    [ad_pat_sub] at the TY sort (§14).
 
     ⚙ [wftac] is what §14's leaf presupposition costs here, and it costs
     nothing: the subject is the painting of a [ptyp] the row already has
-    well-formed, so [d_wf_utyp_painting_syn] carries it across.  ⚙ The
-    second tactic argument — the subject's LOCAL CLOSURE, which the retired
-    ghost-freeness branch needed — went with §13. *)
+    well-formed, so [d_wf_utyp_painting_syn] carries it across. *)
 Ltac base_row wftac :=
   (* ⚙ [ptyp_to_uskl_syn] is a Definition, so the goal never displays the
      [bskl_to_uskl (pskl_to_bskl_syn …)] form the coercion lemma rewrites *)

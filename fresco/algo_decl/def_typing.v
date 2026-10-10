@@ -32,7 +32,7 @@
                                                conclusion's domain)
       [sdtylab{AbsAnno}]       [{{ Θ ⊢ A ≡ᵗ A' }}a]  (same, in the non-check modes)
 
-    ⭐ LEAF-VALID EMBEDDING (2026-08-07, hand-off §6.2; RESHAPED 2026-08-12).
+    ⭐ LEAF-VALID EMBEDDING.
     The three BASE rows of each judgement embed the join with its LEAF DATUM.
     thm:complete-subtyping can only CONSUME a leaf-valid join, and the capture
     configuration (subject [∀X.◇], counterpart [∀ˢX.X]) shows the datum is NOT
@@ -40,11 +40,8 @@
     cex/cex_ad_pat_join_not_leaf_valid.v.  This is the paper's own AUGMENTED
     consistency-solution notion propagating one layer up.
 
-    ⚙ These rows used to embed [ad_pat_sub_v] — [exists n, ad_pat_sub_fuel n …]
-    — because the datum lived only on the fuelled mirror, so a fuel had to be
-    named (and then hidden) just to carry it.  Since [ad_pat_sub] carries the
-    presupposition itself, they embed [ad_pat_sub]: the PAPER'S OWN relation,
-    with no existential over a proof measure in the specification.
+    [ad_pat_sub] carries that datum itself, so the rows embed the PAPER'S
+    OWN relation, with no proof measure in the specification.
 
     ⚙ SORTS.  [ad_pat_sub] is the paper's ALL-IN-ONE subtyping box
     [typsub[N][M][Ψ]] — one judgement over [uskl]/[bskl] carrying the paper's
@@ -55,8 +52,8 @@
     skeleton sorts ([ptyp_to_uskl_syn] on the subject, [btyp_to_bskl] on the
     target) — the same embedding the subtyping flagships already use at TY.
 
-    Naming follows the layer: [ad_*] = the [d_*] judgement over an [aenv], with
-    an [ᵃ] mark on the turnstile. *)
+    Naming follows the layer: [ad_*] = the [d_*] judgement over an [aenv],
+    written with the [}}ad] delimiter. *)
 
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.

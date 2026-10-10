@@ -13,19 +13,40 @@ Require Import src.fresco.decl.def_rules.
 
 Set Implicit Arguments.
 
-(** [bskl_to_pskl] preserves guardedness ([guarded] only ranges over
-    unit / var / arrow, all of which [bskl_to_pskl] maps homomorphically;
-    the arrow case needs local-closure preservation [lc_bskl_to_pskl]). *)
-Lemma guarded_bskl_to_pskl : forall Q,
-    guarded_bskl Q -> guarded_pskl (bskl_to_pskl Q).
+(** * Refinement does not read its context.
+
+    No rule of [d_refine_syn] / [d_refine_pskl] consults [Γ] (the paper's
+    rules carry no scoping premise; well-formedness is an external
+    presupposition), so a derivation transports to ANY context.  This one
+    lemma replaces weakening, strengthening and every other context change. *)
+Lemma d_refine_syn_any_ctx : forall Γ Δ Q Q',
+    {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d -> forall Γ', {{ Γ' ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d.
 Proof.
-  intros Q H. induction H; simpl.
-  - apply guarded_pskl__unit.
-  - apply guarded_pskl__var.
-  - apply guarded_pskl__arrow; apply lc_bskl_to_pskl; assumption.
+  intros Γ Δ Q Q' H; induction H; intros Γ'.
+  - apply d_refine_syn__unit.
+  - apply d_refine_syn__var.
+  - apply d_refine_syn__arrow; auto.
+  - apply d_refine_syn__all with (L := L); [ assumption | ]. intros α Hα. auto.
+  - apply d_refine_syn__ghost. assumption.
+  - apply d_refine_syn__univ_ghost_remove; auto.
+  - apply d_refine_syn__univ_ghost_fill with (L := L); [ assumption | ].
+    intros α Hα. auto.
+  - apply d_refine_syn__univ_ghost_keep; auto.
 Qed.
 
-(** * list_disjoint algebra. *)
+Lemma d_refine_pskl_any_ctx : forall Γ Δ P P',
+    {{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}d -> forall Γ', {{ Γ' ⨟ Δ ⊢ᵣₚ P ⊳ P' }}d.
+Proof.
+  intros Γ Δ P P' H; induction H; intros Γ'.
+  - apply d_refine_pskl__unit.
+  - apply d_refine_pskl__var.
+  - apply d_refine_pskl__arrow; auto.
+  - apply d_refine_pskl__all with (L := L). intros α Hα. auto.
+  - apply d_refine_pskl__ghost. assumption.
+  - apply d_refine_pskl__univ_ghost_remove; auto.
+  - apply d_refine_pskl__univ_ghost_fill with (L := L). intros α Hα. auto.
+  - apply d_refine_pskl__univ_ghost_keep; auto.
+Qed.
 
 (** * Local closure for shape predicates. *)
 
@@ -45,22 +66,6 @@ Proof.
 Qed.
 
 (** * Coercion local-closure preservation. *)
-
-(** The synthesised painting of any locally-closed [ptyp] is synthesised
-    ([is_styp]): every ∀ becomes [btyp_all_syn].  (Induct on [lc_ptyp] so the
-    ∀ body's [is_styp] follows from the per-instance IH.) *)
-Lemma is_styp_ptyp_to_btyp_syn : forall A,
-    lc_ptyp A -> is_styp (ptyp_to_btyp_syn A).
-Proof.
-  intros A H. induction H; simpl.
-  - constructor.
-  - constructor.
-  - constructor; assumption.
-  - apply is_styp__all with (L := empty). intros α _.
-    change (btyp_var_f α) with (ptyp_to_btyp_syn (ptyp_var_f α)).
-    rewrite <- ptyp_to_btyp_syn_open.
-    match goal with H : forall _, is_styp _ |- _ => apply H end.
-Qed.
 
 (** [d_tags_skl] respects set-equality of the tag context. *)
 Lemma d_tags_skl_psi_cong : forall Ψ Ψ' ψ,
