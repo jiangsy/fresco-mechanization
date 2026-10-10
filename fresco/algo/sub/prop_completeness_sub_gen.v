@@ -1201,16 +1201,6 @@ Qed.
 (*  [ad_pat_consis_target_wf]; no new wf side conditions).                 *)
 (* ===================================================================== *)
 
-(** Every variable of a well-formed skeleton is Θ-bound (the [Δ] disjunct is
-    never needed under the current rules; see [a_wf_pskl_ftv_binds]). *)
-Lemma a_wf_pskl_ftv_binds_tvar : forall Θ Δ P α,
-  {{ Θ ⨟ Δ ⊢ₚₛ P }}a ->
-  α `in` ftvar_in_pskl P ->
-  α `in` Δ \/ a_binds_tvar α Θ.
-Proof.
-  intros Θ Δ P α Hwf Hα. right. exact (a_wf_pskl_ftv_binds Hwf Hα).
-Qed.
-
 (** Composing with an identity collapses on the identity's domain. *)
 Lemma msubst_compose_id_lookup : forall w ζ α,
   is_id_msubst w ->
@@ -1335,8 +1325,7 @@ Proof.
   { intros α Hα.
     assert (Hα' : α `in` ftvar_in_pskl ⌊ Rb ⌋ˢ)
       by (rewrite ftvar_in_pskl_uskl_to_pskl; exact Hα).
-    destruct (a_wf_pskl_ftv_binds_tvar HwfPb Hα') as [Hin | Hb];
-      [ exfalso; clear - Hin; fsetdec | exact Hb ]. }
+    exact (a_wf_pskl_ftv_binds HwfPb Hα'). }
   (* a rigid is outside both identity and package domains *)
   assert (Hnotflex : forall α, binds α abind_tvar Θ0 ->
             α `notin` dom w1 /\ α `notin` dom ζ1).
@@ -1838,11 +1827,9 @@ Proof.
       - assert (HβA0 : β `in` ftvar_in_pskl (ptyp_to_pskl A0))
           by (clear - Hβ Hup Hne; fsetdec).
         assert (HβΘ0 : β `in` dom Θ0).
-        { destruct (a_wf_pskl_ftv_binds_tvar HwfP0
+        { destruct (a_wf_pskl_ftv_binds HwfP0
                       (α := β) ltac:(simpl; clear - HβA0; solve_notin_auto))
-            as [Hin | Hbt];
-            [ exfalso; clear - Hin; fsetdec | ].
-          destruct Hbt as [Hb | [Hb | [τ Hb]]]; eapply binds_In; exact Hb. }
+            as [Hb | [Hb | [τ Hb]]]; eapply binds_In; exact Hb. }
         intro Hc. eapply HdisjΞ0; [ | exact HβΘ0 ].
         clear - Hdomκa Hc; fsetdec. }
     rewrite Hagree in Hprec'.
