@@ -335,7 +335,6 @@ Lemma a_looksub_solve_complete_leaf :
     α `notin` dom Ξc /\
     keys κc = keys Ξc /\
     Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
-    Forall (fun p => (ftvar_in_ptyp (snd p)) ∩ Δρ [=] empty) κc /\
     (* NB no [ftvar_in_a_cstrs] conjunct: the STRUCTURAL bound
        [ftv 𝒞 ⊆ ftv P0 ∪ dom Ξc] is already available to every consumer as
        [a_looksub_ftv] (prop_looksub.v).  P6-Cs carries a ψa-RELATIVE bound
@@ -411,7 +410,6 @@ Proof.
       - simpl. exact HwfΘ0.
       - simpl; clear; fsetdec.
       - apply Forall_nil.
-      - apply Forall_nil.
       - simpl. exact Hκ.
       - simpl. apply a_inc_equiv_refl; exact Hκ.
       - intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
@@ -482,7 +480,6 @@ Proof.
       simpl. exact HwfPa.
     - simpl. exact HwfΘ0.
     - simpl; clear; fsetdec.
-    - apply Forall_nil.
     - apply Forall_nil.
     - (* the a_inc: the collection block is empty, so only [κs] is prefixed *)
       simpl. apply a_inc_flex_prefix_build;
@@ -598,7 +595,6 @@ Definition looksub_solve_result
     α `notin` dom Ξc /\
     keys κc = keys Ξc /\
     Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
-    Forall (fun p => (ftvar_in_ptyp (snd p)) ∩ Δρ [=] empty) κc /\
     (κs ++ κc ++ κ) ∷ (Ξs ++ Ξc ++ Θ0) ⊑ Θ /\
     a_inc_equiv Θ0 κ κ Θ /\
     (forall α0, α0 `in` dom κc ->
@@ -636,7 +632,7 @@ Proof.
     destruct REC as (𝒞 & Ξc & Ξs & Pa & κc & κs
                      & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
                      & HwfPa & HwfΞ & HαΞ
-                     & Hmapfst & Himg & HimgΔ & Hinc & Hinceq & Hκfresh
+                     & Hmapfst & Himg & Hinc & Hinceq & Hκfresh
                      & Hprec & HftvC & HapartR).
     (* --- β-freeness of every output, then STRIP it --- *)
     pose proof (@keys_eq_dom _ _ κc Ξc Hmapfst) as Hdκ.
@@ -716,7 +712,6 @@ Proof.
       -- simpl. exact HwfΘ0.
       -- simpl; clear; fsetdec.
       -- apply Forall_nil.
-      -- apply Forall_nil.
       -- simpl. exact Hκ.
       -- simpl. apply a_inc_equiv_refl; exact Hκ.
       -- intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
@@ -777,9 +772,6 @@ Proof.
     -- (* α ∉ dom Ξc *) exact HαΞ.
     -- (* keys *) exact Hmapfst.
     -- (* κc images ⊆ ftv ψa *) exact Himg.
-    -- (* κc images ⊥ Δρ *)
-       rewrite Forall_forall in HimgΔ |- *. intros p Hp.
-       specialize (HimgΔ p Hp). clear - HimgΔ; fsetdec.
     -- (* a_inc — the strip peels BOTH blocks at once *)
        rewrite <- (aenv_app_assoc Ξs Ξc Θ0).
        rewrite <- (list_app_assoc κs κc κ).
@@ -909,11 +901,6 @@ Theorem a_looksub_solve_complete_gen :
     α `notin` dom Ξc /\
     keys κc = keys Ξc /\
     Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
-    (* …and κc's images avoid the ρ-replaced variables — P6-Cs's new output
-       conjunct, needed here for the same reason: Sub-Arrow's RIGHT branch
-       runs at [Pi := Pa1] under [κc1 ++ κ] and must re-establish the
-       ρ-freshness of its new Pi. *)
-    Forall (fun p => (ftvar_in_ptyp (snd p)) ∩ Δρ [=] empty) κc /\
     (* NB no [ftvar_in_a_cstrs] conjunct: the STRUCTURAL bound
        [ftv 𝒞 ⊆ ftv P0 ∪ dom Ξc] is already available to every consumer as
        [a_looksub_ftv] (prop_looksub.v).  P6-Cs carries a ψa-RELATIVE bound
@@ -1062,7 +1049,6 @@ Proof.
     + simpl. exact HwfΘ0.
     + simpl; clear; fsetdec.
     + apply Forall_nil.
-    + apply Forall_nil.
     + simpl. exact Hκ.
     + simpl. apply a_inc_equiv_refl; exact Hκ.
     + intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
@@ -1133,7 +1119,7 @@ Proof.
       as (𝒞 & Ξc & Ξs & Pa & κc & κs
           & Hlook & Hsolve & Hfms & Hus & Hks & Hfrs & HFs
           & HwfPa & HwfΞ & HαΞ & Hkeys
-          & HFor & HForΔ & Hftv & Hinc & Heqv & Hκcfresh0 & Hprec & Hapart0);
+          & HFor & Hftv & Hinc & Heqv & Hκcfresh0 & Hprec & Hapart0);
       [ exact (le_n _) | exact HwfΘ | exact HwfΘ0
       | exact HwfΘw | exact Hmon | exact Hnr
       | exact HwfP0 | exact HwfPi | exact Hκ | exact Hκw | exact Hψaw
@@ -1364,7 +1350,7 @@ Proof.
         as (𝒞 & Ξc & Ξs & Pa & κc & κs
             & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
             & HwfPa & HwfΞ & HαΞ
-            & Hmapfst & Himg & HimgΔ & Hinc & Hinceq & Hκfresh
+            & Hmapfst & Himg & Hinc & Hinceq & Hκfresh
             & Hprec & HftvC & HapartR).
       assert (HβΞs : β `notin` dom Ξs)
         by (intro Hc; pose proof (Hfrs β Hc) as Hf; clear - Hf; fsetdec).
@@ -1437,7 +1423,6 @@ Proof.
         -- (* α ∉ dom Ξc *) exact HαΞ.
         -- (* keys *) exact Hmapfst.
         -- (* κc images ⊆ ftv ψa *) exact Himg.
-        -- (* κc images ⊥ Δρ *) exact HimgΔ.
         -- (* a_inc — the strip peels BOTH blocks at once *)
            rewrite <- (aenv_app_assoc Ξs Ξc Θ0).
            rewrite <- (list_app_assoc κs κc κ).
@@ -1539,7 +1524,6 @@ Proof.
            ++ (* a_wf_aenv *) cbn. exact HwfΘ0.
            ++ (* α ∉ dom nil *) cbn; clear; fsetdec.
            ++ (* κc images *) apply Forall_nil.
-           ++ (* κc images ⊥ Δρ *) apply Forall_nil.
            ++ (* a_inc : only the SOLVE block is prefixed here (Ξc = ·) *)
            cbn [app].
            apply a_inc_flex_prefix_build;
@@ -1593,7 +1577,6 @@ Proof.
            ++ (* a_wf_aenv *) cbn. exact HwfΘ0.
            ++ (* α ∉ dom nil *) cbn; clear; fsetdec.
            ++ (* κc images *) apply Forall_nil.
-           ++ (* κc images ⊥ Δρ *) apply Forall_nil.
            ++ (* a_inc : only the SOLVE block is prefixed here (Ξc = ·) *)
            cbn [app].
            apply a_inc_flex_prefix_build;
@@ -1641,7 +1624,6 @@ Proof.
            ++ (* a_wf_aenv *) cbn. exact HwfΘ0.
            ++ (* α ∉ dom nil *) cbn; clear; fsetdec.
            ++ (* κc images *) apply Forall_nil.
-           ++ (* κc images ⊥ Δρ *) apply Forall_nil.
            ++ (* a_inc : only the SOLVE block is prefixed here (Ξc = ·) *)
            cbn [app].
            apply a_inc_flex_prefix_build;
@@ -1675,7 +1657,6 @@ Proof.
     + simpl. exact HwfPi.
     + simpl. exact HwfΘ0.
     + simpl; clear; fsetdec.
-    + apply Forall_nil.
     + apply Forall_nil.
     + simpl. exact Hκ.
     + simpl. apply a_inc_equiv_refl; exact Hκ.
@@ -1774,7 +1755,7 @@ Proof.
       as (C1 & Ξc1 & Ξs1 & Pa1 & κc1 & κs1
           & HLK1 & HSolve1 & Hfms1 & Hus1 & Hks1 & Hfrs1 & HFs1
           & HwfPa1 & HwfΞ1 & HαΞ1
-          & Hmap1 & Himg1 & HimgΔ1 & HftvC1 & Hinc1 & Hinceq1 & Hκf1 & Hpre1
+          & Hmap1 & Himg1 & HftvC1 & Hinc1 & Hinceq1 & Hκf1 & Hpre1
           & Hapart1);
       [ exact (le_n _) | exact HwfΘ | exact HwfΘ0
       | exact HwfΘw | exact Hmon | exact Hnr
@@ -1830,7 +1811,8 @@ Proof.
       by (rewrite Forall_forall in Himg1; exact Himg1).
     assert (HimgΔ1F : forall p, In p κc1 ->
               (ftvar_in_ptyp (snd p)) ∩ Δρ [=] empty)
-      by (rewrite Forall_forall in HimgΔ1; exact HimgΔ1).
+      by (intros p Hp; pose proof (Himg1F p Hp) as Hi;
+          clear - Hi Hψaap; fsetdec).
     pose proof (forall_wf_mono_images_dom HFs1) as HFs1d.
     assert (Hαr : α `notin` dom (Ξs1 ++ Ξc1 ++ Θ0))
       by (repeat rewrite dom_app; clear - HαΞs1 HαΞ1 HαΘ0; fsetdec).
@@ -2000,7 +1982,6 @@ Proof.
       α `notin` dom Ξc /\
       keys κc = keys Ξc /\
       Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
-      Forall (fun p => (ftvar_in_ptyp (snd p)) ∩ Δρ [=] empty) κc /\
       (κs ++ κc ++ (κs1 ++ κc1 ++ κ)) ∷ (Ξs ++ Ξc ++ (Ξs1 ++ Ξc1 ++ Θ0)) ⊑ Θ /\
       a_inc_equiv (Ξs1 ++ Ξc1 ++ Θ0) (κs1 ++ κc1 ++ κ) (κs1 ++ κc1 ++ κ) Θ /\
       (forall α0, α0 `in` dom κc ->
@@ -2061,7 +2042,7 @@ Proof.
     destruct REC as (C2 & Ξc2 & Ξs2 & Pa2 & κc2 & κs2
                      & HLK2 & HSolve2 & Hfms2 & Hus2 & Hks2 & Hfrs2 & HFs2
                      & HwfPa2 & HwfΞ2
-                     & HαΞ2 & Hmap2 & Himg2 & HimgΔ2 & Hinc2 & Hinceq2
+                     & HαΞ2 & Hmap2 & Himg2 & Hinc2 & Hinceq2
                      & Hκf2 & Hpre2 & HftvC2 & Hapart2).
     (* --- ASSEMBLY.  LS-Arrow pairs [Ξc1,Ξc2] with [C1++C2]; the two solves
        compose because C1 (a LOOKEQ's output) holds no subtyping constraint,
@@ -2232,7 +2213,6 @@ Proof.
        rewrite dom_app; clear - HαΞ1 HαΞ2; fsetdec.
     -- (* keys *) exact Hmapc.
     -- (* κc images ⊆ ftv ψa *) apply Forall_app; split; assumption.
-    -- (* κc images ⊥ Δρ *) apply Forall_app; split; assumption.
     -- (* a_inc : REBUILT from [Hκ] one block at a time *)
        assert (Hb1 : (κc2 ++ κ) ∷ (Ξc2 ++ Θ0) ⊑ Θ)
          by (apply a_inc_flex_prefix_build;
@@ -3003,7 +2983,6 @@ Proof.
       α `notin` dom Ξc /\
       keys κc = keys Ξc /\
       Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
-      Forall (fun p => (ftvar_in_ptyp (snd p)) ∩ Δρ [=] empty) κc /\
       (κs ++ κc ++ κ) ∷ (Ξs ++ Ξc ++ Θ0) ⊑ Θ /\
       a_inc_equiv Θ0 κ κ Θ /\
       (forall α0, α0 `in` dom κc ->
@@ -3060,7 +3039,7 @@ Proof.
     destruct REC as (𝒞 & Ξc & Ξs & Pa & κc & κs
                      & Hlook & Hsolve0 & Hfms0 & Hus0 & Hks0 & Hfrs0 & HFs0
                      & HwfPa0 & HwfΞ0
-                     & HαΞ0 & Hkeys0 & Himg0 & HimgΔ0 & Hinc0 & Hinceq0
+                     & HαΞ0 & Hkeys0 & Himg0 & Hinc0 & Hinceq0
                      & Hκf0 & Hprec0 & HftvC0 & HapartR).
     (* ⭐⭐ ◇-DISPATCH.  At a ghost target the runner answers LS-Vacuous before
        it looks at the subject's ⫯, so the ANSWER is forced to the identity —
@@ -3157,7 +3136,6 @@ Proof.
       α `notin` dom Ξc /\
       keys κc = keys Ξc /\
       Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
-      Forall (fun p => (ftvar_in_ptyp (snd p)) ∩ Δρ [=] empty) κc /\
       (κs ++ κc ++ κ) ∷ (Ξs ++ Ξc ++ Θ0) ⊑ Θ /\
       a_inc_equiv Θ0 κ κ Θ /\
       (forall α0, α0 `in` dom κc ->
@@ -3214,7 +3192,7 @@ Proof.
     destruct REC as (𝒞 & Ξc & Ξs & Pa & κc & κs
                      & Hlook & Hsolve0 & Hfms0 & Hus0 & Hks0 & Hfrs0 & HFs0
                      & HwfPa0 & HwfΞ0
-                     & HαΞ0 & Hkeys0 & Himg0 & HimgΔ0 & Hinc0 & Hinceq0
+                     & HαΞ0 & Hkeys0 & Himg0 & Hinc0 & Hinceq0
                      & Hκf0 & Hprec0 & HftvC0 & HapartR).
     (* ⭐⭐ ◇-DISPATCH.  At a ghost target the runner answers LS-Vacuous before
        it looks at the subject's ⫯, so the ANSWER is forced to the identity —
@@ -3428,7 +3406,7 @@ Proof.
     as (𝒞 & Ξc & Ξs & Pa & κc & κs
         & Hlook & Hsolve & Hfms & Hus & Hks & Hfrs & HFs
         & HwfPa & HwfΞ & HαΞ & Hkeys
-        & HFor & _ & Hinc & Heqv & Hκcfresh & Hprec & HftvC & HapartC);
+        & HFor & Hinc & Heqv & Hκcfresh & Hprec & HftvC & HapartC);
     [ exact HwfΘ | exact HwfΘ0
     | exact HwfΘ | intros x b Hb; exact Hb | intros x b Hb; left; exact Hb
     | intros α0 Hf; eapply a_inc_lookup_flex_ftv_dom; [ exact Hκ | exact Hf ]

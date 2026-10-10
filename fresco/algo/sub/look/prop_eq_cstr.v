@@ -2070,8 +2070,6 @@ Lemma a_lookeq_flex_p0_complete :
     keys κc = keys Ξc /\
     Forall (fun p : atom * ptyp =>
               ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
-    Forall (fun p : atom * ptyp =>
-              ftvar_in_ptyp (snd p) ∩ Δρ [=] empty) κc /\
     ftvar_in_a_cstrs 𝒞
       [<=] ftvar_in_uskl ψa `union` dom Ξc `union` dom κ `union` def_ftv Θ /\
     (κs ++ κc ++ κ) ∷ (Ξs ++ Ξc ++ Θ0) ⊑ Θ /\
@@ -2410,11 +2408,6 @@ repeat split.
    apply Forall_cons; [ | apply Forall_nil ].
    simpl. rewrite Heqψ. rewrite ftvar_ptyp_to_uskl_syn.
    clear; fsetdec.
--- (* …and ψa is Δρ-clean at a flexible P0 *)
-   apply Forall_cons; [ | apply Forall_nil ].
-   simpl. rewrite Heqψ in Hψaap.
-   rewrite ftvar_ptyp_to_uskl_syn in Hψaap.
-   clear - Hψaap; fsetdec.
 -- (* ftv 𝒞 : the only constraint is [eq α1], and α1 ∈ dom Ξc *)
    simpl; clear; fsetdec.
 -- (* a_inc : the two blocks are prefixed one after the other *)
@@ -2569,12 +2562,6 @@ Theorem a_lookeq_solve_complete_gen :
        binder FRESH for ψa is fresh for the images — this is what lets the
        ∀ rows strip their binder out of the [a_inc] conclusion. *)
     Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
-    (* …and they avoid the ρ-replaced variables.  The only witness source is
-       the flexible-P0 row, whose witness is built from the Δρ-apart guess
-       ([ftvar_in_uskl ψa ∩ Δρ = ∅], premise above).  The Arrow row's
-       RIGHT recursion needs this to re-establish the ρ-freshness of its new
-       Pi := Pa1 under the extended κ. *)
-    Forall (fun p => (ftvar_in_ptyp (snd p)) ∩ Δρ [=] empty) κc /\
     (* the collected CONSTRAINTS mention only ψa's variables, the ρ-images'
        (FIXED) scope Θs, the collected flexibles, κ's domain and the context's
        definitions — never a fresh ∀-binder.  This is what makes LE-ForallInh /
@@ -2707,7 +2694,6 @@ Proof.
     - simpl. exact HwfΘ0.
     - simpl; clear; fsetdec.
     - apply Forall_nil.
-    - apply Forall_nil.
     - (* ftv 𝒞 : the ONE constraint is [eq P0]; κP0 refines to Q, and Q is what
          the (β-free) instantiation ψa faces *)
       simpl.
@@ -2760,7 +2746,6 @@ Proof.
     - simpl. exact HwfΘ0.
     - simpl; clear; fsetdec.
     - apply Forall_nil.
-    - apply Forall_nil.
     - (* ftv 𝒞 : no constraints *) simpl; clear; fsetdec.
     - simpl. exact Hκ.
     - simpl. apply a_inc_equiv_refl; exact Hκ.
@@ -2801,7 +2786,6 @@ Proof.
     - simpl. exact HwfPi.
     - simpl. exact HwfΘ0.
     - simpl; clear; fsetdec.
-    - apply Forall_nil.
     - apply Forall_nil.
     - (* ftv 𝒞 : no constraints *) simpl; clear; fsetdec.
     - simpl. exact Hκ.
@@ -2953,7 +2937,7 @@ Proof.
           as (C1 & Ξc1 & Ξs1 & Pa1 & κc1 & κs1
                 & HLK1 & HSolve1 & Hfms1 & Hus1 & Hks1 & Hfrs1 & HFs1
                 & HwfPa1 & HwfΞ1 & HαΞ1
-                & Hmap1 & Himg1 & HimgΔ1 & HftvC1 & Hinc1 & Hinceq1 & Hκf1
+                & Hmap1 & Himg1 & HftvC1 & Hinc1 & Hinceq1 & Hκf1
                 & Hpre1 & Hapart1).
         (* --- the LEFT run's two blocks, read off [Hfrs1] and the solve kit --- *)
         pose proof (a_lookeq_all_flex_mono HLK1) as HfmΞ1.
@@ -2992,7 +2976,8 @@ Proof.
           by (rewrite Forall_forall in Himg1; exact Himg1).
         assert (HimgΔ1F : forall p, In p κc1 ->
                   (ftvar_in_ptyp (snd p)) ∩ Δρ [=] empty)
-          by (rewrite Forall_forall in HimgΔ1; exact HimgΔ1).
+          by (intros p Hp; pose proof (Himg1F p Hp) as Hi;
+              clear - Hi Hψaap; fsetdec).
         pose proof (forall_wf_mono_images_dom HFs1) as HFs1d.
         (* ⭐ THE RIGHT IH's κ-IMAGE BOUND.  A flexible of [Ξs1 ++ Ξc1 ++ Θ0]
            looks up in [κs1] — bounded by [HFs1], wf at Θw — or in [κc1] —
@@ -3197,7 +3182,7 @@ Proof.
           as (C2 & Ξc2 & Ξs2 & Pa2 & κc2 & κs2
                 & HLK2 & HSolve2 & Hfms2 & Hus2 & Hks2 & Hfrs2 & HFs2
                 & HwfPa2 & HwfΞ2 & HαΞ2
-                & Hmap2 & Himg2 & HimgΔ2 & HftvC2 & Hinc2 & Hinceq2 & Hκf2
+                & Hmap2 & Himg2 & HftvC2 & Hinc2 & Hinceq2 & Hκf2
                 & Hpre2 & Hapart2).
         (* --- ASSEMBLY.  Witnesses: 𝒞 := C1++C2 and Ξc := Ξc1++Ξc2 (forced by
            LE-Arrow, which pairs them), Ξs := Ξs2++Ξs1 (forced by
@@ -3388,7 +3373,6 @@ Proof.
            rewrite dom_app; clear - HαΞ1 HαΞ2; fsetdec.
         -- (* keys κc = keys Ξc *) exact Hmapc.
         -- (* κc images ⊆ ftv ψa *) apply Forall_app; split; assumption.
-        -- (* κc images ⊥ Δρ *) apply Forall_app; split; assumption.
         -- (* ftv (C1++C2).  The right branch's κ is [κs1 ++ κc1 ++ κ], so its
               bound carries a [dom Ξs1] term the conclusion does NOT have — and
               that term has to be ELIMINATED, not absorbed: a name of Ξs1 is a
@@ -3520,7 +3504,7 @@ Proof.
           as (𝒞 & Ξc & Ξs & Pa & κc & κs
                 & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
                 & HwfPa & HwfΞ & HαΞ
-                & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+                & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
         exists 𝒞, Ξc, Ξs, Pa, κc, κs.
         repeat split; try assumption.
         apply a_lookeq__univ_ghost_r;
@@ -3737,7 +3721,7 @@ Proof.
           as (𝒞 & Ξc & Ξs & Pa & κc & κs
                 & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
                 & HwfPa & HwfΞ & HαΞ
-                & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+                & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
         (* --- β-freeness of every output (this time 𝒞 comes from the bound) --- *)
         pose proof (@keys_eq_dom _ _ κc Ξc Hmapfst) as Hdκ.
         assert (HβΞc : β `notin` dom Ξc).
@@ -3795,7 +3779,6 @@ Proof.
         -- (* α ∉ dom Ξc *) exact HαΞ.
         -- (* keys *) exact Hmapfst.
         -- (* κc images *) exact Himg.
-        -- (* κc images ⊥ Δρ *) exact HimgΔ.
         -- (* ftv 𝒞 *) cbn [def_ftv] in HftvC. exact HftvC.
         -- (* a_inc — the strip now peels BOTH blocks at once *)
            rewrite <- (aenv_app_assoc Ξs Ξc Θ0).
@@ -3994,7 +3977,7 @@ Proof.
              as (𝒞 & Ξc & Ξs & Pa & κc & κs
                    & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
                    & HwfPa & HwfΞ & HαΞ
-                   & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+                   & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
            (* --- β-freeness of every output --- *)
            pose proof (@keys_eq_dom _ _ κc Ξc Hmapfst) as Hdκ.
            assert (HβΞc : β `notin` dom Ξc).
@@ -4050,7 +4033,6 @@ Proof.
            ++ (* α ∉ dom Ξc *) exact HαΞ.
            ++ (* keys *) exact Hmapfst.
            ++ (* κc images *) exact Himg.
-           ++ (* κc images ⊥ Δρ *) exact HimgΔ.
            ++ (* ftv 𝒞 : [def_ftv] ignores the rigid binder β *)
               cbn [def_ftv] in HftvC. exact HftvC.
            ++ (* a_inc *)
@@ -4304,7 +4286,7 @@ Proof.
           as (𝒞 & Ξc & Ξs & Pa & κc & κs
                 & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
                 & HwfPa & HwfΞ & HαΞ
-                & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+                & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
         (* --- β-freeness of every output (this time 𝒞 comes from the bound) --- *)
         pose proof (@keys_eq_dom _ _ κc Ξc Hmapfst) as Hdκ.
         assert (HβΞc : β `notin` dom Ξc).
@@ -4362,7 +4344,6 @@ Proof.
         -- (* α ∉ dom Ξc *) exact HαΞ.
         -- (* keys *) exact Hmapfst.
         -- (* κc images *) exact Himg.
-        -- (* κc images ⊥ Δρ *) exact HimgΔ.
         -- (* ftv 𝒞 *) cbn [def_ftv] in HftvC. exact HftvC.
         -- (* a_inc — the strip now peels BOTH blocks at once *)
            rewrite <- (aenv_app_assoc Ξs Ξc Θ0).
@@ -4591,7 +4572,7 @@ Proof.
              as (𝒞 & Ξc & Ξs & Pa & κc & κs
                    & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
                    & HwfPa & HwfΞ & HαΞ
-                   & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+                   & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
            (* --- β-freeness of every output --- *)
            pose proof (@keys_eq_dom _ _ κc Ξc Hmapfst) as Hdκ.
            assert (HβΞc : β `notin` dom Ξc).
@@ -4647,7 +4628,6 @@ Proof.
            ++ (* α ∉ dom Ξc *) exact HαΞ.
            ++ (* keys *) exact Hmapfst.
            ++ (* κc images *) exact Himg.
-           ++ (* κc images ⊥ Δρ *) exact HimgΔ.
            ++ (* ftv 𝒞 : [def_ftv] ignores the rigid binder β *)
               cbn [def_ftv] in HftvC. exact HftvC.
            ++ (* a_inc *)
@@ -4708,7 +4688,7 @@ Proof.
         as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ
-              & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+              & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
       exists 𝒞, Ξc, Ξs, Pa, κc, κs.
       repeat split; try assumption.
       apply a_lookeq__univ_ghost2;
@@ -4751,7 +4731,7 @@ Proof.
         as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ
-              & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+              & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
       exists 𝒞, Ξc, Ξs, Pa, κc, κs.
       repeat split; try assumption.
       apply a_lookeq__univ_ghost2;
@@ -4788,7 +4768,7 @@ Proof.
         as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ
-              & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+              & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
       exists 𝒞, Ξc, Ξs, Pa, κc, κs.
       repeat split; try assumption.
       apply a_lookeq__univ_ghost2;
@@ -4925,7 +4905,7 @@ Proof.
              as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ
-                   & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+                   & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
            assert (HβΞs : β `notin` dom Ξs)
              by (intro Hc; pose proof (Hfrs β Hc) as Hf; clear - Hf; fsetdec).
            (* ⭐ the SOLVE block's payloads dodge β for a DIFFERENT reason: they are
@@ -4977,7 +4957,6 @@ Proof.
            ++ (* α ∉ dom Ξc *) exact HαΞ.
            ++ (* keys *) exact Hmapfst.
            ++ (* ρc images *) exact Himg.
-           ++ (* ρc images ⊥ Δρ *) exact HimgΔ.
            ++ (* ftv 𝒞 *) cbn [def_ftv] in HftvC. exact HftvC.
            ++ (* a_inc — the strip peels BOTH blocks at once *)
               rewrite <- (aenv_app_assoc Ξs Ξc Θ0).
@@ -5055,7 +5034,7 @@ Proof.
           as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ
-                & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+                & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
         exists 𝒞, Ξc, Ξs, Pa, κc, κs.
         repeat split; try assumption.
         apply a_lookeq__univ_ghost; exact HLK.
@@ -5097,7 +5076,7 @@ Proof.
              as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ
-                   & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+                   & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
            exists 𝒞, Ξc, Ξs, Pa, κc, κs.
            repeat split; try assumption.
            apply a_lookeq__univ_ghost; exact HLK.
@@ -5136,7 +5115,7 @@ Proof.
           as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ
-                & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+                & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
         exists 𝒞, Ξc, Ξs, Pa, κc, κs.
         repeat split; try assumption.
         apply a_lookeq__univ_ghost; exact HLK.
@@ -5195,7 +5174,7 @@ Proof.
         as (𝒞 & Ξc & Ξs & Pa & κc & κs
               & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
               & HwfPa & HwfΞ & HαΞ
-              & Hmapfst & Himg & HimgΔ & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+              & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
       exists 𝒞, Ξc, Ξs, Pa, κc, κs.
       repeat split; try assumption.
       apply a_lookeq__univ_ghost; exact HLK.
@@ -5303,7 +5282,7 @@ Proof.
     as (𝒞 & Ξc & Ξs & Pa & κc & κs
         & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
         & HwfPa & HwfΞ & HαΞ & Hmapfst
-        & Himg & _ & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart);
+        & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart);
     [ exact (le_n _) | exact HwfΘ | exact HwfΘ0
     | exact HwfΘ | intros x b Hb; exact Hb | intros x b Hb; left; exact Hb
     | exact HwfP0 | exact HwfPi | exact Hκ
