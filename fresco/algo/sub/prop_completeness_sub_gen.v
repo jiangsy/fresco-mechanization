@@ -91,6 +91,7 @@ Require Import src.fresco.algo.sub.prop_completeness_sub_precise.     (* P5 + th
    chain, so already transitively required). *)
 Require Import src.fresco.algo.sub.prop_completeness_look.
 Require Import src.fresco.algo.prop_swap.                  (* THE SWAP KIT — P7a's renaming primitive *)
+Require Import src.fresco.algo.prop_wf_preservation.  (* the runs' OUTPUT well-formedness *)
 
 Set Implicit Arguments.
 
@@ -853,7 +854,7 @@ Proof.
   intros Θ0 P Θ κ Q Hwf0 Hwfth HwfP Hinc Hconsis Hrs Hrp HwfQ.
   (* 1. thm:complete-consistency at [(Θ0; □; P)] *)
   destruct (a_consis_complete Hwf0 (a_wf_pskl__ghost Θ0 empty)
-              HwfP Hinc Hwfth Hconsis Hrs Hrp)
+              HwfP Hinc Hwfth Hconsis Hrs Hrp HwfQ)
     as [P1 [Θ1 [Hrun Hopt]]].
   (* 2. at [P0 = □] the run's output IS the subject *)
   pose proof (a_consis_ghost_p0_output Hrun eq_refl) as HP1; subst P1.
@@ -872,8 +873,7 @@ Proof.
   assert (Hσ : msubst_compose ζ κ1 ∷ Θ0 ⊑ Θ)
     by (eapply a_inc_compose; eassumption).
   assert (Hscope : a_scope_pskl Θ0 P)
-    by (eapply a_wf_pskl_to_a_scope_pskl;
-        [ exact HwfP | auto | intros α Hα; clear - Hα; fsetdec ]).
+    by (exact (a_scope_pskl_of_wf HwfP)).
   assert (Heqσ : msubst_pskl (msubst_compose ζ κ1) P = msubst_pskl ζ P)
     by (exact (msubst_compose_id_pskl Hwf0 Hwf1 Hid Hinc1 Hζ Hscope)).
   unfold ad_precise in Hprec.
@@ -898,7 +898,7 @@ Lemma ad_pat_sub_fuel_ti_consis : forall n NM Ψ Θ R Q,
 Proof.
   intros n NM Ψ Θ R Q H; inversion H; subst; try congruence; destr_join;
     try assumption;                                       (* __infer *)
-    try (apply ad_pat_consis__ghost; [ reflexivity | assumption ]);  (* __ghost *)
+    try (apply ad_pat_consis__ghost; [ reflexivity ]);  (* __ghost *)
     try (apply ad_pat_consis__ghostg; reflexivity).                 (* __ghostg *)
 Qed.
 
@@ -1151,7 +1151,7 @@ Proof.
     destruct (skl_tyequiv_consis_transport Herase Hwfth
                 (fun x b Hb => Hb)) as [Hct _].
     exact (Hct _ _ H0). }
-  destruct (a_consis_complete Hwf0 HwfP0 HwfP Hinc Hwfth Hc Hrs Hrp)
+  destruct (a_consis_complete Hwf0 HwfP0 HwfP Hinc Hwfth Hc Hrs Hrp HwfQ)
     as [P1 [Θ1 [Hrun Hopt]]].
   destruct (a_consis_sound_aux Hrun Hwf0 HwfP0 HwfP
               ltac:(intros α Hα; clear - Hα; solve_notin_auto)
@@ -1174,8 +1174,7 @@ Proof.
   assert (Hσ : msubst_compose ζ κ1 ∷ Θ0 ⊑ Θ)
     by (eapply a_inc_compose; eassumption).
   assert (Hscope : a_scope_pskl Θ0 P0)
-    by (eapply a_wf_pskl_to_a_scope_pskl;
-        [ exact HwfP0 | auto | intros α Hα; clear - Hα; fsetdec ]).
+    by (exact (a_scope_pskl_of_wf HwfP0)).
   assert (Heqσ : msubst_pskl (msubst_compose ζ κ1) P0 = msubst_pskl ζ P0)
     by (exact (msubst_compose_id_pskl Hwf0 Hwf1 Hid Hinc1 Hζ Hscope)).
   pose proof (a_inc_equiv_precise_msubst_flip empty HwfP0 Hwf0 Hwfth Hinc Hσ Hie)
@@ -1197,8 +1196,8 @@ Qed.
 (*  mirroring the consistency Arrow case (prop_completeness_consis.v (PART B):6631):    *)
 (*  the codomain's premises transport SEMANTICALLY at the fixed Θ — the    *)
 (*  fill along ≡ˢ, the join via the motive's ≡ᵘ slack — and the domain     *)
-(*  precision moves ζ1 → ζ2 by the same ≡ˢ route (scope from              *)
-(*  [ad_pat_consis_target_wf]; no new wf side conditions).                 *)
+(*  precision moves ζ1 → ζ2 by the same ≡ˢ route (scope from the domain  *)
+(*  run's output well-formedness, [a_consis_output_wf_nil]).              *)
 (* ===================================================================== *)
 
 (** Composing with an identity collapses on the identity's domain. *)
@@ -1294,7 +1293,7 @@ Proof.
                 (fun x b Hb => Hb)) as [Hrpt _].
     exact (Hrpt _ _ H0). }
   destruct (a_consis_complete Hwf0 HwfP0a HwfPa Hinc Hwfth Hc1
-              Hrs1 Hrp1)
+              Hrs1 Hrp1 ltac:(simpl in HwfQ; inversion HwfQ; assumption))
     as [Q1' [Θ1 [Hrun1 Hopt1]]].
   (* the domain run's soundness: id-witness, wf, join at Θ1 *)
   destruct (a_consis_sound_aux Hrun1 Hwf0 HwfP0a HwfPa
@@ -1366,8 +1365,7 @@ Proof.
     eapply a_uskl_tyequiv_trans; [ exact Hrel2 | exact Hgen ]. }
   (* the codomain FILL moves κ → ζ1 along ≡ˢ *)
   assert (HscP0b : a_scope_pskl Θ0 P0b)
-    by (eapply a_wf_pskl_to_a_scope_pskl;
-        [ exact HwfP0b | auto | intros α Hα; clear - Hα; fsetdec ]).
+    by (exact (a_scope_pskl_of_wf HwfP0b)).
   assert (Heqb0 : {{ Θ ⊢ (msubst_pskl κ P0b) ≡ˢ (msubst_pskl ζ1 P0b) }}a).
   { replace (msubst_pskl ζ1 P0b)
       with (msubst_pskl (msubst_compose ζ1 w1) P0b)
@@ -1413,10 +1411,9 @@ Proof.
       | exact Hincw1 | exact Hincw2 | exact Hζ1 | exact Hζ2
       | exact Hie1 | exact Hie2 ]. }
   (* ---- the precision, componentwise; the domain moves ζ1 → ζ2 ---- *)
-  assert (HscQ1' : a_scope_pskl Θ1 Q1').
-  { destruct Hsol1 as [Qt1 [HeqQt1 [Hjoin1s _]]].
-    rewrite <- HeqQt1.
-    eapply ad_pat_consis_target_wf; exact Hjoin1s. }
+  assert (HscQ1' : a_scope_pskl Θ1 Q1')
+    by (exact (a_scope_pskl_of_wf
+                 (a_consis_output_wf_nil Hrun1 Hwf0 HwfP0a HwfPa))).
   assert (Hlcζ2 : msubst_lc ζ2) by (eapply a_inc_msubst_lc; exact Hζ2).
   assert (Hlcc2 : msubst_lc (msubst_compose ζ2 w2))
     by (apply msubst_lc_compose;
@@ -2159,7 +2156,7 @@ Proof.
                     clear - Hfs Hou Htg Hftjb; fsetdec)
               ltac:(clear; solve_notin_auto)
               Hsubty HwfSubj
-              Hrs)
+              Hrs HwfQ)
     as (Ξ & Pa & κa & Hlook & HwfPa & HwfΞΘ0 & HdeclsΞ & Hkeys
         & Hinca & Hie0 & Hpre).
   (* ---- 3. the ⊑ᵤ pair and the subject swap on the ORIGINAL join ---- *)
@@ -2587,66 +2584,45 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  (D)  The JOIN's target is scoped — [ad_pat_consis_target_wf]'s        *)
-(*       subtyping-level twin.                                            *)
+(*  (D)  The TYPE-sort subtyping target is scoped — when the subject has   *)
+(*       no plain [◇] ([ad_pat_consis_target_scope]'s subtyping twin).     *)
+(*                                                                        *)
+(*  At the SKELETON sort the Ghost rows fill an arbitrary counterpart     *)
+(*  (the paper's Ghost has no premise), so there the counterpart's wf is  *)
+(*  a HYPOTHESIS of every statement that needs it (P7's [HwfQ]).  At the  *)
+(*  TYPE sort there is no Ghost row and ForallL instantiates with a       *)
+(*  ghost-free type ([a_tags_sort__ty]), so a subject without a plain     *)
+(*  [◇] — every type painting — determines a scoped target.               *)
 (* ===================================================================== *)
 
-Lemma ad_pat_sub_target_wf : forall NM M Ψ Θ R Qt,
-  {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Qt }}ad ->
+Lemma ad_pat_sub_target_scope_ty : forall M Ψ Θ R Qt,
+  {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_ty | M ] R ⩽ Qt }}ad ->
+  uskl_no_ghost R ->
   a_scope_pskl Θ (bskl_to_pskl Qt).
 Proof.
-  intros NM M Ψ Θ R Qt H; induction H; destr_join.
-  - (* infer *) eapply ad_pat_consis_target_wf; eassumption.
-  - (* check *)
-    assert (Hc : a_scope_pskl Θ (bskl_to_pskl (pskl_to_bskl_inh B)))
-      by (eapply ad_pat_consis_target_wf; eassumption).
-    exact Hc.
+  intros M Ψ Θ R Qt H.
+  remember a_sub_mode_ty as NM eqn:HNM.
+  induction H; intros Hng; try discriminate HNM; destr_join.
+  - (* infer *) eapply ad_pat_consis_target_scope; eassumption.
+  - (* check *) eapply ad_pat_consis_target_scope; eassumption.
   - (* forall_r *)
-    simpl. apply a_scope_pskl__all with (L := L).
-    intros α Hα. rewrite <- bskl_to_pskl_open. apply H0; exact Hα.
-  - (* univ_ghost_r *)
-    simpl. apply a_scope_pskl__univ_ghost.
-    eapply ad_pat_consis_target_wf; eassumption.
+    simpl. apply a_scope_pskl_all_of_open with (L := L).
+    intros α Hα. rewrite <- bskl_to_pskl_open. apply H0; assumption.
   - (* arrow *)
-    simpl. apply a_scope_pskl__arrow;
-      [ eapply ad_pat_consis_target_wf; eassumption | exact IHad_pat_sub ].
-  - (* forall_l_tagged *) exact IHad_pat_sub.
-  - (* forall_l_untagged *) exact IHad_pat_sub.
-  - (* ghost *)
-    rewrite bskl_to_pskl_pskl_to_bskl_inh.
-    eapply a_wf_pskl_to_a_scope_pskl;
-      [ eassumption | intros x b Hb; exact Hb | intros α Hα; clear - Hα; fsetdec ].
-  - (* ghostg *) simpl. apply a_scope_pskl__ghost.
-  - (* univ_ghost_l *) exact IHad_pat_sub.
-  - (* univ_ghost_lg *) exact IHad_pat_sub.
-  - (* flex_mono *) exact IHad_pat_sub.
-Qed.
-
-(** The flexible walk's OUTPUT skeleton is scoped in the output context. *)
-Lemma a_sub_flex_out_scope : forall NM M P0 Θ0 Ξ α A Θ1,
-  a_sub_flex NM M P0 Θ0 Ξ α A Θ1 ->
-  a_decls Ξ ->
-  {{ ⊢ (Ξ ++ Θ0) }}a ->
-  {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a ->
-  a_binds_tvar α (Ξ ++ Θ0) ->
-  (NM = a_sub_mode_sk -> a_sk_mode_compat (mode_fn M) P0) ->
-  (NM = a_sub_mode_ty -> a_ty_mode_compat (mode_fn M) P0) ->
-  a_scope_pskl Θ1 A.
-Proof.
-  intros NM M P0 Θ0 Ξ α A Θ1 Hrun Hdecls Hwf HwfP0 Hαb Hmod Hgf.
-  assert (Htag : a_subtag_flex NM M P0 Θ0 Ξ α A Θ1).
-  { eapply (proj2 a_sub_decorate_bundle);
-      [ exact Hrun | exact Hdecls | exact Hwf | exact HwfP0 | exact Hαb
-      | intros HSK; apply a_sk_mode_compat_mod_comp_sk; apply Hmod; exact HSK
-      | intros _; eapply a_wf_pskl_top_guarded; exact HwfP0 ]. }
-  destruct ((proj2 a_subtag_sound_bundle) _ _ _ _ _ _ _ _ Htag
-              Hwf Hdecls HwfP0 Hαb
-              ltac:(intros HSK; apply a_sk_mode_compat_mod_comp_sk;
-                    apply Hmod; exact HSK)
-              Hgf)
-    as [_ [_ [Qt [HeqQt [[njoin Hjoin] _]]]]].
-  apply ad_pat_sub_of_fuel in Hjoin.
-  rewrite <- HeqQt. eapply ad_pat_sub_target_wf; exact Hjoin.
+    destruct Hng as [Hng1 Hng2].
+    destruct (ad_pat_consis_target_scope Hjc Hng1) as [Hl1 Hb1].
+    destruct (IHad_pat_sub HNM Hng2) as [Hl2 Hb2].
+    split; [ simpl; constructor; assumption | ].
+    intros γ Hγ; simpl in Hγ. apply union_1 in Hγ as [Hγ | Hγ]; auto.
+  - (* forall_l_tagged : the instantiation is a ghost-free TYPE *)
+    subst. apply IHad_pat_sub; [ reflexivity | ].
+    apply uskl_no_ghost_open; [ exact Hng | ].
+    apply uskl_no_ghost_of_ghost_free. inversion H2; assumption.
+  - (* forall_l_untagged *)
+    subst. apply IHad_pat_sub; [ reflexivity | ].
+    apply uskl_no_ghost_open; [ exact Hng | ].
+    apply uskl_no_ghost_of_ghost_free. inversion H2; assumption.
+  - (* flex_mono *) apply IHad_pat_sub; [ exact HNM | apply uskl_no_ghost_ptyp ].
 Qed.
 
 (* ===================================================================== *)
@@ -2773,10 +2749,9 @@ Proof.
     as [P1 [Θ1 [Hrun Hopt]]].
   destruct (a_sub_flex_sound Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
     as [[[w [Hidw Hincw]] Hdefs] HwfΘ1].
-  assert (HscP1 : a_scope_pskl Θ1 P1)
-    by (eapply a_sub_flex_out_scope;
-        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0'
-        | exact Hαb' | exact HmodSK | exact HmodTY ]).
+  assert (HwfP1o : {{ Θ1 ⨟ empty ⊢ₚₛ P1 }}a)
+    by (eapply a_sub_flex_output_wf;
+        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0' | exact Hαb' ]).
   assert (HβflexΘ1 : forall bd, binds β bd Θ1 ->
             bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ)
     by (eapply a_sub_flex_out_flex_only;
@@ -2904,7 +2879,7 @@ Proof.
       | destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P1))
           as [hin | hout]; [ right | left; exact hout ];
         assert (hbt : a_binds_tvar β Θ1)
-          by (eapply a_scope_pskl_ftv_binds; [ exact HscP1 | exact hin ]);
+          by (eapply a_wf_pskl_ftv_binds; [ exact HwfP1o | exact hin ]);
         destruct hbt as [hbt | [hbt | [τ0 hbt]]];
         [ exfalso; destruct (HβflexΘ1 abind_tvar hbt) as [hc | [τ1 hc]];
             discriminate
@@ -3059,7 +3034,7 @@ Proof.
     by (rewrite Hτ12; exact Heqβ).
   (* ---- 2. the substituted problem, and its side conditions ---- *)
   assert (Hwfpaint : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ ptyp_to_pskl τ }}a).
-  { apply a_scope_pskl_of_ptyp_vis;
+  { apply a_wf_pskl_of_ptyp_vis;
       [ apply mono_ptyp_lc; exact Hmτ | ].
     intros γ Hγ.
     assert (HγΘ0 : a_binds_tvar γ Θ0)
@@ -3218,8 +3193,8 @@ Proof.
         [ apply HmodTY; exact HTY | exact Hmτ ]).
   destruct (a_sub_sound Hrun Hwf' HwfP0' HwfS HmodSK' HmodTY')
     as [[[w [Hidw Hincw]] Hdefs] [HwfΘ1 [Qt [HeqQt [Hjoin1 _]]]]].
-  assert (HscP1 : a_scope_pskl Θ1 P1)
-    by (rewrite <- HeqQt; eapply ad_pat_sub_target_wf; exact Hjoin1).
+  assert (HwfP1o : {{ Θ1 ⨟ empty ⊢ₚₛ P1 }}a)
+    by (exact (a_sub_output_wf Hrun Hwf' HwfP0' HwfS)).
   assert (HβflexΘ1 : forall bd, binds β bd Θ1 ->
             bd = abind_flex_mono \/ exists τ0, bd = abind_flex_mono_def τ0).
   { intros bd Hb.
@@ -3415,7 +3390,7 @@ Proof.
       | destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P1))
           as [hin | hout]; [ right | left; exact hout ];
         assert (hbt : a_binds_tvar β Θ1)
-          by (eapply a_scope_pskl_ftv_binds; [ exact HscP1 | exact hin ]);
+          by (eapply a_wf_pskl_ftv_binds; [ exact HwfP1o | exact hin ]);
         destruct hbt as [hbt | [hbt | [τ0 hbt]]];
         [ exfalso; destruct (HβflexΘ1 abind_tvar hbt) as [hc | [τ1 hc]];
             discriminate
@@ -5093,7 +5068,7 @@ Proof.
   intros Θs Δ P H; induction H; intros σ Hlc Hmono HΔ Himg; simpl.
   - apply a_wf_pskl__unit.
   - (* var : the image is a context-visible lc type *)
-    apply a_scope_pskl_of_ptyp_vis; [ apply Hlc | ].
+    apply a_wf_pskl_of_ptyp_vis; [ apply Hlc | ].
     intros γ Hγ. exact (proj1 (Himg α γ H Hγ)).
   - apply a_wf_pskl__arrow; [ apply IHa_wf_pskl1 | apply IHa_wf_pskl2 ]; assumption.
   - (* all : the opener joins Θs AND Δ *)
@@ -5711,10 +5686,9 @@ Proof.
   (* ---- 11. the junk rename, and the re-attachment ---- *)
   destruct (a_sub_flex_sound Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
     as [[[w [Hidw Hincw]] Hdefs] HwfΘ1].
-  assert (HscP1 : a_scope_pskl Θ1 P1)
-    by (eapply a_sub_flex_out_scope;
-        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0'
-        | exact Hαb' | exact HmodSK | exact HmodTY ]).
+  assert (HwfP1o : {{ Θ1 ⨟ empty ⊢ₚₛ P1 }}a)
+    by (eapply a_sub_flex_output_wf;
+        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0' | exact Hαb' ]).
   assert (HβflexΘ1 : forall bd, binds β bd Θ1 ->
             bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ)
     by (eapply a_sub_flex_out_flex_only;
@@ -5808,7 +5782,7 @@ Proof.
         | destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P1))
             as [hin | hout]; [ right | left; exact hout ];
           assert (hbt : a_binds_tvar β Θ1)
-            by (eapply a_scope_pskl_ftv_binds; [ exact HscP1 | exact hin ]);
+            by (eapply a_wf_pskl_ftv_binds; [ exact HwfP1o | exact hin ]);
           destruct hbt as [hbt | [hbt | [τ0 hbt]]];
           [ exfalso; destruct (HβflexΘ1 abind_tvar hbt) as [hc | [τ1 hc]];
               discriminate
@@ -6088,10 +6062,9 @@ Proof.
   (* ---- 11. the junk rename, and the re-attachment ---- *)
   destruct (a_sub_flex_sound Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
     as [[[w [Hidw Hincw]] Hdefs] HwfΘ1].
-  assert (HscP1 : a_scope_pskl Θ1 P1)
-    by (eapply a_sub_flex_out_scope;
-        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0'
-        | exact Hαb' | exact HmodSK | exact HmodTY ]).
+  assert (HwfP1o : {{ Θ1 ⨟ empty ⊢ₚₛ P1 }}a)
+    by (eapply a_sub_flex_output_wf;
+        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0' | exact Hαb' ]).
   assert (HβflexΘ1 : forall bd, binds β bd Θ1 ->
             bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ)
     by (eapply a_sub_flex_out_flex_only;
@@ -6232,7 +6205,7 @@ Proof.
         | destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P1))
             as [hin | hout]; [ right | left; exact hout ];
           assert (hbt : a_binds_tvar β Θ1)
-            by (eapply a_scope_pskl_ftv_binds; [ exact HscP1 | exact hin ]);
+            by (eapply a_wf_pskl_ftv_binds; [ exact HwfP1o | exact hin ]);
           destruct hbt as [hbt | [hbt | [τ0 hbt]]];
           [ exfalso; destruct (HβflexΘ1 abind_tvar hbt) as [hc | [τ1 hc]];
               discriminate
@@ -6315,7 +6288,7 @@ Proof.
   assert (HwfQv : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ Qv }}a)
     by (eapply a_wf_pskl_weaken;
         [ intros ? ? Hb; apply binds_app_3; exact Hb | exact HwfQv0 ]).
-  assert (HlcQv : lc_pskl Qv) by (eapply a_scope_pskl_lc; eauto).
+  assert (HlcQv : lc_pskl Qv) by (eapply a_wf_pskl_lc; eauto).
   assert (HftvQv : ftvar_in_pskl Qv [<=] dom Θ0)
     by (apply a_scope_pskl_ftv_dom; exact (a_scope_pskl_of_wf HwfQv0)).
   assert (HβQv : β `notin` ftvar_in_pskl Qv).
@@ -6498,10 +6471,9 @@ Proof.
   (* ---- 11. the junk rename, and the re-attachment ---- *)
   destruct (a_sub_flex_sound Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
     as [[[w [Hidw Hincw]] Hdefs] HwfΘ1].
-  assert (HscP1 : a_scope_pskl Θ1 P1)
-    by (eapply a_sub_flex_out_scope;
-        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0'
-        | exact Hαb' | exact HmodSK | exact HmodTY ]).
+  assert (HwfP1o : {{ Θ1 ⨟ empty ⊢ₚₛ P1 }}a)
+    by (eapply a_sub_flex_output_wf;
+        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0' | exact Hαb' ]).
   assert (HβflexΘ1 : forall bd, binds β bd Θ1 ->
             bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ)
     by (eapply a_sub_flex_out_flex_only;
@@ -6644,7 +6616,7 @@ Proof.
         | destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P1))
             as [hin | hout]; [ right | left; exact hout ];
           assert (hbt : a_binds_tvar β Θ1)
-            by (eapply a_scope_pskl_ftv_binds; [ exact HscP1 | exact hin ]);
+            by (eapply a_wf_pskl_ftv_binds; [ exact HwfP1o | exact hin ]);
           destruct hbt as [hbt | [hbt | [τ0 hbt]]];
           [ exfalso; destruct (HβflexΘ1 abind_tvar hbt) as [hc | [τ1 hc]];
               discriminate

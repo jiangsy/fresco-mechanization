@@ -49,6 +49,7 @@ Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
 Require Import src.fresco.algo.prop_refine.               (* a_wf_pskl_delta_mono *)
 Require Import src.fresco.algo.sub.prop_solve_sub.        (* lc_pskl_*_inv *)
+Require Import src.fresco.algo.prop_swap.   (* a_wf_pskl_lc *)
 Require Import src.fresco.algo.consis.prop_soundness_consis.
                      (* a_wf_pskl_lc, a_wf_pskl_rename_bound *)
 Require Import src.fresco.ext_algo.def_supply.

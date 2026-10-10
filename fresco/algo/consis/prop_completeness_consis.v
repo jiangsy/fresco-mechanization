@@ -591,9 +591,6 @@ Proof.
   - apply ad_pat_consis__ghostg; auto.
   - apply ad_pat_consis__dot_univ_ghost. apply IHad_pat_consis; auto.
   - apply ad_pat_consis__ghost; auto.
-    eapply a_wf_pskl_strengthen; [ exact H0 | exact Hu | intros y Hy; clear - Hy; fsetdec | exact Hsub | ].
-    intros α0 Hα0. right. apply HscQ.
-    pose proof (ftvar_in_bskl_inh P) as Hb. clear - Hα0 Hb. fsetdec.
   - apply ad_pat_consis__univ_ghost. apply IHad_pat_consis; auto.
   - eapply ad_pat_consis__univ_ghost_inh
       with (L := L `union` dom Θ `union` dom Θ').
@@ -909,7 +906,7 @@ Proof.
   - (* dot_univ_ghost *) destruct HmC0; simpl in HeqC; discriminate.
   - (* ghost *)
     destruct P0; simpl in HeqS; try discriminate.
-    simpl. apply ad_pat_consis__ghost; [ exact H | exact H0 ].
+    simpl. apply ad_pat_consis__ghost; [ exact H ].
   - (* univ_ghost *) destruct HmC0; simpl in HeqC; discriminate.
   - (* univ_ghost_inh *) destruct HmC0; simpl in HeqC; discriminate.
   - (* univ_ghost_drop *)
@@ -1481,20 +1478,9 @@ Lemma a_scope_pskl_weaken : forall Θ Θ' P,
   a_scope_pskl Θ P ->
   a_scope_pskl Θ' P.
 Proof.
-  intros * Hmon Hwf; revert Θ' Hmon; induction Hwf; intros Θ' Hmon.
-  - apply a_scope_pskl__unit.
-  - apply a_scope_pskl__var.
-    destruct H as [Hb | [Hb | [τ Hb]]];
-      [ left | right; left | right; right; exists τ ]; apply Hmon; exact Hb.
-  - apply a_scope_pskl__arrow; auto.
-  - apply a_scope_pskl__all with (L := L). intros α Hα.
-    apply H0; [ exact Hα | ].
-    intros x b Hb.
-    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqx Heqb] | Hb'];
-      [ subst; unfold binds; left; reflexivity
-      | apply binds_cons_3; apply Hmon; exact Hb' ].
-  - apply a_scope_pskl__ghost.
-  - apply a_scope_pskl__univ_ghost; auto.
+  intros Θ Θ' P Hmon [Hlc Hb]. split; [ exact Hlc | ].
+  intros α Hα. destruct (Hb α Hα) as [Hb' | [Hb' | [τ Hb']]];
+    [ left | right; left | right; right; exists τ ]; apply Hmon; exact Hb'.
 Qed.
 
 Lemma a_inc_var_skl_mid_strip_id : forall Ξ x P Θ0 κ Θ1,
@@ -1809,6 +1795,9 @@ Definition consis_complete_at (m : mu_ty) : Prop :=
     {{ Ψ ⨟ Θ ⊢ˢ (pskl_to_uskl (msubst_pskl κ P)) ∼ Qb }}ad ->
     {{ Θ ⨟ Δ1 ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Qb }}ad ->
     {{ Θ ⨟ Δ2 ⊢ᵣₚ (msubst_pskl κ P) ⊳ (bskl_to_pskl Qb) }}ad ->
+    (* the counterpart is well formed — the paper's presupposition of skeleton
+       consistency (declarative.tex:2074), docs/WF-SIDE-CONDITIONS.md §2a *)
+    {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Qb) }}a ->
     exists P1 Θ1,
       a_consis Δ1 Δ2 Θ0 P0 P P1 Θ1 /\
       (forall γ, γ `in` dom Θ1 -> γ `in` dom Θ0 \/ γ `notin` N) /\
@@ -3206,43 +3195,6 @@ Proof.
       apply Hrr. exact Hr'.
 Qed.
 
-(** The join's target erases to a well-formed (Δ-free) skeleton — the
-    output-regularity C-Arrow's precision transport needs. *)
-Lemma ad_pat_consis_target_wf : forall Ψ Θ R Qt,
-  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
-  a_scope_pskl Θ (bskl_to_pskl Qt).
-Proof.
-  intros Ψ Θ R Qt Hc; induction Hc; simpl.
-  - apply a_scope_pskl__unit.
-  - apply a_scope_pskl__var; exact H0.
-  - apply a_scope_pskl__arrow; assumption.
-  - (* forall_inh_tagged *)
-    apply a_scope_pskl__all with (L := L).
-    intros α Hα. rewrite <- bskl_to_pskl_open. apply H0; exact Hα.
-  - (* forall_inh_untagged *)
-    apply a_scope_pskl__all with (L := L).
-    intros α Hα. rewrite <- bskl_to_pskl_open. apply H0; exact Hα.
-  - (* forall_syn_tagged *)
-    apply a_scope_pskl__all with (L := L).
-    intros α Hα. rewrite <- bskl_to_pskl_open. apply H0; exact Hα.
-  - (* forall_syn *)
-    apply a_scope_pskl__all with (L := L).
-    intros α Hα. rewrite <- bskl_to_pskl_open. apply H0; exact Hα.
-  - apply a_scope_pskl__ghost.
-  - apply a_scope_pskl__univ_ghost; assumption.
-  - (* ghost : the fill is wf by the rule's own premise *)
-    rewrite bskl_to_pskl_pskl_to_bskl_inh.
-    exact (a_scope_pskl_of_wf H0).
-  - apply a_scope_pskl__univ_ghost; assumption.
-  - (* univ_ghost_inh *)
-    apply a_scope_pskl__all with (L := L).
-    intros α Hα. rewrite <- bskl_to_pskl_open. apply H0; exact Hα.
-  - (* univ_ghost_drop *) assumption.
-  - (* flex_l *) assumption.
-  - (* flex_r *)
-    apply a_scope_pskl__var. right; right; exists τ; exact H.
-Qed.
-
 (** An inherited quantifier never refines to a guarded skeleton (the target
     of every rule applicable to an [all_inh] source is an [all_inh] or a
     defined flexible whose unfolding is a monotype painting — itself guarded,
@@ -3762,7 +3714,10 @@ Proof.
                    ltac:(repeat intro; solve_notin_auto)
                    Hinc' Hwfth
                    ltac:(repeat intro; solve_notin_auto)
-                   Hpsi Hjoin' Hrs' Hrp')
+                   Hpsi Hjoin' Hrs' Hrp'
+                   ltac:(unfold ptyp_to_bskl_syn;
+                         rewrite bskl_to_pskl_pskl_to_bskl_syn;
+                         apply a_wf_ptyp_to_wf_pskl; exact HwfB'))
       as [P1 [Θ1' [Hcons [Hnew Hopt']]]].
     exists ((α1 ~ abind_flex_mono_def τdef) ++ Θ1'). split.
     { eapply a_unify__flex_assign;
@@ -5475,7 +5430,7 @@ Proof.
       assert (HwfQ : {{ (Ξ ++ Θ0') ⨟ empty ⊢ₚₛ Q }}a)
         by (eapply a_wf_pskl_weaken;
             [ intros ? ? Hb; apply binds_app_3; exact Hb | exact HwfQ0 ]).
-      assert (HlcQ : lc_pskl Q) by (eapply a_scope_pskl_lc; eauto).
+      assert (HlcQ : lc_pskl Q) by (eapply a_wf_pskl_lc; eauto).
       assert (HwfΘ1 : {{ ⊢ Θ1 }}a)
         by (eapply a_assign_preserves_wf;
             [ exact Ha' | exact Hdecl | exact Hwf' | exact HwfP' ]).
@@ -5519,7 +5474,7 @@ Proof.
       assert (HwfaΘ0x : {{ ⊢ ((α1 ~ abind_var_skl Q) ++ Θ0') }}a)
         by (eapply a_wf_aenv_strip_prefix; exact Hwf).
       destruct (a_wf_aenv_var_skl_inv HwfaΘ0x) as [_ [HwfQ0 _]].
-      assert (HlcQ : lc_pskl Q) by (eapply a_scope_pskl_lc; eauto).
+      assert (HlcQ : lc_pskl Q) by (eapply a_wf_pskl_lc; eauto).
       destruct (@a_inc_strip_decls_prefix Ξ ((α1 ~ abind_var_skl Q) ++ Θ0')
                   κ1 ((α1 ~ abind_var_skl Q) ++ Θ1) Hdecl Hinc1)
         as [κ1a [κ1b' [Heqκ1' [Hdκ1a Hinc1x]]]].
@@ -5869,7 +5824,7 @@ Proof.
     assert (HwfVart : a_scope_pskl
               ((α1 ~ abind_flex_mono_def τdef) ++ Ξ ++ Θ0')
               (pskl_var_f α)).
-    { apply a_scope_pskl__var.
+    { apply a_scope_pskl_var.
       destruct Hfα as [Hb | [τ0 Hb]].
       - destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He1 He2] | Hb'];
           [ discriminate | ].
@@ -5974,7 +5929,13 @@ Proof.
                 Hincab Hwfth
                 ltac:(intros β τ Hb; clear; solve_notin_auto)
                 ltac:(reflexivity)
-                Hjsub Hrssub Hrpsub)
+                Hjsub Hrssub Hrpsub
+                ltac:(rewrite bskl_to_pskl_pskl_to_bskl_syn;
+                      apply a_wf_ptyp_to_wf_pskl;
+                      eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf | ];
+                      destruct Hfα as [Hb | [τ0 Hb]];
+                        [ right; left | right; right; exists τ0 ];
+                        apply binds_app_3; exact Hb))
       as [Q' [Θ1' [Hc [Hnew Hopt']]]].
     exists ((α1 ~ abind_flex_mono_def τdef) ++ Θ1'). split.
     { eapply a_assign__assign; [ exact Hfα | | exact Hc ].
@@ -6150,6 +6111,9 @@ Lemma consis_complete_core : forall Ψ Θ R' Qb,
     (forall P0', P0 = pskl_univ_ghost P0' -> ~ guarded_pskl P) ->
     {{ Θ ⨟ Δ1 ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Qb }}ad ->
     {{ Θ ⨟ Δ2 ⊢ᵣₚ (msubst_pskl κ P) ⊳ (bskl_to_pskl Qb) }}ad ->
+    (* the counterpart is well formed — the paper's presupposition of skeleton
+       consistency (declarative.tex:2074), docs/WF-SIDE-CONDITIONS.md §2a *)
+    {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Qb) }}a ->
     exists P1 Θ1,
       a_consis Δ1 Δ2 Θ0 P0 P P1 Θ1 /\
       (forall γ, γ `in` dom Θ1 -> γ `in` dom Θ0 \/ γ `notin` N) /\
@@ -6162,7 +6126,7 @@ Proof.
   intros Ψ Θ R' Qb Hj.
   induction Hj; intros N Δ1 Δ2 Θ0 PP0 PP κ
     IH Hwf0 HwfP0 HwfP Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth
-    HΨ HeqS HnfP HnfP0 HneP0ghost Hnthg Hrs Hrp.
+    HΨ HeqS HnfP HnfP0 HneP0ghost Hnthg Hrs Hrp HwfQb.
   (* ------------------------------------------------------------- unit *)
   - (* SUBJECT: PP = unit (var subjects are rigid, hence not unit). *)
     destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
@@ -6365,6 +6329,11 @@ Proof.
       |- _ =>
         rename Ha into Hrp1; rename Hb into Hrp2
     end.
+    (* the counterpart's components are well formed *)
+    assert (HwfQ1 : {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q1) }}a)
+      by (simpl in HwfQb; inversion HwfQb; assumption).
+    assert (HwfQ2 : {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q2) }}a)
+      by (simpl in HwfQb; inversion HwfQb; assumption).
     (* ---- first component, at (Θ0, κ); V strictly drops ---- *)
     assert (Hlt1 : mu_lt (mu_consis Θ κ P0a PPa Θ0)
                          (mu_consis Θ κ (pskl_arrow P0a P0b)
@@ -6374,7 +6343,7 @@ Proof.
       pose proof (Vpskl_arrow_lt1 Θ κ P0a P0b). lia. }
     destruct (IH _ Hlt1) as [HcIH1 _].
     destruct (HcIH1 N Δ1 Δ2 Θ0 P0a PPa κ Θ Ψ1 Q1 eq_refl Hwf0 HwfP0a HwfPPa
-                    Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ1e Hj1 Hrs1 Hrp1)
+                    Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ1e Hj1 Hrs1 Hrp1 HwfQ1)
       as [PA1 [Θ1 [Hc1 [Hnew1 Hopt1]]]].
     (* the first node's soundness: id-witness, wf, Δ-invariants *)
     destruct (proj2 (proj2 a_assign_unify_consis_sound) _ _ _ _ _ _ _ Hc1
@@ -6469,7 +6438,7 @@ Proof.
     destruct (IH _ Hlt2) as [HcIH2 _].
     destruct (HcIH2 N Δ1 Δ2 Θ1 P0b PPb ζ1 Θ Ψ2 Q2 eq_refl Hwf1 HwfP0b1
                     HwfPPb1 HrigΘ1 Hnfd1 Hfaf1 Hζ1 Hwfth Hnfdth HΨ2e
-                    Hj2' Hrs2' Hrp2')
+                    Hj2' Hrs2' Hrp2' HwfQ2)
       as [PA2 [Θ2 [Hc2 [Hnew2 Hopt2]]]].
     (* ---- assemble the node ---- *)
     exists (pskl_arrow PA1 PA2), Θ2. split.
@@ -6500,10 +6469,8 @@ Proof.
         | exact Hincw1 | exact Hincw2 | exact Hζ1 | exact Hζ2
         | exact Hie1 | exact Hie2 ]. }
     (* ---- precision: componentwise, first component ζ1 → ζ2 ---- *)
-    assert (HawfPA1 : a_scope_pskl Θ1 PA1).
-    { destruct Hsol1 as [Qt1 [HeqQt1 [Hjoin1s _]]].
-      rewrite <- HeqQt1.
-      eapply ad_pat_consis_target_wf; exact Hjoin1s. }
+    assert (HawfPA1 : a_scope_pskl Θ1 PA1)
+      by (eapply a_consis_output_scope; eassumption).
     assert (Hlcζ2 : msubst_lc ζ2) by (eapply a_inc_msubst_lc; exact Hζ2).
     assert (Hlcc2 : msubst_lc (msubst_compose ζ2 w2))
       by (apply msubst_lc_compose;
@@ -6703,13 +6670,21 @@ Proof.
     { rewrite (msubst_pskl_open_lc PPb Hlcκ Hακ).
       rewrite bskl_to_pskl_open.
       apply Hrp1; clear - Fr; solve_notin_auto. }
+    assert (HwfQα : {{ ((α ~ abind_tvar) ++ Θ) ⨟ empty ⊢ₚₛ
+                       (bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f α))) }}a).
+    { rewrite bskl_to_pskl_open.
+      eapply a_wf_pskl_delta_mono;
+        [ apply a_wf_pskl_all_inv_at;
+            [ exact HwfQb
+            | rewrite ftvar_bskl_to_pskl; clear - Fr; solve_notin_auto ]
+        | intros ? ? Hc; exfalso; clear - Hc; fsetdec ]. }
     destruct (HcIH N (add α Δ1) (add α Δ2) ((α ~ abind_tvar) ++ Θ0)
                 (open_pskl_wrt_pskl P0b (pskl_var_f α))
                 (open_pskl_wrt_pskl PPb (pskl_var_f α)) κ
                 ((α ~ abind_tvar) ++ Θ) Ψ
                 (open_bskl_wrt_bskl Q (bskl_var_f α))
                 eq_refl Hwf0' HwfP0α HwfPα Hrig' Hnfd0' Hfaf' Hinc'
-                Hwfth' Hnfdth' HΨ Hjα Hrsα Hrpα)
+                Hwfth' Hnfdth' HΨ Hjα Hrsα Hrpα HwfQα)
       as [P1 [Θ1' [Hc [Hnew Hopt']]]].
     (* L8 : the output re-attaches the rigid head *)
     destruct (proj2 (proj2 a_assign_unify_consis_tvar_prefix) _ _ _ _ _ _ _ Hc ((α, abind_tvar) :: nil) Θ0 eq_refl
@@ -6960,13 +6935,21 @@ Proof.
     { rewrite (msubst_pskl_open_lc PPb Hlcκ Hακ).
       rewrite bskl_to_pskl_open.
       apply Hrp1; clear - Fr; solve_notin_auto. }
+    assert (HwfQα : {{ ((α ~ abind_tvar) ++ Θ) ⨟ empty ⊢ₚₛ
+                       (bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f α))) }}a).
+    { rewrite bskl_to_pskl_open.
+      eapply a_wf_pskl_delta_mono;
+        [ apply a_wf_pskl_all_inv_at;
+            [ exact HwfQb
+            | rewrite ftvar_bskl_to_pskl; clear - Fr; solve_notin_auto ]
+        | intros ? ? Hc; exfalso; clear - Hc; fsetdec ]. }
     destruct (HcIH N Δ1 (add α Δ2) ((α ~ abind_tvar) ++ Θ0)
                 (pskl_univ_ghost Pt0)
                 (open_pskl_wrt_pskl PPb (pskl_var_f α)) κ
                 ((α ~ abind_tvar) ++ Θ) Ψ
                 (open_bskl_wrt_bskl Q (bskl_var_f α))
                 eq_refl Hwf0' HwfP0α HwfPα Hrig' Hnfd0' Hfaf' Hinc'
-                Hwfth' Hnfdth' HΨ Hjα Hrsα Hrpα)
+                Hwfth' Hnfdth' HΨ Hjα Hrsα Hrpα HwfQα)
       as [P1 [Θ1' [Hc [Hnew Hopt']]]].
     destruct (proj2 (proj2 a_assign_unify_consis_tvar_prefix) _ _ _ _ _ _ _ Hc ((α, abind_tvar) :: nil) Θ0 eq_refl
                 (tvar_prefix_cons tvar_prefix_nil)) as [Θ1 HeqΘ1'].
@@ -7075,7 +7058,7 @@ Proof.
        right-to-left ([ad_refine_syn_rigid_ftv_rev]) into the join's
        fill, whose ftv the Δ2-refinement's ghost rule excludes.  Precision
        IS the competing Δ1-refinement. *)
-    rename H into HΨfill. rename H0 into HwfFill.
+    rename H into HΨfill.
     (* SUBJECT: PP = ◇ (var subjects are rigid, their image a var). *)
     destruct PP as [ | n | β1 | PPa PPb | PPb | | PPt ];
       simpl in HeqS; try discriminate.
@@ -7184,9 +7167,11 @@ Proof.
       by (exact (proj2 (a_wf_pskl_univ_ghost_inv HwfP))).
     assert (HgκP : guarded_pskl (msubst_pskl κ PPt))
       by (eapply guarded_pskl_msubst_inc; eauto).
+    (* the counterpart's body is well formed (wf of the counterpart, [HwfQb]) *)
+    assert (HwfQ : {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a)
+      by (exact (proj2 (a_wf_pskl_univ_ghost_inv HwfQb))).
     assert (HlcQ : lc_bskl Q)
-      by (apply lc_bskl_of_bskl_to_pskl;
-          eapply a_scope_pskl_lc, ad_pat_consis_target_wf; exact Hj).
+      by (apply lc_bskl_of_bskl_to_pskl; exact (a_wf_pskl_lc HwfQ)).
     assert (HgQ : guarded_bskl Q).
     { eapply ad_pat_consis_guarded_r;
         [ exact Hj | exact Hwfth | reflexivity | exact HgκP | exact HlcQ ]. }
@@ -7234,7 +7219,7 @@ Proof.
       pose proof (Vpskl_univ_ghost_lt Θ κ PPt). lia. }
     destruct (IH _ Hlt) as [HcIH _].
     destruct (HcIH N Δ1 Δ2 Θ0 Pt0 PPt κ Θ Ψ Q eq_refl Hwf0 HwfP0t HwfPPt
-                   Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hj Hrs' Hrp')
+                   Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hj Hrs' Hrp' HwfQ)
       as [P1 [Θ1 [Hc [Hnew Hopt']]]].
     exists (pskl_univ_ghost P1), Θ1. split.
     { apply a_consis__univ_ghost. exact Hc. }
@@ -7397,13 +7382,21 @@ Proof.
     assert (Hrpα : {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ2 ⊢ᵣₚ (msubst_pskl κ (pskl_univ_ghost PPt)) ⊳ (bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f α))) }}ad).
     { simpl. rewrite bskl_to_pskl_open. apply Hrp1.
       clear - Fr. fsetdec. }
+    assert (HwfQα : {{ ((α ~ abind_tvar) ++ Θ) ⨟ empty ⊢ₚₛ
+                       (bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f α))) }}a).
+    { rewrite bskl_to_pskl_open.
+      eapply a_wf_pskl_delta_mono;
+        [ apply a_wf_pskl_all_inv_at;
+            [ exact HwfQb
+            | rewrite ftvar_bskl_to_pskl; clear - Fr; solve_notin_auto ]
+        | intros ? ? Hc; exfalso; clear - Hc; fsetdec ]. }
     destruct (HcIH N (add α Δ1) Δ2 ((α ~ abind_tvar) ++ Θ0)
                 (open_pskl_wrt_pskl P0b (pskl_var_f α))
                 (pskl_univ_ghost PPt) κ
                 ((α ~ abind_tvar) ++ Θ) Ψ
                 (open_bskl_wrt_bskl Q (bskl_var_f α))
                 eq_refl Hwf0' HwfP0α HwfPα Hrig' Hnfd0' Hfaf' Hinc'
-                Hwfth' Hnfdth' HΨ Hjα Hrsα Hrpα)
+                Hwfth' Hnfdth' HΨ Hjα Hrsα Hrpα HwfQα)
       as [P1 [Θ1' [Hc [Hnew Hopt']]]].
     destruct (proj2 (proj2 a_assign_unify_consis_tvar_prefix) _ _ _ _ _ _ _ Hc ((α, abind_tvar) :: nil) Θ0 eq_refl
                 (tvar_prefix_cons tvar_prefix_nil)) as [Θ1 HeqΘ1'].
@@ -7523,9 +7516,9 @@ Proof.
       by (exact (proj2 (a_wf_pskl_univ_ghost_inv HwfP))).
     assert (HgκP : guarded_pskl (msubst_pskl κ PPt))
       by (eapply guarded_pskl_msubst_inc; eauto).
+    pose proof HwfQb as HwfQ.
     assert (HlcQ : lc_bskl Q)
-      by (apply lc_bskl_of_bskl_to_pskl;
-          eapply a_scope_pskl_lc, ad_pat_consis_target_wf; exact Hj).
+      by (apply lc_bskl_of_bskl_to_pskl; exact (a_wf_pskl_lc HwfQ)).
     assert (HgQ : guarded_bskl Q).
     { eapply ad_pat_consis_guarded_r;
         [ exact Hj | exact Hwfth | reflexivity | exact HgκP | exact HlcQ ]. }
@@ -7557,7 +7550,7 @@ Proof.
         pose proof (Vpskl_univ_ghost_lt Θ κ PPt). lia. }
       destruct (IH _ Hlt) as [HcIH _].
       destruct (HcIH N Δ1 Δ2 Θ0 P0t PPt κ Θ Ψ Q eq_refl Hwf0 HwfP0t HwfPPt
-                     Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hj Hrs' Hrp')
+                     Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hj Hrs' Hrp' HwfQ)
         as [P1 [Θ1 [Hc [Hnew Hopt']]]].
       exists (pskl_univ_ghost P1), Θ1. split.
       { apply a_consis__univ_ghost. exact Hc. }
@@ -7587,7 +7580,7 @@ Proof.
         pose proof (Vpskl_univ_ghost_lt Θ κ PPt). lia. }
       destruct (IH _ Hlt) as [HcIH _].
       destruct (HcIH N Δ1 Δ2 Θ0 PP0 PPt κ Θ Ψ Q eq_refl Hwf0 HwfP0 HwfPPt
-                     Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hj Hrs Hrp')
+                     Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hj Hrs Hrp' HwfQb)
         as [P1 [Θ1 [Hc [Hnew Hopt']]]].
       exists P1, Θ1. split.
       { apply a_consis__univ_ghost2;
@@ -7646,7 +7639,10 @@ Proof.
     (* recurse on the premise at the SAME measure *)
     destruct (IHHj N Δ1 Δ2 Θ0 PP0 PP κ IH Hwf0 HwfP0 HwfP Hrig Hnfd0 Hfaf
                    Hinc Hwfth Hnfdth HΨ HeqS HnfP HnfP0 HneP0ghost Hnthg
-                   Hrs' Hrp')
+                   Hrs' Hrp'
+                   ltac:(rewrite bskl_to_pskl_ptyp_to_bskl_syn;
+                         apply a_wf_ptyp_to_wf_pskl;
+                         eapply a_wf_aenv_binds_def_wf; eassumption))
       as [P1 [Θ1 [Hc [Hnew Hopt']]]].
     exists P1, Θ1. split; [ exact Hc | ].
     split; [ exact Hnew | ].
@@ -7667,7 +7663,7 @@ Lemma consis_complete_step : forall m,
 Proof.
   intros m IH. unfold consis_complete_at.
   intros N Δ1 Δ2 Θ0 P0 P κ Θ Ψ Qb Hm Hwf0 HwfP0 HwfP Hrig Hnfd0 Hfaf
-    Hinc Hwfth Hnfdth HΨ Hjoin Hrs Hrp.
+    Hinc Hwfth Hnfdth HΨ Hjoin Hrs Hrp HwfQb.
   subst m.
   (* ⭐ DISPATCH ORDER (2026-08-17): [C-GhostR] is tried BEFORE the two
      flexible layers, which is the order the reference implementation
@@ -7859,7 +7855,8 @@ Proof.
           [ exact Hrs | exact Hwfth
           | apply mono_ptyp_to_bskl_syn; exact HmC
           | reflexivity
-          | eapply ad_pat_consis_target_binds; exact Hjoin'' ]. }
+          | eapply ad_pat_consis_target_binds;
+              [ exact Hjoin'' | apply uskl_no_ghost_ptyp ] ]. }
       (* transport the join target from C to κβ̂ along the equivalence *)
       assert (Hvβ : forall α, α `in` ftvar_in_ptyp (msubst_lookup κ β) ->
                               a_binds_tvar α Θ).
@@ -8022,8 +8019,7 @@ Proof.
       assert (Hgκ : guarded_pskl (msubst_pskl κ P))
         by (eapply guarded_pskl_msubst_inc; eauto).
       assert (HlcQb : lc_bskl Qb)
-        by (apply lc_bskl_of_bskl_to_pskl;
-            eapply a_scope_pskl_lc, ad_pat_consis_target_wf; eassumption).
+        by (apply lc_bskl_of_bskl_to_pskl; exact (a_wf_pskl_lc HwfQb)).
       assert (HgQb : guarded_bskl Qb)
         by (eapply ad_pat_consis_guarded_r; eauto).
       change ({{ Θ ⨟ Δ1 ⊢ᵣ (bskl_univ_ghost (pskl_to_bskl_inh (msubst_pskl κ P0'))) ⊳ Qb }}ad)
@@ -8037,7 +8033,7 @@ Proof.
         pose proof (Vpskl_univ_ghost_lt Θ κ P0'). lia. }
       destruct (IH _ Hlt) as [HcIH _].
       destruct (HcIH N Δ1 Δ2 Θ0 P0' P κ Θ Ψ Qb eq_refl Hwf0 HwfP0' HwfP
-                     Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hjoin Hrs' Hrp)
+                     Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hjoin Hrs' Hrp HwfQb)
         as [P1 [Θ1 [Hc [Hnew Hopt']]]].
       exists P1, Θ1. split.
       { apply a_consis__univ_ghost_r;
@@ -8088,6 +8084,9 @@ Lemma consis_complete : forall Ψ Θ R Qb,
     R = pskl_to_uskl (msubst_pskl κ P) ->
     {{ Θ ⨟ Δ1 ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Qb }}ad ->
     {{ Θ ⨟ Δ2 ⊢ᵣₚ (msubst_pskl κ P) ⊳ (bskl_to_pskl Qb) }}ad ->
+    (* the counterpart is well formed — the paper's presupposition of skeleton
+       consistency (declarative.tex:2074), docs/WF-SIDE-CONDITIONS.md §2a *)
+    {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Qb) }}a ->
     exists P1 Θ1,
       a_consis Δ1 Δ2 Θ0 P0 P P1 Θ1 /\
       (forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
@@ -8097,12 +8096,12 @@ Lemma consis_complete : forall Ψ Θ R Qb,
            {{ Θ ⨟ (Δ1 `union` Δ2) ⊢ₚᵣ (msubst_bskl ζ (pskl_to_bskl_syn P1)) ⊑ (bskl_to_pskl Qb) }}ad).
 Proof.
   intros Ψ Θ R Qb Hj Δ1 Δ2 Θ0 P0 P κ
-    Hwf0 HwfP0 HwfP Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ HeqS Hrs Hrp.
+    Hwf0 HwfP0 HwfP Hrig Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ HeqS Hrs Hrp HwfQb.
   subst R.
   destruct (complete_mu (mu_consis Θ κ P0 P Θ0)) as [Hc _].
   (* the avoid set is vacuous at the top: [N := ∅] *)
   destruct (Hc empty Δ1 Δ2 Θ0 P0 P κ Θ Ψ Qb eq_refl Hwf0 HwfP0 HwfP Hrig
-              Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hj Hrs Hrp)
+              Hnfd0 Hfaf Hinc Hwfth Hnfdth HΨ Hj Hrs Hrp HwfQb)
     as [P1 [Θ1 [Hcons [_ Hopt]]]].
   exists P1, Θ1. split; [ exact Hcons | exact Hopt ].
 Qed.
@@ -8122,6 +8121,12 @@ Lemma a_consis_complete : forall Θ0 P0 P,
     {{ empty ⨟ Θ ⊢ˢ (pskl_to_uskl (msubst_pskl κ P)) ∼ Qb }}ad ->
     {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Qb }}ad ->
     {{ Θ ⨟ empty ⊢ᵣₚ (msubst_pskl κ P) ⊳ (bskl_to_pskl Qb) }}ad ->
+    (* [paper-gap → statement] the counterpart is well formed: the paper's
+       presupposition of skeleton consistency (declarative.tex:2074).  Its
+       Ghost rule, which this mechanization now follows, fills a ghost with an
+       ARBITRARY counterpart, so nothing else constrains [Qb] there.
+       docs/WF-SIDE-CONDITIONS.md §2a. *)
+    {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Qb) }}a ->
     exists P1 Θ1,
       a_consis empty empty Θ0 P0 P P1 Θ1 /\
       (forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
@@ -8131,7 +8136,7 @@ Lemma a_consis_complete : forall Θ0 P0 P,
            {{ Θ ⨟ empty ⊢ₚᵣ
              (msubst_bskl ζ (pskl_to_bskl_syn P1)) ⊑ (bskl_to_pskl Qb) }}ad).
 Proof.
-  intros Θ0 P0 P Hwf0 HwfP0 HwfP κ Θ Qb Hinc Hwfth Hjoin Hrs Hrp.
+  intros Θ0 P0 P Hwf0 HwfP0 HwfP κ Θ Qb Hinc Hwfth Hjoin Hrs Hrp HwfQb.
   (* [Δ1 ∪ Δ2 = ∅], so rigid / no_flex_dep / flex_above_free are vacuous. *)
   assert (Hcc : exists P1 Θ1,
       a_consis empty empty Θ0 P0 P P1 Θ1 /\

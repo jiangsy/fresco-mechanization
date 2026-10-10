@@ -1454,7 +1454,7 @@ Proof.
     assert (HwfΞΘ0 : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (Hwfpaint : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ ptyp_to_pskl τ }}a).
-    { apply a_scope_pskl_of_ptyp_vis;
+    { apply a_wf_pskl_of_ptyp_vis;
         [ apply mono_ptyp_lc; exact Hm | ].
       intros α1 Hα1.
       pose proof (a_wf_ptyp_ftv_tvarish Hwfτ Hα1) as Ht.

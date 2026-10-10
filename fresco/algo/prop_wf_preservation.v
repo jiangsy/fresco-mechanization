@@ -801,7 +801,7 @@ Proof.
     assert (HwfΞΘ0 : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
     assert (Hwfpaint : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ ptyp_to_pskl τ }}a).
-    { apply a_scope_pskl_of_ptyp_vis;
+    { apply a_wf_pskl_of_ptyp_vis;
         [ apply mono_ptyp_lc; exact Hm | ].
       intros α1 Hα1.
       pose proof (a_wf_ptyp_ftv_tvarish Hwfτ Hα1) as Ht.
@@ -988,7 +988,7 @@ Proof.
         unfold binds; apply in_or_app; left; exact Hb. }
       apply a_isub_cons_var_skl;
         [ eapply a_isub_strengthen_decls_src; eauto
-        | eapply a_scope_pskl_lc; eauto ]. }
+        | eapply a_wf_pskl_lc; eauto ]. }
     split.
     { apply a_wf_aenv__var; [ exact Hxout | | exact Hwf1 ].
       eapply a_wf_pskl_isub; [ exact HscQ' | exact Hle ]. }
@@ -1007,6 +1007,22 @@ Corollary a_sub_output_wf : forall NM M P0 Θ0 P P' Θ1,
 Proof.
   intros * Hrun Hwf HwfP0 HwfP.
   destruct ((proj1 a_sub_output_wf_bundle) _ _ _ _ _ _ _ Hrun Hwf HwfP0 HwfP)
+    as [_ [_ HwfOut]].
+  exact HwfOut.
+Qed.
+
+(** …and the flexible walk's output, in ITS output context. *)
+Corollary a_sub_flex_output_wf : forall NM M P0 Θ0 Ξ α Q Θ1,
+  a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
+  a_decls Ξ ->
+  {{ ⊢ (Ξ ++ Θ0) }}a ->
+  {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a ->
+  a_binds_tvar α (Ξ ++ Θ0) ->
+  {{ Θ1 ⨟ empty ⊢ₚₛ Q }}a.
+Proof.
+  intros * Hrun Hdecls Hwf HwfP0 Hαb.
+  destruct ((proj2 a_sub_output_wf_bundle) _ _ _ _ _ _ _ _ Hrun
+              Hwf Hdecls HwfP0 Hαb)
     as [_ [_ HwfOut]].
   exact HwfOut.
 Qed.

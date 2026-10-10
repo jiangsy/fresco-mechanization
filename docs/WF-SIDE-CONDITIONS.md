@@ -205,41 +205,56 @@ conversion, so those rows go through `ad_consis_join_inh` /
 have no ghosts, so the condition is free there — which is why the TY half of the
 `d` ⇄ `ad` bridge is closed and the SK half is not.
 
-## 2a. Skeleton consistency / subtyping Ghost — wf of the FILL. **[2026-10-10: decl via (B); ad still (A), by necessity]**
+## 2a. Skeleton consistency / subtyping Ghost — wf of the FILL. **[2026-10-10: both layers via (B)]**
 
 > declarative.tex:2002 (`Ghost`, consistency) and :1912 (`Ghost`, skeleton
 > subtyping) — both rules have **no premise**.  The fill's well-formedness is
 > part of §2's presupposition (wf of the counterpart).
 
-The mech's Ghost rows used to check the fill (`Γ ⨟ ∅ ⊢ₚₛ P`) — the same pattern
-§1 removed from refinement on 2026-10-08.
+The mech's Ghost rows used to check the fill (`Θ ⨟ ∅ ⊢ₚₛ P`) — the same pattern
+§1 removed from refinement on 2026-10-08.  They no longer do, in EITHER layer:
+`d_pat_consis__ghost`, `d_pat_sub__ghost`, `ad_pat_consis__ghost`,
+`ad_pat_sub__ghost` and `ad_pat_sub_fuel__ghost` are all the paper's Ghost.
+The `d → ad` bridges (`d_pat_consis_to_ad`, `d_consis_join_to_ad`,
+`d_pat_sub_to_ad`, `algo_decl/prop_conserv.v`) are hypothesis-free again.
 
-- **Declarative (`d_pat_consis__ghost`, `d_pat_sub__ghost`) — removed.** The
-  rules are the paper's.  Nothing in the declarative metatheory read the
-  premise.  The one place that needs it is the `d → ad` bridge
-  (`algo_decl/prop_conserv.v`): `d_pat_consis_to_ad`, `d_consis_join_to_ad`
-  and `d_pat_sub_to_ad` now take the counterpart's well-formedness
-  (`{{ ⌊Γ⌋ ⨟ Δ ⊢ₚₛ ⌊Q⌋ }}a`, at ANY Δ, because a ∀ on the counterpart moves
-  its variable into Δ too; the ghost case shrinks Δ to ∅ with
-  `a_wf_pskl_delta_mono`).  `d_pat_to_ad` stays hypothesis-free: the base rows
-  carry the counterpart's wf already (§4).
-- **Decl-in-algo (`ad_pat_consis__ghost`, `ad_pat_sub__ghost`,
-  `ad_pat_sub_fuel__ghost`) — KEPT, deliberately.** Route (B) is not available
-  without changing a `README.v` statement: `a_consis_complete` carries no wf
-  hypothesis on its declarative counterpart `Qb`, and its proof reads the
-  join target's scope / local closure off the derivation
-  (`ad_pat_consis_target_wf`, consumed at the C-Arrow precision transport and
-  the C-UnivGhostR guardedness step).  At a position where both the subject
-  and the input skeleton are ghosts, no hypothesis of that theorem constrains
-  `Qb`'s fill — so the fact is genuinely not available from the statement.
-  Removing the premise means adding the paper's presupposition (wf of the
-  counterpart) to `a_consis_complete`.  The two subtyping Ghost rows keep it
-  in step with consistency (`ad_pat_sub_target_wf` is the twin reader, used by
-  subtyping completeness and both type-inference theorems); removing it there
-  alone was not attempted.
+**Where the presupposition is paid** — as a statement HYPOTHESIS, in the
+disciplined form `{{ Θ ⨟ ∅ ⊢ₚₛ ⌊Qb⌋ }}a`, on exactly the statements whose
+proofs read a join TARGET with a plain-`◇` subject:
 
-So the two layers now differ on exactly this premise, and the bridge's
-hypothesis is where the difference is paid.
+- `a_consis_complete` (README, thm:complete-consistency) and its bundle
+  (`consis_complete_at` / `consis_complete_core` / `consis_complete`).  The
+  bundle reads the target's local closure at C-UnivGhost / C-UnivGhost2 /
+  C-UnivGhostR and decomposes the hypothesis along every recursive call
+  (arrow components; a ∀ body via `a_wf_pskl_all_inv_at`, Δ shrunk back to ∅;
+  a `∀◇` body via `a_wf_pskl_univ_ghost_inv`; a flexible's definition via
+  `a_wf_aenv_binds_def_wf`).
+- P6-Cs / P6-Ss / P6-L — the README corollaries `a_lookeq_solve_complete`,
+  `a_looksub_solve_complete`, `a_extract_complete` take the disciplined form;
+  their `_gen` inductions carry only what they read, `lc_bskl Q` (the four
+  consistency-unify lemmas of prop_eq_cstr.v now thread it through the
+  defined-flexible chain).  P6-Cs's subject `(κR')[ψa/α]` may hold a plain
+  `◇` from `R'`, so its target is genuinely unconstrained there.
+
+Every caller already had it: P7's motive carries `HwfQ` (§P7b below), and
+the four type-inference / skeleton-inference call sites of
+`a_consis_complete` join a TYPE painting, whose target is a well-formed type
+painting by the derivation alone (`ad_pat_consis_msubst_target_wf`).
+
+**Where it is NOT needed.**  The Ghost rule is the only rule that invents a
+counterpart, and it needs a plain-`◇` subject.  So whenever the subject has
+none (`uskl_no_ghost`, def_shapes.v — every type painting, every decorated
+skeleton), the target is scoped by the derivation:
+`ad_pat_consis_target_scope` (consistency; `_binds` / `_lc` are its
+projections; `_wf_ghost_free` the disciplined form for ghost-free subjects)
+and `ad_pat_sub_target_scope_ty` (TYPE-sort subtyping, whose ForallL
+instantiates with a ghost-free type).  P6-Cv and P6-Sv (decorated subjects,
+`uskl_rsubst_no_ghost`), consistency soundness and `a_sub_mode_ty` typing
+use these and gained nothing.  On the SOUNDNESS side the scope of an
+algorithmic run's output comes from the run (`a_sub_output_wf`,
+`a_sub_flex_output_wf`, `a_consis_output_wf_nil`, and — inside consistency
+completeness, which `prop_wf_preservation.v` imports — the scoping-only
+`a_consis_output_scope`), not from the join's target.
 
 ---
 
@@ -359,71 +374,61 @@ This is the well-formedness analogue of the colour/mode discipline: the conditio
 that makes the bad derivation impossible usually lives *outside* the rule.
 
 
-## Skeleton wf in the algo layer: `a_wf_pskl` (disciplined) vs `a_scope_pskl` (scoping-only)
-   (registered 2026-07-18; renamed same day — the disciplined judgment now owns the `wf` name)
+## Skeleton wf in the algo layer: ONE judgement, `a_wf_pskl`
+   (registered 2026-07-18; ⭐ the second, scoping-only inductive RETIRED 2026-10-10)
 
-The algo layer has TWO skeleton judgments, both in algo/def_rules.v:
+- **`a_wf_pskl` (`Θ ⨟ Δ ⊢ₚₛᵃ P`) — THE paper's skeleton wf.**  Two contexts:
+  ∀ binds its variable in BOTH Θ and Δ, the variable rule reads only Θ, and a
+  `∀◇`-body must be guarded and well-formed at `Θ∖Δ ⨟ ∅` (`aenv_minus`).  This
+  is the ∀◇-discipline behind §1's capture example: `∀α.∀◇.(α→α)` is
+  well-formed in NO context.  Whenever the paper writes skeleton wf, it means
+  this judgment — the paper has no weak variant.
 
-- **`a_wf_pskl` (`Θ ⨟ Δ ⊢ₚₛᵃ P`) — THE paper's skeleton wf** (ex-`ad_wf_pskl`,
-  moved up from def_consis_refine.v).  Two contexts: ∀ binds its variable in
-  BOTH Θ and Δ (since 2026-10-08; before, in Δ only), the variable rule reads
-  only Θ, and a `∀◇`-body must be guarded and well-formed at `Θ∖Δ ⨟ ∅`
-  (`aenv_minus`).  This is the ∀◇-discipline behind §1's capture example:
-  `∀α.∀◇.(α→α)` is well-formed in NO context.  Whenever the paper writes
-  skeleton wf, it means this judgment — the paper has no weak variant.
+- **`a_scope_pskl` is no longer a judgement.**  Until 2026-10-10 it was a
+  second, scoping-only INDUCTIVE (single context, `∀◇` merely recursing, so
+  `∀α.∀◇.(α→α)` passed it — the reference implementation's `is_wf_` reading).
+  It is now the Definition
 
-- **`a_scope_pskl` (algo/def_rules.v:164) — scoping only.**  Single context Θ,
-  ∀ binds a plain `abind_tvar` into Θ, `pskl_univ_ghost` merely recurses (no
-  guardedness, no Δ-clearing).  `∀α.∀◇.(α→α)` PASSES it.  The reference
-  implementation's `is_wf_` takes the same weak reading.
+  ```coq
+  Definition a_scope_pskl Θ P :=
+    lc_pskl P /\ (forall α, α ∈ ftvar_in_pskl P -> a_binds_tvar α Θ).
+  ```
 
-**Where each sits.**
+  (algo/def_rules.v), which was proved equivalent to the old inductive in
+  both directions before the switch.  Kit, prop_swap.v §0:
+  `a_scope_pskl_of_wf` (at any Δ; also an `Extern` hint),
+  `a_scope_pskl_lc`, `a_scope_pskl_ftv_binds`, `a_scope_pskl_var`,
+  `a_scope_pskl_all_of_open`, `a_scope_pskl_all_close`; `a_wf_pskl_lc` moved
+  there from consistency soundness.
+
+**Where scoping (and not wf) is all there is.**  The old note here said
+"delete `a_scope_pskl`" was unreachable because `ad_pat_consis_target_wf` (a
+join's target is scoped) gave nothing stronger.  That lemma is gone with the
+Ghost rows' fill premise (§2a), and the readers split three ways:
+
+- targets of joins with a plain-`◇` subject — the counterpart-wf HYPOTHESIS
+  (§2a), in the disciplined form, so those sites read `a_wf_pskl`;
+- targets of joins whose subject has no plain `◇` — scoped by the
+  derivation (`ad_pat_consis_target_scope`, `ad_pat_sub_target_scope_ty`);
+  only scoping is derivable there, so they return `a_scope_pskl`;
+- the OUTPUT of a consistency run, inside consistency completeness's C-Arrow
+  row — `a_consis_output_scope`, because the disciplined
+  `a_consis_output_wf` lives in a file that imports consistency completeness.
+
+`msubst_compose_id_pskl`, `a_inc_equiv_msubst_pskl` and the two
+`a_inc_equiv_downarrow_pskl*` take `a_scope_pskl`, because the last kind of
+caller exists; every other caller converts with `a_scope_pskl_of_wf`.
 
 - ForallL's instantiation premise is the DISCIPLINED `(Ξ ++ Θ0) ⨟ ∅ ⊢ₚₛᵃ P1`
-  (on `a_sub__forall_l` and both `a_subtag__forall_l_*`; commit a68fc84).
-  Rationale: the paper's `Θ0,Ξ ⊢ P1` there IS its disciplined wf; the premise
-  is consumed locally by the rule, so the usual transport objection to
-  rule-side placement does not apply; and soundness's ForallL case NEEDS it —
-  `ad_pat_sub__forall_l`'s scope premise is disciplined, and the
-  weak→disciplined conversion is FALSE by the `∀α.∀◇.(α→α)` example.
-
-- Statement-side hypotheses (soundness/completeness motives) all use the
-  disciplined `a_wf_pskl` (route B), as prop_sub_sound.v's bundle does.
-  Transport kit exists: `a_wf_pskl_isub` / `_weaken` / `_delta_mono` /
-  `_mono_subst` / `_msubst_inc` / `_subst_tvar` / `_open`.
-
-- ✅ **DONE 2026-08-09 — `a_wf_aenv__var` now stores the DISCIPLINED
-  `Θ ⨟ ∅ ⊢ₚₛᵃ P`.**  `a_scope_pskl` has NO rule site left; it survives only in
-  lemma statements.  What the queued-cleanup note above predicted, and what it
-  got wrong:
-  - The feared "split/guess outputs are disciplined" lemma pack was **already
-    there**: `a_split_wf` (typing/prop_soundness_typing.v) yields
-    `Θ1 ⨟ ∅ ⊢ₚₛᵃ P` for the split's left output — exactly what `a_pat__abs`
-    pushes — and `a_pat__abs_check` pushes `□`, discharged by
-    `a_wf_pskl__ghost`.  `ad_pat__abs` already carried the premise on the rule.
-    No new pack was needed.
-  - ⚙ **The real obstruction was ORDERING, and it was shallow**: `a_wf_pskl`
-    was declared AFTER `a_wf_aenv` in algo/def_rules.v, so naming it in the
-    constructor was a forward reference.  It depends only on `a_binds_tvar`
-    and `guarded_pskl`, so its block moved above `a_wf_aenv` — 28 lines.
-  - ⚠️ **The endgame "delete `a_scope_pskl`" is NOT reachable as stated.**  The
-    weak judgment is genuinely needed: `ad_pat_consis_target_wf` (a
-    consistency JOIN'S target erases to a scoped skeleton) yields
-    `a_scope_pskl` and nothing stronger, and `msubst_compose_id_pskl` /
-    `a_inc_equiv_msubst_pskl` are applied at exactly that subject.  Demanding
-    the disciplined form there was tried and reverted.  Strengthening
-    `ad_pat_consis_target_wf` is a real proof obligation (its `∀◇` cases would
-    have to establish guardedness and the Δ-reset), not a rename.
-  - Migration shape, for the record: consumers convert with
-    `a_scope_pskl_of_wf` (prop_swap.v §0), which is also an `#[export] Hint
-    Resolve`, so every site that discharged an entry's scope by `eauto` needed
-    no edit at all.  `a_wf_pskl_ftv_tvarish` (since 2026-10-09 replaced by
-    the stronger `a_wf_pskl_ftv_binds`) and `a_wf_pskl_to_a_scope_pskl`
-    moved from the two consistency files to prop_swap.v §0 (the earliest algo
-    proof file; algo/prop_basic.v would be the topical home but it IMPORTS
-    prop_swap.v).  `a_wf_pskl_scope` — pat/prop_soundness_pat.v's private copy
-    of the same conversion — was retired.  ⚠️ prop_swap.v has NO global
-    `Set Implicit Arguments` by design, so §0 scopes its own.
+  (on `a_sub__forall_l` and both `a_subtag__forall_l_*`; commit a68fc84):
+  the paper's `Θ0,Ξ ⊢ P1` there IS its disciplined wf, and soundness's
+  ForallL case needs it (`ad_pat_sub__forall_l`'s scope premise is
+  disciplined, and scope → wf is FALSE by the `∀α.∀◇.(α→α)` example).
+- `a_wf_aenv__var` stores the DISCIPLINED `Θ ⨟ ∅ ⊢ₚₛᵃ P` (since 2026-08-09).
+- Statement-side hypotheses (soundness/completeness motives) use the
+  disciplined `a_wf_pskl` (route B).  Transport kit: `a_wf_pskl_isub` /
+  `_weaken` / `_delta_mono` / `_mono_subst` / `_msubst_inc` / `_subst_tvar` /
+  `_open` / `_all_inv_at` / `_univ_ghost_inv`.
 
 **Rule of thumb** (unchanged): a premise consumed locally by its rule (like
 ForallL's) may be disciplined at the rule; a condition threaded through the

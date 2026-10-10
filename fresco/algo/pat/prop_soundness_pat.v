@@ -707,7 +707,7 @@ Qed.
 
 (** ⭐ Dropping a term entry from the MIDDLE of a well-formed context keeps
     it well-formed.  The point is that no payload can mention a term KEY
-    type-wise: every payload is checked by [a_wf_ptyp] / [a_scope_pskl],
+    type-wise: every payload is checked by [a_wf_ptyp] / [a_wf_pskl],
     both of which read only type-level entries, so they transport along
     [aenv_tbinds_le_strip_tm].  Freshness only shrinks.  This is what turns
     the Abs rows' body context [Ξ,x:P,Θ2] into the rule's output [Ξ,Θ2]. *)

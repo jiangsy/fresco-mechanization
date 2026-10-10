@@ -776,14 +776,16 @@ Lemma ad_pat_consis_arrow_refine_unify : forall Ψs Θ R Q,
   {{ Ψs ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall Ra Rb, R = uskl_arrow Ra Rb ->
   forall Δr Ql, delta_def_fresh Δr Θ -> {{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ Q }}ad ->
+  lc_bskl Q ->
   exists Ψ1 Ψ2 Q1 Q2,
     Ψs [=] Ψ1 `union` Ψ2 /\
     ({{ Ψ1 ⨟ Θ ⊢ˢ Ra ∼ Q1 }}ad) /\
     ({{ Ψ2 ⨟ Θ ⊢ˢ Rb ∼ Q2 }}ad) /\
     ({{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ (bskl_arrow Q1 Q2) }}ad) /\
-    ({{ Ψs ⨟ Θ ⊢ˢ (uskl_arrow Ra Rb) ∼ (bskl_arrow Q1 Q2) }}ad).
+    ({{ Ψs ⨟ Θ ⊢ˢ (uskl_arrow Ra Rb) ∼ (bskl_arrow Q1 Q2) }}ad) /\
+    lc_bskl (bskl_arrow Q1 Q2).
 Proof.
-  intros Ψs Θ R Q HwfΘ H; induction H; intros Ra Rb Heq Δr Ql Hdf Href;
+  intros Ψs Θ R Q HwfΘ H; induction H; intros Ra Rb Heq Δr Ql Hdf Href Hlc;
     try discriminate Heq.
   - (* __arrow: the structural case — read the split straight off *)
     injection Heq as Hea Heb; subst.
@@ -792,13 +794,15 @@ Proof.
     split; [ eassumption | ].
     split; [ eassumption | ].
     split; [ exact Href | ].
-    eapply ad_pat_consis__arrow; eassumption.
+    split; [ eapply ad_pat_consis__arrow; eassumption | exact Hlc ].
   - (* __flex_r: unfold ONE definition step on BOTH sides, then recurse *)
     subst.
     eapply IHad_pat_consis;
       [ exact HwfΘ | reflexivity | exact Hdf
       | eapply ad_refine_flexdef_target_unfold;
-          [ exact HwfΘ | exact Hdf | exact Href | reflexivity | eassumption ] ].
+          [ exact HwfΘ | exact Hdf | exact Href | reflexivity | eassumption ]
+      | apply mono_bskl_lc, mono_ptyp_to_bskl_syn;
+        eapply a_wf_aenv_binds_def_mono; eauto ].
 Qed.
 
 (* ---- guarded-source inversions of refinement ---- *)
@@ -863,18 +867,19 @@ Lemma ad_pat_consis_univ_ghost_guarded_unify : forall Ψs Θ R Q,
   forall R0, R = uskl_univ_ghost R0 ->
   forall Δr Ql, delta_def_fresh Δr Θ -> {{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ Q }}ad ->
   guarded_bskl Q ->
+  lc_bskl Q ->
   exists Q0,
     ({{ Ψs ⨟ Θ ⊢ˢ R0 ∼ Q0 }}ad) /\
     ({{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ Q0 }}ad) /\
-    guarded_bskl Q0.
+    guarded_bskl Q0 /\ lc_bskl Q0.
 Proof.
-  intros Ψs Θ R Q HwfΘ H; induction H; intros R0 Heq Δr Ql Hdf Href Hg;
+  intros Ψs Θ R Q HwfΘ H; induction H; intros R0 Heq Δr Ql Hdf Href Hg Hlc;
     try discriminate Heq.
   - (* __univ_ghost : target ∀◇Q — not guarded *) inversion Hg.
   - (* __univ_ghost_inh : target ∀ — not guarded *) inversion Hg.
   - (* __univ_ghost_drop : the ghost is dropped *)
     injection Heq as He; subst.
-    eexists; split; [ eassumption | split; [ exact Href | exact Hg ] ].
+    eexists; split; [ eassumption | split; [ exact Href | split; [ exact Hg | exact Hlc ] ] ].
   - (* __flex_r: unfold ONE definition step on BOTH sides, then recurse *)
     subst.
     eapply IHad_pat_consis;
@@ -882,6 +887,8 @@ Proof.
       | eapply ad_refine_flexdef_target_unfold;
           [ exact HwfΘ | exact Hdf | exact Href | reflexivity | eassumption ]
       | apply mono_bskl_guarded, mono_ptyp_to_bskl_syn;
+        eapply a_wf_aenv_binds_def_mono; eauto
+      | apply mono_bskl_lc, mono_ptyp_to_bskl_syn;
         eapply a_wf_aenv_binds_def_mono; eauto ].
 Qed.
 
@@ -892,21 +899,25 @@ Lemma ad_pat_consis_dot_univ_ghost_refine_unify : forall Ψs Θ R Q,
   {{ Ψs ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall R0, R = uskl_dot_univ_ghost R0 ->
   forall Δr Ql, delta_def_fresh Δr Θ -> {{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ Q }}ad ->
+  lc_bskl Q ->
   exists Q0,
     ({{ Ψs ⨟ Θ ⊢ˢ R0 ∼ Q0 }}ad) /\
-    ({{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ (bskl_univ_ghost Q0) }}ad).
+    ({{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ (bskl_univ_ghost Q0) }}ad) /\
+    lc_bskl Q0.
 Proof.
-  intros Ψs Θ R Q HwfΘ H; induction H; intros R0 Heq Δr Ql Hdf Href;
+  intros Ψs Θ R Q HwfΘ H; induction H; intros R0 Heq Δr Ql Hdf Href Hlc;
     try discriminate Heq.
   - (* __dot_univ_ghost *)
     injection Heq as He; subst.
-    eexists; split; [ eassumption | exact Href ].
+    eexists; split; [ eassumption | split; [ exact Href | inversion Hlc; assumption ] ].
   - (* __flex_r: unfold ONE definition step on BOTH sides, then recurse *)
     subst.
     eapply IHad_pat_consis;
       [ exact HwfΘ | reflexivity | exact Hdf
       | eapply ad_refine_flexdef_target_unfold;
-          [ exact HwfΘ | exact Hdf | exact Href | reflexivity | eassumption ] ].
+          [ exact HwfΘ | exact Hdf | exact Href | reflexivity | eassumption ]
+      | apply mono_bskl_lc, mono_ptyp_to_bskl_syn;
+        eapply a_wf_aenv_binds_def_mono; eauto ].
 Qed.
 
 (* ===================================================================== *)
@@ -1649,27 +1660,31 @@ Lemma ad_pat_consis_all_syn_refine_unify : forall Ψs Θ R Q,
   {{ Ψs ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall R0, R = uskl_all_syn R0 ->
   forall Δr Ql, delta_def_fresh Δr Θ -> {{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ Q }}ad ->
+  lc_bskl Q ->
   exists L Q0,
     (forall α, α `notin` L ->
        {{ Ψs ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ˢ (open_uskl_wrt_uskl R0 (uskl_var_f α))
             ∼ (open_bskl_wrt_bskl Q0 (bskl_var_f α)) }}ad) /\
+    (forall α, lc_bskl (open_bskl_wrt_bskl Q0 (bskl_var_f α))) /\
     (({{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ (bskl_all_inh Q0) }}ad) \/
      ({{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ (bskl_all_syn Q0) }}ad)).
 Proof.
-  intros Ψs Θ R Q HwfΘ H; induction H; intros R0 Heq Δr Ql Hdf Href;
+  intros Ψs Θ R Q HwfΘ H; induction H; intros R0 Heq Δr Ql Hdf Href Hlc;
     try discriminate Heq.
   - (* __forall_inh_untagged *)
     injection Heq as He; subst.
-    exists L, Q; split; [ assumption | left; exact Href ].
+    exists L, Q; split; [ assumption | split; [ inversion Hlc; auto | left; exact Href ] ].
   - (* __forall_syn *)
     injection Heq as He; subst.
-    exists L, Q; split; [ assumption | right; exact Href ].
+    exists L, Q; split; [ assumption | split; [ inversion Hlc; auto | right; exact Href ] ].
   - (* __flex_r *)
     subst.
     eapply IHad_pat_consis;
       [ exact HwfΘ | reflexivity | exact Hdf
       | eapply ad_refine_flexdef_target_unfold;
-          [ exact HwfΘ | exact Hdf | exact Href | reflexivity | eassumption ] ].
+          [ exact HwfΘ | exact Hdf | exact Href | reflexivity | eassumption ]
+      | apply mono_bskl_lc, mono_ptyp_to_bskl_syn;
+        eapply a_wf_aenv_binds_def_mono; eauto ].
 Qed.
 
 (* the ε-tagged mirror: [uskl_all_tag] subjects (C-ForallInh's tagged row
@@ -1679,28 +1694,34 @@ Lemma ad_pat_consis_all_tag_refine_unify : forall Ψs Θ R Q,
   {{ Ψs ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
   forall εr R0, R = uskl_all_tag εr R0 ->
   forall Δr Ql, delta_def_fresh Δr Θ -> {{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ Q }}ad ->
+  lc_bskl Q ->
   exists L Q0 Ψ0,
     (forall α, α `notin` L ->
        {{ Ψ0 ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ˢ (open_uskl_wrt_uskl R0 (uskl_var_f α))
             ∼ (open_bskl_wrt_bskl Q0 (bskl_var_f α)) }}ad) /\
+    (forall α, lc_bskl (open_bskl_wrt_bskl Q0 (bskl_var_f α))) /\
     ((({{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ (bskl_all_inh Q0) }}ad) /\ Ψs [=] add εr Ψ0) \/
      (({{ Θ ⨟ Δr ⊢ᵣ Ql ⊳ (bskl_all_syn Q0) }}ad) /\ Ψs [=] Ψ0)).
 Proof.
-  intros Ψs Θ R Q HwfΘ H; induction H; intros εr R0 Heq Δr Ql Hdf Href;
+  intros Ψs Θ R Q HwfΘ H; induction H; intros εr R0 Heq Δr Ql Hdf Href Hlc;
     try discriminate Heq.
   - (* __forall_inh_tagged *)
     injection Heq as He1 He2; subst.
-    exists L, Q, Ψ0; split; [ assumption | left; split; assumption ].
+    exists L, Q, Ψ0; split;
+      [ assumption | split; [ inversion Hlc; auto | left; split; assumption ] ].
   - (* __forall_syn_tagged *)
     injection Heq as He1 He2; subst.
     exists L, Q, Ψ; split;
-      [ assumption | right; split; [ exact Href | clear; fsetdec ] ].
+      [ assumption
+      | split; [ inversion Hlc; auto | right; split; [ exact Href | clear; fsetdec ] ] ].
   - (* __flex_r *)
     subst.
     eapply IHad_pat_consis;
       [ exact HwfΘ | reflexivity | exact Hdf
       | eapply ad_refine_flexdef_target_unfold;
-          [ exact HwfΘ | exact Hdf | exact Href | reflexivity | eassumption ] ].
+          [ exact HwfΘ | exact Hdf | exact Href | reflexivity | eassumption ]
+      | apply mono_bskl_lc, mono_ptyp_to_bskl_syn;
+        eapply a_wf_aenv_binds_def_mono; eauto ].
 Qed.
 
 (* ===================================================================== *)
@@ -2429,6 +2450,19 @@ repeat split.
 Qed.
 
 
+(** The counterpart's local closure, at a SUB-counterpart: read off the
+    statement's [lc_bskl Q] through the inversions the rows performed. *)
+Ltac lc_tgt :=
+  match goal with
+  | |- lc_bskl _ =>
+      first
+        [ assumption
+        | solve [ eauto ]
+        | match goal with
+          | H : lc_bskl _ |- _ => solve [ inversion H; subst; eauto ]
+          end ]
+  end.
+
 Theorem a_lookeq_solve_complete_gen :
   forall n NM Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α Θs Δρ Ψρ Rsub,
   size_uskl R' + size_pskl P0 <= n ->       (* measure: R' recursion + P0 ∀◇-stripping *)
@@ -2466,6 +2500,12 @@ Theorem a_lookeq_solve_complete_gen :
   Ψa [<=] Ψsub ->                          (* ψa's subtree tags ⊆ index *)
   (* subject = the ρ-IMAGE of the paper's (κR)[ψa/α] (ρ = id ⇒ the paper's) *)
   {{ Ψsub ⨟ Θ ⊢ˢ Rsub ∼ Q }}ad ->
+  (* the counterpart is locally closed — the part of its well-formedness (the
+     paper's presupposition, declarative.tex:2074) this induction reads: a
+     plain-◇ subject's Ghost row fills an ARBITRARY counterpart.  The
+     corollary below takes the disciplined form; docs/WF-SIDE-CONDITIONS.md
+     §2a. *)
+  lc_bskl Q ->
   (* … and that subject is WELL-FORMED (the paper's prose "all inputs are
      well-formed"; erased to a pskl so the existing [a_wf_pskl] can state it —
      ⌊·⌋ˢ maps the dotted ghosts onto the plain ones, and the only content
@@ -2599,7 +2639,7 @@ Proof.
   { exfalso. pose proof (size_uskl_min R'). pose proof (size_pskl_min P0). lia. }
   intros HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0 HwfPi Hκ Hκw Hψaw
          HαΘ HαΘ0 HeraseR HscopeS HlcS Htags Hdisj Hsub
-         Hdfresh Hpre HΨs1 HΨs2 Hconsis HwfSub Hrefine
+         Hdfresh Hpre HΨs1 HΨs2 Hconsis HlcQ HwfSub Hrefine
          Hrho HΘs HΨρ Hrfr HΔρΔ HΔρw HΔρftv HΔρPi Hψaap L HL.
   (* the two ρ-scope facts every row reuses: Θs is a sub-context of Θ, and the
      ρ-replaced variables are rigid tvars OF Θ *)
@@ -2729,7 +2769,7 @@ Proof.
     simpl in Hrefine.  (* msubst κ □ = □ ; inh □ = bskl_ghost *)
     assert (Hsk : is_sskl Q)
       by (eapply ad_refine_syn_ghost_sskl; [ exact Hrefine | reflexivity
-                 | exact (ad_pat_consis_target_lc Hconsis) ]).
+                 | exact HlcQ ]).
     assert (HΨe : Ψsub [=] empty)
       by (eapply ad_pat_consis_sskl_tags; [ exact Hconsis | exact HwfΘ | exact Hsk ]).
     assert (HΨa0 : Ψa [=] empty) by (clear - HΨs2 HΨe; fsetdec).
@@ -2836,8 +2876,8 @@ Proof.
        consistency and the refinement side, so we get ONE continuation with
        [Q := bskl_arrow Q1 Q2]. *)
     destruct (ad_pat_consis_arrow_refine_unify HwfΘ Hconsis eq_refl
-                (delta_def_fresh_empty Θ) Hrefine)
-      as (Ψ1 & Ψ2 & Q1 & Q2 & H6 & H1 & H4 & Href0 & Hcons0).
+                (delta_def_fresh_empty Θ) Hrefine HlcQ)
+      as (Ψ1 & Ψ2 & Q1 & Q2 & H6 & H1 & H4 & Href0 & Hcons0 & HlcQ12).
     clear Hconsis Hrefine.
     rename Href0 into Hrefine.
     + (* Q = bskl_arrow Q1 Q2.  Dispatch the P0-grid. *)
@@ -2928,7 +2968,7 @@ Proof.
                      (uskl_to_pskl Ra) P01 Pi Ra α Θs Δρ Ψρ1 Ra'
                      Hml HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP01 HwfPi Hκ Hκw Hψaw
                      HαΘ HαΘ0 eq_refl
-                     HscopeSa HlcSa Htags HdisjSa HsubL Hdfresh Hpre HΨs1L HΨs2L H1 HwfSubA Href1
+                     HscopeSa HlcSa Htags HdisjSa HsubL Hdfresh Hpre HΨs1L HΨs2L H1 ltac:(lc_tgt) HwfSubA Href1
                      Hrhoa HΘs HΨρ1e Hrfr HΔρΔ HΔρw
                      ltac:(eapply rsubst_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; solve_notin_auto
@@ -3174,7 +3214,7 @@ Proof.
                      Ψ2 ψa Q2 (uskl_to_pskl Rb) P02 Pa1 Rb α Θs Δρ Ψρ2 Rb'
                      Hmr HwfΘ HwfΞs1 HwfΘw Hmon Hnr HwfP02R HwfPa1 Hinc1 HκwR Hψaw
                      HαΘ Hαr eq_refl
-                     HscopeSbR HlcSb Htags HdisjSb HsubR Hdfresh Hpre1 HΨs1R HΨs2R H4 HwfSubB Href2
+                     HscopeSbR HlcSb Htags HdisjSb HsubR Hdfresh Hpre1 HΨs1R HΨs2R H4 ltac:(lc_tgt) HwfSubB Href2
                      Hrhob HΘs HΨρ2e HrfrR HΔρΔ HΔρw HΔρftvR HΔρPa1 Hψaap
                      (add α (union (union (union L (dom Θ))
                                    (union (dom Ξs1) (dom Ξc1)))
@@ -3496,7 +3536,7 @@ Proof.
                      HαΘ HαΘ0
                      (eq_refl : ⌊ uskl_arrow Ra Rb ⌋ˢ
                                 = pskl_arrow (uskl_to_pskl Ra) (uskl_to_pskl Rb))
-                     HscopeS HlcS Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hcons0 HwfSub Href'
+                     HscopeS HlcS Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hcons0 ltac:(lc_tgt) HwfSub Href'
                      Hrho0 HΘs HΨρ Hrfr HΔρΔ HΔρw
                      ltac:(eapply rsubst_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; solve_notin_auto
@@ -3543,8 +3583,8 @@ Proof.
     inversion HlcS; subst.
     match goal with H : forall α0, lc_uskl _ |- _ => rename H into Hlcbody end.
     destruct (ad_pat_consis_all_syn_refine_unify HwfΘ Hconsis eq_refl
-        (delta_def_fresh_empty Θ) Hrefine)
-      as (Lcof & Q0 & Hcof & [HrefInh | HrefSyn]).
+        (delta_def_fresh_empty Θ) Hrefine HlcQ)
+      as (Lcof & Q0 & Hcof & HlcQ0 & [HrefInh | HrefSyn]).
     + (* C-ForallInh: Q = ∀ᴵ.Q0.  Refinement inversion gives P0 = ∀.P0' and the
          binder in Θ and Δ; dropping it from Δ ([ad_refine_syn_delta_mono])
          matches the consistency's; LE-ForallInh then needs a β-FREE
@@ -3715,7 +3755,7 @@ Proof.
                      Hmeas Hwfβ Hwfβ0 HwfΘw Hmonβ Hnrβ HwfP0β HwfPiβ Hκβ Hκwβ
                      Hψaw HαΘβ HαΘ0β eq_refl
                      HscopeSβ (Hlcbody β) Htags Hdisjβ Hsub Hdfreshβ Hpreβ
-                     HΨs1β HΨs2 Hconsβ HwfSubβ Hrefβ
+                     HΨs1β HΨs2 Hconsβ ltac:(lc_tgt) HwfSubβ Hrefβ
                      Hrhoβ HΘsβ HΨρ Hrfrβ HΔρΔ HΔρw HΔρftvβ HΔρPi Hψaap
                      (add β L) HLβ)
           as (𝒞 & Ξc & Ξs & Pa & κc & κs
@@ -3971,7 +4011,7 @@ Proof.
                         Hmeas Hwfβ Hwfβ0 HwfΘw Hmonβ Hnrβ HwfP0β HwfPiβ Hκβ Hκwβ
                         Hψaw HαΘβ HαΘ0β eq_refl
                         HscopeSβ (Hlcbody β) Htags Hdisjβ Hsub Hdfreshβ Hpreβ
-                        HΨs1β HΨs2 Hconsβ HwfSubβ Hrefβ
+                        HΨs1β HΨs2 Hconsβ ltac:(lc_tgt) HwfSubβ Hrefβ
                         Hrhoβ HΘsβ HΨρ Hrfrβ HΔρΔ HΔρw HΔρftv HΔρPi Hψaap
                         (add β L) HLβ)
              as (𝒞 & Ξc & Ξs & Pa & κc & κs
@@ -4069,8 +4109,8 @@ Proof.
     inversion HlcS; subst.
     match goal with H : forall α0, lc_uskl _ |- _ => rename H into Hlcbody end.
     destruct (ad_pat_consis_all_tag_refine_unify HwfΘ Hconsis eq_refl
-        (delta_def_fresh_empty Θ) Hrefine)
-      as (Lcof & Q0 & Ψ0 & Hcof & [[HrefInh HΨeq] | [HrefSyn HΨeq]]).
+        (delta_def_fresh_empty Θ) Hrefine HlcQ)
+      as (Lcof & Q0 & Ψ0 & Hcof & HlcQ0 & [[HrefInh HΨeq] | [HrefSyn HΨeq]]).
     + (* C-ForallInh: Q = ∀ᴵ.Q0.  Refinement inversion gives P0 = ∀.P0' and the
          binder in Θ and Δ; dropping it from Δ ([ad_refine_syn_delta_mono])
          matches the consistency's; LE-ForallInh then needs a β-FREE
@@ -4280,7 +4320,7 @@ Proof.
                      Hmeas Hwfβ Hwfβ0 HwfΘw Hmonβ Hnrβ HwfP0β HwfPiβ Hκβ Hκwβ
                      Hψaw HαΘβ HαΘ0β eq_refl
                      HscopeSβ (Hlcbody β) Htags Hdisjβ Hsub Hdfreshβ Hpreβ
-                     HΨs1β HΨs2β Hconsβ HwfSubβ Hrefβ
+                     HΨs1β HΨs2β Hconsβ ltac:(lc_tgt) HwfSubβ Hrefβ
                      Hrhoβ HΘsβ HΨρ Hrfrβ HΔρΔ HΔρw HΔρftvβ HΔρPi Hψaap
                      (add β L) HLβ)
           as (𝒞 & Ξc & Ξs & Pa & κc & κs
@@ -4566,7 +4606,7 @@ Proof.
                         Hmeas Hwfβ Hwfβ0 HwfΘw Hmonβ Hnrβ HwfP0β HwfPiβ Hκβ Hκwβ
                         Hψaw HαΘβ HαΘ0β eq_refl
                         HscopeSβ (Hlcbody β) Htags Hdisjβ Hsub Hdfreshβ Hpreβ
-                        HΨs1β HΨs2β Hconsβ HwfSubβ Hrefβ
+                        HΨs1β HΨs2β Hconsβ ltac:(lc_tgt) HwfSubβ Hrefβ
                         Hrhoβ HΘsβ HΨρ Hrfrβ HΔρΔ HΔρw HΔρftv HΔρPi Hψaap
                         (add β L) HLβ)
              as (𝒞 & Ξc & Ξs & Pa & κc & κs
@@ -4671,17 +4711,17 @@ Proof.
       assert (HgP0 : guarded_pskl pskl_unit) by apply guarded_pskl__unit.
       assert (HgQ : guarded_bskl Q).
       { eapply ad_refine_syn_guarded_r;
-        [ exact HwfΘ | exact Hrefine | | exact (ad_pat_consis_target_lc Hconsis) ].
+        [ exact HwfΘ | exact Hrefine | | lc_tgt ].
         apply guarded_pskl_to_bskl_inh;
           eapply guarded_pskl_msubst_inc; [ exact Hκ | exact HgP0 ]. }
       destruct (ad_pat_consis_univ_ghost_guarded_unify HwfΘ Hconsis eq_refl
-        (delta_def_fresh_empty Θ) Hrefine HgQ)
-        as (Q0 & Hc0 & Href0 & HgQ0).
+        (delta_def_fresh_empty Θ) Hrefine HgQ HlcQ)
+        as (Q0 & Hc0 & Href0 & HgQ0 & HlcQ0).
       edestruct (IHn NM Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψsub ψa Q0
                    (uskl_to_pskl R0) pskl_unit Pi R0 α Θs Δρ Ψρ Rsub0
                    (Hmeas0 pskl_unit ltac:(cbn; lia))
                    HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0 HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
-                   HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href0
+                   HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 ltac:(lc_tgt) HwfSub0 Href0
                    Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rsubst_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; solve_notin_auto
                           | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
@@ -4714,17 +4754,17 @@ Proof.
       (* RIGID β0 — LE-UnivGhost2 survives, and the guard reads off rigidity *)
       assert (HgQ : guarded_bskl Q).
       { eapply ad_refine_syn_guarded_r;
-        [ exact HwfΘ | exact Hrefine | | exact (ad_pat_consis_target_lc Hconsis) ].
+        [ exact HwfΘ | exact Hrefine | | lc_tgt ].
         apply guarded_pskl_to_bskl_inh;
           eapply guarded_pskl_msubst_inc; [ exact Hκ | exact HgP0 ]. }
       destruct (ad_pat_consis_univ_ghost_guarded_unify HwfΘ Hconsis eq_refl
-        (delta_def_fresh_empty Θ) Hrefine HgQ)
-        as (Q0 & Hc0 & Href0 & HgQ0).
+        (delta_def_fresh_empty Θ) Hrefine HgQ HlcQ)
+        as (Q0 & Hc0 & Href0 & HgQ0 & HlcQ0).
       edestruct (IHn NM Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψsub ψa Q0
                    (uskl_to_pskl R0) (pskl_var_f β0) Pi R0 α Θs Δρ Ψρ Rsub0
                    (Hmeas0 (pskl_var_f β0) ltac:(cbn; lia))
                    HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0 HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
-                   HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href0
+                   HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 ltac:(lc_tgt) HwfSub0 Href0
                    Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rsubst_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; solve_notin_auto
                           | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
@@ -4751,17 +4791,17 @@ Proof.
         apply guarded_pskl__arrow; assumption. }
       assert (HgQ : guarded_bskl Q).
       { eapply ad_refine_syn_guarded_r;
-        [ exact HwfΘ | exact Hrefine | | exact (ad_pat_consis_target_lc Hconsis) ].
+        [ exact HwfΘ | exact Hrefine | | lc_tgt ].
         apply guarded_pskl_to_bskl_inh;
           eapply guarded_pskl_msubst_inc; [ exact Hκ | exact HgP0 ]. }
       destruct (ad_pat_consis_univ_ghost_guarded_unify HwfΘ Hconsis eq_refl
-        (delta_def_fresh_empty Θ) Hrefine HgQ)
-        as (Q0 & Hc0 & Href0 & HgQ0).
+        (delta_def_fresh_empty Θ) Hrefine HgQ HlcQ)
+        as (Q0 & Hc0 & Href0 & HgQ0 & HlcQ0).
       edestruct (IHn NM Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψsub ψa Q0
                    (uskl_to_pskl R0) (pskl_arrow P01 P02) Pi R0 α Θs Δρ Ψρ Rsub0
                    (Hmeas0 (pskl_arrow P01 P02) ltac:(cbn; lia))
                    HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0 HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
-                   HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href0
+                   HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 ltac:(lc_tgt) HwfSub0 Href0
                    Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rsubst_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; solve_notin_auto
                           | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
@@ -4899,7 +4939,7 @@ Proof.
                         Hmeas Hwfβ Hwfβ0 HwfΘw Hmonβ Hnrβ HwfP0β HwfPiβ Hκβ Hκwβ
                         Hψaw HαΘβ HαΘ0β eq_refl
                         HscopeSβ HlcS Htags Hdisj Hsub Hdfreshβ Hpreβ
-                        HΨs1 HΨs2 (Hcbody β ltac:(auto)) HwfSubβ Hrefβ
+                        HΨs1 HΨs2 (Hcbody β ltac:(auto)) ltac:(lc_tgt) HwfSubβ Hrefβ
                         Hrho0 HΘsβ HΨρ Hrfrβ HΔρΔ HΔρw HΔρftvβ HΔρPi Hψaap
                         (add β L) HLβ)
              as (𝒞 & Ξc & Ξs & Pa & κc & κs
@@ -5016,10 +5056,10 @@ Proof.
         assert (HgQ : guarded_bskl Q)
           by (eapply ad_refine_syn_guarded_r;
               [ exact HwfΘ | exact Href1 | exact HgL
-              | exact (ad_pat_consis_target_lc Hconsis) ]).
+              | lc_tgt ]).
         destruct (ad_pat_consis_univ_ghost_guarded_unify HwfΘ Hconsis eq_refl
-        (delta_def_fresh_empty Θ) Hrefine HgQ)
-          as (Q0 & Hc0 & Href0 & HgQ0).
+        (delta_def_fresh_empty Θ) Hrefine HgQ HlcQ)
+          as (Q0 & Hc0 & Href0 & HgQ0 & HlcQ0).
         assert (Href2 : {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0s)) ⊳ Q0 }}ad)
           by (eapply ad_refine_syn_univ_ghost_guarded_inv;
                 [ exact HwfΘ | exact Href0 | exact HgQ0 ]).
@@ -5027,7 +5067,7 @@ Proof.
                      (uskl_to_pskl R0) P0s Pi R0 α Θs Δρ Ψρ Rsub0
                      (Hmeas0 P0s ltac:(cbn; lia))
                      HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0s HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
-                     HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href2
+                     HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 ltac:(lc_tgt) HwfSub0 Href2
                      Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rsubst_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; solve_notin_auto
                           | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
@@ -5069,7 +5109,7 @@ Proof.
                         (Hmeas0 P0s ltac:(cbn; lia))
                         HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0s HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
                         HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2
-                        Hc0 HwfSub0 Href1
+                        Hc0 ltac:(lc_tgt) HwfSub0 Href1
                         Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rsubst_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; solve_notin_auto
                           | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
@@ -5099,8 +5139,8 @@ Proof.
           rename H into Hbf end.
         assert (HgQ : guarded_bskl (bskl_var_f α0)) by apply guarded_bskl__var.
         destruct (ad_pat_consis_univ_ghost_guarded_unify HwfΘ Hconsis eq_refl
-        (delta_def_fresh_empty Θ) Hrefine HgQ)
-          as (Q0 & Hc0 & Href0 & HgQ0).
+        (delta_def_fresh_empty Θ) Hrefine HgQ HlcQ)
+          as (Q0 & Hc0 & Href0 & HgQ0 & HlcQ0).
         assert (Href2 : {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0s)) ⊳ Q0 }}ad)
           by (eapply ad_refine_syn_univ_ghost_guarded_inv;
                 [ exact HwfΘ | exact Href0 | exact HgQ0 ]).
@@ -5108,7 +5148,7 @@ Proof.
                      (uskl_to_pskl R0) P0s Pi R0 α Θs Δρ Ψρ Rsub0
                      (Hmeas0 P0s ltac:(cbn; lia))
                      HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0s HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
-                     HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 HwfSub0 Href2
+                     HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 ltac:(lc_tgt) HwfSub0 Href2
                      Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rsubst_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; solve_notin_auto
                           | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
@@ -5132,8 +5172,8 @@ Proof.
     cbn [uskl_to_pskl] in HwfSub.
     destruct (a_wf_pskl_univ_ghost_inv HwfSub) as [HgSub0 HwfSub0].
     destruct (ad_pat_consis_dot_univ_ghost_refine_unify HwfΘ Hconsis eq_refl
-        (delta_def_fresh_empty Θ) Hrefine)
-      as (Q0 & Hc0 & Href0).
+        (delta_def_fresh_empty Θ) Hrefine HlcQ)
+      as (Q0 & Hc0 & Href0 & HlcQ0).
     clear Hconsis Hrefine.
     assert (Hsrc : (exists L0, pskl_to_bskl_inh (msubst_pskl κ P0) = bskl_univ_ghost L0)
                    \/ pskl_to_bskl_inh (msubst_pskl κ P0) = bskl_ghost)
@@ -5167,7 +5207,7 @@ Proof.
                    (uskl_to_pskl R0) P0s Pi R0 α Θs Δρ Ψρ Rsub0
                    Hmeas HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0s HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
                    HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0
-                   HwfSub0 Href1
+                   ltac:(lc_tgt) HwfSub0 Href1
                    Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rsubst_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; solve_notin_auto
                           | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
@@ -5237,6 +5277,9 @@ Theorem a_lookeq_solve_complete :
      guess has replaced every α-occurrence — which is why a Θ-scoped judgment
      is content never to have seen α. *)
   {{ Ψsub ⨟ Θ ⊢ˢ (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R')) ∼ Q }}ad ->
+  (* the counterpart is well formed — the paper's presupposition of skeleton
+     consistency (declarative.tex:2074); docs/WF-SIDE-CONDITIONS.md §2a *)
+  {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   (* … and that subject is WELL-FORMED — the paper's prose side condition;
      without it the statement is FALSE (fresco/algo/cex/cex_p6cs_subject_wf.v).
      [paper-external wf side condition — docs/WF-SIDE-CONDITIONS.md] *)
@@ -5269,7 +5312,7 @@ Theorem a_lookeq_solve_complete :
 Proof.
   intros NM Θ0 Θ κ Δ Ψ' Ψi Ψa Ψsub ψa Q P P0 Pi R' α.
   intros HwfΘ HwfΘ0 HwfP0 HwfPi Hκ HαΘ HαΘ0 HeraseR HscopeS HlcS Htags Hdisj
-         Hsub Hdfresh Hpre HΨs1 HΨs2 Hψaw Hconsis HwfSub Hrefine L HL.
+         Hsub Hdfresh Hpre HΨs1 HΨs2 Hψaw Hconsis HwfQ HwfSub Hrefine L HL.
   (* the FUEL is an artefact of the strong induction, not part of the claim:
      instantiate it at the measure itself.  [Θw := Θ] collapses the whole Θw
      pack: the two binds conditions are the identity and the κ-image bound is
@@ -5291,6 +5334,7 @@ Proof.
     | exact HαΘ | exact HαΘ0 | exact HeraseR | exact HscopeS
     | exact HlcS | exact Htags | exact Hdisj | exact Hsub | exact Hdfresh
     | exact Hpre | clear - HΨs1; fsetdec | exact HΨs2 | exact Hconsis
+    | apply lc_bskl_of_bskl_to_pskl; exact (a_wf_pskl_lc HwfQ)
     | exact HwfSub | exact Hrefine
     | apply ursubst__refl;
         [ apply lc_uskl_of_pskl; eapply a_wf_pskl_lc; exact HwfSub

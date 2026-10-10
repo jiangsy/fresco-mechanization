@@ -88,7 +88,7 @@ Proof.
   change (bskl_var_f α) with (pskl_to_bskl_inh (pskl_var_f α)).
   apply ad_pat_consis__ghost;
     [ clear; fsetdec
-    | apply a_wf_pskl__var; left; simpl; auto ].
+    ].
 Qed.
 
 (* ===================================================================== *)

@@ -55,7 +55,8 @@ Require Import src.fresco.def_shapes.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
 Require Import src.fresco.algo.sub.prop_solve_sub.   (* lc_pskl_*_inv *)
-Require Import src.fresco.algo.consis.prop_soundness_consis. (* a_wf_pskl_lc *)
+Require Import src.fresco.algo.prop_swap.   (* a_wf_pskl_lc *)
+Require Import src.fresco.algo.consis.prop_soundness_consis.
 Require Import src.fresco.prop_coercions.
 Require Import src.fresco.prop_ln.
 Require Import src.fresco.ext_algo.notations.

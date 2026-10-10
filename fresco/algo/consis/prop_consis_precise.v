@@ -213,10 +213,10 @@ Proof.
   - eapply ad_pat_consis__forall_syn with (L := L).
     intros α Hα. rewrite <- strip_uskl_open. exact (H0 α Hα).
   - change bskl_ghost with (pskl_to_bskl_inh pskl_ghost).
-    apply ad_pat_consis__ghost; [ reflexivity | apply a_wf_pskl__ghost ].
+    apply ad_pat_consis__ghost; [ reflexivity ].
   - (* dot_univ_ghost: stripping the dotted ghost yields a plain [univ_ghost] *)
     apply ad_pat_consis__univ_ghost. exact IHad_pat_consis.
-  - apply ad_pat_consis__ghost; [ reflexivity | exact H0 ].
+  - apply ad_pat_consis__ghost; [ reflexivity ].
   - apply ad_pat_consis__univ_ghost. exact IHad_pat_consis.
   - eapply ad_pat_consis__univ_ghost_inh with (L := L).
     intros α Hα. specialize (H0 α Hα). simpl in H0. exact H0.
@@ -1263,7 +1263,7 @@ Proof.
     destruct (consis_concrete_target_inh Hstr Hwf (uskl_to_pskl R) eq_refl H0)
       as [_ Heqinh].
     rewrite <- Heqinh.
-    apply ad_pat_consis__ghost; [ exact HΨe | exact Hwfq ].
+    apply ad_pat_consis__ghost; [ exact HΨe ].
   - (* univ_ghost_remove *)
     intros Θ' Ψfull Ψn Ψna Q Hc Hmon Hwf HΨf HΨa Hdisj Hwfq.
     apply ad_pat_consis__univ_ghost_drop.

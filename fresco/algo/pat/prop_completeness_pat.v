@@ -1775,7 +1775,9 @@ Proof.
     rewrite bskl_to_pskl_btyp_to_bskl, HBA.
     apply ad_refine_pskl_refl.
     apply a_wf_ptyp_to_wf_pskl; exact HwfA. }
-  destruct (a_consis_complete Hwf0 HwfP1 HwfpA0 Hinc HwfΘ Hjoin Href13 Hrp)
+  destruct (a_consis_complete Hwf0 HwfP1 HwfpA0 Hinc HwfΘ Hjoin Href13 Hrp
+              (@ad_pat_consis_msubst_target_wf _ _ _ _ _ Hjoin
+                     ltac:(first [ exact I | apply ptyp_to_pskl_ghost_free ]) empty))
     as [Ac [Θmid [HcRun HoptC]]].
   destruct (a_consis_isub_wf_nil HcRun Hwf0 HwfP1 HwfpA0) as [Hlec Hwfmid].
   destruct Hlec as [[κc [Hidc Hincc]] _].

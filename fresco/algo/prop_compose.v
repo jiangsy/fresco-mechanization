@@ -94,14 +94,6 @@ Qed.
 (*  κ's domain is EXACTLY the source's flexible variables                  *)
 (* ===================================================================== *)
 
-(** The skeleton mirror of [a_wf_ptyp_ftv_tvarish]; same fact as
-    [a_scope_pskl_ftv_binds] (prop_swap.v). *)
-Lemma a_scope_pskl_ftv_tvarish : forall Θ P α,
-  a_scope_pskl Θ P ->
-  α `in` ftvar_in_pskl P ->
-  a_binds_tvar α Θ.
-Proof. intros; eapply a_scope_pskl_ftv_binds; eauto. Qed.
-
 Lemma a_inc_dom_flex : forall Θ κ Θ',
   κ ∷ Θ ⊑ Θ' ->
   forall α', α' `in` dom κ -> a_flex_tvar Θ α'.
@@ -812,7 +804,7 @@ Proof.
     { apply msubst_pskl_compose. intros α0 Hα0.
       eapply a_inc_compose_vis;
         [ exact Hinc1 | exact Hinc2'' | exact Hwa | exact Hwf1t
-        | eapply a_scope_pskl_ftv_tvarish; eauto ]. }
+        | eapply a_scope_pskl_ftv_binds; eauto ]. }
     rewrite HP.
     eapply a_pskl_tyequiv__trans; [ exact Heq2 | ].
     eapply a_pskl_tyequiv_msubst; [ exact H | exact Hwf1t | exact Hinc2'' ].

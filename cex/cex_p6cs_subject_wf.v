@@ -253,6 +253,9 @@ Proof.
                        destruct c end; [ | contradiction ];
                      apply ad_pat_consis__univ_ghost;
                      apply ad_pat_consis__unit; clear; fsetdec)
+               (* the counterpart's well-formedness *)
+               ltac:(cbn; apply a_wf_pskl__univ_ghost;
+                       [ apply guarded_pskl__unit | apply a_wf_pskl__unit ])
                ltac:(cbn [cex_S msubst_uskl_syn msubst_lookup subst_uskl_in_uskl];
                      unfold ptyp_to_uskl_syn; cbn;
                      match goal with |- context [if ?c then _ else _] =>

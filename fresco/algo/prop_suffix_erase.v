@@ -795,9 +795,7 @@ Proof.
   - (* ghost : the fill is substituted, and stays well-formed *)
     assert (Hm : mono_ptyp τs) by (eapply solves_flex_mono; eassumption).
     rewrite (pskl_to_bskl_inh_subst_mono P α0 Hm).
-    apply ad_pat_consis__ghost; [ assumption | ].
-    eapply a_wf_pskl_subst_mid;
-      [ eassumption | reflexivity | exact Hs | clear; fsetdec | clear; fsetdec ].
+    apply ad_pat_consis__ghost; assumption.
   - (* univ_ghost *) apply ad_pat_consis__univ_ghost; eauto.
   - (* univ_ghost_inh : only the TARGET opens *)
     eapply ad_pat_consis__univ_ghost_inh
@@ -1052,8 +1050,6 @@ Proof.
     rewrite pskl_to_bskl_inh_subst_mono; [ | assumption ].
     apply ad_pat_sub__ghost;
       [ assumption
-      | eapply a_wf_pskl_subst_mid;
-          [ eassumption | reflexivity | exact Hs | clear; fsetdec | clear; fsetdec ]
       | rewrite <- pskl_to_bskl_inh_subst_mono; [ | assumption ];
         apply mod_comp_sk_subst_mono; assumption ].
   - (* ghostg (SK) *)

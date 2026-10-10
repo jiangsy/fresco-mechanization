@@ -222,7 +222,7 @@ Proof.
           + apply (mono_ptyp_to_uskl_syn_tags Hmono). reflexivity. }
       eapply a_tags_sort_psi_cong; [ exact Htagpaint | clear - HΨ; fsetdec ].
     + rewrite uskl_to_pskl_ptyp_to_uskl_syn.
-      apply a_scope_pskl_of_ptyp_vis.
+      apply a_wf_pskl_of_ptyp_vis.
       * eapply a_wf_ptyp_lc; exact Hwfτ.
       * intros α0 Hα0.
         eapply a_wf_ptyp_ftv_tvarish; [ exact Hwfτ | exact Hα0 ].
@@ -575,7 +575,7 @@ Proof.
       apply ad_pat_sub_fuel__infer; [ assumption | | ].
       * split.
         -- apply ad_pat_consis__univ_ghost_drop.
-           apply ad_pat_consis__ghost; [ clear; fsetdec | assumption ].
+           apply ad_pat_consis__ghost; [ clear; fsetdec ].
         -- simpl. rewrite bskl_to_pskl_pskl_to_bskl_inh.
            apply ad_refine_pskl__univ_ghost_remove.
            apply ad_refine_pskl__ghost. clear; fsetdec.
@@ -693,7 +693,6 @@ Proof.
   rewrite <- Heq. subst NM.
   apply ad_pat_sub_fuel__ghost.
   - clear - HΨn HΨe; fsetdec.
-  - exact Hwfq.
   - rewrite Heq. exact Hmc.
 Qed.
 
@@ -813,30 +812,29 @@ Lemma ad_pat_sub_fuel_ghost_transport : forall Θb Ψrep R' R,
   {{ ⊢ Θb }}a ->
   (forall x b, binds x b Θb -> binds x b Θ') ->
   {{ ⊢ Θ' }}a ->
-  {{ Θ' ⨟ empty ⊢ₚₛ P }}a ->
   mod_comp_sk (pskl_to_bskl_inh P) M ->
   Ψn [=] empty ->
   ad_pat_sub_fuel n a_sub_mode_sk M Ψn Θ' R' (pskl_to_bskl_inh P).
 Proof.
   intros Θb Ψrep R' R Hup; induction Hup;
-    intros n M Θ' Ψn P0 HeqR Hwfb Hmon Hwf HwfP Hmc HΨe;
+    intros n M Θ' Ψn P0 HeqR Hwfb Hmon Hwf Hmc HΨe;
     try discriminate HeqR.
   - (* refl: R' = □ *)
     subst R.
-    apply ad_pat_sub_fuel__ghost; [ exact HΨe | exact HwfP | exact Hmc ].
+    apply ad_pat_sub_fuel__ghost; [ exact HΨe | exact Hmc ].
   - (* ghost: R' = □ as well *)
-    apply ad_pat_sub_fuel__ghost; [ exact HΨe | exact HwfP | exact Hmc ].
+    apply ad_pat_sub_fuel__ghost; [ exact HΨe | exact Hmc ].
   - (* univ_ghost_remove *)
     apply ad_pat_sub_fuel_wrap_univ_ghost.
     eapply IHHup;
       [ exact HeqR | exact Hwfb | exact Hmon | exact Hwf
-      | exact HwfP | exact Hmc | exact HΨe ].
+      | exact Hmc | exact HΨe ].
   - (* flex_l *)
     eapply ad_pat_sub_fuel_fold_flex with (τ := τ);
       [ | reflexivity | apply Hmon; exact H | exact Hwf ].
     eapply IHHup;
       [ exact HeqR | exact Hwfb | exact Hmon | exact Hwf
-      | exact HwfP | exact Hmc | exact HΨe ].
+      | exact Hmc | exact HΨe ].
 Qed.
 
 (** [GhostG], leaf-valid (no leaf on the rule). *)
@@ -860,7 +858,7 @@ Proof.
   - (* ghost: R' = □ against the ⫯-target *)
     change bskl_ghost with (pskl_to_bskl_inh pskl_ghost).
     apply ad_pat_sub_fuel__ghost;
-      [ exact HΨe | apply a_wf_pskl__ghost | simpl; exact Hmc ].
+      [ exact HΨe | simpl; exact Hmc ].
   - (* univ_ghost_remove *)
     apply ad_pat_sub_fuel_wrap_univ_ghost.
     eapply IHHup;
@@ -1635,7 +1633,7 @@ Proof.
     assert (HΨe : Ψn [=] empty) by (clear - H HΨf; fsetdec).
     eapply ad_pat_sub_fuel_ghost_transport;
       [ exact Hup | reflexivity | exact Hwfb | exact Hmon | exact Hwf
-      | exact H0 | exact H1 | exact HΨe ].
+      | exact H0 | exact HΨe ].
   - (* GhostG (SK) *)
     assert (HΨe : Ψn [=] empty) by (clear - H HΨf; fsetdec).
     eapply ad_pat_sub_fuel_ghostg_transport;

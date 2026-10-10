@@ -306,25 +306,34 @@ Lemma a_inc_equiv_msubst_pskl : forall P Θ0 κ1 κ2 Θ,
   msubst_lc κ1 -> msubst_lc κ2 ->
   {{ Θ ⊢ (msubst_pskl κ1 P) ≡ˢ (msubst_pskl κ2 P) }}a.
 Proof.
-  intros P Θ0 κ1 κ2 Θ Hwf; revert κ1 κ2 Θ.
-  induction Hwf as [ Θ0 | Θ0 α Hbt | Θ0 P1 P2 Hwf1 IH1 Hwf2 IH2
-                   | L Θ0 P0 Hwf0 IH0 | Θ0 | Θ0 P0 Hwf0 IH0 ];
-    intros κ1 κ2 Θ Hie Hwf Hlc1 Hlc2; simpl.
+  (* induction on LOCAL CLOSURE, the context generalized: [a_scope_pskl] is
+     [lc_pskl P] plus the free-variable lookups *)
+  intros P Θ0 κ1 κ2 Θ [Hlc Hbt]; revert Θ0 κ1 κ2 Θ Hbt.
+  induction Hlc as [ | α | P1 P2 Hlc1' IH1 Hlc2' IH2 | P0 Hlc0 IH0 | | P0 Hlc0 IH0 ];
+    intros Θ0 κ1 κ2 Θ Hbt Hie Hwf Hlc1 Hlc2; simpl in *.
   - apply a_pskl_tyequiv__refl; apply lc_pskl_unit.
-  - apply a_tyequiv_pskl. eapply prop_normal.a_inc_equiv_lookup_tvar; eauto.
-  - apply a_pskl_tyequiv__arrow; [ apply IH1 | apply IH2 ]; auto.
+  - apply a_tyequiv_pskl. eapply prop_normal.a_inc_equiv_lookup_tvar;
+      [ exact Hie | exact Hwf | apply Hbt; clear; fsetdec ].
+  - apply a_pskl_tyequiv__arrow;
+      [ apply IH1 with (Θ0 := Θ0) | apply IH2 with (Θ0 := Θ0) ]; auto;
+      intros β Hβ; apply Hbt; clear - Hβ; fsetdec.
   - apply a_pskl_tyequiv__all
-      with (L := L `union` dom κ1 `union` dom κ2 `union` dom Θ0).
+      with (L := dom κ1 `union` dom κ2 `union` dom Θ0).
     intros α Hα.
     rewrite <- (msubst_pskl_open_lc P0 Hlc1) by (clear - Hα; fsetdec).
     rewrite <- (msubst_pskl_open_lc P0 Hlc2) by (clear - Hα; fsetdec).
     eapply a_pskl_tyequiv_strengthen_tvar_cons with (α := α) (Θ := Θ); [ | reflexivity ].
-    apply IH0 with (α := α); [ clear - Hα; fsetdec | | | exact Hlc1 | exact Hlc2 ].
+    apply IH0 with (Θ0 := (α ~ abind_tvar) ++ Θ0); [ | | | exact Hlc1 | exact Hlc2 ].
+    + intros β Hβ. apply a_binds_tvar_cons_tvar.
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f α)) as Hup.
+      simpl in Hup.
+      destruct (β == α) as [-> | Hne]; [ left; reflexivity | right ].
+      apply Hbt. clear - Hup Hβ Hne. fsetdec.
     + apply a_inc_equiv__tvar with (Ξ := (@nil (atom * abind)));
         [ exact Hie | apply a_suffix__nil ].
     + apply a_wf_aenv__tvar; [ clear - Hα; fsetdec | exact Hwf ].
   - apply a_pskl_tyequiv__refl; apply lc_pskl_ghost.
-  - apply a_pskl_tyequiv__univ_ghost; apply IH0; auto.
+  - apply a_pskl_tyequiv__univ_ghost; eapply IH0; eauto.
 Qed.
 
 (** Composing with an IDENTITY increment on the right is invisible to
@@ -360,10 +369,10 @@ Lemma msubst_compose_id_pskl : forall Θ0 κ1 Θ1 ζ Θ2 P,
   is_id_msubst κ1 ->
   κ1 ∷ Θ0 ⊑ Θ1 ->
   ζ ∷ Θ1 ⊑ Θ2 ->
-  (* ⚠️ the WEAK [a_scope_pskl], deliberately: this lemma's own proof needs
-     only scoping, and one caller's subject is a consistency JOIN'S TARGET,
-     for which [ad_pat_consis_target_wf] gives scope and nothing stronger.
-     Callers holding the disciplined form convert with [a_scope_pskl_of_wf]. *)
+  (* only the SCOPING facts [a_scope_pskl] (lc + free-variable lookups): the
+     proof needs nothing more, and one caller's subject is a consistency
+     run's OUTPUT, for which only scoping is available in that file.  Callers
+     holding the disciplined form convert with [a_scope_pskl_of_wf]. *)
   a_scope_pskl Θ0 P ->
   msubst_pskl (msubst_compose ζ κ1) P = msubst_pskl ζ P.
 Proof.
@@ -371,7 +380,7 @@ Proof.
   rewrite msubst_pskl_compose;
     [ rewrite (msubst_pskl_id (κ:=κ1) P Hid); reflexivity | ].
   intros α Hα.
-  destruct (a_scope_pskl_ftv_tvarish HP Hα) as [Hrig | [Hflex | [τ Hdef]]].
+  destruct (a_scope_pskl_ftv_binds HP Hα) as [Hrig | [Hflex | [τ Hdef]]].
   - right. intros Hin.
     apply (a_inc_dom_flex Hζ) in Hin.
     assert (Hbt1 : binds α abind_tvar Θ1)
@@ -1018,7 +1027,7 @@ Proof.
     { apply msubst_pskl_compose. intros α0 Hα0.
       eapply a_inc_compose_vis;
         [ exact Hκ | exact Hib1' | exact Hwa | exact Hwf1t
-        | eapply a_scope_pskl_ftv_tvarish; eauto ]. }
+        | eapply a_scope_pskl_ftv_binds; eauto ]. }
     rewrite HP.
     eapply a_pskl_tyequiv__trans; [ exact Heqve | ].
     eapply a_pskl_tyequiv_msubst; [ exact H | exact Hwf1t | exact Hib1' ].
@@ -1464,7 +1473,7 @@ Proof.
         -- intros α0 Hα0. eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf0' | ].
            destruct (a_inc_dom_flex Hinc Hα0) as [Hb | [t0 Hb]];
              [ right; left | right; right; exists t0 ]; exact Hb.
-        -- eapply a_scope_pskl_lc; eauto.
+        -- eapply a_wf_pskl_lc; eauto.
     + apply a_inc_equiv__var_skl; [ | exact H | exact H0 ].
       replace (Θpre ++ Ξ ++ x ~ abind_var_skl P' ++ Θ')
          with ((Θpre ++ Ξ ++ x ~ abind_var_skl P') ++ Θ') by (simpl_env; reflexivity).

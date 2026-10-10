@@ -78,8 +78,7 @@ Lemma cap_consis : forall Θ, {{ empty ⨟ Θ ⊢ˢ capR ∼ capQ }}ad.
 Proof.
   intros Θ. apply ad_pat_consis__forall_syn with (L := empty).
   intros α Hα. cbn.
-  apply (ad_pat_consis__ghost (P := pskl_var_f α)); [ reflexivity | ].
-  apply a_wf_pskl__var. unfold a_binds_tvar. eauto.
+  apply (@ad_pat_consis__ghost empty _ (pskl_var_f α)); reflexivity.
 Qed.
 
 (** ⚠️ RETRACTED 2026-08-12 — AND THAT IS THE POINT.  Until then this section

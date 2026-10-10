@@ -237,6 +237,22 @@ Fixpoint pskl_no_ghost (P : pskl) : Prop :=
   | pskl_univ_ghost P0 => pskl_no_ghost P0
   end.
 
+(** The unresolved-skeleton twin of [pskl_no_ghost]: no PLAIN ghost [◇]
+    ([uskl_ghost]).  The dotted ghosts [◈] / [∀◈] and the plain [∀◇] are
+    allowed — so it holds of every decorated skeleton ([is_dskl]) AND of every
+    type painting.  It is exactly the condition under which a consistency
+    derivation's TARGET is determined by the subject and the context: the
+    paper's [Ghost] rule, which fills an arbitrary counterpart, needs a plain
+    [◇] subject (algo/consis/prop_soundness_consis.v, [ad_pat_consis_target_scope]). *)
+Fixpoint uskl_no_ghost (R : uskl) : Prop :=
+  match R with
+  | uskl_ghost => False
+  | uskl_arrow R1 R2 => uskl_no_ghost R1 /\ uskl_no_ghost R2
+  | uskl_all_syn R0 | uskl_all_tag _ R0
+  | uskl_univ_ghost R0 | uskl_dot_univ_ghost R0 => uskl_no_ghost R0
+  | uskl_unit | uskl_var_b _ | uskl_var_f _ | uskl_dot_ghost => True
+  end.
+
 (** Value restriction: terms that may be generalised in checking mode. *)
 Inductive is_value : exp -> Prop :=
 | is_value__unit     : is_value exp_unit

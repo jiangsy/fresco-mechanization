@@ -186,7 +186,7 @@ Proof.
     destruct (@pskl_inh_eq_syn_inv _ _ Heq) as [-> Haf].
     destruct (@pskl_all_ghost_free_mono _ Haf Hgf Hlc) as [τ [Heqτ Hmτ]].
     exists τ; repeat split; [ exact Heqτ | exact Hmτ | ].
-    subst. apply a_scope_pskl_of_ptyp_vis;
+    subst. apply a_wf_pskl_of_ptyp_vis;
       [ apply mono_ptyp_lc; exact Hmτ | ].
     rewrite ftvar_ptyp_to_pskl in HΔP.
     intros γ Hγ. apply HscX;
@@ -1048,6 +1048,9 @@ Theorem a_extract_complete_gen :
   {{ Θ ⨟ empty ⊢ₚₛ
     (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) }}a ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
+  (* the counterpart is well formed — the paper's presupposition
+     (declarative.tex:2074); docs/WF-SIDE-CONDITIONS.md §2a *)
+  {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   exists Ξ Pa κa,
     ({{ Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ Pa }}a) /\      (* look succeeds *)
     {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\                 (* Θ0,Ξ ⊢ Pa *)
@@ -1061,7 +1064,7 @@ Proof.
   intros n NM M Θ0 Θ κ Ψa Ψsub ψa Q P P0 R' α.
   intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR
          Htags Hdisj Hψaw Hwfψ HΨsubU HΨsubL Hsubty
-         HwfSubj Hrefine.
+         HwfSubj Hrefine HwfQ.
   (* ---- (a)-(f) : P6-Ss at [Pi := □], [Ψi := ∅] ---- *)
   (* ⭐ THE SOLVE'S OWN BLOCK [Ξs] (2026-08-05, the SolE-FlexR repair).  The
      look's suffix is now three blocks, [Ξc ++ Ξs ++ Ξ'] — collection,
@@ -1078,7 +1081,7 @@ Proof.
               ltac:(cbn [msubst_pskl];
                     apply ad_ppre__ghost; [ clear; solve_notin_auto | clear; fsetdec ])
               HΨsubU HΨsubL
-              Hsubty HwfSubj Hrefine
+              Hsubty HwfSubj Hrefine HwfQ
               (ftvar_in_aenv Θ0) ltac:(clear; solve_notin_auto))
     as (𝒞 & Ξc & Ξs & Pa & κc & κs
         & Hlook & Hsolve & Hfms & Hus & Hks & Hfrs & HFs
@@ -1291,6 +1294,9 @@ Corollary a_extract_complete :
   {{ Θ ⨟ empty ⊢ₚₛ
     (uskl_to_pskl (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ R'))) }}a ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
+  (* the counterpart is well formed — the paper's presupposition
+     (declarative.tex:2074); docs/WF-SIDE-CONDITIONS.md §2a *)
+  {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
   exists Ξ Pa κa,
     ({{ Θ0 ⊢ P ⊳[ NM , α , M ] P0 ⤳ Ξ ↪ Pa }}a) /\
     {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
@@ -1303,7 +1309,7 @@ Corollary a_extract_complete :
 Proof.
   intros n NM M Θ0 Θ κ Ψa ψa Q P P0 R' α.
   intros HwfΘ HwfΘ0 HwfP0 HmodSK HmodTY Hκ HαΘ HαΘ0 HeraseR HscopeR HlcR
-         Htags Hdisj Hψaw Hwfψ Hsubty HwfSubj Hrefine.
+         Htags Hdisj Hψaw Hwfψ Hsubty HwfSubj Hrefine HwfQ.
   eapply a_extract_complete_gen with (Ψsub := Ψa);
     [ exact HwfΘ | exact HwfΘ0 | exact HwfP0 | exact HmodSK | exact HmodTY
     | exact Hκ | exact HαΘ | exact HαΘ0 | exact HeraseR | exact HscopeR
@@ -1311,7 +1317,7 @@ Proof.
     | exact Hψaw
     | exact Hwfψ
     | clear; fsetdec | clear; fsetdec                (* Ψsub := Ψa *)
-    | exact Hsubty | exact HwfSubj | exact Hrefine ].
+    | exact Hsubty | exact HwfSubj | exact Hrefine | exact HwfQ ].
 Qed.
 
 (* ===================================================================== *)

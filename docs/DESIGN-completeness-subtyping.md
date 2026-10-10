@@ -2026,7 +2026,7 @@ ghost / ∀◇-chains / flex / TY-type conditions); freshening bridge ≈ 300
   algebra pins `Ψ1 = d_tags ψ1` via `psi_cong`) — the "no disjointness" note
   in §5.1 was wrong.  univ_ghost_fill vacuous via `tags_sub` as planned.  flex
   cases: `a_wf_ptyp` is tvar-only ⇒ def bodies are flex-free ⇒ wf of the mono
-  paint holds (`a_scope_pskl_of_ptyp_vis`).  COQ GOTCHA (cost a 9-min hang):
+  paint holds (`a_wf_pskl_of_ptyp_vis`).  COQ GOTCHA (cost a 9-min hang):
   never `fsetdec` a psi_cong EVAR goal — build `a_tags_sort NM empty` concretely
   first, THEN `psi_cong; [exact … | fsetdec]` (memory rule).  NEXT P5b-ii:
   `ad_pat_sub_precise_subst` (fuel-preserving; state the subject-subst form

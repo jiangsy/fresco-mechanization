@@ -93,7 +93,7 @@ Qed.
     bound.  [ptyp_to_pskl] images carry no ghosts, so the Δ-slot (read only
     by the [∀◇] rule) plays no role, and a quantifier's variable goes into
     the context exactly as [a_wf_ptyp] puts it there. *)
-Lemma a_scope_pskl_of_ptyp_vis : forall A Θ Δ,
+Lemma a_wf_pskl_of_ptyp_vis : forall A Θ Δ,
   lc_ptyp A ->
   (forall α, α `in` ftvar_in_ptyp A -> a_binds_tvar α Θ) ->
   {{ Θ ⨟ Δ ⊢ₚₛ (ptyp_to_pskl A) }}a.
@@ -125,7 +125,7 @@ Lemma a_wf_ptyp_to_wf_pskl : forall Θ Δ A,
   a_wf_ptyp Θ A ->
   {{ Θ ⨟ Δ ⊢ₚₛ (ptyp_to_pskl A) }}a.
 Proof.
-  intros Θ Δ A H. apply a_scope_pskl_of_ptyp_vis.
+  intros Θ Δ A H. apply a_wf_pskl_of_ptyp_vis.
   - eapply a_wf_ptyp_lc; eauto.
   - intros α Hα. eapply a_wf_ptyp_ftv_tvarish; eauto.
 Qed.

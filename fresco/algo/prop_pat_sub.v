@@ -326,10 +326,7 @@ Proof.
   - apply ad_pat_consis__ghostg; assumption.
   - apply ad_pat_consis__dot_univ_ghost; eauto.
   - rewrite pskl_to_bskl_inh_subst_unit.
-    apply ad_pat_consis__ghost; [ assumption | ].
-    eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono);
-      [ eassumption | reflexivity | exact Hfr | clear; fsetdec
-      | apply guarded_pskl__unit | apply a_wf_pskl__unit | clear; fsetdec ].
+    apply ad_pat_consis__ghost; assumption.
   - apply ad_pat_consis__univ_ghost; eauto.
   - apply ad_pat_consis__univ_ghost_inh
       with (L := L `union` {{β}} `union` dom (Θ1 ++ Θ2)).
@@ -552,14 +549,7 @@ Proof.
   - apply ad_pat_consis__ghostg; assumption.
   - apply ad_pat_consis__dot_univ_ghost; eauto.
   - rewrite pskl_to_bskl_inh_subst_mono; [ | assumption ].
-    apply ad_pat_consis__ghost; [ assumption | ].
-    eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ0);
-      [ eassumption | reflexivity | exact Hfr | clear; fsetdec
-      | apply mono_ptyp_to_pskl_guarded; assumption
-      | apply a_scope_pskl_of_ptyp_vis;
-        [ apply mono_ptyp_lc; assumption
-        | intros β0 Hβ0; apply Hvis; assumption ]
-      | clear; fsetdec ].
+    apply ad_pat_consis__ghost; assumption.
   - apply ad_pat_consis__univ_ghost; eauto.
   - apply ad_pat_consis__univ_ghost_inh
       with (L := L `union` {{β}} `union` dom (Θ1 ++ Θ2)).

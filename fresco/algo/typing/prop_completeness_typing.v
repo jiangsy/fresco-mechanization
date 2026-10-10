@@ -145,18 +145,18 @@ Proof. intros; apply ad_refine_syn__ghost; clear; fsetdec. Qed.
 (* ===================================================================== *)
 
 (** The counterpart's wf, read off the fused rule's join: scope from
-    [ad_pat_sub_target_wf], ghost-freeness structural (it is a [btyp]'s
-    erasure). *)
-Lemma typ_counterpart_wf : forall NM M Ψ Θ R (B : btyp),
-  {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ (btyp_to_bskl B) }}ad ->
+    [ad_pat_sub_target_scope_ty] (the subject is a type painting, so it has
+    no plain ◇), ghost-freeness structural (it is a [btyp]'s erasure). *)
+Lemma typ_counterpart_wf : forall M Ψ Θ A (B : btyp),
+  {{ Ψ ⨟ Θ ⊢ˢ[ a_sub_mode_ty | M ] (ptyp_to_uskl_syn A) ⩽ (btyp_to_bskl B) }}ad ->
   {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl (btyp_to_bskl B)) }}a.
 Proof.
-  intros NM M Ψ Θ R B Hj.
+  intros M Ψ Θ A B Hj.
   rewrite bskl_to_pskl_btyp_to_bskl.
   apply a_wf_ptyp_to_wf_pskl.
   eapply a_wf_ptyp_of_scope_pskl;
     [ | rewrite <- bskl_to_pskl_btyp_to_bskl; reflexivity ].
-  eapply ad_pat_sub_target_wf. exact Hj.
+  eapply ad_pat_sub_target_scope_ty; [ exact Hj | apply uskl_no_ghost_ptyp ].
 Qed.
 
 (** The optimality tail every base row shares: a PRECISION between two
@@ -500,7 +500,8 @@ Proof.
         | Hj : ad_pat_sub _ _ _ _ _ _ |- _ =>
             eapply a_wf_ptyp_of_scope_pskl;
               [ | rewrite <- bskl_to_pskl_btyp_to_bskl; reflexivity ];
-            eapply ad_pat_sub_target_wf; exact Hj
+            eapply ad_pat_sub_target_scope_ty;
+              [ exact Hj | apply uskl_no_ghost_ptyp ]
         end.
   - (* freeze *)
     rewrite btyp_to_ptyp_ptyp_to_btyp_inh.
@@ -663,7 +664,8 @@ Proof.
               ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfB'mid)
               Hζb HwfΘ Hjoin
               ltac:(exact HrefT)
-              Hrp)
+              Hrp (@ad_pat_consis_msubst_target_wf _ _ _ _ _ Hjoin
+                     ltac:(first [ exact I | apply ptyp_to_pskl_ghost_free ]) empty))
     as [Qc [Θ2 [HcRun HoptC]]].
   (* ---- 4. the run ---- *)
   exists Ap, Θ2.
@@ -2029,7 +2031,8 @@ Proof.
     apply a_wf_ptyp_to_wf_pskl. exact HwfA'. }
   destruct (a_consis_complete Hwf0 HwfP HwfpA0 Hinc HwfΘ Hjoin
               ltac:(exact HrefD)
-              Hrp)
+              Hrp (@ad_pat_consis_msubst_target_wf _ _ _ _ _ Hjoin
+                     ltac:(first [ exact I | apply ptyp_to_pskl_ghost_free ]) empty))
     as [Qc [Θmid [HcRun HoptC]]].
   destruct (a_consis_isub_wf_nil HcRun Hwf0 HwfP HwfpA0) as [HleC Hwfmid].
   destruct HleC as [[κc [Hidc Hincc]] _].
@@ -2873,7 +2876,8 @@ Proof.
                         destruct Hflex as [Hb | [τx Hb]];
                         [ right; left | right; right; exists τx ];
                         repeat apply binds_cons_3; exact Hb)
-                  Hinc' HwfΘ Hjoin Hrs Hrp)
+                  Hinc' HwfΘ Hjoin Hrs Hrp (@ad_pat_consis_msubst_target_wf _ _ _ _ _ Hjoin
+                     ltac:(first [ exact I | apply ptyp_to_pskl_ghost_free ]) empty))
         as [P1 [Θ1 [Hcons Hopt]]].
       (* the SPLIT *)
       assert (Hsplit : {{ Θ0 ⊲ (pskl_var_f β) ▹ (pskl_var_f β1)
@@ -3322,7 +3326,9 @@ Proof.
     by (apply a_wf_ptyp_to_wf_pskl; exact HwfAd).
   assert (HwfBcP1 : {{ Θ1 ⨟ empty ⊢ₚₛ (ptyp_to_pskl Bc) }}a)
     by (apply a_wf_ptyp_to_wf_pskl; exact HwfBc).
-  destruct (a_consis_complete Hwf1 HwfAanP1 HwfAdP1 Hζ HwfΘ Hjoin Hrs Hrp)
+  destruct (a_consis_complete Hwf1 HwfAanP1 HwfAdP1 Hζ HwfΘ Hjoin Hrs Hrp
+              (@ad_pat_consis_msubst_target_wf _ _ _ _ _ Hjoin
+                     ltac:(first [ exact I | apply ptyp_to_pskl_ghost_free ]) empty))
     as [Qc [Θ2 [HcRun HoptC]]].
   destruct (a_consis_isub_wf_nil HcRun Hwf1 HwfAanP1 HwfAdP1) as [HleC Hwf2].
   destruct HleC as [[κc [Hidc Hincc]] _].
