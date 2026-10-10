@@ -254,7 +254,11 @@ mechanization/
 │   │   │                  skeleton refinement, well-formedness)
 │   │   ├── prop_basic.v
 │   │   ├── prop_wellformed.v          (d_wf_denv + well-formedness lemmas)
-│   │   ├── prop_weakening.v           (weakening / narrowing, split-syntax)
+│   │   ├── prop_weakening.v           (context MONOTONICITY: one `_mono` /
+│   │   │                              `_tvar_mono` lemma per judgement over
+│   │   │                              `denv_binds_le` / `denv_tbinds_le` (the
+│   │   │                              algo_decl/prop_ctx_mono.v design);
+│   │   │                              weakening is a one-line corollary)
 │   │   ├── prop_renaming.v            (tvar-renaming closure for all judgments)
 │   │   ├── prop_skeleton.v            (skeleton refinement preserves wf, D4)
 │   │   ├── prop_tag_swap.v            (ε-tag equivariance of d_tags /
@@ -267,7 +271,7 @@ mechanization/
 │   │   │                              iterated through an induction — that is
 │   │   │                              why §4 collects first)
 │   │   ├── prop_syntax_directed.v     (d_sd_typing ⇄ d_typing)
-│   │   ├── prop_annotation.v / prop_shallow.v
+│   │   ├── prop_shallow.v
 │   │   ├── prop_general_subsumption.v (D1 + D12; CST; FN^n spine machinery —
 │   │   │                              is_fn_n / btyp_spine / d_consis_sub_trans /
 │   │   │                              d_sub_trans_spine)
@@ -383,7 +387,10 @@ mechanization/
 │       │                                        `msubst_*` and `subst_*`)
 │       │                   prop_solve_ext.v     solve_ext / solve_sub_ext /
 │       │                                        solve_eq_mono_concl packages
-│       │                   prop_flex_apart.v    flex_apart + Arrow repair
+│       │                   prop_flex_apart.v    mono-paint / precision /
+│       │                                        refinement kit (the name is
+│       │                                        historical: the flex_apart
+│       │                                        premise is gone, 2026-10-10)
 │       │                 then prop_eq_var (Cv) -> prop_eq_cstr (Cs) ->
 │       │                 prop_sub_var (Sv) -> prop_sub_cstr (Ss) ->
 │       │                 prop_extract (L).  ⚙ The substrate was ONE 6952-line
@@ -478,8 +485,12 @@ their topic names.
   twice.  Before adding a helper, grep for it.  When two copies differ in
   strength (`=` vs `[=]` vs `[<=]`, general vs variable-instance), keep the
   STRONG one and let the weak uses `rewrite` with it; do not keep both.
-  Duplicate count: **0** (audited 2026-08-12; two of the last ten turned out to
-  be one fact under THREE names, so grep for the FACT, not just the name).
+  ⚠️ The 2026-08-12 audit's "duplicate count 0" was WRONG: a by-statement
+  sweep on 2026-10-10 found ~60 more (local copies of Metalib's `uniq_mid` /
+  `binds_weaken`, `utags_uskl` = `ftag_in_uskl`, `a_sub_sound_v` =
+  `a_sub_sound`, …) and removed most.  A name grep cannot find them —
+  normalise the STATEMENT (binder names, argument order, `[=]` vs `=`) and
+  compare.
 
 ## Encoding conventions
 
@@ -535,8 +546,8 @@ before changing any of them.
   rules name the atom and constrain it (`x ∉ dom (Ξ ++ Θ1) ∪ dom Θ2 ∪
   fvar_in_exp e`).  The trade is real: cofinite is cheap to USE and expensive
   to BUILD — completeness must regenerate the whole family from the IH's one
-  instance, which is exactly what `prop_swap.v` §6's `*_rename_tm` bridges
-  exist for — and exists-fresh is the reverse.  Layer by layer:
+  instance (that is what the old `*_rename_tm` bridges were for) — and
+  exists-fresh is the reverse.  Layer by layer:
   - `decl/def_rules.v`, `algo_decl/*` / `deco_algo/*` — cofinite. ✅
   - `algo/def_rules.v` operational judgments (`a_looksub`, `a_solve_*`,
     `a_assign` / `a_unify` / `a_consis`, `a_sub`, `a_pat`, `a_typing`) —
@@ -546,8 +557,7 @@ before changing any of them.
     recommended it; `a_typing`'s six went 2026-08-08, `7061d31`).  It did
     re-open theorems 1 and 3, and the two moved in opposite directions:
     completeness got **shorter** (it no longer regenerates a family, so the
-    four `a_pat_rename_tm` calls and the lemma itself are gone — see the ⛔
-    note where §6 of `algo/prop_swap.v` used to end), soundness slightly
+    four `a_pat_rename_tm` calls and the lemma itself are gone), soundness slightly
     longer (it opens the `a_wf_exp` families at the row's own binder, via
     `a_wf_exp_abs_pick` / `a_wf_exp_abs_anno_pick`).  All four flagships are
     Qed and axiom-free after the move.

@@ -93,7 +93,7 @@ So the type's colour profile is determined by the mode it sits under.
 > colours" (the paper's `syn{A}` / `inh{A}` overload) is documented
 > in [Part 2 §4.4](#44-the-colourless-base-ctyp--syn_color--inh_color-paintings).
 
-### 2.3 Tags (`epsvar`, `eps`; ranges via `dD : tagctx`)
+### 2.3 Tags (`epsvar`, `eps`; tag contexts `Ψ : atoms`)
 
 Tags `ε` are atoms tracking provenance during instantiation. When
 subtyping `∀ε α. T ≤ A` triggers via `sub__forall_l`, Fresco picks a

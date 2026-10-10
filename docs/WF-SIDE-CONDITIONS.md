@@ -162,8 +162,8 @@ occurs. `d_pat_sub`'s three consistency-bearing rows (`Infer`, `UnivGhostR`, the
 (`decl/def_rules.v`; the paper defines that sort at `declarative.tex:1516`). The
 `d` and `ad` skeleton-inference judgements therefore agree row for row, which is
 what made `d_pat_to_ad` / `d_sd_typing_to_ad` hypothesis-free. Kit: three
-structural lemmas mirroring `d_refine_syn`'s (`_weakening`, `_subst_unit`,
-`_same_tvar`) plus the ⇄ bridge in `prop_conserv.v` §5. Full statement, in the
+structural lemmas mirroring `d_refine_syn`'s (`_tvar_mono`, `_subst_unit`)
+plus the ⇄ bridge in `prop_conserv.v` §5. Full statement, in the
 paper's notation: [`ghost-capture.tex`](ghost-capture.tex).
 
 ⭐ **THE TWO ARE NOW ONE RELATION (2026-08-22).** Carrying the presupposition
@@ -193,7 +193,7 @@ refinement half is `d_consis_refine_ty` — reflexivity, given scope.
 
 ⚙ Transport kit for the join (each is its two halves' transports, plus the two
 erasure commutations where the substitution moves): `_weakening`,
-`_subst_unit`, `_same_tvar` (decl); `_mono`, `_isub`, `_weaken`, `_psi_cong`,
+`_subst_unit`, `_tvar_mono` (decl); `_mono`, `_isub`, `_weaken`, `_psi_cong`,
 `_subst_mid`, `_subst_flex`, `_subst_flex_def`, `_rename_tvar`,
 `_tyequiv_subject`, `_unfold_def_subject`, `_paint_transport` (algo); and the
 ⇄ bridge `ad_consis_join_to_d` / `d_consis_join_to_ad`. The TY rows'

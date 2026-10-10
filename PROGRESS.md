@@ -249,6 +249,84 @@ NOT straightforward in the mechanization — reasons recorded per lemma there.
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-10 — Simplification pass after the `_f` removal: duplicates, the flex_apart tower, repeated scripts
+
+A read-only review of every area (plus a rule-by-rule check against the
+current paper), then five per-area passes merged as `simp-{decl,algo,sub,
+pat,ext}`.  No rule changed and no README.v claim changed (one hypothesis of
+`d_consis_sub_trans_mid` is now the indexed `utyp_tag_refines_in`).
+`fresco/`, `cex/`, `README.v`: 99 files, +7698 / −13791 (about 2,900 of the
+insertions are `ext_algo/prop_solve_rel.v` §7–§13d moved verbatim into the
+new `ext_algo/prop_lift_kit.v`).
+
+1. **The paper adopted both algorithm fixes** (paper `f484dde3`): the
+   threaded-`Ξ` `SolE-FlexR` and `Flex-SkipTmVar`.  The mechanization already
+   matched both rule for rule; the PAPER-GAPS entries and `def_rules.v`
+   comments now say so.
+2. **The `flex_apart` tower is gone** (sub, −1600 net).  Every statement that
+   took `flex_apart_deep Θ0 Δρ P0 ψa` also took `ftv ψa ∩ Δρ = ∅`, which
+   implies it; its one consumer's second arm was unreachable.  Removed with it:
+   `flex_apart`, `pskl_flex_free`, `p0_walk`, the derivable
+   `Forall (ftv ∩ Δρ = ∅) κc` conclusion conjunct of P6-Cs / P6-Ss, and
+   P6-Cv's discarded FLEX block.  `prop_flex_apart.v` keeps its name (a cex
+   imports it).  P7b's two ForallL rows are one proof over the head
+   (`a_sub_complete_forall_l_hd`); P6-L is stated at Δ = ∅, its only use.
+3. **Declarative context changes have one design** (decl, −1100 net):
+   `denv_binds_le` / `denv_tbinds_le` and one `_tvar_mono` / `_mono` lemma per
+   judgement, as in `algo_decl/prop_ctx_mono.v`; `ctx_weaken`, `same_tvar`
+   and their 18 lemmas are gone.  Refinement ignores Γ, so
+   `d_refine_{syn,pskl}_any_ctx` replaces its weakening / same-tvar lemmas.
+   `utyp_tags` (= `ftag_in_utyp`) and the unindexed `utyp_tag_refines` are
+   gone; ~50 conversion facts moved into `fresco/prop_coercions.v`; tag
+   contexts in 41 decl statements are named Ψ, not Δ.  `language.ott` lost the
+   unused list-Δ `tagctx` / `psienv` / `list_disjoint`;
+   `decl/prop_annotation.v` (empty) and the unused Hammer import are gone.
+4. **~60 duplicate facts** removed or reduced to one-line corollaries,
+   including local copies of Metalib's `uniq_mid` / `binds_weaken` /
+   `binds_app_3`, `a_sub_sound_v` (= `a_sub_sound`), `utags_uskl`
+   (= `ftag_in_uskl`), `ad_refine_syn_rename_tvar` (now the rename lemmas of
+   `prop_soundness_consis.v` plus `ad_refine_syn_delta_mono`), and ext_algo
+   copies of algo facts.  Where both copies are used across areas the weaker
+   is now a one-line corollary; those are the next pass's merges.
+5. **Repeated scripts factored**: e.g. 17 `Hbtδ` blocks
+   (`a_wf_pskl_var_non_flex_tvar`), 16 close/open rewrite pairs, 8 `Hdefsα`
+   blocks (`a_wf_aenv_def_ftv_notin`), byte-identical case bullets in
+   `look_pair_fold_sub` (goal selectors), IH types as definitions
+   (`pat_complete_ih`, `typ_complete_ih`).
+6. **Speed**: avoid-set unions split before `fsetdec`.
+   `prop_completeness_typing.v` 40.5 s → 7 s (`a_guess_mono_complete_gen`
+   31.6 s → 2.3 s); `prop_soundness_pat.v` 11.5 → 3.7 s;
+   `e_looksub_lookeq_block` ~24 → 3.4 s; `e_sub_sub_flex_dom_upper`
+   ~17 → 4.7 s.  `prop_lift*.v` no longer import `prop_typing_complete`, and
+   `prop_run_complete.v` no longer imports the four heaviest Equations files.
+7. **Stale comments**: tombstones, campaign history, citations of retired
+   lemmas (`sub_shield`, `flex_shield`, `fa_step`, `_gv`, …) and missing
+   files, and drifted paper line numbers.
+
+Renamed or merged names a reader may look for: `e_extract_rel` →
+`e_extract_det`; `a_extract_rel_e_gen` → `a_extract_rel_e`; `e_pat_lc` /
+`e_pat_env_lc` → `e_pat_lc_env`; `a_solve_cstr_block_fresh_set` →
+`a_solve_cstr_generated_fresh_set`; `a_isub_peel_var_{skl,typ}_mid` →
+`a_isub_peel_tm_mid`; `msubst_compose_inc_id_r` → `msubst_compose_is_id_r`;
+`a_looksub_open_target_at_size` → `a_looksub_open_target_at` (plain case
+split); `ad_refine_syn_rigid_var_{unit,arrow,nonvar}_absurd{,_sub}` →
+`ad_refine_syn_rigid_var_nonvar_absurd`; `pskl_no_top` →
+`pskl_ghost_free_top_guarded`.
+
+Left for a later pass: rule-faithfulness items (`d_pat__anno`'s extra
+`⊢ₚ A`; the fill-wf premise of `d_pat_consis__ghost` / `ad_pat_consis__ghost`
+/ `d_pat_sub__ghost`, the same pattern removed from refinement on
+2026-10-08; redundant `is_ityp` premises; `d_sub__arg` → `d_sub__arrow`;
+decorated FlexL/FlexR lack the plain rules' `≠ ◇` guard), retiring
+`a_scope_pskl` (no rule uses it; ~480 lemma uses), the cross-area merges noted
+in item 4, and the near-twin rows that need a helper generic in the subject
+(AT-AbsCheck / AbsAnnoCheck in soundness, completeness and ext_algo; PSS
+ForallL tagged/untagged).
+
+Validation: full `make coq` passes (107 files rebuilt, 8m17s at -j8); all 34
+`README.v` claims are closed under the global context; the extracted OCaml is
+byte-identical.
+
 ## 2026-10-09 — Cleanup: _f removed, leftovers, faithful partial precision, dead-lemma sweep
 
 Commits `360393bc`, `66a183cf`, `835b629b`, `d923ba2c`, `11a55da7`, plus the
