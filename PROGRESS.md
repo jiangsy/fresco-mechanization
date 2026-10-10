@@ -181,6 +181,23 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-10 — Rule-faithfulness pass
+
+Branch `rules-pass` (merged `70e02a0`).  `README.v` unchanged; full build green, 34/34 closed.
+
+- `d_sub__arg` / `d_pat_sub__arg` / `d_sub_tagsin__arg` → `__arrow` (paper rule Arrow).
+- Decorated FlexL/FlexR carry the plain rules' `≠ ◇` guard (the paper's decorated rules are
+  inherited unchanged).
+- The redundant `is_ityp` premise is gone from `d_sub__forall_r` and the `d_sd_typing` /
+  `ad_sd_typing` ∀-step rows; it is the lemma `d_sub_tc_is_ityp` /
+  `d_sd_typing_tc_abs{,_anno}_is_ityp` instead.
+- P-Anno no longer carries the annotation's wf (`d_pat__anno`, `ad_pat__anno`), as in the paper.
+- The Ghost rows of skeleton consistency / subtyping lose the fill-wf premise on the declarative
+  side (`d_pat_consis__ghost`, `d_pat_sub__ghost`); the `d → ad` bridges take the counterpart's
+  wf.  The `ad` rows still carry it — see docs/GAPS.md G-56; being finished with the
+  `a_scope_pskl` retirement.
+- The two "lift Ψ quantification" TODOs in `d_pat_sub` are done.
+
 ## 2026-10-10 — Simplification pass after the `_f` removal: duplicates, the flex_apart tower, repeated scripts
 
 A read-only review of every area (plus a rule-by-rule check against the

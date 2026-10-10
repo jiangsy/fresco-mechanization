@@ -8,7 +8,7 @@ Citation conventions:
 - `impl:type.ml:<line>` is `paper/artifact/implementation/lib/type.ml` at d10a4460.
 - Mechanization paths are repo-relative.
 
-⏳ marks an entry that the 2026-10-10 rule-faithfulness pass will change. That pass is running on another branch. It touches the Ghost rules' fill-wf premise, `d_pat__anno`'s `⊢ₚ A`, the redundant `is_ityp` premises, `d_sub__arg` → `d_sub__arrow`, and the decorated FlexL/FlexR `≠ ◇` guard. Re-check these entries after it lands.
+The 2026-10-10 rule-faithfulness pass has landed (G-56); the entries it touched are updated.
 
 ## Summary
 
@@ -225,9 +225,9 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 - **Source**: PG:117
 
 ### G-24 U-FlexL/U-FlexR overlap U-GhostR/U-Ghost at a ◇–flexible cell
-- **Kind**: Ambiguity / non-determinism · **Status**: LIVE ⏳ affected by the 2026-10-10 rule pass (decorated FlexL/FlexR)
+- **Kind**: Ambiguity / non-determinism · **Status**: LIVE
 - **Paper**: U-FlexL / U-FlexR carry only `nonflex` (paper:algorithmic.tex:755-767; full-algo-spec.tex:1665-1679). At pattern ◇ and subject α̂, U-GhostR keeps Θ while U-FlexL solves α̂ to a fresh β̂.
-- **Mechanization**: `P0 <> pskl_ghost` / `P <> pskl_ghost` on `a_consis__flex_l/_r` (fresco/algo/def_rules.v:1477-1486). The decorated twins still lack the guard (see G-55).
+- **Mechanization**: `P0 <> pskl_ghost` / `P <> pskl_ghost` on `a_consis__flex_l/_r` (fresco/algo/def_rules.v:1477-1486). The decorated twins `a_consistag__flex_l/_r` carry it too since the 2026-10-10 rule pass (the paper's decorated rules are inherited unchanged).
 - **Evidence**: cex/probe_inc_more_general.v shows the two answers are equally general, so nothing is lost for soundness or optimality. cex/probe_consis_ghost_flex.v and cex/probe_pat_presents_hole_flex.v show the cell is reachable. All are Qed.
 - **Ask for the authors**: Add `P₀ ≠ ◇` / `P ≠ ◇`, or state the rule priority. This matches `join_sk`'s ghost-first arms (impl:type.ml:146-154). It is a determinism fix, not a soundness fix.
 - **Source**: PG:230, PG:4382
@@ -326,7 +326,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ## C. Live — for the authors: prose completions and well-formedness presuppositions ("state it")
 
 ### G-36 Skeleton consistency presupposes refinement; this is load-bearing and stated only in prose
-- **Kind**: Prose completion (not derivable from the rules) · **Status**: LIVE ⏳ affected by the 2026-10-10 rule pass (Ghost rules' fill-wf premise)
+- **Kind**: Prose completion (not derivable from the rules) · **Status**: LIVE
 - **Paper**: paper:declarative.tex:2071-2073 ("requires … the refinement judgement Γ ⊢ ⌊S⌋ ⊳ P"). It is absent from the consistency figure (:1966-2045), and the counterpart wf presupposition (:1593-1596) is also only in prose.
 - **Mechanization**: the join `d_consis_join` / `ad_consis_join` (fresco/algo_decl/def_consis_refine.v:254) is the premise of every consistency leaf of `d_pat_sub` / `ad_pat_sub` and their `_fuel` twins. `d_pat_to_ad` is hypothesis-free. The closed completeness corollaries are stated over the paper's `⊢ˢ` and `⊢` (`a_typing_complete_sd_infer`, fresco/algo/typing/prop_closed.v:298).
 - **Evidence**: cex/cex_ad_pat_join_not_leaf_valid.v (`cap_consis`: the rules derive `∀X.◇ ∼ ∀ˢX.X`; `cap_no_refine`) and cex/cex_d_pat_bridges_false.v (`cap_d_pat_excluded`). Root placement is refuted by cex_p7_univ_ghost_r_vacuous.v and cex_p7_third_premise_forall.v. All compile.
@@ -366,9 +366,9 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 - **Source**: WF:586-630
 
 ### G-41 Skeleton inference's base rows need counterpart wf; no output-wf theorem is stated
-- **Kind**: Prose completion + Missing lemma · **Status**: LIVE ⏳ affected by the 2026-10-10 rule pass (`d_pat__anno`'s `⊢ₚ A`; Ghost fill-wf)
+- **Kind**: Prose completion + Missing lemma · **Status**: LIVE
 - **Paper**: "wf of M and bid{P}, as well as skmod" (paper:declarative.tex:1593-1596) is stated per judgement. P-Unit, P-Var and P-Anno (:1630-1650) carry neither. lemma:context-precision-skeleton (paper:proofs.tex:128) and the Sub case use precision at base leaves, which needs `Θ ⊢ ⌊Q⌋`. The paper never proves that algorithmic outputs are well-formed.
-- **Mechanization**: `⊢ₚₛ ⌊Q⌋` on `d_pat__unit/__var/__anno` and `ad_pat__unit/__var/__anno` (fresco/algo_decl/def_typing.v:90-119). Output-wf theorems `a_consis_output_wf` and `a_sub_output_wf` (fresco/algo/prop_wf_preservation.v:114, :1001).
+- **Mechanization**: `⊢ₚₛ ⌊Q⌋` (the counterpart's wf) on `d_pat__unit/__var/__anno` and `ad_pat__unit/__var/__anno`; since the 2026-10-10 rule pass P-Anno no longer carries the annotation's `⊢ₚ A`, matching the paper (fresco/algo_decl/def_typing.v:90-119). Output-wf theorems `a_consis_output_wf` and `a_sub_output_wf` (fresco/algo/prop_wf_preservation.v:114, :1001).
 - **Evidence**: `ad_refine_syn_output_not_wf` (cex/cex_refine_not_transitive.v:125) shows that wf cannot be propagated top-down past P-App.
 - **Ask for the authors**: Say that the presupposition holds at every sub-derivation, or put it on the base rules. Add the output-wf lemma for consistency and for subtyping.
 - **Source**: PG:4052; WF:229-240
@@ -502,18 +502,14 @@ Other UNCERTAIN items: G-50 and G-51 (implementation) and G-54 (SolS-ForallR sor
 - **Do**: check whether that cell is reachable in the implementation. If it is, report an implementation incompleteness. Otherwise sort the mechanization's rule and re-prove. Then ask the authors.
 - **Source**: PG:1399 (point 2)
 
-### G-55 Decorated FlexL/FlexR lack the `≠ ◇` guard ⏳ affected by the 2026-10-10 rule pass
-- **Kind**: Mechanization to-do · **Status**: LIVE
-- **What**: the plain `a_consis__flex_l/_r` carry the G-24 guard, but `a_consistag__flex_l/_r` (fresco/deco_algo/def_decorated.v) do not (PROGRESS.md:322-323). The rule pass adds it.
+### G-55 Decorated FlexL/FlexR now carry the `≠ ◇` guard
+- **Kind**: Mechanization to-do · **Status**: DONE (2026-10-10 rule pass, `c76b344`)
+- **What**: `a_consistag__flex_l/_r` (fresco/deco_algo/def_decorated.v) gained `P0 <> pskl_ghost` / `P <> pskl_ghost`, as the plain rules have (G-24). Decoration gets it from the plain rule; decorated soundness lost its ◇ cases.
 
-### G-56 Rule-faithfulness items in flight ⏳ affected by the 2026-10-10 rule pass
-- **Kind**: Mechanization to-do · **Status**: LIVE
-- **What**: the extra mechanization premises that the paper does not have:
-  - the Ghost rules' fill-wf premise (`d_pat_consis__ghost`, `ad_pat_consis__ghost`, `d_pat_sub__ghost`);
-  - `d_pat__anno`'s `⊢ₚ A`. Its algo twin `ad_sd_typing__anno`'s `a_wf_ptyp Θ A` is MOOT for the paper (PG:923, see G-79) but is still an extra premise;
-  - redundant `is_ityp` premises;
-  - `d_sub__arg` → `d_sub__arrow`.
-- **Do**: after the pass lands, update G-36, G-41 and G-24, and the WF-SIDE-CONDITIONS §skeleton-inference text.
+### G-56 Rule-faithfulness pass (2026-10-10): what changed, what remains
+- **Kind**: Mechanization to-do · **Status**: PARTLY DONE
+- **Done** (merged `70e02a0`, full build green): `d_sub__arg` / `d_pat_sub__arg` / `d_sub_tagsin__arg` → `__arrow`; the redundant `is_ityp` premise dropped from `d_sub__forall_r` and the `d_sd_typing` / `ad_sd_typing` ∀-step rows (now lemmas `d_sub_tc_is_ityp`, `d_sd_typing_tc_abs{,_anno}_is_ityp`); P-Anno's annotation wf dropped from `d_pat__anno` and `ad_pat__anno` (the sd-Anno prose completion stays on `ad_sd_typing__anno` only, PG:923); the Ghost fill-wf premise dropped from `d_pat_consis__ghost` and `d_pat_sub__ghost` (the `d → ad` bridges take the counterpart's wf instead).
+- **Remaining**: the `ad` Ghost rows (`ad_pat_consis__ghost`, `ad_pat_sub__ghost`, `ad_pat_sub_fuel__ghost`) still carry the fill-wf premise, because dropping it needs `a_consis_complete` (README) to take the counterpart `Qb`'s wf as a hypothesis (the paper's presupposition). Being done together with step 3 (retiring `a_scope_pskl`), so that `d` and `ad` agree.
 
 ### G-57 Register the P6-Cs subject-wf refutation in PAPER-GAPS.md
 - **Kind**: Mechanization to-do · **Status**: LIVE
@@ -612,7 +608,7 @@ Moot (mechanization bugs fixed, or encoding notes):
 - **G-76** Definition-sync findings from the restart. This is a pointer only (docs/REPORT-remech-decl-sync.md). PG:2197
 - **G-77** Decorated ForallL quantifies its decoration as a cofinite tag family. Equivalent modulo renaming. PG:2231
 - **G-78** The `flex_apart` premise was missing `fa_rsubst_var`. The whole `flex_apart` / `sub_shield` tower was deleted (2026-10-10). PG:3032
-- **G-79** sd-Anno annotation wf. The paper puts wf on no sd rule, so only the mechanization was inconsistent (see G-56 ⏳). PG:923
+- **G-79** sd-Anno annotation wf. The paper puts wf on no sd rule, so only the mechanization was inconsistent (see G-56). PG:923
 - **G-80** ForallL "WLOG guarded P₀" is a join permutation. The paper's sentence is right, and the mechanization's cost has been paid. PG:3574
 - **G-81** Solve binder rows and arrow siblings need freshness and threading. The paper's solve judgement is context-free and Barendregt covers it. The D-fragment called this "LIVE as an encoding choice"; it is classified MOOT here. The related global-supply wording is G-22. PG:3844 (:3916)
 - **G-82** Typing binder rows are exists-fresh, not cofinite. This is purely a locally-nameless matter. PG:4092 (:4125)
