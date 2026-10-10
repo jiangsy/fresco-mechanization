@@ -109,7 +109,7 @@ Proof.
   - apply d_pat__var with (d := d) (P := P);
       eauto using d_wf_pskl_tvar_mono, d_pat_sub_tvar_mono.
   - apply d_pat__anno;
-      eauto using d_wf_ptyp_tvar_mono, d_wf_pskl_tvar_mono, d_pat_sub_tvar_mono.
+      eauto using d_wf_pskl_tvar_mono, d_pat_sub_tvar_mono.
   - apply d_pat__freeze; auto.
   - apply d_pat__abs with (L := L) (P := P);
       [ assumption | eauto using d_wf_pskl_tvar_mono | assumption | mono_cof ].

@@ -381,7 +381,7 @@ Proof.
         [ exact Hby | exact H0 | exact H1 | exact H2 ].
     + apply d_pat__var with (d := d) (P := P);
         [ exact H | exact H0 | exact H1 | exact H2 ].
-  - (* anno *) apply d_pat__anno; [ exact H | exact H0 | exact H1 ].
+  - (* anno *) apply d_pat__anno; [ exact H | exact H0 ].
   - (* freeze *) apply d_pat__freeze. eapply IHd_pat; eauto.
   - (* abs *) apply d_pat__abs with
       (L := L `union` {{x0}} `union` {{y0}} `union` dom Γ) (P := P);

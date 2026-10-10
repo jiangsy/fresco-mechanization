@@ -1042,7 +1042,7 @@ the paper theorem without qualification**:
   established at the toplevel and shown to be preserved (likely via a
   separate regularity lemma if needed).
 - **Wf premises on intro rules.** `d_typing__abs` / `_abs_anno` /
-  `d_pat__anno` / `d_pat__abs` carry explicit `d_wf_typ Γ A` /
+  `d_pat__abs` carry explicit `d_wf_typ Γ A` /
   `d_wf_pskl Γ nil P`. The paper does not state these — they're
   regularity strengthenings the mechanization needs to close
   `d_typing_pat_preserves_wf`. Worth a paper footnote. (After the

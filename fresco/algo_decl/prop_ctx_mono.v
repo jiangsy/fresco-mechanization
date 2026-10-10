@@ -336,8 +336,7 @@ Proof.
       [ eauto | eassumption | eapply a_wf_pskl_mono; eauto
       | eapply ad_pat_sub_mono; eauto ].
   - apply ad_pat__anno;
-      [ eapply a_wf_ptyp_mono; eauto | eapply a_wf_pskl_mono; eauto
-      | eapply ad_pat_sub_mono; eauto ].
+      [ eapply a_wf_pskl_mono; eauto | eapply ad_pat_sub_mono; eauto ].
   - apply ad_pat__freeze; auto.
   - apply ad_pat__abs with (L := L);
       [ assumption | eapply a_wf_pskl_mono; eauto | assumption | ].

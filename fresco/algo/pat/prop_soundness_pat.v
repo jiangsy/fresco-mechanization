@@ -167,8 +167,7 @@ Proof.
       | eapply ad_pat_sub_isub; eauto ].
   - (* anno *)
     apply ad_pat__anno;
-      [ eapply a_wf_ptyp_isub; eauto | eapply a_wf_pskl_isub; eauto
-      | eapply ad_pat_sub_isub; eauto ].
+      [ eapply a_wf_pskl_isub; eauto | eapply ad_pat_sub_isub; eauto ].
   - (* freeze *) apply ad_pat__freeze; auto.
   - (* abs *)
     apply ad_pat__abs with (L := L);
@@ -623,9 +622,7 @@ Proof.
       apply binds_app_3; unfold binds; simpl; right; exact H.
   - (* anno *)
     apply ad_pat__anno;
-      [ eapply a_wf_ptyp_mono;
-          [ eassumption | exact Hren ]
-      | eapply a_wf_pskl_mono;
+      [ eapply a_wf_pskl_mono;
           [ eassumption | exact Hren ]
       | eapply ad_pat_sub_mono;
           [ eassumption | exact Hren ] ].
@@ -1763,7 +1760,7 @@ Proof.
   intros M Θ e Q H; induction H; intros Hwf.
   - (* unit : on the rule *) exact H.
   - (* var : on the rule *) exact H1.
-  - (* anno : on the rule *) exact H0.
+  - (* anno : on the rule *) exact H.
   - (* freeze *) apply IHad_pat; exact Hwf.
   - (* abs : arrow of the rule's wf P and the body's target *)
     destruct (atom_fresh (L `union` dom Θ)) as [x Hx].
@@ -1922,8 +1919,7 @@ Proof.
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     exists Qt. split; [ exact HeQt | ]. split; [ | exact Href ].
     apply ad_pat__anno;
-      [ eapply a_wf_ptyp_isub; [ exact HwfA | exact Hle ]
-      | exact HwfQt
+      [ exact HwfQt
       | rewrite pskl_to_uskl_via_bskl_syn; exact Hjoin ].
   - (* AP-Freeze *)
     destruct (IHa_pat Hwf ltac:(apply a_wf_pskl__ghost)

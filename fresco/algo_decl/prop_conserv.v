@@ -951,8 +951,7 @@ Proof.
       | exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty (bskl_to_pskl Q) H1 Γ0 eq_refl)
       | eapply ad_pat_sub_sk_to_d; [ eassumption | reflexivity | reflexivity ] ].
   - (* P-Anno *) apply d_pat__anno;
-      [ exact (a_wf_ptyp_to_d (denv_to_aenv Γ0) A H Γ0 eq_refl)
-      | exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty (bskl_to_pskl Q) H0 Γ0 eq_refl)
+      [ exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty (bskl_to_pskl Q) H Γ0 eq_refl)
       | eapply ad_pat_sub_sk_to_d; [ eassumption | reflexivity | reflexivity ] ].
   - (* P-Freeze *) apply d_pat__freeze. exact (IHad_pat Γ0 eq_refl).
   - (* P-Abs *) apply d_pat__abs with (L := L);
@@ -1500,8 +1499,7 @@ Proof.
       | exact (d_wf_pskl_to_a Γ empty (bskl_to_pskl Q) H1)
       | apply d_pat_sub_to_ad; assumption ].
   - (* P-Anno *) apply ad_pat__anno;
-      [ exact (d_wf_ptyp_to_a Γ A H)
-      | exact (d_wf_pskl_to_a Γ empty (bskl_to_pskl Q) H0)
+      [ exact (d_wf_pskl_to_a Γ empty (bskl_to_pskl Q) H)
       | apply d_pat_sub_to_ad; assumption ].
   - (* P-Freeze *) apply ad_pat__freeze; assumption.
   - (* P-Abs *) apply ad_pat__abs with (L := L);

@@ -958,6 +958,15 @@ Lemma ad_sd_typing_wf_exp : forall M Θ e B, Θ ⊢ᵃᵈ[ M ] e ⦂ B -> a_wf_e
 
 i.e. a derivation EXHIBITS its own subject as a well-formed term, which is
 what the paper's ambient "all inputs are well formed" is supposed to mean.
+
+⚙ **Only sd-Anno carries it** (2026-10-10).  The skeleton-inference twins
+`d_pat__anno` / `ad_pat__anno` used to carry the same premise; they are now
+the paper's P-Anno verbatim.  The argument above does not reach them:
+skeleton inference never exhibits its subject (P-Anno has no premise about
+`e` at all, so there is no `ad_pat_wf_exp` to buy), and the one proof that
+read the annotation's wf — `a_pat_complete`'s Anno case, for `lc A` — gets it
+from the theorem's own `lc_exp e`.  The declarative `d_sd_typing__anno` /
+`d_typing__anno` never carried it.
 The visible payoff: `a_typing_complete_infer` (algo/typing/prop_closed.v)
 — completeness of INFERENCE at a closed program — now has the declarative
 derivation as its **only** premise.

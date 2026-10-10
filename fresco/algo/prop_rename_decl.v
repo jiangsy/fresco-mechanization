@@ -352,11 +352,10 @@ Proof.
         rewrite subst_pskl_in_pskl_fresh_eq in Hs; [ exact Hs | exact Hfr ].
   - (* anno *)
     apply ad_pat__anno.
-    + apply a_wf_ptyp_rename_paint; [ exact H | exact Hdefs ].
     + rewrite <- bskl_to_pskl_subst_var.
-      apply a_wf_pskl_rename_paint; [ exact H0 | exact Hdefs ].
+      apply a_wf_pskl_rename_paint; [ exact H | exact Hdefs ].
     + pose proof (@ad_pat_sub_rename_paint _ _ _ Θ1 α Θ0 _ _ β'
-                    H1 Hdom Hdefs) as Hs.
+                    H0 Hdom Hdefs) as Hs.
       rewrite subst_var_pskl_to_uskl_syn, subst_var_ptyp_to_pskl in Hs.
       exact Hs.
   - (* freeze *)

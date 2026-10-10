@@ -522,7 +522,6 @@ Proof.
         | apply denv_tbinds_le_map_subst_unit ].
   - (* anno: embedded sub premise as in unit. *)
     apply d_pat__anno.
-    + eapply d_wf_ptyp_subst_unit_ctx; [ eassumption | reflexivity ].
     + (* the counterpart's wf premise travels exactly like the join *)
       rewrite bskl_to_pskl_subst_unit;
       eapply d_wf_pskl_tvar_mono;

@@ -1180,13 +1180,11 @@ Proof.
     rewrite pskl_to_uskl_subst. exact Hx.
   - (* anno *)
     eapply ad_pat__anno;
-      [ eapply a_wf_ptyp_subst_mid;
-          [ eassumption | reflexivity | exact Hs ]
-      | rewrite bskl_to_pskl_subst_mono;
+      [ rewrite bskl_to_pskl_subst_mono;
         eapply a_wf_pskl_subst_mid;
-          [ exact H0 | reflexivity | exact Hs | clear; fsetdec | clear; fsetdec ]
+          [ exact H | reflexivity | exact Hs | clear; fsetdec | clear; fsetdec ]
       | ].
-    pose proof (@ad_pat_sub_subst_mid _ _ _ _ _ _ H1 τs α0 b0 Θa Θ0
+    pose proof (@ad_pat_sub_subst_mid _ _ _ _ _ _ H0 τs α0 b0 Θa Θ0
                   eq_refl Hs Hu) as Hx.
     rewrite !pskl_to_uskl_via_bskl_syn in Hx |- *.
     rewrite ptyp_to_pskl_subst, pskl_to_uskl_subst. exact Hx.

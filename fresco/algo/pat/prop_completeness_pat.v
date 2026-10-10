@@ -368,7 +368,8 @@ Lemma slack_unit : forall Θ κ,
 Proof. intros. simpl. apply a_uskl_tyequiv__unit. Qed.
 
 (** [P-Anno]'s slack — reflexive, by the fixpoint above.  [lc_ptyp A] comes
-    from the declarative rule's own [a_wf_ptyp Θ A]. *)
+    from theorem 3's [lc_exp] (the declarative rule, like the paper's,
+    states nothing about [A]). *)
 Lemma slack_anno : forall Θ0 κ Θ A,
   κ ∷ Θ0 ⊑ Θ ->
   {{ ⊢ Θ0 }}a ->
@@ -698,11 +699,14 @@ Lemma a_pat_complete_anno : forall M Θ0 P0 e A κ Θ Q,
   (* ⭐ the ONE side condition theorem 3 carries about the term: an
      annotation is SOURCE syntax, so its type variables are RIGID *)
   (forall α, α `in` ftvar_in_ptyp A -> binds α abind_tvar Θ0) ->
+  (* [P-Anno] has no wf premise on [A] (the paper's has none); local closure
+     comes from theorem 3's [lc_exp] *)
+  lc_ptyp A ->
   {{ Θ ⊢ˢ[ M ] (exp_anno e A) ⦂ Q }}ad ->
   {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
   pat_complete_concl M Θ0 P0 (exp_anno e A) κ Θ Q.
 Proof.
-  intros M Θ0 P0 e A κ Θ Q Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig Hd Href.
+  intros M Θ0 P0 e A κ Θ Q Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig HlcA Hd Href.
   inversion Hd; subst.
   match goal with
   | H : ad_pat_sub _ _ _ _ _ _ |- _ =>
@@ -711,12 +715,9 @@ Proof.
   match goal with
   | H : {{ _ ⨟ empty ⊢ₚₛ (bskl_to_pskl _) }}a |- _ => rename H into HwfQ
   end.
-  match goal with
-  | H : a_wf_ptyp Θ A |- _ => rename H into HwfA
-  end.
   assert (HwfpA : {{ Θ0 ⨟ empty ⊢ₚₛ (ptyp_to_pskl A) }}a).
   { apply a_wf_ptyp_to_wf_pskl. apply a_wf_ptyp_of_lc_tvarish;
-      [ eapply a_wf_ptyp_lc; exact HwfA
+      [ exact HlcA
       | intros α Hα; left; apply Hrig; exact Hα ]. }
   rewrite pskl_to_uskl_via_bskl_syn in Hjoin.
   destruct (@a_sub_complete njoin a_sub_mode_sk M Θ0 P0
@@ -725,8 +726,7 @@ Proof.
               ltac:(intros _; exact Hmod)
               ltac:(intros Hd0; discriminate)
               Hinc
-              (@slack_anno Θ0 κ Θ A Hinc Hwf0
-                 ltac:(eapply a_wf_ptyp_lc; exact HwfA) Hrig)
+              (@slack_anno Θ0 κ Θ A Hinc Hwf0 HlcA Hrig)
               ltac:(rewrite pskl_to_uskl_ptyp in Hjoin; exact Hjoin)
               Href HwfQ
               ltac:(intros Hd0; discriminate))
@@ -2324,7 +2324,8 @@ Proof.
       apply IHn; try assumption. clear - Hsz Hm2; lia.
   - (* anno *)
     apply a_pat_complete_anno; try assumption.
-    intros α Hα. apply Hrig. simpl. clear - Hα; fsetdec.
+    + intros α Hα. apply Hrig. simpl. clear - Hα; fsetdec.
+    + inversion Hlc; assumption.
   - (* freeze : the rule pins the mode and the input ghost *)
     destruct M as [ | | M' ]; [ inversion Hd | | inversion Hd ].
     inversion Hmod; subst.

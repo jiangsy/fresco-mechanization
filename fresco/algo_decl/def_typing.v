@@ -112,7 +112,7 @@ Inductive ad_pat : mode -> aenv -> exp -> bskl -> Prop :=
       (bskl_to_uskl (pskl_to_bskl_syn P)) Q ->
     {{ Θ ⊢ˢ[ m ] (exp_var_f x) ⦂ Q }}ad
 | ad_pat__anno : forall Θ m e (A : ptyp) Q,                      (* P-Anno *)
-    a_wf_ptyp Θ A ->
+    (* no wf premise on [A], as in the paper and [d_pat__anno] *)
     {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
     ad_pat_sub a_sub_mode_sk m empty Θ
       (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A))) Q ->

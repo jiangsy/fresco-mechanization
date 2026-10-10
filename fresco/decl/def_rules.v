@@ -805,7 +805,11 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
     {{ empty ⨟ Γ ⊢ˢ[ m ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⩽ Q }}d ->
     {{ Γ ⊢ˢ[ m ] (exp_var_f x) ⦂ Q }}d
 | d_pat__anno : forall Γ m e (A : ptyp) Q,
-    {{ Γ ⊢ₚ A }}d ->
+    (* Paper P-Anno: no wf premise on the annotation, as in [d_typing__anno] /
+       [d_sd_typing__anno].  (The sd-Anno prose-completion lives only on
+       [ad_sd_typing__anno], where it buys [ad_sd_typing_wf_exp]; skeleton
+       inference does not exhibit its subject anyway — P-Anno has no premise
+       about [e].) *)
     {{ Γ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}d ->
     {{ empty ⨟ Γ ⊢ˢ[ m ] (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A))) ⩽ Q }}d ->
     {{ Γ ⊢ˢ[ m ] (exp_anno e A) ⦂ Q }}d
