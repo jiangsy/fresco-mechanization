@@ -65,7 +65,7 @@ Proof.
   - apply d_pat_consis__forall_syn_tagged with (L := L); mono_cof.
   - apply d_pat_consis__forall_syn with (L := L); mono_cof.
   - eapply d_pat_consis__arrow; eauto.
-  - apply d_pat_consis__ghost; [ assumption | eapply d_wf_pskl_tvar_mono; eassumption ].
+  - apply d_pat_consis__ghost; assumption.
   - apply d_pat_consis__ghostg; assumption.
   - apply d_pat_consis__dot_univ_ghost; auto.
   - apply d_pat_consis__univ_ghost; auto.
@@ -90,7 +90,7 @@ Proof.
   intros m Ψ Γ R Q H; induction H; intros Γ' Hle.
   - apply d_pat_sub__infer; eauto using d_consis_join_tvar_mono.
   - apply d_pat_sub__univ_ghost_r; eauto using d_consis_join_tvar_mono.
-  - apply d_pat_sub__ghost; eauto using d_wf_pskl_tvar_mono.
+  - apply d_pat_sub__ghost; assumption.
   - apply d_pat_sub__ghostg; assumption.
   - eapply d_pat_sub__arrow; eauto using d_consis_join_tvar_mono.
   - eapply d_pat_sub__forall_l_tagged; eauto using d_wf_uskl_tvar_mono.

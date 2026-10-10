@@ -606,8 +606,11 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
     Ψ [=] Ψ1 `union` Ψ2 ->
     {{ Ψ ⨟ Γ ⊢ˢ (uskl_arrow R1 R2) ∼ (bskl_arrow Q1 Q2) }}d
 | d_pat_consis__ghost : forall Ψ Γ P,
+    (* Paper [Ghost]: no premise on the fill.  Its well-formedness is the
+       judgement's presupposition (wf of the counterpart, declarative.tex:2074),
+       carried by the statements that need it — the same move refinement's
+       Ghost rule made on 2026-10-08 (WF-SIDE-CONDITIONS.md §1–§2). *)
     Ψ [=] empty ->
-    {{ Γ ⨟ empty ⊢ₚₛ P }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ uskl_ghost ∼ (pskl_to_bskl_inh P) }}d
 | d_pat_consis__ghostg : forall Ψ Γ,
     Ψ [=] empty ->
@@ -709,9 +712,9 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
        (declarative.tex:2049, defined at :1596): it excludes an ill-moded fill (a poly [inh{P}] at
        ti/tc is not [is_sskl]), so the sub output stays mode-compatible — the
        skeleton analog of [d_sub] having no ghost rule. *)
+    (* No premise on the fill, as in the paper (see [d_pat_consis__ghost]). *)
     (* Todo: lift Ψ quantification above *)
     forall Ψ, Ψ [=] empty ->
-    {{ Γ ⨟ empty ⊢ₚₛ P }}d ->
     mod_comp_sk (pskl_to_bskl_inh P) m ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] uskl_ghost ⩽ (pskl_to_bskl_inh P) }}d
 | d_pat_sub__ghostg : forall m Ψ Γ,

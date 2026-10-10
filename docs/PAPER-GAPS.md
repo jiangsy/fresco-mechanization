@@ -275,7 +275,11 @@ unguarded consistency derivations.
 
 **What the mechanization does**: `a_consis__flex_l` carries
 `P0 <> pskl_ghost` and `a_consis__flex_r` carries `P <> pskl_ghost`
-(`fresco/algo/def_rules.v`), with the `ext_algo` twins identical.
+(`fresco/algo/def_rules.v`), with the `ext_algo` twins identical — and,
+since 2026-10-10, the DECORATED twins `a_consistag__flex_l` / `__flex_r`
+too (`deco_algo/def_decorated.v`): the paper inherits the flexible rules
+unchanged into the decorated system (decorated-algosub.tex:237), so they
+say what the plain ones say; decoration reads the guard off the plain run.
 Completeness is UNAFFECTED — `a_consis_complete` is re-proved with the
 guards, by trying `C-GhostR` BEFORE the two flexible layers (the
 implementation's own order) and adding the mirror `C-Ghost` node at a
@@ -922,6 +926,26 @@ step the paper does not mention, that the run's OUTPUT context still holds
 flexibles and must be closed off by a metasubstitution `ζ ∷ Θ₁ ⊑ ·` before
 the answer is a declarative type at all.  `thm:complete-type-inference`
 cannot, for (A).
+
+## RULE FAITHFULNESS (2026-10-10) — the skeleton Ghost rows: the declarative ones now match the paper; the decl-in-algo ones keep a fill-wf premise the paper does not state
+
+The paper's skeleton-consistency `Ghost` (declarative.tex:2002) and
+skeleton-subtyping `Ghost` (:1912) have no premise.  The mech's had
+`Γ ⨟ ∅ ⊢ₚₛ P` on the fill.  `d_pat_consis__ghost` / `d_pat_sub__ghost` have
+now lost it (the paper's rules verbatim); the fill's wf is part of the
+presupposition "wf of the counterpart" (declarative.tex:2074), and the `d → ad`
+bridge carries it as a hypothesis.
+
+`ad_pat_consis__ghost` / `ad_pat_sub__ghost` / `ad_pat_sub_fuel__ghost` KEEP
+it.  Not for convenience: `thm:complete-consistency` as mechanized
+(`a_consis_complete`, `README.v`) takes no wf hypothesis on its declarative
+counterpart `Qb`, and its proof reads `Qb`'s scope off the derivation.  At a
+position where subject and input are both ghosts, nothing in the theorem's
+hypotheses constrains the fill — so moving the premise to the statements
+means adding the paper's own presupposition to the theorem.  For the
+authors this is only the observation that the completeness theorem, too,
+should be read under the presupposition on its declarative counterpart.
+Details: docs/WF-SIDE-CONDITIONS.md §2a.
 
 ## PROSE-COMPLETION (2026-08-10) — `sd-Anno` must require its annotation well formed, like its four siblings
 

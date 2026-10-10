@@ -105,6 +105,9 @@ Inductive ad_pat_sub :
     {{ (Ψ `union` Ψ') ⨟ Θ ⊢ˢ[ NM | M ] (open_uskl_wrt_uskl R ψ) ⩽ Q }}ad ->
     {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] (uskl_all_syn R) ⩽ Q }}ad
 | ad_pat_sub__ghost : forall Ψ Θ M P,                         (* Ghost (SK) *)
+    (* ⚠️ the fill-wf premise is KEPT, in step with [ad_pat_consis__ghost]
+       (whose comment says why); [ad_pat_sub_target_wf] reads it.
+       docs/WF-SIDE-CONDITIONS.md §2a. *)
     Ψ [=] empty ->
     {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
     mod_comp_sk (pskl_to_bskl_inh P) M ->
@@ -233,6 +236,7 @@ Inductive ad_pat_sub_fuel :
     ad_pat_sub_fuel n NM M (Ψ `union` Ψ') Θ (open_uskl_wrt_uskl R ψ) Q ->
     ad_pat_sub_fuel (S n) NM M Ψ Θ (uskl_all_syn R) Q
 | ad_pat_sub_fuel__ghost : forall n Ψ Θ M P,                    (* Ghost (SK) *)
+    (* fill-wf KEPT, as [ad_pat_sub__ghost] *)
     Ψ [=] empty ->
     {{ Θ ⨟ empty ⊢ₚₛ P }}a ->
     mod_comp_sk (pskl_to_bskl_inh P) M ->

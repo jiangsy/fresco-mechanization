@@ -550,7 +550,11 @@ before changing any of them.
   `docs/WF-SIDE-CONDITIONS.md` §1.  There is ONE refinement relation per
   sort: a fill-avoidance set is just part of Δ (the internal `_f` variants
   were removed 2026-10-09), and partial precision follows the paper rule for
-  rule too (2026-10-09).
+  rule too (2026-10-09).  The declarative skeleton consistency / subtyping
+  Ghost rows do too (no fill-wf premise, 2026-10-10); their decl-in-algo
+  twins (`ad_pat_consis__ghost`, `ad_pat_sub{,_fuel}__ghost`) deliberately
+  KEEP it — `a_consis_complete` would otherwise need a new hypothesis
+  (`docs/WF-SIDE-CONDITIONS.md` §2a).
 - **Locally-nameless via lngen**, including for ε tag variables.
   Imports go through `Metalib.Metatheory`.
 - **Binder rules: COFINITE in the declarative layers, EXISTS-FRESH in the
