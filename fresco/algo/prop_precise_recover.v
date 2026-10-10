@@ -15,7 +15,7 @@
 
         {{ Θ ⨟ (Δ₁ ∪ Δ₂) ⊢ₚᵣ (msubst_bskl ζ Qt) ⊑ (bskl_to_pskl Qb) }}ad
 
-    (see [consis_optimal_post], algo/prop_consis_complete.v:189).  For the
+    (the optimality half of [complete_mu], consis/prop_completeness_consis.v).  For the
     three flexible rules the algorithmic OUTPUT painting is [Qt = α̂] (a
     flexible variable): the rule assigns/unifies [α̂] and returns it.  The
     consistency paper dismisses these three cases in one sentence —
@@ -50,7 +50,7 @@
     composing the converse bridge [tyequiv_mono_consis] with the
     consistency→refinement mono lemma [ad_pat_consis_refine_syn_mono].
 
-    NOTE ON [κ₁].  [consis_optimal_post] quantifies the algorithmic solution
+    NOTE ON [κ₁].  [complete_mu]'s optimality half quantifies the algorithmic solution
     [κ₁] universally (only [κ₁ ∷ Θ₀ ⊑ Θ₁]).  The recovery genuinely needs
     [κ₁] to act as the identity on [α̂] — [msubst_lookup κ₁ α = ptyp_var_f α]
     — which is how the (OPT) proof instantiates it (the algorithm's own
@@ -230,7 +230,7 @@ Qed.
 (*      — read [C] off the competing consistency JOIN of [κα̂];             *)
 (*    - [consis_precise_via_refine] : the INPUT is [α̂]   (rule FlexR)       *)
 (*      — read [C] off the competing Δ₁-REFINEMENT of [κα̂].                 *)
-(*  Both conclude the [consis_optimal_post] precision conjunct verbatim.    *)
+(*  Both conclude [complete_mu]'s optimality precision conjunct verbatim.  *)
 (* ===================================================================== *)
 
 (** Shared tail: given [κα̂ ≡ᵗ C], [Qb = syn C], and the factoring, close the

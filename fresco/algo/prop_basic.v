@@ -181,16 +181,6 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  Soundness of variable unification (thm:sound-consistency part 2)      *)
-(* ===================================================================== *)
-
-(* [a_unify_sound] MOVED to prop_soundness_consis.v: with the corrected
-   [Flex-Flex-Assign] (whose premise is CONSISTENCY, not [unifyvar]),
-   [a_unify] and [a_consis] are MUTUALLY inductive, so their soundness is one
-   mutual induction ([a_unify_consis_mutind]).  That is also how the paper
-   organises its own proof (consistency-proofs.tex:1562). *)
-
-(* ===================================================================== *)
 (*  Source-prefix machinery for assignvar (the [Θ0 | Ξ] split): flexible  *)
 (*  declarations can be prepended to the SOURCE of an increase whenever   *)
 (*  they are still visible in the target.                                 *)
@@ -1092,8 +1082,7 @@ Proof.
     try (intros τ0 Hc; inversion Hc; subst; congruence).
 Qed.
 
-(** A monotype's skeleton is guarded / locally closed.  (Duplicated from
-    [prop_consis_sound], which is DOWNSTREAM of this file.) *)
+(** A monotype's skeleton is guarded / locally closed. *)
 Lemma mono_ptyp_to_pskl_guarded : forall τ,
   mono_ptyp τ -> guarded_pskl (ptyp_to_pskl τ).
 Proof.
@@ -1231,8 +1220,7 @@ Proof.
 Qed.
 
 (** FORWARD monotype substitution: folding a defined flexible variable's
-    definition INTO a well-formed skeleton keeps it well-formed.  (The BACK
-    direction is [a_wf_pskl_mono_subst_back] in [prop_consis_sound].)
+    definition INTO a well-formed skeleton keeps it well-formed.
     Stated at the EMPTY tag scope: at a nonempty [Δ] it is false, since a
     [∀◇] body is read at [Θ∖Δ] and the definition may mention [Δ]. *)
 Lemma a_wf_pskl_mono_subst : forall Θ β τ P,
@@ -1249,17 +1237,6 @@ Proof.
   eapply a_wf_aenv_binds_def_wf; eauto.
 Qed.
 
-(* ===================================================================== *)
-(*  [a_assign_sound] MOVED.  [a_assign] is now in the a_unify/a_consis    *)
-(*  MUTUAL block (algo/def_rules.v): its Assign-Assign premise is a       *)
-(*  CONSISTENCY derivation, so soundness of assignment can no longer be a *)
-(*  standalone induction — there is no IH for that premise.  It lives in  *)
-(*  the 3-motive bundle [a_assign_unify_consis_sound] (prop_consis_sound) *)
-(*  and is re-exported from there under its original name.                *)
-(* ===================================================================== *)
-
-(* --- relocated from prop_soundness_consis.v (pure base lemma needed by the
-   metasubst layer prop_metasubst.v, which must not import consistency) --- *)
 Lemma a_wf_aenv_uniq : forall Θ,
   {{ ⊢ Θ }}a -> uniq Θ.
 Proof.

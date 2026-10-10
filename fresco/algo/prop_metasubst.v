@@ -244,9 +244,7 @@ Proof.
     + apply IH; [ intros a t Hin; apply (Hlc a t); right; exact Hin ].
 Qed.
 
-(** [msubst_pskl] commutes with opening under a locally-closed metasubst.
-    (Local copies of [prop_consis_exist]'s lemmas, which cannot be imported
-    here — that file imports this one.) *)
+(** [msubst_pskl] commutes with opening under a locally-closed metasubst. *)
 Lemma msubst_pskl_open_rec_lc : forall κ,
   msubst_lc κ ->
   forall P P' k,

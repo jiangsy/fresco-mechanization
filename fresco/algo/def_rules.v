@@ -143,9 +143,7 @@ Definition a_binds_tvar (α : atom) (Θ : aenv) : Prop :=
    follows.  Well-formedness is not a run: nothing here opens a binder at a
    name it chose, so there is no witness to name, and the cofinite form gives
    the strong elimination the whole tree leans on.  Do not "fix" these three to
-   match their file-mates.  (The one genuine violation is [a_pat]'s four binder
-   rows at the bottom of this file — see docs/REPORT-remech-cleanup-audit.md
-   §3.) *)
+   match their file-mates. *)
 Inductive a_wf_ptyp : aenv -> ptyp -> Prop :=
 | a_wf_ptyp__unit : forall Θ,
     a_wf_ptyp Θ ptyp_unit
@@ -437,7 +435,7 @@ Definition a_flex_tvar (Θ : aenv) (α : atom) : Prop :=
     collection's LE-FlexR row does NOT apply at counterpart [P'].
 
     The paper's row concludes at a HATTED counterpart —
-    [lookeq{α}{P}{β̂}{≐ γ̂}[γ̂]], full-algo-spec.tex:1110-1116 — and the
+    [lookeq{α}{P}{β̂}{≐ γ̂}[γ̂]], full-algo-spec.tex:1117-1123 — and the
     reference implementation renders that as the match arm [| _, MFlex beta],
     type.ml:561, where [MFlex] is a constructor DISTINCT from [TVar]
     (lib/type.ml:23).  So the row fires at a FLEXIBLE counterpart and at
@@ -446,11 +444,9 @@ Definition a_flex_tvar (Θ : aenv) (α : atom) : Prop :=
 
     ⚠️ NOT admissible, like the ForallR-priority guard and unlike the
     absence-first one: [guarded_pskl] includes VARIABLES, so without it the
-    two rows both fire at a ⫯ subject against a flexible and their answers
+    two rows both fire at a ∀◇ subject against a flexible and their answers
     differ in KIND — FlexR invents a flexible and spends supply, UnivGhost2
-    strips and collects whatever the premise collected.  Machine-checked at
-    the collection (cex/probe_bcore_ug2_flexr.v) and, one level up, at
-    [e_extract] (cex/probe_extract_flexr_ug2_drift.v).  docs/PAPER-GAPS.md. *)
+    strips and collects whatever the premise collected.  docs/PAPER-GAPS.md. *)
 
 Definition flex_r_off (Θ : aenv) (P' : pskl) : Prop :=
   forall β, P' = pskl_var_f β -> ~ a_flex_tvar Θ β.
@@ -470,8 +466,10 @@ Proof. intros Θ β H β0 Heq; injection Heq as ->; exact H. Qed.
 (*  \guessMono macro, which renders as guess^TY — macro.tex:1505)          *)
 (*  [guess^TY(P) = (Ξ; A)]: fill each ghost with a fresh flexible          *)
 (*  variable, drop universal ghosts.  [guess[SK] P = (·; P)] is [a_guess]. *)
-(*  NB: freshness of the generated [Ξ] is not carried by the relation;     *)
-(*  proofs needing it add an explicit freshness premise (paper: "fresh").  *)
+(*  Freshness of the generated [Ξ] is carried by the ghost row's side     *)
+(*  condition ([α ∉ ftvar_in_aenv Θ]) together with the ∀ row's witness    *)
+(*  entering the context.  NB [Ξ1 ++ Ξ2] in the arrow row is the paper's   *)
+(*  [Ξ2,Ξ1]: the list head is the paper's RIGHTMOST entry.                 *)
 (* ===================================================================== *)
 
 Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
@@ -485,7 +483,7 @@ Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
        instead of a hypothesis renaming lemmas cannot even state. *)
     α `notin` ftvar_in_aenv Θ ->
     a_guess_mono Θ pskl_ghost ((α ~ abind_flex_mono) ++ nil) (ptyp_var_f α)
-| a_guess_mono__univ_ghost : forall Θ P Ξ A,                     (* ⫯.P ↦ guess P *)
+| a_guess_mono__univ_ghost : forall Θ P Ξ A,                     (* ∀◇.P ↦ guess P *)
     a_guess_mono Θ P Ξ A ->
     a_guess_mono Θ (pskl_univ_ghost P) Ξ A
 | a_guess_mono__var : forall Θ α,                             (* α / α̂ ↦ (·; α) *)
@@ -524,7 +522,7 @@ Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
       (open_pskl_wrt_pskl P (pskl_var_f β)) Ξ A ->
     a_guess_mono Θ (pskl_all_syn P) Ξ (ptyp_all (close_ptyp_wrt_ptyp β A)).
 
-(** [guess^N(Q) = (Ξ'; Q')] (full-algo-spec.tex:1000): [guess^SK] is the
+(** [guess^N(Q) = (Ξ'; Q')] (full-algo-spec.tex:1005): [guess^SK] is the
     identity; [guess^TY] is [a_guess_mono] read back into [pskl].
     The avoid-input [Θ] is threaded on (cluster 1 gave [a_guess_mono] one;
     running the inner guess at [nil] left that discipline INERT here, so the
@@ -589,7 +587,7 @@ Reserved Notation "{{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a"
    is the relational rendering of the implementation's global fresh counter
    ([incr counter; Bindlib.new_var], type.ml:563-565), exactly as for
    [a_guess_mono] and the solve judgments.  Without it LE-FlexR's paper-side
-   side condition "fresh γ̂" (algorithmic.tex:1204) has NO rendering at all,
+   side condition "fresh γ̂" (algorithmic.tex:1214) has NO rendering at all,
    and — decisively — [a_looksub_lookeq_ftv] cannot even be STATED once the
    ∀ rules leak: its repaired disjunct is "or the variable is one the run
    generated", i.e. "∉ ftvar_in_aenv Θ" (cf. [a_solve_cstr_ftv]).
@@ -620,7 +618,7 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
     P <> pskl_var_f α ->
     {{ Θ ⊢ P ≼[ α , m ] pskl_ghost ⤳ nil ⨾ nil }}a
 | a_looksub__check : forall Θ α A B Ξ C,         (* LS-Check *)
-    (* SORT: [A] and [B] are TYPES in the paper (full-algo-spec.tex:1042-1049),
+    (* SORT: [A] and [B] are TYPES in the paper (full-algo-spec.tex:1047-1053),
        matching the [a_sub__check] row this collection rule covers.  ⚠️ Only
        the TARGET is mechanized — see the SORT note on [a_looksub__forall_r]
        for why the subject is not. *)
@@ -632,16 +630,15 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
     {{ Θ ⊢ A ≼[ α , mode_tc ] B ⤳ Ξ ⨾ C }}a
 | a_looksub__forall_r : forall Θ α A B Ξ C β,    (* LS-ForallR — LEAKS *)
     (* SORT — TARGET ONLY, here and at [a_looksub__check].  The paper sorts
-       the collection's SUBJECT as a type too ([A], full-algo-spec.tex:1042-1056),
+       the collection's SUBJECT as a type too ([A], full-algo-spec.tex:1047-1062),
        and it is TRUE — but only because these two rows are reachable at the TY
        sort ALONE: they need a guarded target, and [skmod{SK}] pins the
        collection's target to [◇] at every mode.  Mechanizing it would
        therefore mean threading [skmod] through the collection's STRUCTURAL
-       lemmas, which are mode-agnostic by design.  Two of them show why the
-       premise is not free: [a_looksub_lookeq_subst_stable] and
-       [a_looksub_lookeq_subst_gen_size] (prop_looksub.v §4, prop_decorate_sub.v
-       §8) substitute an ARBITRARY skeleton into the subject, and the latter's
-       consumer — [a_subtag_decoration]'s ForallL row — feeds it the node's
+       lemmas, which are mode-agnostic by design.  One shows why the
+       premise is not free: [a_looksub_lookeq_subst_gen_size]
+       (deco_algo/prop_decorate_sub.v §8) substitutes an ARBITRARY skeleton
+       into the subject, and its consumer — [a_subtag_decoration]'s ForallL row — feeds it the node's
        guess [P1], which at the SK sort IS the raw solve output and carries
        ghosts.  The TARGET premise below has no such cost: it is read straight
        off [skmod{TY}], which every consumer already carries.
@@ -649,8 +646,12 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
     pskl_ghost_free (pskl_all_syn B) ->
     β `notin` add α (ftvar_in_aenv Θ `union` ftvar_in_pskl A
                        `union` ftvar_in_pskl B) ->
-    (* [paper-gap] ABSENCE-FIRST GUARD — see [a_looksub__forall_r]. *)
+    (* [paper-gap] ABSENCE-FIRST GUARD — the runner tries LS/LE-Absent
+       before any binder row; admissible (sub/prop_looksub.v §2b).  The
+       explanation is docs/PAPER-GAPS.md (absence-first guard). *)
     α `in` ftvar_in_pskl A ->
+    (* dispatch guard: at subject [α] LS-Var fires; the paper relies on the
+       overlap being harmless (docs/PAPER-GAPS.md, ◇-dispatch). *)
     A <> pskl_var_f α ->
     {{ ((β ~ abind_tvar) ++ Θ) ⊢ A ≼[ α , mode_tc ]
       (open_pskl_wrt_pskl B (pskl_var_f β)) ⤳ Ξ ⨾ C }}a ->
@@ -687,6 +688,8 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
     ftvar_in_a_cstrs C2 ∩ dom Ξ1 [=] empty ->
     {{ Θ ⊢ P1 ∼[ α ] P1' ⤳ Ξ1 ⨾ C1 }}a ->
     {{ Θ ⊢ P2 ≼[ α , m ] P2' ⤳ Ξ2 ⨾ C2 }}a ->
+    (* NB [Ξ1 ++ Ξ2] is the paper's [Ξ1,Ξ2] REVERSED as a list: the list
+       head is the paper's rightmost entry.  Same in [a_lookeq__arrow]. *)
     {{ Θ ⊢ (pskl_arrow P1 P2) ≼[ α , (mode_fn m) ] (pskl_arrow P1' P2')
         ⤳ (Ξ1 ++ Ξ2) ⨾ (C1 ++ C2) }}a
 | a_looksub__forall_l : forall Θ α m P P' Ξ C β, (* LS-ForallL — LEAKS *)
@@ -694,6 +697,9 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
                        `union` ftvar_in_pskl P') ->
     (* [paper-gap] ABSENCE-FIRST GUARD — see [a_looksub__forall_r]. *)
     α `in` ftvar_in_pskl (pskl_all_syn P) ->
+    (* dispatch guard: at a [◇] counterpart LS-Vacuous answers first; the
+       paper relies on the overlap being harmless (docs/PAPER-GAPS.md,
+       ◇-dispatch). *)
     P' <> pskl_ghost ->
     (* [paper-gap] ForallR-PRIORITY GUARD — the runner tries LS-ForallR
        first at a ∀ counterpart in check mode ([forall_r_off],
@@ -703,7 +709,7 @@ Inductive a_looksub : aenv -> atom -> mode -> pskl -> pskl -> aenv -> a_cstrs ->
       ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
     {{ Θ ⊢ (pskl_all_syn P) ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a
 | a_looksub__univ_ghost_l : forall Θ α m P P' Ξ C, (* LS-UnivGhostL *)
-    P' <> pskl_ghost ->
+    P' <> pskl_ghost ->                (* dispatch guard — see [a_looksub__forall_l] *)
     (* [paper-gap] ForallR-PRIORITY GUARD — see [a_looksub__forall_l]. *)
     forall_r_off m P' ->
     {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a ->
@@ -722,7 +728,7 @@ with a_lookeq : aenv -> atom -> pskl -> pskl -> aenv -> a_cstrs -> Prop :=
     P <> pskl_var_f α ->
     {{ Θ ⊢ P ∼[ α ] pskl_ghost ⤳ nil ⨾ nil }}a
 | a_lookeq__flex_r : forall Θ α P β α1,          (* LE-FlexR (β̂ a flex var) *)
-    (* the paper's [fresh γ̂] (algorithmic.tex:1204).  [ftvar_in_aenv], not
+    (* the paper's [fresh γ̂] (algorithmic.tex:1214).  [ftvar_in_aenv], not
        [dom]: a payload ([α̂ ≔ τ]) may mention the name, and it must not. *)
     α1 `notin` add α (add β (ftvar_in_aenv Θ `union` ftvar_in_pskl P)) ->
     (* [paper-gap] THE HAT.  The paper's row concludes at [β̂]; one atom class
@@ -821,7 +827,7 @@ where "{{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a" := (a_looksub Θ α m P P'
 (*  wrong avoid-set for anything that touches the guess — and SE-FlexR     *)
 (*  now does.  Concretely it is what makes the WITNESS-MOVE work: the      *)
 (*  swap [swap_aenv b δ Θ] collapses to [Θ] exactly when both atoms dodge  *)
-(*  [ftvar_in_aenv Θ] ([a_solve_eq_weaken_tvar], sub/look/prop_rsubst.v),    *)
+(*  [ftvar_in_aenv Θ] ([swap_aenv_fresh_id], algo/prop_swap.v),              *)
 (*  and the same set is what [a_solve_sub_eq_ctx_change] transports.       *)
 (*  The change only SHRINKS the judgment, so every consumer (soundness,    *)
 (*  decoration) is unaffected; the completeness proofs CONSTRUCT these     *)
@@ -869,7 +875,7 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
 | a_solve_sub__check : forall Θ P Q Ξ P',        (* SS-Check *)
     (* SORT: the paper writes [solvesub{P}{TC}{B}{P'}] — the LHS is the
        accumulated PATTERN (a skeleton) but the RHS is a TYPE
-       (full-algo-spec.tex:1262-1267).  The asymmetry is real: the pattern
+       (full-algo-spec.tex:1276-1281).  The asymmetry is real: the pattern
        starts at [◇] and is a skeleton throughout, while the target is a
        mode-spine position of [P0], hence [⌈A⌉] at the TY sort. *)
     pskl_ghost_free Q ->
@@ -879,10 +885,10 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
     {{ Θ ⊢ₛ P ≼[ mode_tc ] Q ⤳ Ξ ⨾ P' }}a
 | a_solve_sub__forall_r : forall Θ P B Ξ P' β,   (* SS-ForallR *)
     (* SORT — TARGET ONLY.  The paper writes [solvesub{A}{TC}{\forall\beta.B}]
-       (full-algo-spec.tex:1269-1273), i.e. it sorts BOTH sides as types; the
+       (full-algo-spec.tex:1283-1287), i.e. it sorts BOTH sides as types; the
        LHS reading is a metavariable slip and is NOT mechanized, because this
        rule's own premise is discharged by SolS-GhostL, whose LHS is the ghost
-       [◇] (:1283-1294).  Sorting the LHS would leave [◇ ≼TC ∀β.B] with no
+       [◇] (:1306-1310).  Sorting the LHS would leave [◇ ≼TC ∀β.B] with no
        rule at all, and that configuration is reachable (subject [∀α.α]
        against a ∀-target: LS-Var emits [sub_TC(∀β.B)] and the pattern is
        still [◇]).  docs/PAPER-GAPS.md.  The binder is therefore named [P],
@@ -898,7 +904,7 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
        through unchanged, so β may legitimately ESCAPE into [P'] — the
        implementation opens the RHS and DISCARDS the binder name
        ([let _, b = Bindlib.unbind b in end_rule (solve_sub (Check b) a)],
-       type.ml:517-520), and the paper's rule (full-algo-spec.tex:1271)
+       type.ml:517-520), and the paper's rule (full-algo-spec.tex:1283-1287)
        runs its premise at [B] with β still free.  The leak is BY DESIGN;
        ill-scoped results are filtered downstream by wf side conditions
        ([a_sub__forall_l]'s [{{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P1 }}a]), not by narrowing
@@ -930,7 +936,7 @@ Inductive a_solve_sub : aenv -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
     {{ Θ ⊢ₛ pskl_ghost ≼[ (mode_fn m) ] (pskl_arrow Q1 Q2)
          ⤳ (Ξ2 ++ Ξ1) ⨾ (pskl_univ_ghost (pskl_arrow P1' P2')) }}a
 | a_solve_sub__ghost_l : forall Θ B,             (* SS-GhostL *)
-    (* SORT: [guarded{B}] with [B] a TYPE (full-algo-spec.tex:1283-1288). *)
+    (* SORT: [guarded{B}] with [B] a TYPE (full-algo-spec.tex:1306-1310). *)
     pskl_ghost_free B ->
     guarded_pskl B ->
     {{ Θ ⊢ₛ pskl_ghost ≼[ mode_tc ] B ⤳ nil ⨾ (pskl_univ_ghost B) }}a
@@ -941,14 +947,12 @@ with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
 | a_solve_eq__var : forall Θ α Q,                (* SE-Var + SE-FlexL *)
     {{ Θ ⊢ₑ (pskl_var_f α) ∼ Q ⤳ nil ⨾ (pskl_var_f α) }}a
 | a_solve_eq__flex_r : forall Θ α P Ξ A,         (* SE-FlexR *)
-    (* the paper's FlexR (full-algo-spec.tex:1374) is context-free and fires
+    (* the paper's FlexR (full-algo-spec.tex:1388-1393) is context-free and fires
        on ANY hatted variable — defined or not; [α̂ ∈ Θ] here is only the
        mech's rendering of hattedness.  The earlier [binds α abind_flex_mono]
        (undefined-only) encoding was UNFAITHFULLY narrow: a defined flexible
        nested in a structural counterpart makes the solve stuck here but not
-       on paper, falsifying the completeness statements independently of the
-       flexible-counterpart cex (cex_p6_flex_counterpart.v).  Widened
-       2026-07-24.
+       on paper, falsifying the completeness statements.
 
        ⭐ THE OUTPUT IS THE ACCUMULATED PATTERN, NOT THE FLEXIBLE
        (2026-08-04 — the authors' repair of the row this mechanization
@@ -958,8 +962,8 @@ with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
        overwrites the eq-constraint's yield [∀γ.γ→γ] with the flexible, the
        enclosing SS-ForallL then re-binds a VACUOUS binder [∀_.β̂], and the
        continuation is scope-stuck — which is exactly why NO [a_sub] run
-       existed there (cex/probe_double_occ_run.v) even though the run with
-       the right instantiation does (cex/probe_solve_flexr.v).  A raw
+       existed there even though the run with the right instantiation
+       does.  A raw
        flexible and a ghost are the SAME epistemic situation, and the ghost
        twins SE-VacuousR / SS-Vacuous both KEEP the pattern.
 
@@ -1065,7 +1069,7 @@ Reserved Notation "{{ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}a"
    then apply [guess[N]]. *)
 (* ⚠️ THE SOLVE RUNS AT [Ξ ++ Θ0], NOT AT [Ξ] ALONE.  The paper's constraint
    solving is CONTEXT-FREE — [solve C P Q], [solveeq P Q P'] and
-   [guess^N(Q)] carry no context at all (full-algo-spec.tex:1216-1375) —
+   [guess^N(Q)] carry no context at all (full-algo-spec.tex:1256-1393) —
    because there [α̂] is a syntactically distinct metavariable class.  The
    mech has ONE atom class, so [a_solve_eq__flex_r] must consult a context to
    decide HATTEDNESS; that is the only context-sensitive rule in the whole
@@ -1096,7 +1100,9 @@ Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv
     {{ (Ξ ++ Θ0) ⊩ C ⨾ pskl_ghost ⤳ Ξs ⨾ Q }}a ->
     (* the guess runs AFTER the collection AND the solving, so its
        avoid-input is the whole [Ξs ++ Ξ ++ Θ0] — this is what makes the
-       three halves of the output block [Ξ ++ Ξs ++ Ξ'] disjoint *)
+       three halves of the output block [Ξ ++ Ξs ++ Ξ'] disjoint (as a
+       list; the head is the paper's RIGHTMOST entry, so this is the
+       paper's [Ξ',Ξs,Ξ]) *)
     a_guess (Ξs ++ Ξ ++ Θ0) NM Q Ξ' Q' ->
     (* ⭐⭐ [paper-gap] THE CROSS-LAYER FRESHNESS GUARD (2026-08-20): the
        FOLD's generated flexibles are fresh for the CONSTRAINTS it is
@@ -1114,7 +1120,7 @@ Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv
        rule.  ⇒ the run is not the implementation's.
 
        ✅ IT COSTS THE THREADED ENCODING NOTHING, and that is a THEOREM
-       ([e_extract_solve_guard], ext_algo/prop_lift.v): [e_looksub]'s
+       (ext_algo/prop_extract.v): [e_looksub]'s
        constraints live in the supply it has already SPENT and
        [e_solve_cstr]'s block is drawn STRICTLY ABOVE it, so
        [e_extract_sound] discharges the guard from facts its proof already
@@ -1221,7 +1227,7 @@ Inductive a_assign : aenv -> aenv -> atom -> pskl -> aenv -> Prop :=
 | a_assign__assign : forall Θ0 Θ1 Ξ α β τ P Q,          (* Assign-Assign *)
     (* The premise is CONSISTENCY over the MERGED context [Θ₀,Ξ = Ξ ++ Θ0],
        with subject [α̂[τ/β̂]] and input [P[τ/β̂]], output dropped.  [Δ₁∣Δ₂] are
-       omitted in the paper, which per full-algo-spec.tex:1472-1473 means BOTH
+       omitted in the paper, which per full-algo-spec.tex:1487-1488 means BOTH
        EMPTY.
 
        The premise ABSORBS [Ξ] into the context and resets the pending suffix:
@@ -1327,7 +1333,7 @@ with a_unify : aenv -> atom -> atom -> aenv -> Prop :=
        (full-algo-spec.tex:1440-1442) writes "we write Θ₀ ⊢ P ∼ P₀ ⊣ Θ₁ for
        Θ₀ ⊢[P₀] P ∼ Q ⊣ Θ₁ WHEN THE OUTPUT Q IS NOT USED" — so the two-slot form
        is consistency with SUBJECT [α̂[τ/α1̂]], INPUT [β̂[τ/α1̂]] and the output
-       dropped.  [Δ₁∣Δ₂] are omitted there, which per :1472-1473 means BOTH
+       dropped.  [Δ₁∣Δ₂] are omitted there, which per :1487-1488 means BOTH
        EMPTY.  The rule drops out of [unifyvar] precisely because substituting
        the definition can turn a variable subject into an arbitrary MONOTYPE,
        which only consistency can handle (via FlexL / FlexR / the structural
@@ -1335,7 +1341,7 @@ with a_unify : aenv -> atom -> atom -> aenv -> Prop :=
 
        Recursing into [a_unify] here — as this rule previously did — left the
        algorithm STUCK on any non-variable definition (machine-checked at the
-       time; now a SUCCESS regression test, algo/test_unify_regression.v).
+       time; now a SUCCESS regression test, test/test_unify_regression.v).
        Hence [a_unify] and [a_consis] are MUTUAL, which
        is also how the paper's own soundness proof is organised
        (consistency-proofs.tex:1562: "by mutual induction on the algorithmic
@@ -1493,8 +1499,8 @@ and "{{ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}a" :=
 
 (* Mutual induction scheme for the algorithmic judgments.  Kept next to the
    inductives (it needs only them) so the metasubst-layer flex-preservation
-   bundle in prop_inc_strengthen can use it WITHOUT importing prop_consis_sound
-   (which would create a prop_inc_strengthen -> prop_consis_sound cycle). *)
+   bundle in prop_inc_strengthen can use it WITHOUT importing
+   consis/prop_soundness_consis.v (which would create a cycle). *)
 Scheme a_assign_mind := Induction for a_assign Sort Prop
   with a_unify_mind  := Induction for a_unify  Sort Prop
   with a_consis_mind := Induction for a_consis Sort Prop.
@@ -1591,7 +1597,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
        under the binder and not re-bound, because the look cluster's generated
        names already avoid the looked-for variable, so ONE instance generates
        the whole family with the SAME [Ξ ↪ P1]
-       ([a_extract_family_of_instance], sub/look/prop_extract.v).
+       ([a_extract_family_of_instance], sub/prop_looksub.v).
        Consumers that want a family apply that lemma. *)
     α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P
       `union` ftvar_in_pskl P0 ->
@@ -1687,20 +1693,14 @@ with a_sub_flex : a_sub_mode -> mode -> pskl -> aenv -> aenv -> atom -> pskl -> 
     β `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
     a_sub_flex NM M P0 ((β ~ abind_tvar) ++ Θ0) Ξ α Q ((β ~ abind_tvar) ++ Θ1)
-(* ⛔ [paper-gap] Flex-SkipTmVar — MISSING from fig:alg-subtyping's second box
-   (full-algo-spec.tex:883-912), which has only the five rules above, ALL of
-   them matching a TYPE-variable entry.  The paper's TWIN walk has the rule
-   (Assign-SkipTmVar, full-algo-spec.tex:1791; [a_assign__skip_tm_var] /
-   [a_assign__skip_tm_skl] just above), and without it the subtyping walk is
-   STUCK the moment a term entry sits above the subject — which is where
-   `fun x -> x 1` puts it, since [a_typing__abs] pushes the binder ABOVE the
-   flexibles [a_guess_mono] just invented and [a_typing__var] then hands that
-   flexible to subtyping at an FN mode.  thm:complete-subtyping is FALSE for
-   the five-rule set (cex/cex_p7_flex_walk_tm_var.v, which also records that
-   the reference implementation CRASHES on that program), so these two rules
-   are added in the paper's own idiom, verbatim mirrors of the twin walk's.
+(* Flex-SkipTmVar (full-algo-spec.tex:914-920) — the mirror of the twin
+   walk's Assign-SkipTmVar ([a_assign__skip_tm_var] / [a_assign__skip_tm_skl]
+   above).  Without it the subtyping walk is STUCK the moment a term entry
+   sits above the subject (`fun x -> x 1`; cex/cex_p7_flex_walk_tm_var.v
+   records that thm:complete-subtyping fails for the rule set without it).
    The mech splits the paper's single [x : P] entry into a type binding and a
-   skeleton binding, hence two rules for the paper's one.  docs/PAPER-GAPS.md *)
+   skeleton binding, hence two rules for the paper's one; the extra
+   [x ∉ dom Θ1] is the standard re-attach freshness, as on Flex-SkipRigid. *)
 | a_sub_flex__skip_tm_var : forall NM M P0 Θ0 Θ1 Ξ α x Apay Q, (* Flex-SkipTmVar *)
     x `notin` dom Θ1 ->                     (* prose-completion (Barendregt) *)
     a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
@@ -1972,8 +1972,8 @@ Inductive a_typing : mode -> aenv -> pskl -> exp -> ptyp -> aenv -> Prop :=
     {{ ((x ~ abind_var_typ A) ++ Θ2) ⊢[ mode_tc ; (ptyp_to_pskl B) ]
       (open_exp_wrt_exp e (exp_var_f x)) ⦂ B1 ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) }}a ->
     (* ⭐ [paper-gap] THE RESULT'S DOMAIN IS THE SPLIT'S [A'], NOT THE WRITTEN
-       ANNOTATION [A].  The paper's (commented-out) AT-AbsAnnoCheck writes
-       [A → B] (algorithmic.tex:296-303) while orienting its consistency
+       ANNOTATION [A].  The paper's AT-AbsAnnoCheck (full-algo-spec.tex:358-367)
+       writes [A → B] while orienting its consistency
        [A' ∼ A] — subject the split's domain, input the annotation — the
        reverse of AT-AbsAnno's [A ∼ P].  The two cannot both hold: with
        [A → B] the soundness proof owes [inh⌈A'⌉ ⊳ ⌈A⌉], and the consistency

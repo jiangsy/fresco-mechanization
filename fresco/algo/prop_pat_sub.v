@@ -944,9 +944,9 @@ Qed.
 (*  with no condition on Δ at all: what ForallR's fill re-attachment      *)
 (*  needs.                                                                *)
 (*                                                                        *)
-(*  [pskl_ghost_free] / [bskl_ghost_free] themselves now live in          *)
-(*  fresco/predicates.v — the algorithmic RULES constrain their type       *)
-(*  positions with them, so the definition has to precede algo/def_extra. *)
+(*  [pskl_ghost_free] / [bskl_ghost_free] themselves live in              *)
+(*  fresco/def_shapes.v — the algorithmic RULES constrain their type       *)
+(*  positions with them, so the definition has to precede algo/def_rules. *)
 (* ===================================================================== *)
 
 Lemma mono_ptyp_to_bskl_syn_ghost_free : forall τ,

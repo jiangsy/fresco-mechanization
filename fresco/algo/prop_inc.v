@@ -274,8 +274,7 @@ Qed.
 
 (** Flexibility survives an arbitrary context PREFIX ([binds] is plain
     membership, so no freshness side condition is needed — contrast
-    [a_flex_tvar_weaken_cons], which asks for one it does not use).
-    (Relocated here from prop_consis_sound to break an import cycle.) *)
+    [a_flex_tvar_weaken_cons], which asks for one it does not use). *)
 Lemma a_flex_tvar_weaken_prefix : forall α Ξ Θ,
   a_flex_tvar Θ α -> a_flex_tvar (Ξ ++ Θ) α.
 Proof.

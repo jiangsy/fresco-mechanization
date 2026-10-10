@@ -9,7 +9,7 @@
     DESIGN-completeness-subtyping.md §5.2).  This file holds that
     consistency-level metatheory:
 
-    - general tag/wf helpers shared with [prop_sub_complete.v] (the
+    - general tag/wf helpers shared with sub/prop_completeness_sub_precise.v (the
       [pskl_no_forall] kit, [a_wf_pskl] Δ-stripping, [d_tags_skl] /
       [a_tags_sort] inversions and congruences);
     - crux (1a) [ad_pat_consis_strip_tags]: strip the decorated subject to
@@ -23,12 +23,12 @@
       SUBSTITUTION [R[ψa/α] ∼ Q  ⇒  R[Pa/α] ∼ Q], by induction on the
       consistency derivation, whose [R = α] case is crux (1).  Its tag
       bookkeeping needs the syntactic-tag reading ([ftag_in_uskl],
-      algo/def_rules.v): the tag context is contained in the subject's tags
+      fresco/def_shapes.v): the tag context is contained in the subject's tags
       ([ad_pat_consis_ftag_sub]), and the paper's [fresh Ψ'] side condition
       is rendered as disjointness from the subject's OTHER tags
       ([inter Ψ' (ftag R) = ∅]).  Consistency has no ForallL, so no new
       tags appear inside a derivation and the syntactic premise suffices —
-      unlike the subtyping level (see prop_sub_complete.v §P5b-ii). *)
+      unlike the subtyping level (see sub/prop_completeness_sub_precise.v). *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -59,7 +59,7 @@ Require Import src.fresco.algo.prop_pat_sub.
 Set Implicit Arguments.
 
 (* ===================================================================== *)
-(*  General tag / wf helpers (shared with prop_sub_complete.v).           *)
+(*  General tag / wf helpers (shared with sub/prop_completeness_sub_precise.v).  *)
 (* ===================================================================== *)
 
 (** A pskl with no synthesised quantifier: [inh] and [syn] paintings then
@@ -343,7 +343,7 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  Step (2) infrastructure — syntactic tags [ftag_in_uskl] (algo/def_rules.v). *)
+(*  Step (2) infrastructure — syntactic tags [ftag_in_uskl] (fresco/def_shapes.v). *)
 (* ===================================================================== *)
 
 Lemma ftag_in_uskl_open_rec_var : forall α' R k,
@@ -384,7 +384,7 @@ Qed.
 (** The consistency tag context is contained in the SUBJECT's syntactic
     tags — every solved tag is consumed at an [all_tag] node of the
     subject.  (Syntactic counterpart of [ad_partial_precise_tags_sub],
-    prop_sub_complete.v; the precision-substitution crux uses it to pin
+    above; the precision-substitution crux uses it to pin
     the residual tag context of a wholly-[ψa] subject to ∅.) *)
 Lemma ad_pat_consis_ftag_sub : forall Ψ Θ R' Q,
   {{ Ψ ⨟ Θ ⊢ˢ R' ∼ Q }}ad ->

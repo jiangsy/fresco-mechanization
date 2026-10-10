@@ -1,11 +1,11 @@
 (** ⚠️ DO NOT MERGE THIS INTO [prop_inc.v].  It shares that file's topic but
-    NOT its layer: this one needs [prop_flex], [prop_compose] and
+    NOT its layer: this one needs [prop_basic], [prop_compose] and
     [prop_normal], and all three import [prop_inc] — so folding it back is an
     import CYCLE, not a tidy-up.  Checked 2026-08-09 during the file-reorg
     pass; the [_strengthen] suffix marks the layer, not a size accident. *)
 
 (** Increment strengthening / mid-strip infrastructure for the OPTIMALITY
-    walk cases (algo/prop_consis_complete.v, Blocker-2).
+    walk cases (consis/prop_completeness_consis.v).
 
     The assign walk sandwiches the skipped binding as [Ξ ++ [β] ++ Θ0]
     (unlike Flex-Flex-Skip's clean head-flex).  [a_inc_peel_suffix] only peels

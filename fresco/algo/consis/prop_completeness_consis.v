@@ -1761,7 +1761,7 @@ Qed.
 (*  §2  The three completeness statements AT A MEASURE                    *)
 (*                                                                        *)
 (*  Hypotheses mirror the AUGMENTED problem/solution of consistency-      *)
-(*  proofs.tex:2230-2242 exactly as [consis_optimal_post] does (the       *)
+(*  proofs.tex:2230-2242 exactly (the                                    *)
 (*  competing-solution shape of the green soundness bundle); the          *)
 (*  conclusion is the fused existence+optimality of :2246-2255, with the  *)
 (*  algorithm's own id-witness quantified as in [a_consis_optimal].       *)
@@ -3199,9 +3199,6 @@ Qed.
 
 (** Bridge to the Δ-free skeleton wf (the form the ≡ˢ/V lemmas take):
     Δ-variables must be tvar-ish in the receiving context. *)
-(* [a_wf_pskl_to_a_scope_pskl] relocated to algo/prop_swap.v §0 (with the
-   [Δ = ∅] corollary [a_scope_pskl_of_wf]) — see that file's header. *)
-
 (** The join's target erases to a well-formed (Δ-free) skeleton — the
     output-regularity C-Arrow's precision transport needs. *)
 Lemma ad_pat_consis_target_wf : forall Ψ Θ R Qt,

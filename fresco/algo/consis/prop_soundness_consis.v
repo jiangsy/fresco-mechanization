@@ -84,32 +84,6 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  Context bookkeeping                                                   *)
-(* ===================================================================== *)
-
-(* ===================================================================== *)
-(*  Q-side definition folding at monotypes                                *)
-(* ===================================================================== *)
-
-(* ===================================================================== *)
-(*  Soundness of variable unification, declaratively                      *)
-(*  (thm:sound-consistency part 2, read as the paper's Flex case does)    *)
-(* ===================================================================== *)
-
-(** Unification subjects are always variables. *)
-(* [a_unify_var_inv] DELETED.  It said "every derivable [a_unify] has VARIABLE
-   subjects" — which read like a theorem but was a SYMPTOM of the bug: the old
-   [Flex-Flex-Assign] recursed into [a_unify], so a substituted non-variable
-   subject had nowhere to go.  [a_unify]'s subjects are now ATOMS (the paper's
-   hatted [unifyvar{α̂}{β̂}]), so the statement is vacuous. *)
-
-(* [a_unify_sound_consis] REPLACED by the mutual soundness bundle
-   ([a_unify_consis_sound] below): part 2 now produces a type EQUIVALENCE
-   [{{ Θ1 ⊢ α ≡ᵗ β }}a] (subjects are atoms), and the converse bridge
-   [tyequiv_mono_consis] (prop_mono_bridge.v) recovers the declarative
-   consistency reading where the Flex case of part 1 needs it. *)
-
-(* ===================================================================== *)
 (*  Consistency at a monotype painting implies both refinements          *)
 (*  (the paper's since-flexible-variables-do-not-depend-on-the-rigid-    *)
 (*   type-variables-in-Δ steps, part 1 cases Flex / FlexL / FlexR)       *)
@@ -1130,11 +1104,6 @@ Proof.
   clear - Hd Hsc Hfr. fsetdec.
 Qed.
 
-(* [a_guess_mono_ftv] MOVED to algo/prop_basic.v by the freshness campaign: the
-   guess kit there derives target-side freshness from it instead of
-   assuming output-side hypotheses.  prop_flex sits below this file, so
-   the name is still in scope here. *)
-
 Lemma a_decls_no_def : forall Ξ β τ,
   a_decls Ξ ->
   binds β (abind_flex_mono_def τ) Ξ ->
@@ -1145,25 +1114,6 @@ Proof.
   - destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
     [ inversion H0; subst; discriminate Heq | auto ].
 Qed.
-
-(* [a_assign_preserves_inv] is now the ∀Δ-generalized 5th CONJUNCT of the
-   bundle's ASSIGN motive: with the corrected Assign-Assign the proof recurses
-   into CONSISTENCY, so it cannot be a standalone induction on [a_assign] any
-   more.  Re-exported from the bundle under its original name (with the
-   [a_decls] / wf hypotheses the motive carries). *)
-
-(** Unification preserves the domain (no names are created). *)
-(* [a_unify_dom] DELETED — it is now FALSE.  It said unification preserves the
-   context DOMAIN ([dom Θ1 [=] dom Θ0]).  With [Flex-Flex-Assign] recursing into
-   CONSISTENCY, unification can GROW the context: consistency → FlexL/FlexR →
-   [a_assign] → [Assign-SolveM] → fresh [β̄] from [guess^TY].  That is CORRECT —
-   the paper's part-2 soundness only claims an information INCREASE
-   ([⊑{Θ₀}{Θ₁}]), which permits growth.  Uses of it are reworked onto ⊴. *)
-
-(* [a_unify_preserves_inv] is now a CONJUNCT of the mutual soundness bundle
-   ([a_unify_consis_sound] below), generalized over the Δ it protects — the
-   consistency premise of [Flex-Flex-Assign] runs with [Δ1 = Δ2 = ∅], so a
-   fixed-Δ statement would be useless there. *)
 
 (* ===================================================================== *)
 (*  Helpers for the main induction                                        *)
@@ -1185,10 +1135,6 @@ Lemma bskl_to_pskl_close : forall Q α,
   bskl_to_pskl (close_bskl_wrt_bskl α Q)
   = close_pskl_wrt_pskl α (bskl_to_pskl Q).
 Proof. intros; apply bskl_to_pskl_close_rec. Qed.
-
-(* [a_assign_subject_binds] MOVED below the bundle: it needs NO induction any
-   more — the increase conjunct plus [a_assign_subject_flex] and
-   [a_isub_binds_tvarish] give it directly. *)
 
 (* ===================================================================== *)
 (*  ∀-wf at a CHOSEN opener                                               *)
@@ -1284,8 +1230,6 @@ Proof.
     apply H0; auto. apply a_isub_cons_tvar; auto.
 Qed.
 
-(* [a_wf_aenv_uniq] relocated to algo/prop_basic.v (pure base lemma needed by prop_metasubst). *)
-
 (** Every binding produced by guess^TY is a plain flexible variable. *)
 Lemma a_guess_mono_flex_binds : forall Θ P βs τ,
   a_guess_mono Θ P βs τ ->
@@ -1333,12 +1277,6 @@ Proof.
       * intros α1' Hγ'2. apply Hfresh. simpl. fsetdec.
 Qed.
 
-(* [a_assign_new_avoids_F] is now the 4th CONJUNCT of the bundle's ASSIGN
-   motive, re-exported below. *)
-
-(* [a_assign_dom_mono] is now the 3rd CONJUNCT of the bundle's ASSIGN
-   motive, re-exported below. *)
-
 (** A visible monotype's skeleton is well-formed (no quantifiers, no
     ghosts — only the var leaves need discharging). *)
 Lemma mono_ptyp_wf_pskl : forall Θ τ,
@@ -1379,22 +1317,7 @@ Lemma a_wf_aenv_var_skl_inv : forall x P Θ,
   x `notin` dom Θ /\ {{ Θ ⨟ empty ⊢ₚₛ P }}a /\ {{ ⊢ Θ }}a.
 Proof. intros * H; inversion H; subst; auto. Qed.
 
-(* [a_unify_preserves_wf] is now a CONJUNCT of the mutual soundness bundle
-   ([a_unify_consis_sound] below): with the corrected [Flex-Flex-Assign] the
-   proof recurses into consistency, so it cannot be a standalone induction
-   on [a_unify] any more. *)
-
-(* [a_assign_notin] is a corollary of [a_assign_new_avoids_F]; both are now
-   conjuncts of the bundle's ASSIGN motive and re-exported below. *)
-
-(* [a_assign_preserves_wf] is now the 2nd CONJUNCT of the ASSIGN motive of
-   the mutual bundle [a_assign_unify_consis_sound] below (Assign-Assign's
-   premise is a CONSISTENCY derivation, so there is no [a_assign] IH for it).
-   Re-exported from the bundle under its original name. *)
-
 (** Monotype skeletons are locally closed and guarded. *)
-(* [mono_ptyp_to_pskl_guarded] relocated to algo/prop_basic.v (pure base lemma needed by prop_metasubst). *)
-
 Lemma mono_bskl_lc : forall Q,
   mono_bskl Q -> lc_bskl Q.
 Proof. induction 1; auto using lc_bskl. Qed.
@@ -1468,15 +1391,6 @@ Proof.
       by (destruct Hfβ as [Hb | [τ Hb]]; apply binds_In in Hb; auto).
     split; (apply a_flex_tvar_weaken_cons; [ auto | simpl; fsetdec ]).
 Qed.
-
-(* [a_unify_sym] DELETED.  With [Flex-Flex-Assign]'s premise read as
-   CONSISTENCY (subject vs input, asymmetric), unification is no longer
-   syntactically symmetric.  The soundness bundle yields a type EQUIVALENCE
-   [{{ Θ1 ⊢ α ≡ᵗ β }}a] instead, and [a_tyequiv__sym] provides the flip. *)
-
-(* [a_flex_tvar_weaken_prefix] relocated to prop_inc.v (pure metasubst-base
-   lemma; it was the only symbol prop_inc_strengthen borrowed from here, which
-   created a prop_inc_strengthen -> prop_consis_sound import cycle). *)
 
 (** The subject of an assignment is flexible in the input context.
 
@@ -1915,10 +1829,6 @@ Qed.
 (*  directly, and completeness carries the matching avoid set on its own    *)
 (*  motive (prop_completeness_consis.v (PART B) §2).                                     *)
 (* ===================================================================== *)
-
-(* [a_assign_unify_consis_mutind] (+ the per-judgment Induction schemes)
-   relocated to algo/def_rules.v, next to the inductives, so prop_inc_strengthen can
-   use it without importing this file (cycle break). *)
 
 (** Conclusions of the two motives (hypotheses live in [*_concl] below). *)
 Definition unify_sound_post (Θ0 : aenv) (α β : atom)
@@ -3894,11 +3804,6 @@ Proof.
   destruct (proj1 a_assign_unify_consis_sound _ _ _ _ _ Ha Hdecl Hwf HwfP)
     as [_ [Hwf1 _]]. exact Hwf1.
 Qed.
-
-(* [a_assign_new_avoids_F] / [a_assign_notin] / [a_unify_notin] /
-   [a_consis_notin] DELETED with the used-name set: "a name in [F] and fresh
-   for the input stays fresh" is exactly what the walk's re-attaching rules
-   now state as their own premise (DESIGN.md §4.3). *)
 
 (** Preservation of the problem invariants by assignment, at any protected Δ. *)
 Lemma a_assign_preserves_inv : forall Θ0 Ξ α P Θ1 Δ,
