@@ -43,6 +43,22 @@ Require Import src.fresco.ext_algo.def_consis.
 
 Set Implicit Arguments.
 
+(** Substituting the same replacement in two covered inputs preserves their
+    joint cover, including the surrounding context's variables [V]. *)
+Lemma subst_pskl_preserves_cover : forall P Q R α V S,
+  V ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q ∪ ftvar_in_pskl R [<=] S ->
+  V ∪ ftvar_in_pskl (subst_pskl_in_pskl R α P)
+    ∪ ftvar_in_pskl (subst_pskl_in_pskl R α Q) [<=] S.
+Proof.
+  intros P Q R α V S Hcov x Hx. apply Hcov.
+  repeat rewrite union_iff in Hx |- *.
+  destruct Hx as [Hx | [Hx | Hx]]; [ tauto | | ].
+  - apply (ftvar_in_pskl_subst_pskl_in_pskl_upper P R α) in Hx.
+    clear - Hx. fsetdec.
+  - apply (ftvar_in_pskl_subst_pskl_in_pskl_upper Q R α) in Hx.
+    clear - Hx. fsetdec.
+Qed.
+
 Open Scope fresco_e_scope.
 
 (* ===================================================================== *)
@@ -498,12 +514,10 @@ Proof.
               ∪ ftvar_in_pskl
                   (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α))
               ∪ empty ∪ empty [<=] S0).
-    { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
-                    P (ptyp_to_pskl τ) β) as H1.
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
-                    (pskl_var_f α) (ptyp_to_pskl τ) β) as H2.
-      pose proof (ftvar_ptyp_to_pskl τ) as H3.
-      simpl in H2. clear - H1 H2 H3 Hτcov HcovΞΘ HcovP HαS. fsetdec. }
+    { repeat rewrite (empty_union_2 (s := empty)) by (unfold Empty; clear; fsetdec).
+      apply subst_pskl_preserves_cover.
+      rewrite ftvar_ptyp_to_pskl. simpl.
+      clear - Hτcov HcovΞΘ HcovP HαS. fsetdec. }
     destruct (IH HuΞΘ Hsub) as [Hca [Hu1 Hcov1]].
     pose proof (e_consis_supply_grows Hc) as Hgrow.
     assert (Hβ1 : β `notin` dom Θ1).
@@ -642,15 +656,10 @@ Proof.
               ∪ ftvar_in_pskl (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f β)))
               ∪ ftvar_in_pskl (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α)))
               ∪ empty ∪ empty [<=] S0).
-    { pose proof (ftvar_in_ptyp_subst_ptyp_in_ptyp_upper
-                    (ptyp_var_f β) τ α1) as H1.
-      pose proof (ftvar_in_ptyp_subst_ptyp_in_ptyp_upper
-                    (ptyp_var_f α) τ α1) as H2.
-      pose proof (ftvar_ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f β)))
-        as H3.
-      pose proof (ftvar_ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α)))
-        as H4.
-      simpl in H1, H2. clear - H1 H2 H3 H4 Hτcov HcovΘ HαS HβS. fsetdec. }
+    { repeat rewrite (empty_union_2 (s := empty)) by (unfold Empty; clear; fsetdec).
+      repeat rewrite ptyp_to_pskl_subst.
+      apply subst_pskl_preserves_cover. repeat rewrite ftvar_ptyp_to_pskl. simpl.
+      clear - Hτcov HcovΘ HαS HβS. fsetdec. }
     destruct (IH Hu' Hsub) as [Hca [Hu1 Hcv1]].
     pose proof (e_consis_supply_grows Hc) as Hgrow.
     assert (H11 : α1 `notin` dom Θ1).

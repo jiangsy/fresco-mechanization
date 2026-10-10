@@ -1262,44 +1262,21 @@ Proof.
       cbv beta iota.
       assert (Hu0 : uniq (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
       pose proof (a_flex_tvar_in_dom Hft) as Hαdom.
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P
-                    (ptyp_to_pskl τ) β0) as Hsu1.
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper (pskl_var_f α)
-                    (ptyp_to_pskl τ) β0) as Hsu2.
-      pose proof (ftvar_ptyp_to_pskl τ) as Hftτ.
       pose proof (dom_subset_ftvar_in_aenv
                     ((β0, abind_flex_mono_def τ) :: Θ0)) as Hdm.
-      (* ⚠️⚠️ SPELLED OUT — see the unify twin below for why: as one
-         [fsetdec] this goal is over the cliff. *)
       assert (HΘ : ftvar_in_aenv ((β0, abind_flex_mono_def τ) :: Θ0)
                 [<=] S1)
         by (clear - Hcov; rewrite ftvar_in_aenv_app in Hcov; fsetdec).
       assert (HαS : α `in` S1) by (clear - HΘ Hαdom Hdm; fsetdec).
-      assert (Hτ : ftvar_in_pskl (ptyp_to_pskl τ) [<=] S1)
-        by (rewrite Hftτ; clear - HΘ; simpl in HΘ; fsetdec).
-      assert (HP : ftvar_in_pskl P [<=] S1) by (clear - Hcov; fsetdec).
-      assert (HΞΘ : ftvar_in_aenv (Ξ ++ Θ0) [<=] S1)
-        by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
-            simpl in *; fsetdec).
-      assert (Hb1 : ftvar_in_pskl
-                (subst_pskl_in_pskl (ptyp_to_pskl τ) β0 P) [<=] S1).
-      { clear - Hsu1 Hτ HP.
-        assert (Hrm : remove β0 (ftvar_in_pskl P) [<=] ftvar_in_pskl P)
-          by (clear; fsetdec).
-        fsetdec. }
-      assert (Hb2 : ftvar_in_pskl
-                (subst_pskl_in_pskl (ptyp_to_pskl τ) β0 (pskl_var_f α))
-                [<=] S1).
-      { clear - Hsu2 Hτ HαS. simpl in Hsu2.
-        assert (Hrm : remove β0 (singleton α) [<=] singleton α)
-          by (clear; fsetdec).
-        fsetdec. }
       assert (Hcov0 : consis_call_cover (Ξ ++ Θ0)
                 (consis_call_consis empty empty
                    (subst_pskl_in_pskl (ptyp_to_pskl τ) β0 P)
                    (subst_pskl_in_pskl (ptyp_to_pskl τ) β0 (pskl_var_f α)))
                 [<=] S1)
-        by (cbn [consis_call_cover]; clear - HΞΘ Hb1 Hb2; fsetdec).
+        by (cbn [consis_call_cover]; repeat rewrite (empty_union_2 (s := empty)) by (unfold Empty; clear; fsetdec);
+            apply subst_pskl_preserves_cover; rewrite ftvar_ptyp_to_pskl;
+            clear - Hcov HαS; repeat rewrite ftvar_in_aenv_app in *;
+            simpl in *; fsetdec).
       kill_ccall (Has β0 τ Θ0 eq_refl) Hu0 Hcov0 Dc Qm
         r Hr ps Hav HS HT HQ.
       exists (mk_consis_result (cs_supply r)
@@ -1426,48 +1403,17 @@ Proof.
       pose proof (a_flex_tvar_in_dom Hfb) as Hβdom.
       pose proof (dom_subset_ftvar_in_aenv
                     ((γ, abind_flex_mono_def τ) :: Θ0)) as Hdm.
-      pose proof (ftvar_in_ptyp_subst_ptyp_in_ptyp_upper
-                    (ptyp_var_f β) τ γ) as Hsu1.
-      pose proof (ftvar_in_ptyp_subst_ptyp_in_ptyp_upper
-                    (ptyp_var_f α) τ γ) as Hsu2.
-      pose proof (ftvar_ptyp_to_pskl
-                    (subst_ptyp_in_ptyp τ γ (ptyp_var_f β))) as Hft1.
-      pose proof (ftvar_ptyp_to_pskl
-                    (subst_ptyp_in_ptyp τ γ (ptyp_var_f α))) as Hft2.
-      (* ⚠️⚠️ SPELLED OUT, and it has to be.  As ONE [fsetdec] over the
-         eight facts below this goal does not terminate (measured with
-         [coqc -time]: it is the only sentence of the unify case that
-         never returns).  The set variables are ~8 and one of them sits
-         under a [remove] — the cliff CLAUDE.md warns about.  Each step
-         here keeps [fsetdec] at three or four variables, and the two
-         [in]-facts are proved WITHOUT [simpl], so [dom Θ] and
-         [ftvar_in_aenv Θ] stay opaque. *)
       assert (HβS : β `in` S1) by (clear - Hcov Hβdom Hdm; fsetdec).
       assert (HαS : α `in` S1) by (clear - Hcov Hαdom Hdm; fsetdec).
-      assert (Hτ : ftvar_in_ptyp τ [<=] S1)
-        by (clear - Hcov; simpl in Hcov; fsetdec).
-      assert (HΘ0 : ftvar_in_aenv Θ0 [<=] S1)
-        by (clear - Hcov; simpl in Hcov; fsetdec).
-      assert (Hb1 : ftvar_in_pskl
-                (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f β)))
-                [<=] S1).
-      { rewrite Hft1. clear - Hsu1 Hτ HβS. simpl in Hsu1.
-        assert (Hrm : remove γ (singleton β) [<=] singleton β)
-          by (clear; fsetdec).
-        fsetdec. }
-      assert (Hb2 : ftvar_in_pskl
-                (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f α)))
-                [<=] S1).
-      { rewrite Hft2. clear - Hsu2 Hτ HαS. simpl in Hsu2.
-        assert (Hrm : remove γ (singleton α) [<=] singleton α)
-          by (clear; fsetdec).
-        fsetdec. }
       assert (Hcov0 : consis_call_cover Θ0
                 (consis_call_consis empty empty
                    (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f β)))
                    (ptyp_to_pskl (subst_ptyp_in_ptyp τ γ (ptyp_var_f α))))
                 [<=] S1)
-        by (cbn [consis_call_cover]; clear - HΘ0 Hb1 Hb2; fsetdec).
+        by (cbn [consis_call_cover]; repeat rewrite (empty_union_2 (s := empty)) by (unfold Empty; clear; fsetdec);
+            repeat rewrite ptyp_to_pskl_subst; apply subst_pskl_preserves_cover;
+            repeat rewrite ftvar_ptyp_to_pskl; clear - Hcov HαS HβS;
+            simpl in *; fsetdec).
       kill_ccall (Has γ τ Θ0 eq_refl) Hu0 Hcov0 Dc Qm
         r Hr ps Hav HS HT HQ.
       exists (mk_consis_result (cs_supply r)

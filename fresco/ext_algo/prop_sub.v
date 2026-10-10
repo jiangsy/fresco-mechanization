@@ -422,12 +422,8 @@ Proof.
               ∪ ftvar_in_pskl
                   (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α))
               [<=] S0).
-    { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
-                    P0 (ptyp_to_pskl τ) β) as H1.
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper
-                    (pskl_var_f α) (ptyp_to_pskl τ) β) as H2.
-      pose proof (ftvar_ptyp_to_pskl τ) as H3.
-      simpl in H2. clear - H1 H2 H3 Hτ HcovΞΘ HcovP0 HαS. fsetdec. }
+    { apply subst_pskl_preserves_cover. rewrite ftvar_ptyp_to_pskl. simpl.
+      clear - Hτ HcovΞΘ HcovP0 HαS. fsetdec. }
     destruct (IH HuΞΘ Hcov') as [Hsa [Hu1 [Hcv1 Hq1]]].
     pose proof (e_sub_supply_grows Hs) as Hgrow.
     assert (Hβ1 : β `notin` dom Θ1).

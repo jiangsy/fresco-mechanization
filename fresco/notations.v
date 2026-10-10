@@ -185,6 +185,7 @@ Notation cardinal := AtomSetImpl.cardinal.
 Notation Empty := AtomSetImpl.Empty.
 Notation cardinal_Empty := AtomSetProperties.cardinal_Empty.
 Notation subset_cardinal_lt := AtomSetProperties.subset_cardinal_lt.
+Notation empty_union_2 := AtomSetProperties.empty_union_2.
 
 (** The set operations the paper writes infix.  `∪` mirrors metalib's
     `` `union` `` (level 65, right); `∩` and `∖` bind tighter, as in maths.

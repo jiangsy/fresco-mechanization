@@ -181,6 +181,30 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Shared substitution coverage without remove-set detours
+
+Added `subst_pskl_preserves_cover` in `ext_algo/prop_consis.v`: substituting
+the same covered replacement into two covered inputs preserves their joint
+cover, including the surrounding context's variables. Its pointwise proof
+uses the generated support bound with a narrow set context. Added the
+standard `empty_union_2` abbreviation alongside the other set properties.
+
+Used this lemma in the assign/unify consistency bridge, the subtyping
+bridge, and all three corresponding runner-completeness cases. Removed
+repeated support bounds, intermediate substituted-input bounds, and
+`remove`-subset arguments. Painted types use the existing substitution
+commutation lemma before applying the same coverage fact.
+
+**Reduction:** 65 nonblank, noncomment Coq lines including the helper and
+notation. Every refactored proof body shrinks: consistency bridge
+386 → 379, consistency completeness 978 → 934, subtyping bridge
+263 → 259, subtyping completeness 420 → 396. Every existing theorem
+statement and every computational definition is unchanged.
+
+**Validation:** full `make coq`; all 34 headline assumption checks closed
+under the global context. Extracted OCaml unchanged.
+
+
 ## 2026-10-11 — Remove unused completeness entry points
 
 Removed seven internal completeness wrappers with no consumers: the four

@@ -1361,37 +1361,13 @@ Proof.
       rewrite e_sub_call_impl_equation_7. cbv beta iota.
       destruct (e_sub_flex_inv_def Hd) as [Θd' [-> Dc]].
       assert (Hu0 : uniq (Ξ ++ Θ0')) by (clear - Hu; solve_uniq).
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P0
-                    (ptyp_to_pskl τ) γ) as Hsu1.
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper (pskl_var_f α)
-                    (ptyp_to_pskl τ) γ) as Hsu2.
-      pose proof (ftvar_ptyp_to_pskl τ) as Hftτ.
-      assert (HΞΘ : ftvar_in_aenv (Ξ ++ Θ0') [<=] S0)
-        by (clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
-            simpl in *; fsetdec).
-      assert (HαS : α `in` S0) by (clear - Hcov; fsetdec).
-      assert (Hτ : ftvar_in_pskl (ptyp_to_pskl τ) [<=] S0)
-        by (rewrite Hftτ; clear - Hcov;
-            repeat rewrite ftvar_in_aenv_app in *; simpl in *; fsetdec).
-      assert (HP0S : ftvar_in_pskl P0 [<=] S0) by (clear - Hcov; fsetdec).
-      assert (Hb1 : ftvar_in_pskl
-                (subst_pskl_in_pskl (ptyp_to_pskl τ) γ P0) [<=] S0).
-      { clear - Hsu1 Hτ HP0S.
-        assert (Hrm : remove γ (ftvar_in_pskl P0) [<=] ftvar_in_pskl P0)
-          by (clear; fsetdec).
-        fsetdec. }
-      assert (Hb2 : ftvar_in_pskl
-                (subst_pskl_in_pskl (ptyp_to_pskl τ) γ (pskl_var_f α))
-                [<=] S0).
-      { clear - Hsu2 Hτ HαS. simpl in Hsu2.
-        assert (Hrm : remove γ (singleton α) [<=] singleton α)
-          by (clear; fsetdec).
-        fsetdec. }
       assert (Hcov0 : ftvar_in_aenv (Ξ ++ Θ0')
                       ∪ ftvar_in_pskl (subst_pskl_in_pskl (ptyp_to_pskl τ) γ P0)
                       ∪ ftvar_in_pskl (subst_pskl_in_pskl (ptyp_to_pskl τ) γ
                             (pskl_var_f α)) [<=] S0)
-        by (clear - HΞΘ Hb1 Hb2; fsetdec).
+        by (apply subst_pskl_preserves_cover; rewrite ftvar_ptyp_to_pskl;
+            clear - Hcov; repeat rewrite ftvar_in_aenv_app in *;
+            simpl in *; fsetdec).
       kill_scall (Hag γ τ Θ0' eq_refl) Hu0 Hcov0 Dc r Hr ps Hav HS HT HQ.
       exists (mk_sub_result (sb_supply r)
                 ((γ ~ abind_flex_mono_def τ) ++ sb_ctx r) (sb_out r)), ps.
