@@ -304,98 +304,28 @@ Lemma ad_pat_consis_ty_to_d : forall Ψ Θ R Q,
   forall C B, R = utyp_to_uskl C -> Q = btyp_to_bskl B ->
   d_consis Ψ Γ C B.
 Proof.
-  intros Ψ Θ R Q H; induction H; intros Γ0 HΘ C0 B0 HR HQ; subst.
-  - destruct C0; simpl in HR; try discriminate HR.
-    destruct B0; simpl in HQ; try discriminate HQ.
-    apply d_consis__unit; assumption.
-  - destruct C0; simpl in HR; try discriminate HR.
-    destruct B0; simpl in HQ; try discriminate HQ.
-    inversion HR; inversion HQ; subst.
-    apply d_consis__var;
-      [ apply a_binds_tvar_denv_to_aenv; assumption | assumption ].
-  - destruct C0; simpl in HR; try discriminate HR.
-    destruct B0; simpl in HQ; try discriminate HQ.
-    inversion HR; inversion HQ; subst.
-    apply d_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-      [ exact (IHad_pat_consis1 Γ0 eq_refl C0_1 B0_1 eq_refl eq_refl)
-      | exact (IHad_pat_consis2 Γ0 eq_refl C0_2 B0_2 eq_refl eq_refl)
-      | assumption ].
-  - destruct C0; simpl in HR; try discriminate HR.
-    destruct B0; simpl in HQ; try discriminate HQ.
-    inversion HR; inversion HQ; subst.
-    apply d_consis__forall_inh_tagged with (L := L) (Ψ0 := Ψ0); [ | assumption ].
-    intros α Hα.
+  intros Ψ Θ R Q H; induction H; intros Γ0 HΘ C0 B0 HR HQ; subst;
+    try solve [exfalso; eapply denv_to_aenv_no_flex_def; eassumption];
+    destruct C0; simpl in HR; try discriminate HR;
+    destruct B0; simpl in HQ; try discriminate HQ; inversion HR; inversion HQ; subst;
+    try solve [eauto 4 using d_consis, a_binds_tvar_denv_to_aenv].
+  all: econstructor; try eassumption; intros α Hα;
     exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl
-             (open_utyp_wrt_utyp C0 (utyp_var_f α))
-             (open_btyp_wrt_btyp B0 (btyp_var_f α))
-             ltac:(symmetry; apply utyp_to_uskl_open_var)
-             ltac:(rewrite btyp_to_bskl_open; reflexivity)).
-  - destruct C0; simpl in HR; try discriminate HR.
-    destruct B0; simpl in HQ; try discriminate HQ.
-    inversion HR; inversion HQ; subst.
-    apply d_consis__forall_inh_untagged with (L := L).
-    intros α Hα.
-    exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl
-             (open_utyp_wrt_utyp C0 (utyp_var_f α))
-             (open_btyp_wrt_btyp B0 (btyp_var_f α))
-             ltac:(symmetry; apply utyp_to_uskl_open_var)
-             ltac:(rewrite btyp_to_bskl_open; reflexivity)).
-  - destruct C0; simpl in HR; try discriminate HR.
-    destruct B0; simpl in HQ; try discriminate HQ.
-    inversion HR; inversion HQ; subst.
-    apply d_consis__forall_syn_tagged with (L := L).
-    intros α Hα.
-    exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl
-             (open_utyp_wrt_utyp C0 (utyp_var_f α))
-             (open_btyp_wrt_btyp B0 (btyp_var_f α))
-             ltac:(symmetry; apply utyp_to_uskl_open_var)
-             ltac:(rewrite btyp_to_bskl_open; reflexivity)).
-  - destruct C0; simpl in HR; try discriminate HR.
-    destruct B0; simpl in HQ; try discriminate HQ.
-    inversion HR; inversion HQ; subst.
-    apply d_consis__forall_syn with (L := L).
-    intros α Hα.
-    exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl
-             (open_utyp_wrt_utyp C0 (utyp_var_f α))
-             (open_btyp_wrt_btyp B0 (btyp_var_f α))
-             ltac:(symmetry; apply utyp_to_uskl_open_var)
-             ltac:(rewrite btyp_to_bskl_open; reflexivity)).
-  - destruct C0; simpl in HR; discriminate HR.
-  - destruct C0; simpl in HR; discriminate HR.
-  - destruct C0; simpl in HR; discriminate HR.
-  - destruct C0; simpl in HR; discriminate HR.
-  - destruct C0; simpl in HR; discriminate HR.
-  - destruct C0; simpl in HR; discriminate HR.
-  - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
-  - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
+      (open_utyp_wrt_utyp C0 (utyp_var_f α))
+      (open_btyp_wrt_btyp B0 (btyp_var_f α))
+      ltac:(symmetry; apply utyp_to_uskl_open_var)
+      ltac:(rewrite btyp_to_bskl_open; reflexivity)).
 Qed.
 
 Lemma d_consis_to_ad : forall Ψ Γ C B,
   d_consis Ψ Γ C B ->
   ad_pat_consis Ψ (denv_to_aenv Γ) (utyp_to_uskl C) (btyp_to_bskl B).
 Proof.
-  intros Ψ Γ C B H; induction H; simpl.
-  - apply ad_pat_consis__unit; assumption.
-  - apply ad_pat_consis__var;
-      [ assumption | apply a_binds_tvar_of_denv; assumption ].
-  - apply ad_pat_consis__forall_inh_tagged with (L := L) (Ψ0 := Ψ0);
-      [ | assumption ].
-    intros α Hα. pose proof (H0 α Hα) as Hx.
-    rewrite utyp_to_uskl_open_var, (btyp_to_bskl_open B (btyp_var_f α)) in Hx.
-    exact Hx.
-  - apply ad_pat_consis__forall_inh_untagged with (L := L).
-    intros α Hα. pose proof (H0 α Hα) as Hx.
-    rewrite utyp_to_uskl_open_var, (btyp_to_bskl_open B (btyp_var_f α)) in Hx.
-    exact Hx.
-  - apply ad_pat_consis__forall_syn_tagged with (L := L).
-    intros α Hα. pose proof (H0 α Hα) as Hx.
-    rewrite utyp_to_uskl_open_var, (btyp_to_bskl_open B (btyp_var_f α)) in Hx.
-    exact Hx.
-  - apply ad_pat_consis__forall_syn with (L := L).
-    intros α Hα. pose proof (H0 α Hα) as Hx.
-    rewrite utyp_to_uskl_open_var, (btyp_to_bskl_open B (btyp_var_f α)) in Hx.
-    exact Hx.
-  - apply ad_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
+  intros Ψ Γ C B H; induction H; simpl;
+    try solve [eauto 4 using ad_pat_consis, a_binds_tvar_of_denv].
+  all: econstructor; try eassumption; intros α Hα;
+    pose proof (H0 α Hα) as Hx;
+    rewrite utyp_to_uskl_open_var, (btyp_to_bskl_open B (btyp_var_f α)) in Hx; auto 2.
 Qed.
 
 (* ===================================================================== *)
@@ -476,56 +406,25 @@ Lemma d_wf_uskl_of_a_wf_pskl : forall Θ Δ P,
   forall Γ, Θ = denv_to_aenv Γ -> d_wf_uskl Γ Δ ψ.
 Proof.
   intros Θ Δ P H; induction H; intros ψ Hψ Γ0 HΘ; subst;
-    destruct ψ; simpl in Hψ; try discriminate Hψ.
-  - apply d_wf_uskl__unit.
-  - inversion Hψ; subst. apply d_wf_uskl__var.
-    apply a_binds_tvar_denv_to_aenv; exact H.
-  - inversion Hψ; subst. apply d_wf_uskl__arrow;
-      [ exact (IHa_wf_pskl1 _ eq_refl Γ0 eq_refl)
-      | exact (IHa_wf_pskl2 _ eq_refl Γ0 eq_refl) ].
-  - inversion Hψ; subst. apply d_wf_uskl__all_syn with (L := L). intros α Hα.
+    destruct ψ; simpl in Hψ; try discriminate Hψ; inversion Hψ; subst;
+    try solve [eauto 5 using d_wf_uskl, a_binds_tvar_denv_to_aenv,
+      guarded_uskl_of_uskl_to_pskl, denv_to_aenv_minus, eq_sym].
+  all: econstructor; intros α Hα;
     exact (H0 α Hα (open_uskl_wrt_uskl ψ (uskl_var_f α))
-             ltac:(symmetry; apply uskl_to_pskl_open)
-             ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - inversion Hψ; subst. apply d_wf_uskl__all_tag with (L := L) (ε := ε).
-    intros α Hα.
-    exact (H0 α Hα (open_uskl_wrt_uskl ψ (uskl_var_f α))
-             ltac:(symmetry; apply uskl_to_pskl_open)
-             ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_wf_uskl__ghost.
-  - apply d_wf_uskl__dot_ghost.
-  - inversion Hψ; subst. apply d_wf_uskl__univ_ghost;
-      [ apply guarded_uskl_of_uskl_to_pskl; exact H
-      | exact (IHa_wf_pskl _ eq_refl (denv_minus Γ0 Δ)
-                 (eq_sym (denv_to_aenv_minus Γ0 Δ))) ].
-  - inversion Hψ; subst. apply d_wf_uskl__dot_univ_ghost;
-      [ apply guarded_uskl_of_uskl_to_pskl; exact H
-      | exact (IHa_wf_pskl _ eq_refl (denv_minus Γ0 Δ)
-                 (eq_sym (denv_to_aenv_minus Γ0 Δ))) ].
+      ltac:(symmetry; apply uskl_to_pskl_open) ((α ~ dbind_tvar) ++ Γ0) eq_refl).
 Qed.
 
 Lemma a_wf_pskl_of_d_wf_uskl : forall Γ Δ ψ,
   d_wf_uskl Γ Δ ψ ->
   a_wf_pskl (denv_to_aenv Γ) Δ (uskl_to_pskl ψ).
 Proof.
-  intros Γ Δ ψ H; induction H; simpl.
-  - apply a_wf_pskl__ghost.
-  - apply a_wf_pskl__unit.
-  - apply a_wf_pskl__var. apply a_binds_tvar_of_denv; exact H.
-  - apply a_wf_pskl__arrow; auto.
-  - apply a_wf_pskl__all with (L := L). intros α Hα.
-    pose proof (H0 α Hα) as Hx.
-    rewrite uskl_to_pskl_open in Hx. exact Hx.
-  - apply a_wf_pskl__all with (L := L). intros α Hα.
-    pose proof (H0 α Hα) as Hx.
-    rewrite uskl_to_pskl_open in Hx. exact Hx.
-  - apply a_wf_pskl__univ_ghost.
-    + apply guarded_pskl_uskl_to_pskl; assumption.
-    + rewrite <- (denv_to_aenv_minus Γ Δ). exact IHd_wf_uskl.
-  - apply a_wf_pskl__ghost.
-  - apply a_wf_pskl__univ_ghost.
-    + apply guarded_pskl_uskl_to_pskl; assumption.
-    + rewrite <- (denv_to_aenv_minus Γ Δ). exact IHd_wf_uskl.
+  intros Γ Δ ψ H; induction H; simpl;
+    try solve [eauto 4 using a_wf_pskl, a_binds_tvar_of_denv].
+  all: try solve [apply a_wf_pskl__all with (L := L); intros α Hα;
+    pose proof (H0 α Hα) as Hx; rewrite uskl_to_pskl_open in Hx; auto 2].
+  all: apply a_wf_pskl__univ_ghost;
+    [eauto 2 using guarded_pskl_uskl_to_pskl |
+     rewrite <- denv_to_aenv_minus; auto 2].
 Qed.
 
 (** The ghost-free part of [uskl] IS [utyp]: the retraction is a section
@@ -533,22 +432,14 @@ Qed.
 Lemma uskl_ghost_free_utyp_to_uskl : forall R,
   uskl_ghost_free R -> utyp_to_uskl (uskl_to_utyp R) = R.
 Proof.
-  intros R H; induction H; simpl; try reflexivity.
-  - rewrite IHuskl_ghost_free1, IHuskl_ghost_free2. reflexivity.
-  - f_equal.
+  intros R H; induction H; simpl; try congruence.
+  all: f_equal;
     pick fresh α for (L `union` ftvar_in_uskl R
-                        `union` ftvar_in_uskl (utyp_to_uskl (uskl_to_utyp R))).
+                      `union` ftvar_in_uskl (utyp_to_uskl (uskl_to_utyp R)));
     apply open_uskl_wrt_uskl_inj with (α1 := α);
-      [ clear - Fr; fsetdec | clear - Fr; fsetdec | ].
-    rewrite <- utyp_to_uskl_open_var, <- uskl_to_utyp_open_var.
-    exact (H0 α ltac:(clear - Fr; fsetdec)).
-  - f_equal.
-    pick fresh α for (L `union` ftvar_in_uskl R
-                        `union` ftvar_in_uskl (utyp_to_uskl (uskl_to_utyp R))).
-    apply open_uskl_wrt_uskl_inj with (α1 := α);
-      [ clear - Fr; fsetdec | clear - Fr; fsetdec | ].
-    rewrite <- utyp_to_uskl_open_var, <- uskl_to_utyp_open_var.
-    exact (H0 α ltac:(clear - Fr; fsetdec)).
+      [clear - Fr; fsetdec | clear - Fr; fsetdec |];
+    rewrite <- utyp_to_uskl_open_var, <- uskl_to_utyp_open_var;
+    apply H0; clear - Fr; fsetdec.
 Qed.
 
 Lemma is_dtyp_uskl_to_utyp : forall ψ,
@@ -657,13 +548,10 @@ Lemma is_ityp_of_btyp_to_bskl : forall Q,
   is_iskl Q -> forall B, Q = btyp_to_bskl B -> is_ityp B.
 Proof.
   intros Q H; induction H; intros B0 HQ;
-    destruct B0; simpl in HQ; try discriminate HQ; inversion HQ; subst.
-  - apply is_ityp__unit.
-  - apply is_ityp__var.
-  - apply is_ityp__arrow; [ apply IHis_iskl1 | apply IHis_iskl2 ]; reflexivity.
-  - apply is_ityp__all with (L := L). intros α Hα.
-    apply (H0 α Hα (open_btyp_wrt_btyp B0 (btyp_var_f α))).
-    rewrite btyp_to_bskl_open; reflexivity.
+    destruct B0; simpl in HQ; try discriminate HQ; inversion HQ; subst;
+    try solve [eauto 5 using is_ityp].
+  apply is_ityp__all with (L := L); intros α Hα.
+  eapply H0; [ auto 2 | rewrite btyp_to_bskl_open; reflexivity ].
 Qed.
 
 (** [Check]'s target: an inherited painting that is also a [btyp]'s skeleton
@@ -680,10 +568,8 @@ Proof.
   split; [ exact Hi | ].
   pose proof (is_ityp_lc Hi) as Hlc.
   destruct P; inversion Hg; subst;
-    destruct B; simpl in Heq; try discriminate Heq.
-  - apply guarded_btyp__unit.
-  - apply guarded_btyp__var.
-  - inversion Hlc; subst. apply guarded_btyp__arrow; assumption.
+    destruct B; simpl in Heq; try discriminate Heq;
+    inversion Hlc; subst; eauto 3 using guarded_btyp.
 Qed.
 
 Lemma ad_pat_sub_ty_to_d : forall NM M Ψ Θ R Q,
@@ -777,41 +663,12 @@ Qed.
 Lemma ad_pat_to_d : forall M Θ e Q,
   ad_pat M Θ e Q -> forall Γ, Θ = denv_to_aenv Γ -> d_pat M Γ e Q.
 Proof.
-  intros M Θ e Q H; induction H; intros Γ0 HΘ; subst Θ.
-  - (* P-Unit *) apply d_pat__unit;
-      [ exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty (bskl_to_pskl Q) H Γ0 eq_refl)
-      | eapply ad_pat_sub_sk_to_d; [ eassumption | reflexivity | reflexivity ] ].
-  - (* P-Var *)
-    destruct (binds_denv_to_aenv_inv x b Γ0 H) as [d [Hd Heq]]; subst.
-    apply d_pat__var with (P := P) (d := d);
-      [ exact Hd
-      | rewrite <- abind_to_pskl_of_dbind; exact H0
-      | exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty (bskl_to_pskl Q) H1 Γ0 eq_refl)
-      | eapply ad_pat_sub_sk_to_d; [ eassumption | reflexivity | reflexivity ] ].
-  - (* P-Anno *) apply d_pat__anno;
-      [ exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty (bskl_to_pskl Q) H Γ0 eq_refl)
-      | eapply ad_pat_sub_sk_to_d; [ eassumption | reflexivity | reflexivity ] ].
-  - (* P-Freeze *) apply d_pat__freeze. exact (IHad_pat Γ0 eq_refl).
-  - (* P-Abs *) apply d_pat__abs with (L := L);
-      [ assumption
-      | exact (a_wf_pskl_to_d (denv_to_aenv Γ0) empty P H0 Γ0 eq_refl)
-      | assumption
-      | intros x Hx; exact (H3 x Hx ((x ~ dbind_skl P) ++ Γ0) eq_refl) ].
-  - (* P-AbsAnno *) apply d_pat__abs_anno with (L := L) (B := B);
-      [ assumption
-      | exact (a_wf_ptyp_to_d (denv_to_aenv Γ0) A H0 Γ0 eq_refl)
-      | assumption | assumption
-      | intros x Hx; exact (H4 x Hx ((x ~ dbind_typ A) ++ Γ0) eq_refl) ].
-  - (* P-App *) apply d_pat__app with (P := P) (Q1 := Q1);
-      [ exact (IHad_pat1 Γ0 eq_refl)
-      | exact (ad_refine_syn_to_d (denv_to_aenv Γ0) empty
-                 (pskl_to_bskl_inh P) Q1 H0 Γ0 eq_refl)
-      | exact (IHad_pat2 Γ0 eq_refl) ].
-  - (* P-AbsCheck *) apply d_pat__abs_check with (L := L). intros x Hx.
-    exact (H0 x Hx ((x ~ dbind_skl pskl_ghost) ++ Γ0) eq_refl).
-  - (* P-AbsAnnoCheck *) apply d_pat__abs_anno_check with (L := L);
-      [ exact (a_wf_ptyp_to_d (denv_to_aenv Γ0) A H Γ0 eq_refl)
-      | intros x Hx; exact (H1 x Hx ((x ~ dbind_typ A) ++ Γ0) eq_refl) ].
+  intros M Θ e Q H; induction H; intros Γ0 HΘ; subst Θ;
+    try solve [eauto 5 using d_pat, a_wf_pskl_to_d, a_wf_ptyp_to_d,
+      ad_pat_sub_sk_to_d, ad_refine_syn_to_d].
+  destruct (binds_denv_to_aenv_inv x b Γ0 H) as [d [Hd Heq]]; subst.
+  eapply d_pat__var; eauto 4 using a_wf_pskl_to_d, ad_pat_sub_sk_to_d.
+  rewrite <- abind_to_pskl_of_dbind; auto 2.
 Qed.
 
 (* ===================================================================== *)
@@ -1327,36 +1184,12 @@ Qed.
 Lemma d_pat_to_ad : forall M Γ e Q,
   d_pat M Γ e Q -> ad_pat M (denv_to_aenv Γ) e Q.
 Proof.
-  intros M Γ e Q H; induction H.
-  - (* P-Unit *) apply ad_pat__unit;
-      [ exact (d_wf_pskl_to_a Γ empty (bskl_to_pskl Q) H)
-      | apply d_pat_sub_to_ad; assumption ].
-  - (* P-Var *) apply ad_pat__var with (P := P) (b := abind_of_dbind d);
-      [ apply binds_denv_to_aenv; assumption
-      | rewrite abind_to_pskl_of_dbind; assumption
-      | exact (d_wf_pskl_to_a Γ empty (bskl_to_pskl Q) H1)
-      | apply d_pat_sub_to_ad; assumption ].
-  - (* P-Anno *) apply ad_pat__anno;
-      [ exact (d_wf_pskl_to_a Γ empty (bskl_to_pskl Q) H)
-      | apply d_pat_sub_to_ad; assumption ].
-  - (* P-Freeze *) apply ad_pat__freeze; assumption.
-  - (* P-Abs *) apply ad_pat__abs with (L := L);
-      [ assumption
-      | exact (d_wf_pskl_to_a Γ empty P H0)
-      | assumption
-      (* ⚙ the cofinite premise is [H2]; its IH — what we need — is [H3] *)
-      | intros x Hx; exact (H3 x Hx) ].
-  - (* P-AbsAnno *) apply ad_pat__abs_anno with (L := L) (B := B);
-      [ assumption | exact (d_wf_ptyp_to_a Γ A H0) | assumption | assumption
-      | intros x Hx; exact (H4 x Hx) ].
-  - (* P-AbsCheck *) apply ad_pat__abs_check with (L := L).
-    intros x Hx; exact (H0 x Hx).
-  - (* P-AbsAnnoCheck *) apply ad_pat__abs_anno_check with (L := L);
-      [ exact (d_wf_ptyp_to_a Γ A H) | intros x Hx; exact (H1 x Hx) ].
-  - (* P-App *) apply ad_pat__app with (P := P) (Q1 := Q1);
-      [ assumption
-      | exact (d_refine_syn_to_ad Γ empty (pskl_to_bskl_inh P) Q1 H0)
-      | assumption ].
+  intros M Γ e Q H; induction H;
+    try solve [eauto 5 using ad_pat, d_wf_pskl_to_a, d_wf_ptyp_to_a,
+      d_pat_sub_to_ad, d_refine_syn_to_ad].
+  eapply ad_pat__var with (b := abind_of_dbind d);
+    eauto 3 using binds_denv_to_aenv, d_wf_pskl_to_a, d_pat_sub_to_ad.
+  rewrite abind_to_pskl_of_dbind; auto 2.
 Qed.
 
 Lemma aenv_tbinds_le_weaken_cons : forall Θ x (b : abind),

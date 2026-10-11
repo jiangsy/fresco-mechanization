@@ -84,67 +84,29 @@ Lemma d_consis_subst_tvar : forall Ψ Γ C B,
       {{ Ψ ⨟ (Γ1 ++ Γ2) ⊢ (subst_utyp_in_utyp C' α0 C)
                       ∼ (subst_btyp_in_btyp (utyp_to_btyp C') α0 B) }}d.
 Proof.
-  intros Ψ Γ C B H. induction H; intros Γ1 Γ2 α0 C' Heq Hwf Htt; subst; simpl.
-  - apply d_consis__unit. assumption.
-  - (* var: [α = α0] uses the base fact; [α <> α0] stays a variable. *)
-    destruct_if.
-    + eapply d_consis_equiv; [ | apply d_consis_dtyp_refl; assumption ]. fsetdec.
-    + apply d_consis__var; [ analyze_binds H; auto | assumption ].
-  - eapply d_consis__forall_inh_tagged with
-      (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
-    + intros α2 Hα2.
-      erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
-        by (solve [ fsetdec | apply is_dtyp_lc; assumption ]).
-      erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-        by (solve [ fsetdec | apply lc_utyp_to_btyp; apply is_dtyp_lc; assumption ]).
-      rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
-      eapply (H0 α2);
-        [ fsetdec | simpl; reflexivity
-        | rewrite_env ((α2 ~ dbind_tvar) ++ (Γ1 ++ Γ2));
-          apply d_wf_utyp_weakening_head; exact Hwf
-        | assumption ].
-    + assumption.
-  - apply d_consis__forall_inh_untagged with
-      (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
-    intros α2 Hα2.
+  intros Ψ Γ C B H. induction H; intros Γ1 Γ2 α0 C' Heq Hwf Htt; subst; simpl; try solve [eauto 4 using d_consis].
+  all: try solve [destruct_if;
+    [eapply d_consis_equiv; [ | apply d_consis_dtyp_refl; assumption ]; fsetdec |
+     apply d_consis__var; [analyze_binds H; auto | assumption]]].
+  all: first
+    [eapply d_consis__forall_inh_tagged with
+       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0)
+    |apply d_consis__forall_inh_untagged with
+       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0)
+    |apply d_consis__forall_syn_tagged with
+       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0)
+    |apply d_consis__forall_syn with
+       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0)]; try eassumption.
+  all: intros α2 Hα2;
     erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
-      by (solve [ fsetdec | apply is_dtyp_lc; assumption ]).
+      by (solve [fsetdec | apply is_dtyp_lc; assumption]);
     erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-      by (solve [ fsetdec | apply lc_utyp_to_btyp; apply is_dtyp_lc; assumption ]).
-    rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
+      by (solve [fsetdec | apply lc_utyp_to_btyp; apply is_dtyp_lc; assumption]);
+    rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2);
     eapply (H0 α2);
-      [ fsetdec | simpl; reflexivity
-      | rewrite_env ((α2 ~ dbind_tvar) ++ (Γ1 ++ Γ2));
-        apply d_wf_utyp_weakening_head; exact Hwf
-      | assumption ].
-  - apply d_consis__forall_syn_tagged with
-      (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
-    intros α2 Hα2.
-    erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
-      by (solve [ fsetdec | apply is_dtyp_lc; assumption ]).
-    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-      by (solve [ fsetdec | apply lc_utyp_to_btyp; apply is_dtyp_lc; assumption ]).
-    rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
-    eapply (H0 α2);
-      [ fsetdec | simpl; reflexivity
-      | rewrite_env ((α2 ~ dbind_tvar) ++ (Γ1 ++ Γ2));
-        apply d_wf_utyp_weakening_head; exact Hwf
-      | assumption ].
-  - apply d_consis__forall_syn with
-      (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0).
-    intros α2 Hα2.
-    erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
-      by (solve [ fsetdec | apply is_dtyp_lc; assumption ]).
-    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
-      by (solve [ fsetdec | apply lc_utyp_to_btyp; apply is_dtyp_lc; assumption ]).
-    rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2).
-    eapply (H0 α2);
-      [ fsetdec | simpl; reflexivity
-      | rewrite_env ((α2 ~ dbind_tvar) ++ (Γ1 ++ Γ2));
-        apply d_wf_utyp_weakening_head; exact Hwf
-      | assumption ].
-  - eapply d_consis__arrow;
-      [ eapply IHd_consis1; eauto | eapply IHd_consis2; eauto | assumption ].
+      [fsetdec | simpl; reflexivity |
+       rewrite_env ((α2 ~ dbind_tvar) ++ (Γ1 ++ Γ2));
+       apply d_wf_utyp_weakening_head; auto | auto].
 Qed.
 
 (** [d_consis] is closed under tvar renaming (the tag context is untouched):

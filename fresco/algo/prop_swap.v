@@ -1103,76 +1103,30 @@ Proof.
               a_lookeq (swap_aenv a b Θ) (swap_atom a b α)
                 (swap_pskl a b P) (swap_pskl a b P')
                 (swap_aenv a b Ξ) (swap_cstrs a b C)));
-    intros; simpl.
-  (* -------- a_looksub -------- *)
-  - (* var *) apply a_looksub__var.
-  - (* absent *) apply a_looksub__absent. auto using swap_pskl_ftv_notin.
-  - (* vacuous *) apply a_looksub__vacuous.
-    apply swap_pskl_neq_var; assumption.
-  - (* check *)
-    apply a_looksub__check;
-      auto using swap_pskl_neq_var, guarded_pskl_swap, pskl_ghost_free_swap.
-  - (* forall_r *)
-    apply a_looksub__forall_r with (β := swap_atom a b β);
-      [ apply pskl_ghost_free_swap; assumption | swap_freshness
-      | apply swap_pskl_ftv_in; assumption
-      | apply swap_pskl_neq_var; assumption
-      |].
-    rewrite swap_pskl_open_var in H. exact H.
-  - (* arrow *)
-    rewrite swap_aenv_app, swap_cstrs_app.
-    apply a_looksub__arrow; auto using swap_look_guard.
-  - (* forall_l *)
-    apply a_looksub__forall_l with (β := swap_atom a b β);
-      [ swap_freshness
-      | apply swap_pskl_ftv_in; assumption
-      | apply swap_pskl_not_ghost; assumption
-      | apply forall_r_off_swap; assumption
-      |].
-    rewrite swap_pskl_open_var in H. exact H.
-  - (* univ_ghost_l *)
-    apply a_looksub__univ_ghost_l;
-      [ apply swap_pskl_not_ghost; assumption
-      | apply forall_r_off_swap; assumption | auto ].
-  (* -------- a_lookeq -------- *)
-  - (* var *) apply a_lookeq__var.
-  - (* absent *) apply a_lookeq__absent. auto using swap_pskl_ftv_notin.
-  - (* vacuous *) apply a_lookeq__vacuous.
-    apply swap_pskl_neq_var; assumption.
-  - (* flex_r *)
-    apply a_lookeq__flex_r;
-      [ swap_freshness
-      | auto using a_flex_tvar_swap
-      | auto using swap_pskl_neq_var
-      | auto using swap_pskl_ftv_in ].
-  - (* arrow *)
-    rewrite swap_aenv_app, swap_cstrs_app.
-    apply a_lookeq__arrow; auto using swap_look_guard.
-  - (* forall_inh *)
-    apply a_lookeq__forall_inh with (β := swap_atom a b β);
-      [ swap_freshness
-      | apply swap_pskl_ftv_in; assumption
-      |].
-    rewrite !swap_pskl_open_var in H. exact H.
-  - (* forall_syn *)
-    apply a_lookeq__forall_syn with (β := swap_atom a b β);
-      [ swap_freshness
-      | apply swap_pskl_ftv_in; assumption
-      |].
-    rewrite swap_pskl_open_var in H. exact H.
-  - (* univ_ghost *) apply a_lookeq__univ_ghost; auto.
-  - (* univ_ghost1 *)
-    apply a_lookeq__univ_ghost1 with (β := swap_atom a b β);
-      [ swap_freshness
-      | apply swap_pskl_ftv_in; assumption
-      |].
-    rewrite swap_pskl_open_var in H. exact H.
-  - (* univ_ghost2 *)
-    apply a_lookeq__univ_ghost2;
-      auto using guarded_pskl_swap, flex_r_off_swap.
-  - (* univ_ghost_r *)
-    apply a_lookeq__univ_ghost_r;
-      auto using swap_pskl_neq_var, guarded_pskl_swap.
+    intros; simpl;
+    rewrite ?swap_aenv_app, ?swap_cstrs_app, ?swap_pskl_open_var in *;
+    try solve [eauto 5 using a_looksub, a_lookeq, swap_pskl_ftv_notin,
+      swap_pskl_neq_var, guarded_pskl_swap, pskl_ghost_free_swap,
+      swap_look_guard, swap_pskl_not_ghost, forall_r_off_swap, flex_r_off_swap];
+    try solve [apply a_looksub__check; auto 3 using swap_pskl_neq_var,
+      guarded_pskl_swap, pskl_ghost_free_swap];
+    try solve [apply a_looksub__arrow; auto 3 using swap_look_guard |
+               apply a_lookeq__arrow; auto 3 using swap_look_guard].
+  - apply a_looksub__forall_r with (β := swap_atom a b β);
+      auto 3 using swap_pskl_ftv_in, swap_pskl_neq_var;
+      try solve [apply pskl_ghost_free_swap; auto 2]; swap_freshness.
+  - apply a_looksub__forall_l with (β := swap_atom a b β);
+      auto 3 using swap_pskl_not_ghost, forall_r_off_swap;
+      try solve [apply swap_pskl_ftv_in; auto 2]; swap_freshness.
+  - apply a_lookeq__flex_r;
+      auto 3 using a_flex_tvar_swap, swap_pskl_neq_var, swap_pskl_ftv_in;
+      swap_freshness.
+  - apply a_lookeq__forall_inh with (β := swap_atom a b β); auto 2;
+      try solve [apply swap_pskl_ftv_in; auto 2]; swap_freshness.
+  - apply a_lookeq__forall_syn with (β := swap_atom a b β); auto 2;
+      try solve [apply swap_pskl_ftv_in; auto 2]; swap_freshness.
+  - apply a_lookeq__univ_ghost1 with (β := swap_atom a b β); auto 2;
+      try solve [apply swap_pskl_ftv_in; auto 2]; swap_freshness.
 Qed.
 
 Scheme a_solve_sub_sind := Induction for a_solve_sub Sort Prop
@@ -1206,54 +1160,19 @@ Proof.
                 (swap_pskl a b Q) (swap_aenv a b Ξ) (swap_pskl a b P')));
     intros; simpl;
     (* the THREADING rows split the block; the BINDER rows push a witness *)
-    rewrite ? swap_aenv_app in *; rewrite ? swap_aenv_cons in *; simpl in *.
-  (* -------- a_solve_sub -------- *)
-  - (* var *) apply a_solve_sub__var.
-  - (* forall_l: close in the output *)
-    rewrite swap_pskl_close.
-    apply a_solve_sub__forall_l; [ swap_freshness |].
-    rewrite swap_pskl_open_var in H. exact H.
-  - (* univ_ghost_l *) apply a_solve_sub__univ_ghost_l; auto.
-  - (* vacuous *) apply a_solve_sub__vacuous. apply peel_l_off_swap. assumption.
-  - (* check *) apply a_solve_sub__check;
-      auto using guarded_pskl_swap, pskl_ghost_free_swap.
-  - (* forall_r: the binder LEAKS into the output — no close, no re-bind *)
-    apply a_solve_sub__forall_r with (β := swap_atom a b β);
-      [ apply pskl_ghost_free_swap; assumption
-      | apply solve_l_off_swap; assumption | swap_freshness |].
-    rewrite swap_pskl_open_var in H. exact H.
-  - (* arrow *) apply a_solve_sub__arrow; auto.
-  - (* ghost_l_fn *) apply a_solve_sub__ghost_l_fn; auto.
-  - (* ghost_l *) apply a_solve_sub__ghost_l;
-      auto using guarded_pskl_swap, pskl_ghost_free_swap.
-  (* -------- a_solve_eq -------- *)
-  - (* unit *) apply a_solve_eq__unit.
-  - (* var *) apply a_solve_eq__var.
-  - (* flex_r : the output is guess^TY's, read back through the coercion *)
-    rewrite swap_pskl_ptyp_to_pskl.
-    apply a_solve_eq__flex_r;
-      auto using a_flex_tvar_swap, a_non_flex_swap, nonghost_pskl_swap,
-                 a_guess_mono_swap.
-  - (* ghost_l *) apply a_solve_eq__ghost_l.
-  - (* ghost_r *) apply a_solve_eq__ghost_r.
-  - (* arrow *) apply a_solve_eq__arrow; auto.
-  - (* forall *)
-    rewrite swap_pskl_close.
-    apply a_solve_eq__forall; [ swap_freshness |].
-    rewrite !swap_pskl_open_var in H. exact H.
-  - (* univ_ghost_both *) apply a_solve_eq__univ_ghost_both; auto.
-  - (* univ_ghost_l_all *)
-    rewrite swap_pskl_close.
-    apply a_solve_eq__univ_ghost_l_all; [ swap_freshness |].
-    rewrite swap_pskl_open_var in H. exact H.
-  - (* univ_ghost_l_guarded *)
-    apply a_solve_eq__univ_ghost_l_guarded; auto using guarded_pskl_swap.
-  - (* all_l_univ_ghost *)
-    rewrite swap_pskl_close.
-    apply a_solve_eq__all_l_univ_ghost; [ swap_freshness |].
-    rewrite swap_pskl_open_var in H. exact H.
-  - (* univ_ghost_r_guarded *)
-    apply a_solve_eq__univ_ghost_r_guarded; auto using guarded_pskl_swap.
+    rewrite ? swap_aenv_app in *; rewrite ? swap_aenv_cons in *; simpl in *;
+    rewrite ?swap_pskl_close, ?swap_pskl_open_var, ?swap_pskl_ptyp_to_pskl in *;
+    try solve [eauto 4 using a_solve_sub, a_solve_eq, peel_l_off_swap,
+      guarded_pskl_swap, pskl_ghost_free_swap, a_flex_tvar_swap,
+      a_non_flex_swap, nonghost_pskl_swap, a_guess_mono_swap];
+    try solve [apply a_solve_sub__check;
+      auto 3 using guarded_pskl_swap, pskl_ghost_free_swap];
+    try solve [apply a_solve_eq__flex_r;
+      auto 3 using a_flex_tvar_swap, a_non_flex_swap, nonghost_pskl_swap, a_guess_mono_swap];
+    try solve [econstructor; auto 2; swap_freshness].
+  - apply a_solve_sub__forall_r with (β := swap_atom a b β);
+      auto 3 using solve_l_off_swap;
+      try solve [apply pskl_ghost_free_swap; auto 2]; swap_freshness.
 Qed.
 
 Lemma a_solve_cstr_swap : forall a b Θ C P Ξ Q,
@@ -1362,11 +1281,13 @@ Proof.
                 Δ1' [=] swap_atoms a b Δ1 ->
                 Δ2' [=] swap_atoms a b Δ2 ->
               a_consis Δ1' Δ2' (swap_aenv a b Θ0) (swap_pskl a b P0)
-                (swap_pskl a b P) (swap_pskl a b Q) (swap_aenv a b Θ1))).
-  (* ==================== a_assign ==================== *)
-  - (* univ_ghost_id *)
-    intros Θ0 α. simpl.
-    apply a_assign__univ_ghost_id.
+                (swap_pskl a b P) (swap_pskl a b Q) (swap_aenv a b Θ1)));
+    try solve [intros; simpl;
+      rewrite ?swap_aenv_app in *;
+      econstructor; eauto 3 using swap_atom_neq,
+        swap_pskl_ftv_in, swap_pskl_ftv_notin, swap_aenv_dom_notin,
+        a_flex_tvar_swap, guarded_pskl_swap, a_non_flex_swap,
+        swap_pskl_not_ghost, swap_inter_ftv_empty].
   - (* solve_m *)
     intros Θ0 Ξ α P βs τ Hnα Hg Hmono Huniq Hfr. simpl.
     rewrite !swap_aenv_app.
@@ -1399,39 +1320,6 @@ Proof.
       change (swap_pskl a b (pskl_var_f α)) with
         (pskl_var_f (swap_atom a b α)) in IH.
       exact IH.
-  - (* depend *)
-    intros Θ0 Θ1 Ξ α β P Hne Hin Hd IH. simpl.
-    rewrite swap_aenv_app in IH.
-    apply a_assign__depend;
-      [ auto using swap_atom_neq | auto using swap_pskl_ftv_in | exact IH ].
-  - (* skip *)
-    intros Θ0 Θ1 Ξ α β P Hne Hnf Hnd Hd IH. simpl.
-    apply a_assign__skip;
-      [ auto using swap_atom_neq | auto using swap_pskl_ftv_notin
-      | apply swap_aenv_dom_notin; exact Hnd | exact IH ].
-  - (* skip_rigid *)
-    intros Θ0 Θ1 Ξ α β P Hnf Hnd Hd IH. simpl.
-    apply a_assign__skip_rigid;
-      [ auto using swap_pskl_ftv_notin
-      | apply swap_aenv_dom_notin; exact Hnd | exact IH ].
-  - (* skip_tm_var *)
-    intros Θ0 Θ1 Ξ α x Q P Hnd Hd IH. simpl.
-    apply a_assign__skip_tm_var;
-      [ apply swap_aenv_dom_notin; exact Hnd | exact IH ].
-  - (* skip_tm_skl *)
-    intros Θ0 Θ1 Ξ α x Q P Hnd Hd IH. simpl.
-    apply a_assign__skip_tm_skl;
-      [ apply swap_aenv_dom_notin; exact Hnd | exact IH ].
-  (* ==================== a_unify ==================== *)
-  - (* flex_id *)
-    intros Θ0 α Hflex.
-    apply a_unify__flex_id. auto using a_flex_tvar_swap.
-  - (* flex_l *)
-    intros Θ0 α β Hne Hflex. simpl.
-    apply a_unify__flex_l; auto using swap_atom_neq, a_flex_tvar_swap.
-  - (* flex_r *)
-    intros Θ0 α β Hne Hflex. simpl.
-    apply a_unify__flex_r; auto using swap_atom_neq, a_flex_tvar_swap.
   - (* flex_assign *)
     intros Θ0 Θ1 α1 τ α β Q Hfα Hfβ Hnd Hd IH. simpl.
     eapply a_unify__flex_assign.
@@ -1448,11 +1336,6 @@ Proof.
       change (swap_ptyp a b (ptyp_var_f β)) with
         (ptyp_var_f (swap_atom a b β)) in IH.
       exact IH.
-  - (* flex_skip *)
-    intros Θ0 Θ1 α1 α β Hne1 Hne2 Hnd Hd IH. simpl.
-    apply a_unify__flex_skip;
-      [ auto using swap_atom_neq | auto using swap_atom_neq
-      | apply swap_aenv_dom_notin; exact Hnd | exact IH ].
   - (* skip_other *)
     intros Θ0 Θ1 c bd α β Hb Hnd Hd IH. simpl.
     apply a_unify__skip_other.
@@ -1462,22 +1345,10 @@ Proof.
       * right; right; eexists; reflexivity.
     + apply swap_aenv_dom_notin; exact Hnd.
     + exact IH.
-  (* ==================== a_consis ==================== *)
-  - (* ghost *)
-    intros Δ1 Δ2 Θ0 P0 Hemp Δ1' Δ2' HΔ1 HΔ2. simpl.
-    apply a_consis__ghost. eauto using swap_inter_ftv_empty.
-  - (* unit *)
-    intros Δ1 Δ2 Θ0 Δ1' Δ2' HΔ1 HΔ2. simpl.
-    apply a_consis__unit.
   - (* rigid *)
     intros Δ1 Δ2 Θ0 α Hb Δ1' Δ2' HΔ1 HΔ2. simpl.
     apply a_consis__rigid.
     pose proof (swap_aenv_binds a b _ _ _ Hb) as h. exact h.
-  - (* arrow *)
-    intros Δ1 Δ2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hd1 IH1 Hd2 IH2
-           Δ1' Δ2' HΔ1 HΔ2. simpl.
-    eapply a_consis__arrow;
-      [ exact (IH1 _ _ HΔ1 HΔ2) | exact (IH2 _ _ HΔ1 HΔ2) ].
   - (* forall_inh *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     rewrite swap_pskl_close.
@@ -1486,7 +1357,7 @@ Proof.
     + specialize (IH (add (swap_atom a b α) Δ1') (add (swap_atom a b α) Δ2')
                      (eq_swap_atoms_add a b α _ _ HΔ1)
                         (eq_swap_atoms_add a b α _ _ HΔ2)).
-      rewrite !swap_pskl_open_var in IH. exact IH.
+      rewrite !swap_pskl_open_var in IH; auto 2.
   - (* forall_syn *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     rewrite swap_pskl_close.
@@ -1494,10 +1365,7 @@ Proof.
     + swap_freshness; eauto using swap_notin_eq.
     + specialize (IH Δ1' (add (swap_atom a b α) Δ2')
                      HΔ1 (eq_swap_atoms_add a b α _ _ HΔ2)).
-      rewrite !swap_pskl_open_var in IH. exact IH.
-  - (* univ_ghost *)
-    intros Δ1 Δ2 Θ0 Θ1 P0 P Q Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
-    apply a_consis__univ_ghost; auto.
+      rewrite !swap_pskl_open_var in IH; auto 2.
   - (* univ_ghost1 *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
     rewrite swap_pskl_close.
@@ -1505,31 +1373,7 @@ Proof.
     + swap_freshness; eauto using swap_notin_eq.
     + specialize (IH (add (swap_atom a b α) Δ1') Δ2'
                      (eq_swap_atoms_add a b α _ _ HΔ1) HΔ2).
-      rewrite !swap_pskl_open_var in IH. exact IH.
-  - (* univ_ghost2 *)
-    intros Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
-    apply a_consis__univ_ghost2;
-      auto using guarded_pskl_swap, a_non_flex_swap.
-  - (* flex *)
-    intros Δ1 Δ2 Θ0 Θ1 α β Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
-    apply a_consis__flex; auto.
-  - (* flex_l *)
-    intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hnh Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
-    apply a_consis__flex_l;
-      [ auto using a_non_flex_swap | auto using swap_pskl_not_ghost
-      | exact IH ].
-  - (* flex_r *)
-    intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hnh Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
-    apply a_consis__flex_r;
-      [ auto using a_non_flex_swap | auto using swap_pskl_not_ghost
-      | exact IH ].
-  - (* ghost_r *)
-    intros Δ1 Δ2 Θ0 P Hemp Δ1' Δ2' HΔ1 HΔ2. simpl.
-    apply a_consis__ghost_r. eauto using swap_inter_ftv_empty.
-  - (* univ_ghost_r *)
-    intros Δ1 Δ2 Θ0 Θ1 P0 P Q Hg Hnf Hd IH Δ1' Δ2' HΔ1 HΔ2. simpl.
-    apply a_consis__univ_ghost_r;
-      auto using guarded_pskl_swap, a_non_flex_swap.
+      rewrite !swap_pskl_open_var in IH; auto 2.
 Qed.
 
 (* ===================================================================== *)

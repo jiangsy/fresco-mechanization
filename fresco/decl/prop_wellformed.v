@@ -92,25 +92,15 @@ Proof. intros. apply denv_tbinds_le_of_binds_le, denv_binds_le_weaken. Qed.
 Lemma d_wf_ptyp_tvar_mono : forall Γ A,
     d_wf_ptyp Γ A -> forall Γ', denv_tbinds_le Γ Γ' -> d_wf_ptyp Γ' A.
 Proof.
-  intros Γ A H; induction H; intros Γ' Hle.
-  - apply d_wf_ptyp__unit.
-  - apply d_wf_ptyp__var. auto.
-  - apply d_wf_ptyp__arrow; auto.
-  - apply d_wf_ptyp__all with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply denv_tbinds_le_cons; exact Hle ].
+  intros Γ A H; induction H; intros Γ' Hle;
+    eauto 5 using d_wf_ptyp, denv_tbinds_le_cons.
 Qed.
 
 Lemma d_wf_utyp_tvar_mono : forall Γ C,
     {{ Γ ⊢ᵤ C }}d -> forall Γ', denv_tbinds_le Γ Γ' -> {{ Γ' ⊢ᵤ C }}d.
 Proof.
-  intros Γ C H; induction H; intros Γ' Hle.
-  - apply d_wf_utyp__unit.
-  - apply d_wf_utyp__var. auto.
-  - apply d_wf_utyp__arrow; auto.
-  - apply d_wf_utyp__all_syn with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply denv_tbinds_le_cons; exact Hle ].
-  - apply d_wf_utyp__all_tag with (L := L). intros α Hα.
-    apply H0; [ exact Hα | apply denv_tbinds_le_cons; exact Hle ].
+  intros Γ C H; induction H; intros Γ' Hle;
+    eauto 5 using d_wf_utyp, denv_tbinds_le_cons.
 Qed.
 
 Lemma d_wf_ptyp_weakening : forall Γ1 Γ2 Γ3 A,
@@ -346,12 +336,8 @@ Qed.
 
 Lemma d_wf_btyp_lc : forall Γ B, d_wf_btyp Γ B -> lc_btyp B.
 Proof.
-  intros Γ B H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; assumption.
-  - pick fresh α. apply (lc_btyp_all_syn_exists α). apply H0. auto.
-  - pick fresh α. apply (lc_btyp_all_inh_exists α). apply H0. auto.
+  intros * H; induction H; try solve [eauto 3 using lc_btyp].
+  all: pick fresh α; eauto 3 using lc_btyp_all_syn_exists, lc_btyp_all_inh_exists.
 Qed.
 
 Lemma d_wf_btyp_ftvar : forall Γ B,
@@ -374,12 +360,8 @@ Qed.
 
 Lemma d_wf_utyp_lc : forall Γ C, d_wf_utyp Γ C -> lc_utyp C.
 Proof.
-  intros Γ C H. induction H.
-  - constructor.
-  - constructor.
-  - constructor; assumption.
-  - pick fresh α. apply (lc_utyp_all_syn_exists α). apply H0. auto.
-  - pick fresh α. apply (lc_utyp_all_tag_exists α). apply H0. auto.
+  intros * H; induction H; try solve [eauto 3 using lc_utyp].
+  all: pick fresh α; eauto 3 using lc_utyp_all_syn_exists, lc_utyp_all_tag_exists.
 Qed.
 
 Lemma d_wf_utyp_ftvar : forall Γ C,
@@ -409,11 +391,8 @@ Qed.
 (** Well-formed plain types are locally closed. *)
 Lemma d_wf_ptyp_lc : forall Γ A, d_wf_ptyp Γ A -> lc_ptyp A.
 Proof.
-  intros Γ A H. induction H.
-  - apply lc_ptyp_unit.
-  - apply lc_ptyp_var_f.
-  - apply lc_ptyp_arrow; assumption.
-  - pick fresh α. apply (lc_ptyp_all_exists α). auto.
+  intros * H; induction H; try solve [eauto 3 using lc_ptyp].
+  all: pick fresh α; eauto 3 using lc_ptyp_all_exists.
 Qed.
 
 Lemma d_wf_btyp_painting_syn : forall Γ A,
@@ -490,22 +469,10 @@ Qed.
 Lemma d_consis_wf : forall Ψ Γ C B,
     {{ Ψ ⨟ Γ ⊢ C ∼ B }}d -> d_wf_utyp Γ C -> d_wf_btyp Γ B.
 Proof.
-  intros Ψ Γ C B H. induction H; intros Hwf.
-  - apply d_wf_btyp__unit.
-  - apply d_wf_btyp__var. assumption.
-  - (* forall_inh_tagged: utyp_all_tag ε C ∼ btyp_all_inh B *)
-    inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_inh.
-    intros α Hα. apply H0; auto.
-  - (* forall_inh_untagged: utyp_all_syn C ∼ btyp_all_inh B *)
-    inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_inh.
-    intros α Hα. apply H0; auto.
-  - (* forall_syn_tagged: utyp_all_tag ε C ∼ btyp_all_syn B *)
-    inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_syn.
-    intros α Hα. apply H0; auto.
-  - (* forall_syn: utyp_all_syn C ∼ btyp_all_syn B *)
-    inversion Hwf; subst. inst_cofinites_for d_wf_btyp__all_syn.
-    intros α Hα. apply H0; auto.
-  - inversion Hwf; subst. apply d_wf_btyp__arrow; auto.
+  intros Ψ Γ C B H; induction H; intros Hwf; inversion Hwf; subst;
+    try solve [eauto 4 using d_wf_btyp].
+  all: first [inst_cofinites_for d_wf_btyp__all_inh |
+              inst_cofinites_for d_wf_btyp__all_syn]; intros α Hα; eauto 4.
 Qed.
 
 (** Substituting a well-formed [ph] for a head tvar preserves [d_wf_utyp]. *)

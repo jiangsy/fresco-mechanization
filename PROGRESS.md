@@ -181,6 +181,33 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share structural conversion and binder proofs
+
+Remove routine constructor lists across coercions, colour predicates,
+declarative well-formedness, renaming, conservativity, and the mutual swap
+proofs. Use bounded constructor search; normalize shapes and commuting
+rewrites once before handling the remaining cases. No new tactics, hint
+databases, imports, or changed statements/computational definitions.
+
+Four declarative consistency substitution binder cases share one argument.
+Local-closure conversions use their induction hypotheses for every opener
+directly, removing unnecessary fresh-witness detours. The mutual swap
+proofs retain only the cases requiring freshness, lookup, substitution, or
+binding analysis. Routine assumptions and rewritten induction hypotheses
+are discharged with `auto` rather than separate `exact` endings.
+
+**Reduction:** 520 nonblank, noncomment Coq lines across 66 proofs in six
+files: coercions 106, basic properties 28, swaps 149, declarative
+well-formedness 33, declarative renaming 38, conservativity 166. Every
+changed proof is strictly shorter; all retained statements and definitions
+are unchanged. Controlled serial compilation totals approximately 16.6s
+versus 15.3s before the change; constructor search depths are explicit.
+
+**Validation:** full `make coq` green; all 34 flagship assumption checks
+closed under the global context; extracted OCaml byte-identical;
+`git diff --check` clean. Individual full kernel file compilations and
+controlled before/after timing checks also pass.
+
 ## 2026-10-11 — Automate conservativity translations
 
 Replace routine constructor case lists in `algo_decl/prop_conserv.v` with
