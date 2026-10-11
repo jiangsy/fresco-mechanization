@@ -1963,6 +1963,64 @@ Definition assign_sound_concl (Θ0 Ξ : aenv) (α : atom)
   {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P }}a ->
   assign_sound_post Θ0 Ξ α P Θ1.
 
+(** The invariant conjunct of [assign_sound_post], named for the Skip rows. *)
+Definition assign_sound_inv (Θ0 Ξ : aenv) (P : pskl) (Θ1 : aenv) : Prop :=
+  forall Δ,
+     no_flex_dep Δ (Ξ ++ Θ0) -> flex_above_free Δ Θ0 ->
+     Δ ∩ dom Ξ [=] empty ->
+     Δ ∩ dom Θ1 [<=] dom (Ξ ++ Θ0) ->
+     (forall α, α `in` Δ -> α `notin` dom Θ0 -> α `notin` ftvar_in_pskl P) ->
+     no_flex_dep Δ Θ1 /\ flex_above_free Δ Θ1 /\
+     (forall α, α `in` Δ -> α `in` dom Θ1 -> α `in` (dom Ξ `union` dom Θ0)).
+
+(** The Skip rows (Assign-Skip / -SkipRigid / -SkipTmVar) walk past a
+    non-definition head [c ~ b] that both contexts share: the invariant
+    conjunct carries over.  A rigid head must be absent from [P]; any other
+    head is not a Δ-name at all. *)
+Lemma assign_sound_skip_inv : forall Θ0 Ξ P Θ1 c b,
+  assign_sound_inv Θ0 Ξ P Θ1 ->
+  c `notin` dom Θ1 ->
+  (forall τ, b <> abind_flex_mono_def τ) ->
+  (b = abind_tvar -> c `notin` ftvar_in_pskl P) ->
+  assign_sound_inv ((c ~ b) ++ Θ0) Ξ P ((c ~ b) ++ Θ1).
+Proof.
+  intros Θ0 Ξ P Θ1 c b Hinv Hbar Hndef Htv Δ Hnd Hfaf HΔΞ Hcov HP.
+  assert (Hhd : b = abind_tvar \/ Δ ∩ (add c (dom Θ0)) [=] empty).
+  { destruct b; try (left; reflexivity);
+      right; apply (faf_head Hfaf); discriminate. }
+  destruct (Hinv Δ) as [IH1 [IH2 IH3]].
+  - intros β' τ' Hb. apply (Hnd β' τ').
+    apply (@binds_weaken abind β' (abind_flex_mono_def τ') Ξ (c ~ b) Θ0).
+    exact Hb.
+  - eapply faf_tail; eauto.
+  - exact HΔΞ.
+  - (* the IH's OUTPUT-relative coverage: a Δ-name in the sub-run's
+       output is in the conclusion's too, and it is not the walked head
+       (the rule's own premise says the head misses that output) *)
+    intros α0 Hα0.
+    assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; solve_notin_auto)).
+    clear - HXc Hα0 Hbar.
+    repeat rewrite dom_app in *. simpl in *. fsetdec.
+  - intros α0 Hα0Δ HXd.
+    destruct (eq_var α0 c) as [-> | Hne].
+    + destruct Hhd as [-> | Hhd].
+      * exact (Htv eq_refl).
+      * exfalso. clear - Hhd Hα0Δ. fsetdec.
+    + apply HP; [ exact Hα0Δ | simpl; clear - Hne HXd; fsetdec ].
+  - split; [ | split ].
+    + intros β' τ' Hb.
+      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heq] | Hb'].
+      * exfalso. exact (Hndef τ' (eq_sym Heq)).
+      * exact (IH1 β' τ' Hb').
+    + apply faf_cons; [ | exact IH2 ].
+      intros Hne. destruct Hhd as [Hb | Hhd]; [ contradiction | ].
+      repeat rewrite dom_app in *; simpl in *.
+      clear - Hcov Hhd HΔΞ; fsetdec.
+    + intros α0 Hα0Δ HXd.
+      repeat rewrite dom_app in *; simpl in *.
+      clear - Hcov Hα0Δ HXd; fsetdec.
+Qed.
+
 (** Invariant preservation descends through a shared rigid binder when
     opening adds at most that binder to the input free-variable bound. *)
 Lemma sound_invariants_strip_tvar : forall α Θ0 Θ1 F Fopen,
@@ -2719,35 +2777,9 @@ Proof.
     split.
     { clear - Hdom. repeat rewrite dom_app in *; simpl in *. fsetdec. }
     split.
-    { intros Δ Hnd Hfaf HΔΞ Hcov HP.
-      assert (Hhd : Δ ∩ (add β (dom Θ0)) [=] empty)
-        by (apply (faf_head Hfaf); discriminate).
-      destruct (Hinv Δ) as [IH1 [IH2 IH3]].
-      { intros β' τ' Hb. apply (Hnd β' τ').
-        apply (@binds_weaken abind β' (abind_flex_mono_def τ') Ξ
-                 (β ~ abind_flex_mono) Θ0). exact Hb. }
-      { eapply faf_tail; eauto. }
-      { exact HΔΞ. }
-      { (* the IH's OUTPUT-relative coverage: a Δ-name in the sub-run's
-           output is in the conclusion's too, and it is not the walked head
-           (the rule's own premise says the head misses that output) *)
-        intros α0 Hα0.
-        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; solve_notin_auto)).
-        clear - HXc Hα0 Hbar.
-        repeat rewrite dom_app in *. simpl in *. fsetdec. }
-      { intros α0 Hα0Δ HXd. apply HP; auto. simpl.
-        assert (α0 `notin` add β (dom Θ0)) by (clear - Hhd Hα0Δ; fsetdec).
-        auto. }
-      split; [ | split ].
-      + intros β' τ' Hb.
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-          [ discriminate | exact (IH1 β' τ' Hb') ].
-      + apply faf_cons; [ | exact IH2 ].
-        intros _. repeat rewrite dom_app in *; simpl in *.
-        clear - Hcov Hhd HΔΞ; fsetdec.
-      + intros α0 Hα0Δ HXd.
-        repeat rewrite dom_app in *; simpl in *.
-        clear - Hcov Hα0Δ HXd; fsetdec. }
+    { apply (assign_sound_skip_inv Hinv Hbar).
+      - intros τ Hc. discriminate Hc.
+      - intros Hc. discriminate Hc. }
     apply ad_pat_consis_weaken_cons. exact Hcons.
 
   - (* Assign-SkipRigid *)
@@ -2776,31 +2808,9 @@ Proof.
     split.
     { clear - Hdom. repeat rewrite dom_app in *; simpl in *. fsetdec. }
     split.
-    { intros Δ Hnd Hfaf HΔΞ Hcov HP.
-      destruct (Hinv Δ) as [IH1 [IH2 IH3]].
-      { intros β' τ' Hb. apply (Hnd β' τ').
-        apply (@binds_weaken abind β' (abind_flex_mono_def τ') Ξ
-                 (β ~ abind_tvar) Θ0). exact Hb. }
-      { eapply faf_tail; eauto. }
-      { exact HΔΞ. }
-      { (* the IH's OUTPUT-relative coverage: a Δ-name in the sub-run's
-           output is in the conclusion's too, and it is not the walked head
-           (the rule's own premise says the head misses that output) *)
-        intros α0 Hα0.
-        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; solve_notin_auto)).
-        clear - HXc Hα0 Hbar.
-        repeat rewrite dom_app in *. simpl in *. fsetdec. }
-      { intros α0 Hα0Δ HXd.
-        destruct (eq_var α0 β) as [->|Hnex]; [ exact Hβn | ].
-        apply HP; auto; simpl; auto. }
-      split; [ | split ].
-      + intros β' τ' Hb.
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-          [ discriminate | exact (IH1 β' τ' Hb') ].
-      + apply faf_cons; [ intros Hne; congruence | exact IH2 ].
-      + intros α0 Hα0Δ HXd.
-        repeat rewrite dom_app in *; simpl in *.
-        clear - Hcov Hα0Δ HXd; fsetdec. }
+    { apply (assign_sound_skip_inv Hinv Hbar).
+      - intros τ Hc. discriminate Hc.
+      - intros _. exact Hβn. }
     apply ad_pat_consis_weaken_cons. exact Hcons.
 
   - (* Assign-SkipTmVar (typ) *)
@@ -2846,35 +2856,9 @@ Proof.
     split.
     { clear - Hdom. repeat rewrite dom_app in *; simpl in *. fsetdec. }
     split.
-    { intros Δ Hnd Hfaf HΔΞ Hcov HP.
-      assert (Hhd : Δ ∩ (add x (dom Θ0)) [=] empty)
-        by (apply (faf_head Hfaf); discriminate).
-      destruct (Hinv Δ) as [IH1 [IH2 IH3]].
-      { intros β' τ' Hb. apply (Hnd β' τ').
-        apply (@binds_weaken abind β' (abind_flex_mono_def τ') Ξ
-                 (x ~ abind_var_typ P3) Θ0). exact Hb. }
-      { eapply faf_tail; eauto. }
-      { exact HΔΞ. }
-      { (* the IH's OUTPUT-relative coverage: a Δ-name in the sub-run's
-           output is in the conclusion's too, and it is not the walked head
-           (the rule's own premise says the head misses that output) *)
-        intros α0 Hα0.
-        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; solve_notin_auto)).
-        clear - HXc Hα0 Hbar.
-        repeat rewrite dom_app in *. simpl in *. fsetdec. }
-      { intros α0 Hα0Δ HXd. apply HP; auto. simpl.
-        assert (α0 `notin` add x (dom Θ0)) by (clear - Hhd Hα0Δ; fsetdec).
-        auto. }
-      split; [ | split ].
-      + intros β' τ' Hb.
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-          [ discriminate | exact (IH1 β' τ' Hb') ].
-      + apply faf_cons; [ | exact IH2 ].
-        intros _. repeat rewrite dom_app in *; simpl in *.
-        clear - Hcov Hhd HΔΞ; fsetdec.
-      + intros α0 Hα0Δ HXd.
-        repeat rewrite dom_app in *; simpl in *.
-        clear - Hcov Hα0Δ HXd; fsetdec. }
+    { apply (assign_sound_skip_inv Hinv Hbar).
+      - intros τ Hc. discriminate Hc.
+      - intros Hc. discriminate Hc. }
     apply ad_pat_consis_weaken_cons. exact Hcons.
 
   - (* Assign-SkipTmVar (skl) *)
@@ -2919,35 +2903,9 @@ Proof.
     split.
     { clear - Hdom. repeat rewrite dom_app in *; simpl in *. fsetdec. }
     split.
-    { intros Δ Hnd Hfaf HΔΞ Hcov HP.
-      assert (Hhd : Δ ∩ (add x (dom Θ0)) [=] empty)
-        by (apply (faf_head Hfaf); discriminate).
-      destruct (Hinv Δ) as [IH1 [IH2 IH3]].
-      { intros β' τ' Hb. apply (Hnd β' τ').
-        apply (@binds_weaken abind β' (abind_flex_mono_def τ') Ξ
-                 (x ~ abind_var_skl P3) Θ0). exact Hb. }
-      { eapply faf_tail; eauto. }
-      { exact HΔΞ. }
-      { (* the IH's OUTPUT-relative coverage: a Δ-name in the sub-run's
-           output is in the conclusion's too, and it is not the walked head
-           (the rule's own premise says the head misses that output) *)
-        intros α0 Hα0.
-        assert (HXc := Hcov α0 ltac:(clear - Hα0; simpl; solve_notin_auto)).
-        clear - HXc Hα0 Hbar.
-        repeat rewrite dom_app in *. simpl in *. fsetdec. }
-      { intros α0 Hα0Δ HXd. apply HP; auto. simpl.
-        assert (α0 `notin` add x (dom Θ0)) by (clear - Hhd Hα0Δ; fsetdec).
-        auto. }
-      split; [ | split ].
-      + intros β' τ' Hb.
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
-          [ discriminate | exact (IH1 β' τ' Hb') ].
-      + apply faf_cons; [ | exact IH2 ].
-        intros _. repeat rewrite dom_app in *; simpl in *.
-        clear - Hcov Hhd HΔΞ; fsetdec.
-      + intros α0 Hα0Δ HXd.
-        repeat rewrite dom_app in *; simpl in *.
-        clear - Hcov Hα0Δ HXd; fsetdec. }
+    { apply (assign_sound_skip_inv Hinv Hbar).
+      - intros τ Hc. discriminate Hc.
+      - intros Hc. discriminate Hc. }
     apply ad_pat_consis_weaken_cons. exact Hcons.
   - (* U-Flex-Flex-Id *)
     intros Θ0 α Hb Hwf.
