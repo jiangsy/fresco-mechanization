@@ -334,6 +334,37 @@ Proof.
   - (* ∀◈ *) cbn [subst_uskl_in_uskl]; apply ursubst__dot_univ_ghost; auto.
 Qed.
 
+(** Renaming the single fresh instance [α0] of a ρ-substituted ∀-body into
+    another member [α] of the family — the binder rows of
+    [uskl_rsubst_subst{,_refl}]. *)
+Lemma uskl_rsubst_subst_open_rename : forall NM Θ Δρ Ψ R' R ψb β α0 α,
+  uskl_rsubst NM Θ (add β Δρ) Ψ
+    (subst_uskl_in_uskl ψb β (open_uskl_wrt_uskl R' (uskl_var_f α0)))
+    (open_uskl_wrt_uskl R (uskl_var_f α0)) ->
+  lc_uskl ψb ->
+  α0 `notin` dom Θ `union` Δρ `union` singleton β `union` ftvar_in_uskl R
+    `union` ftvar_in_uskl R' `union` ftvar_in_uskl ψb ->
+  α `notin` singleton β ->
+  uskl_rsubst NM Θ (add β Δρ) Ψ
+    (open_uskl_wrt_uskl (subst_uskl_in_uskl ψb β R') (uskl_var_f α))
+    (open_uskl_wrt_uskl R (uskl_var_f α)).
+Proof.
+  intros NM Θ Δρ Ψ R' R ψb β α0 α Hr Hlcb Hα0 Hα.
+  assert (Hβα : β <> α) by (intros ->; solve_notin_auto).
+  pose proof (uskl_rsubst_rename Hr (α1 := α0) α) as Hren.
+  rewrite (@subst_uskl_in_uskl_subst_uskl_in_uskl
+             (open_uskl_wrt_uskl R' (uskl_var_f α0)) (uskl_var_f α) ψb β α0)
+    in Hren by (cbn [ftvar_in_uskl]; solve_notin_auto).
+  rewrite (@subst_uskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0) in Hren
+    by solve_notin_auto.
+  rewrite <- (@subst_uskl_in_uskl_intro α0 R' (uskl_var_f α)) in Hren
+    by solve_notin_auto.
+  rewrite <- (@subst_uskl_in_uskl_intro α0 R (uskl_var_f α)) in Hren
+    by solve_notin_auto.
+  rewrite (@subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψb β α Hβα Hlcb).
+  apply Hren; solve_notin_auto.
+Qed.
+
 Lemma uskl_rsubst_subst_refl : forall NM Θ Δρ R β ψb Ψb,
   lc_uskl R ->
   a_tags_sort NM Ψb ψb ->
@@ -390,34 +421,10 @@ Proof.
                                       `union` ftvar_in_uskl ψb
                                       `union` singleton β);
         intros α Hα.
-      assert (Hα0 : α0 `notin` dom Θ) by (clear - Fr; solve_notin).
-      assert (Hα0Δ : α0 `notin` add β Δρ)
-        by (assert (Hd : α0 `notin` Δρ) by (clear - Fr; solve_notin);
-            assert (Hb : α0 <> β)
-              by (apply notin_singleton_1; clear - Fr; solve_notin);
-            clear - Hd Hb; fsetdec).
-      pose proof (uskl_rsubst_rename Hr1 (α1 := α0) α Hα0 Hα0Δ) as Hren.
-      assert (Hα0ψb : α0 `notin` ftvar_in_uskl ψb)
-        by (clear - Fr; solve_notin).
-      assert (Hα0β : α0 <> β)
-        by (apply notin_singleton_1; clear - Fr; solve_notin).
-      assert (Hα0R : α0 `notin` ftvar_in_uskl R) by (clear - Fr; solve_notin).
-      assert (Hβα : β <> α)
-        by (apply not_eq_sym; apply notin_singleton_1;
-            clear - Hα; solve_notin).
-      (* push the rename PAST the instantiation (α0 avoids ψb), then read
-         both sides back as openings at α *)
-      rewrite (@subst_uskl_in_uskl_subst_uskl_in_uskl
-                 (open_uskl_wrt_uskl R (uskl_var_f α0)) (uskl_var_f α) ψb
-                 β α0
-                 ltac:(cbn [ftvar_in_uskl]; clear - Hβα; solve_notin_auto)
-                 ltac:(apply not_eq_sym; exact Hα0β)) in Hren.
-      rewrite (@subst_uskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0 Hα0ψb)
-        in Hren.
-      rewrite <- (@subst_uskl_in_uskl_intro α0 R (uskl_var_f α) Hα0R)
-        in Hren.
-      rewrite (@subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψb β α Hβα Hlcb).
-      exact Hren.
+      eapply uskl_rsubst_subst_open_rename with (1 := Hr1).
+      * exact Hlcb.
+      * clear - Fr. solve_notin_auto.
+      * clear - Hα. solve_notin_auto.
   - (* ∀^ε : the same, with the tag carried through *)
     match goal with IH : forall α, _ |- _ =>
       pick fresh α0 for (dom Θ `union` ftvar_in_uskl R `union` singleton β
@@ -436,34 +443,10 @@ Proof.
                                       `union` ftvar_in_uskl ψb
                                       `union` singleton β);
         intros α Hα.
-      assert (Hα0 : α0 `notin` dom Θ) by (clear - Fr; solve_notin).
-      assert (Hα0Δ : α0 `notin` add β Δρ)
-        by (assert (Hd : α0 `notin` Δρ) by (clear - Fr; solve_notin);
-            assert (Hb : α0 <> β)
-              by (apply notin_singleton_1; clear - Fr; solve_notin);
-            clear - Hd Hb; fsetdec).
-      pose proof (uskl_rsubst_rename Hr1 (α1 := α0) α Hα0 Hα0Δ) as Hren.
-      assert (Hα0ψb : α0 `notin` ftvar_in_uskl ψb)
-        by (clear - Fr; solve_notin).
-      assert (Hα0β : α0 <> β)
-        by (apply notin_singleton_1; clear - Fr; solve_notin).
-      assert (Hα0R : α0 `notin` ftvar_in_uskl R) by (clear - Fr; solve_notin).
-      assert (Hβα : β <> α)
-        by (apply not_eq_sym; apply notin_singleton_1;
-            clear - Hα; solve_notin).
-      (* push the rename PAST the instantiation (α0 avoids ψb), then read
-         both sides back as openings at α *)
-      rewrite (@subst_uskl_in_uskl_subst_uskl_in_uskl
-                 (open_uskl_wrt_uskl R (uskl_var_f α0)) (uskl_var_f α) ψb
-                 β α0
-                 ltac:(cbn [ftvar_in_uskl]; clear - Hβα; solve_notin_auto)
-                 ltac:(apply not_eq_sym; exact Hα0β)) in Hren.
-      rewrite (@subst_uskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0 Hα0ψb)
-        in Hren.
-      rewrite <- (@subst_uskl_in_uskl_intro α0 R (uskl_var_f α) Hα0R)
-        in Hren.
-      rewrite (@subst_uskl_in_uskl_open_uskl_wrt_uskl_var R ψb β α Hβα Hlcb).
-      exact Hren.
+      eapply uskl_rsubst_subst_open_rename with (1 := Hr1).
+      * exact Hlcb.
+      * clear - Fr. solve_notin_auto.
+      * clear - Hα. solve_notin_auto.
   - (* ⟨⟩ ghost *)
     exists empty; repeat split;
       [ clear; fsetdec | intros Hin; clear - Hin; fsetdec
@@ -586,33 +569,10 @@ Proof.
                                        `union` ftvar_in_uskl R'
                                        `union` ftvar_in_uskl ψb);
         intros α Hα.
-      assert (Hα0Θ : α0 `notin` dom Θ) by (clear - Fr; solve_notin).
-      assert (Hα0Δ : α0 `notin` add β Δρ)
-        by (assert (Hd : α0 `notin` Δρ) by (clear - Fr; solve_notin);
-            assert (Hb : α0 <> β)
-              by (apply notin_singleton_1; clear - Fr; solve_notin);
-            clear - Hd Hb; fsetdec).
-      pose proof (uskl_rsubst_rename Hr1 (α1 := α0) α Hα0Θ Hα0Δ) as Hren.
-      assert (Hα0ψb : α0 `notin` ftvar_in_uskl ψb)
-        by (clear - Fr; solve_notin).
-      assert (Hα0β : α0 <> β)
-        by (apply notin_singleton_1; clear - Fr; solve_notin).
-      assert (Hβα : β <> α)
-        by (apply not_eq_sym; apply notin_singleton_1;
-            clear - Hα; solve_notin).
-      rewrite (@subst_uskl_in_uskl_subst_uskl_in_uskl
-                 (open_uskl_wrt_uskl R' (uskl_var_f α0)) (uskl_var_f α) ψb
-                 β α0
-                 ltac:(cbn [ftvar_in_uskl]; clear - Hβα; solve_notin_auto)
-                 ltac:(apply not_eq_sym; exact Hα0β)) in Hren.
-      rewrite (@subst_uskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0 Hα0ψb)
-        in Hren.
-      rewrite <- (@subst_uskl_in_uskl_intro α0 R' (uskl_var_f α)
-                    ltac:(clear - Fr; solve_notin)) in Hren.
-      rewrite <- (@subst_uskl_in_uskl_intro α0 R (uskl_var_f α)
-                    ltac:(clear - Fr; solve_notin)) in Hren.
-      rewrite (@subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψb β α Hβα Hlcb).
-      exact Hren.
+      eapply uskl_rsubst_subst_open_rename with (1 := Hr1).
+      * exact Hlcb.
+      * clear - Fr. solve_notin_auto.
+      * clear - Hα. solve_notin_auto.
   - (* ∀^ε : the same, with the tag carried through *)
     pick fresh α0 for (L `union` dom Θ `union` Δρ `union` singleton β
                          `union` ftvar_in_uskl R `union` ftvar_in_uskl R'
@@ -632,33 +592,10 @@ Proof.
                 `union` singleton β `union` ftvar_in_uskl R
                 `union` ftvar_in_uskl R' `union` ftvar_in_uskl ψb);
         intros α Hα.
-      assert (Hα0Θ : α0 `notin` dom Θ) by (clear - Fr; solve_notin).
-      assert (Hα0Δ : α0 `notin` add β Δρ)
-        by (assert (Hd : α0 `notin` Δρ) by (clear - Fr; solve_notin);
-            assert (Hb : α0 <> β)
-              by (apply notin_singleton_1; clear - Fr; solve_notin);
-            clear - Hd Hb; fsetdec).
-      pose proof (uskl_rsubst_rename Hr1 (α1 := α0) α Hα0Θ Hα0Δ) as Hren.
-      assert (Hα0ψb : α0 `notin` ftvar_in_uskl ψb)
-        by (clear - Fr; solve_notin).
-      assert (Hα0β : α0 <> β)
-        by (apply notin_singleton_1; clear - Fr; solve_notin).
-      assert (Hβα : β <> α)
-        by (apply not_eq_sym; apply notin_singleton_1;
-            clear - Hα; solve_notin).
-      rewrite (@subst_uskl_in_uskl_subst_uskl_in_uskl
-                 (open_uskl_wrt_uskl R' (uskl_var_f α0)) (uskl_var_f α) ψb
-                 β α0
-                 ltac:(cbn [ftvar_in_uskl]; clear - Hβα; solve_notin_auto)
-                 ltac:(apply not_eq_sym; exact Hα0β)) in Hren.
-      rewrite (@subst_uskl_in_uskl_fresh_eq ψb (uskl_var_f α) α0 Hα0ψb)
-        in Hren.
-      rewrite <- (@subst_uskl_in_uskl_intro α0 R' (uskl_var_f α)
-                    ltac:(clear - Fr; solve_notin)) in Hren.
-      rewrite <- (@subst_uskl_in_uskl_intro α0 R (uskl_var_f α)
-                    ltac:(clear - Fr; solve_notin)) in Hren.
-      rewrite (@subst_uskl_in_uskl_open_uskl_wrt_uskl_var R' ψb β α Hβα Hlcb).
-      exact Hren.
+      eapply uskl_rsubst_subst_open_rename with (1 := Hr1).
+      * exact Hlcb.
+      * clear - Fr. solve_notin_auto.
+      * clear - Hα. solve_notin_auto.
   - (* ∀◇ *)
     destruct (IHuskl_rsubst β ψb Ψb Htags Hwfb Hlcb HβΘ HβΔ)
       as (Ψ1 & Hs1 & Hm1 & Hocc1 & Hr1).
