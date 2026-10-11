@@ -816,12 +816,9 @@ Proof.
             & Hs1 & Hs2 & Hfm & Hu & Hk & Hfr & HF & Hw1 & Hw2 & Hp)
     end.
     exists (Ξ2 ++ Ξ1), (pskl_arrow Pa1 Pa2), (κ2 ++ κ1).
-    repeat (split; [ solve [ apply a_solve_sub__arrow; [ exact Hs1 | exact Hs2 ]
-                           | exact Hfm | exact Hu | exact Hk | exact Hfr
-                           | exact HF
-                           | apply a_wf_pskl__arrow; [ exact Hw1 | exact Hw2 ] ]
-                   | ]).
-    exact Hp.
+    repeat split; try assumption.
+    + apply a_solve_sub__arrow; assumption.
+    + apply a_wf_pskl__arrow; assumption.
   - (* ∀ : no rule targets an arrow from a quantifier *) inversion Hpre.
   - (* □ : SolS-GhostLF, with both branches run at input □ *)
     inversion Hpre; subst.
@@ -842,18 +839,13 @@ Proof.
             & Hs1 & Hs2 & Hfm & Hu & Hk & Hfr & HF & Hw1 & Hw2 & Hp)
     end.
     exists (Ξ2 ++ Ξ1), (pskl_univ_ghost (pskl_arrow Pa1 Pa2)), (κ2 ++ κ1).
-    repeat (split;
-      [ solve [ apply a_solve_sub__ghost_l_fn; [ exact Hs1 | exact Hs2 ]
-              | exact Hfm | exact Hu | exact Hk | exact Hfr | exact HF
-              | apply a_wf_pskl__univ_ghost;
-                  [ apply guarded_pskl__arrow;
-                      [ eapply a_wf_pskl_lc; exact Hw1
-                      | eapply a_wf_pskl_lc; exact Hw2 ]
-                  | rewrite aenv_minus_empty;
-                    apply a_wf_pskl__arrow; [ exact Hw1 | exact Hw2 ] ] ]
-      | ]).
-    cbn [msubst_pskl] in Hp |- *.
-    apply ad_ppre__univ_ghost_remove; exact Hp.
+    repeat split; try assumption.
+    + apply a_solve_sub__ghost_l_fn; assumption.
+    + apply a_wf_pskl__univ_ghost.
+      * apply guarded_pskl__arrow; eapply a_wf_pskl_lc; eassumption.
+      * rewrite aenv_minus_empty. apply a_wf_pskl__arrow; assumption.
+    + cbn [msubst_pskl] in Hp |- *.
+      apply ad_ppre__univ_ghost_remove; exact Hp.
   - (* ∀◇Pi0 : strip the ghost (the FILL and KEEP rows need a ∀^ε / ∀◈
        guess), recurse, and wrap the output — a PASS-THROUGH row, so the
        block and the extension come back unchanged *)
@@ -870,21 +862,16 @@ Proof.
         as (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hw & Hp)
     end.
     exists Ξ, (pskl_univ_ghost Pa), κ'.
-    repeat (split;
-      [ solve [ apply a_solve_sub__univ_ghost_l; exact Hs
-              | exact Hfm | exact Hu | exact Hk | exact Hfr | exact HF
-              | apply a_wf_pskl__univ_ghost;
-                  [ eapply (proj1 a_solve_sub_eq_guarded);
-                      [ exact Hs
-                      | eapply a_wf_pskl_lc;
-                        eapply a_wf_pskl_univ_ghost_inv; exact HwfPi
-                      | apply lc_pskl_arrow;
-                          [ eapply a_wf_pskl_lc; exact HwfP01
-                          | eapply a_wf_pskl_lc; exact HwfP02 ]
-                      | inversion HwfPi; assumption ]
-                  | rewrite aenv_minus_empty; exact Hw ] ]
-      | ]).
-    cbn [msubst_pskl]. apply ad_ppre__univ_ghost_remove; exact Hp.
+    repeat split; try assumption.
+    + apply a_solve_sub__univ_ghost_l; exact Hs.
+    + apply a_wf_pskl__univ_ghost.
+      * eapply (proj1 a_solve_sub_eq_guarded).
+        -- exact Hs.
+        -- eapply a_wf_pskl_lc. eapply a_wf_pskl_univ_ghost_inv; exact HwfPi.
+        -- apply lc_pskl_arrow; eapply a_wf_pskl_lc; eassumption.
+        -- inversion HwfPi; assumption.
+      * rewrite aenv_minus_empty; exact Hw.
+    + cbn [msubst_pskl]. apply ad_ppre__univ_ghost_remove; exact Hp.
 Qed.
 
 (** Abstraction never shields more than the body already did. *)
@@ -1521,20 +1508,13 @@ Proof.
                       inversion Hng end ].
       match goal with Hbody : {{ Θ0 ⊢ₑ Pi' ∼ _ ⤳ _ ⨾ _ }}a |- _ =>
         exists Ξ, (pskl_univ_ghost Pa), κ';
-        repeat (split;
-          [ solve [ apply a_solve_sub__univ_ghost_l;
-                      apply a_solve_sub__check;
-                        [ exact HgfP0 | exact HgPi' | exact HgP0 | exact Hbody ]
-                  | exact Hfm | exact Hu | exact Hk | exact Hfr | exact HF
-                  | apply a_wf_pskl__univ_ghost;
-                      [ eapply (proj2 a_solve_sub_eq_guarded);
-                          [ exact Hbody
-                          | eapply a_wf_pskl_lc; exact HwfPi'
-                          | eapply a_wf_pskl_lc; exact HwfP0
-                          | exact HgPi' ]
-                      | rewrite aenv_minus_empty; exact HwfPa ] ] | ])
+        repeat split; try assumption
       end.
-      cbn [msubst_pskl]. apply ad_ppre__univ_ghost_remove. exact Hp.
+      * apply a_solve_sub__univ_ghost_l. apply a_solve_sub__check; assumption.
+      * apply a_wf_pskl__univ_ghost.
+        -- eapply (proj2 a_solve_sub_eq_guarded); eauto using a_wf_pskl_lc.
+        -- rewrite aenv_minus_empty; exact HwfPa.
+      * cbn [msubst_pskl]. apply ad_ppre__univ_ghost_remove. exact Hp.
   - (* ForallR (TY/TC).  [skmod{TY}] makes P0 a TYPE, so the refinement's
        inherited-∀ target forces P0 = ∀.P0' (every other type shape is
        GUARDED, and a guarded source refines only to a guarded target).
@@ -1688,23 +1668,21 @@ Proof.
         pose proof (forall_wf_mono_images_dom HF p Hp0) as Hb.
         clear - Hb HβΘw; fsetdec. }
       exists Ξ, Pa, κ'.
-      repeat (split;
-        [ solve [ (* rebuild SolS-ForallR.  The rule is EXISTS-FRESH and LEAKS
-                     its binder, and — since the repair — it runs its premise
-                     at [(β ~ tvar) ++ Θ0], so the IH's output IS the premise:
-                     no strengthening, no family to manufacture. *)
-                  (* ⭐ SS-ForallR is guarded now, so the DERIVED form is
-                     what applies at an arbitrary accumulated pattern —
-                     [a_solve_sub_forall_r_gen] peels a var / ∀ / ⫯ subject
-                     the way the implementation does and answers the same. *)
-                  apply a_solve_sub_forall_r_gen with (β := β);
-                    [ exact (ptyp_to_pskl_ghost_free (ptyp_all A0))
-                    | clear - Fr; solve_notin | exact Hs ]
-                | exact Hfm | exact Hu | exact Hk
-                | intros α0 Hα0; pose proof (Hfr α0 Hα0) as Hf;
-                  clear - Hf; fsetdec
-                | exact HF | exact HwfPa0 ] | ]).
-      eapply ad_partial_precise_strengthen_tvar; exact Hp.
+      repeat split; try assumption.
+      * (* rebuild SolS-ForallR.  The rule is EXISTS-FRESH and LEAKS its
+           binder, and — since the repair — it runs its premise at
+           [(β ~ tvar) ++ Θ0], so the IH's output IS the premise: no
+           strengthening, no family to manufacture.
+           ⭐ SS-ForallR is guarded now, so the DERIVED form is what applies at
+           an arbitrary accumulated pattern — [a_solve_sub_forall_r_gen] peels
+           a var / ∀ / ⫯ subject the way the implementation does and answers
+           the same. *)
+        apply a_solve_sub_forall_r_gen with (β := β).
+        -- exact (ptyp_to_pskl_ghost_free (ptyp_all A0)).
+        -- clear - Fr; solve_notin.
+        -- exact Hs.
+      * intros α0 Hα0; pose proof (Hfr α0 Hα0) as Hf; clear - Hf; fsetdec.
+      * eapply ad_partial_precise_strengthen_tvar; exact Hp.
   - (* UnivGhostR (SK) : M = TC at sort SK, so [skmod] again forces P0 = □
        and the case closes exactly like Infer *)
     assert (HP0 : P0 = pskl_ghost)
@@ -1949,9 +1927,7 @@ Proof.
       [ | (* ρ-leaf *)
         destruct Hleaf as (α0 & Ψ'' & Heq & HαΔρ & _ & _ & _); subst ψa;
         eapply a_solve_sub_complete_rsubst_var;
-          solve [ exact HwfΘ | exact Htags | clear - Htageq; fsetdec
-                | exact Hrhof | exact Hdelta | exact HαΔρ | exact Hapart
-                | exact HwfPi | exact Hpre ]
+          solve [ eauto | clear - Htageq; fsetdec ]
       | ].
     (* REFL: ρ is the identity here, so the guess IS the subject *)
     { subst ψa.
@@ -2402,9 +2378,7 @@ Proof.
     + (* ρ-leaf: the guess is a replaced rigid variable *)
       destruct Hleaf as (α0 & Ψ'' & Heq & HαΔρ & _ & _ & _); subst ψa.
       eapply a_solve_sub_complete_rsubst_var;
-        solve [ exact HwfΘ | exact Htags | clear - Htageq; fsetdec
-              | exact Hrhof | exact Hdelta | exact HαΔρ | exact Hapart
-              | exact HwfPi | exact Hpre ].
+        solve [ eauto | clear - Htageq; fsetdec ].
     + (* congruence *)
       destruct Hcong as (L0 & ψsrc & Heq & Hfam); subst ψa.
       eapply MAIN;
@@ -2524,8 +2498,7 @@ Proof.
                      Hdfresh Hpre0' HΨs1 HΨs2 Hext Hrefine Lav HLav)
           as (Ξ & Pa' & κ' & Hs' & Hfm & Hu & Hk & Hfr & HF & Hw' & Hp').
         exists Ξ, Pa', κ'.
-        repeat (split; [ solve [ exact Hs' | exact Hfm | exact Hu | exact Hk
-                               | exact Hfr | exact HF | exact Hw' ] | ]).
+        repeat split; try assumption.
         eapply ad_ppre_lift_dot_univ_ghost;
           [ exact HwfΘ | exact Hp' | exact HΔψ0
           | (* the guess erases to a guarded skeleton: ρ transports it from
@@ -2564,15 +2537,12 @@ Proof.
                        Hdfresh Hpre' HΨs1 HΨs2 Hext Hrefine Lav HLav)
             as (Ξ & Pa' & κ' & Hs' & Hfm & Hu & Hk & Hfr & HF & Hw' & Hp').
           exists Ξ, (pskl_univ_ghost Pa'), κ'.
-          repeat (split;
-            [ solve [ apply a_solve_sub__univ_ghost_l; exact Hs'
-                    | exact Hfm | exact Hu | exact Hk | exact Hfr | exact HF
-                    | apply a_wf_pskl__univ_ghost;
-                        [ eapply (proj1 a_solve_sub_eq_guarded);
-                            [ exact Hs' | eapply a_wf_pskl_lc; exact HwfPi'
-                            | eapply a_wf_pskl_lc; exact HwfP0 | exact HgPi' ]
-                        | rewrite aenv_minus_empty; exact Hw' ] ] | ]).
-          cbn [msubst_pskl]; apply ad_ppre__univ_ghost_keep; exact Hp'. }
+          repeat split; try assumption.
+          * apply a_solve_sub__univ_ghost_l; exact Hs'.
+          * apply a_wf_pskl__univ_ghost.
+            -- eapply (proj1 a_solve_sub_eq_guarded); eauto using a_wf_pskl_lc.
+            -- rewrite aenv_minus_empty; exact Hw'.
+          * cbn [msubst_pskl]; apply ad_ppre__univ_ghost_keep; exact Hp'. }
     destruct (uskl_rsubst_dot_univ_ghost_l_inv Hrho) as [[Heq HΨρe] | [Hleaf | Hcong]].
     + (* refl: ρ is the identity here, so ψ0 := R *)
       subst ψa.
@@ -2581,9 +2551,7 @@ Proof.
     + (* ρ-leaf: ψa is a replaced rigid variable *)
       destruct Hleaf as (α0 & Ψ'' & Heq & HαΔρ & _ & _ & _); subst ψa.
       eapply a_solve_sub_complete_rsubst_var;
-        solve [ exact HwfΘ | exact Htags | clear - Htageq; fsetdec
-              | exact Hrhof | exact Hdelta | exact HαΔρ | exact Hapart
-              | exact HwfPi | exact Hpre ].
+        solve [ eauto | clear - Htageq; fsetdec ].
     + (* congruence: ψa = ∀◈ψ0 with R ρ-related to ψ0 *)
       destruct Hcong as (ψ0 & Heq & Hrho0); subst ψa.
       apply KEY; assumption.
@@ -2642,14 +2610,11 @@ Proof.
       * exact HLav.
       * (* rebuild: the guess is the flexible whose definition we unfolded *)
         exists Ξ, Pa, κ'.
-        repeat (split; [ solve [ exact Hs | exact Hfm | exact Hu | exact Hk
-                               | exact Hfr | exact HF | exact Hw ] | ]).
+        repeat split; try assumption.
         eapply ad_ppre__flex_r; [ exact H | exact Hp ].
     + (* ρ-leaf: the guess is a replaced rigid variable *)
       destruct Hleaf as (α0 & Ψ'' & Heq & HαΔρ & _ & _ & _); subst ψa.
       eapply a_solve_sub_complete_rsubst_var;
-        solve [ exact HwfΘ | exact Htags | clear - Htageq; fsetdec
-              | exact Hrhof | exact Hdelta | exact HαΔρ | exact Hapart
-              | exact HwfPi | exact Hpre ].
+        solve [ eauto | clear - Htageq; fsetdec ].
 Qed.
 
