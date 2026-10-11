@@ -555,11 +555,10 @@ Proof.
                        clear - Hcov Hup1 Hup2; simpl in *; fsetdec)
 )
       as [ps' [Hav' [HS' [HX' HC']]]].
-    exists ((β1, β2) :: ps'). repeat apply conj.
-    + eapply swaps_fresh_cons; eassumption.
-    + eapply swaps_atoms_cons_transport; eassumption.
-    + cbn [swaps_aenv]. exact HX'.
-    + cbn [swaps_cstrs]. exact HC'.
+    exists ((β1, β2) :: ps').
+    refine (conj (swaps_fresh_cons _ _ _ _ Hβ1 Hβ2 Hav')
+      (conj (swaps_atoms_cons_transport _ _ _ _ _ _ HS1t HS') (conj HX' _))).
+    cbn [swaps_cstrs]. exact HC'.
 
   - (* LE-ForallSyn — (∀,⫯): the SUBJECT opens, the counterpart is fixed *)
     destruct (e_lookeq_inv_forall_syn D1 HαP) as (β1 & Hβ1 & Dp).
@@ -579,11 +578,10 @@ Proof.
                        clear - Hcov Hup1; simpl in *; fsetdec)
 )
       as [ps' [Hav' [HS' [HX' HC']]]].
-    exists ((β1, β2) :: ps'). repeat apply conj.
-    + eapply swaps_fresh_cons; eassumption.
-    + eapply swaps_atoms_cons_transport; eassumption.
-    + cbn [swaps_aenv]. exact HX'.
-    + cbn [swaps_cstrs]. exact HC'.
+    exists ((β1, β2) :: ps').
+    refine (conj (swaps_fresh_cons _ _ _ _ Hβ1 Hβ2 Hav')
+      (conj (swaps_atoms_cons_transport _ _ _ _ _ _ HS1t HS') (conj HX' _))).
+    cbn [swaps_cstrs]. exact HC'.
 
   - (* LE-UnivGhost — (⫯,⫯): both ⫯s vanish *)
     assert (Hα' : α `in` ftvar_in_pskl Qs) by (simpl in HαP; exact HαP).
@@ -611,11 +609,10 @@ Proof.
                        clear - Hcov Hup2; simpl in *; fsetdec)
 )
       as [ps' [Hav' [HS' [HX' HC']]]].
-    exists ((β1, β2) :: ps'). repeat apply conj.
-    + eapply swaps_fresh_cons; eassumption.
-    + eapply swaps_atoms_cons_transport; eassumption.
-    + cbn [swaps_aenv]. exact HX'.
-    + cbn [swaps_cstrs]. exact HC'.
+    exists ((β1, β2) :: ps').
+    refine (conj (swaps_fresh_cons _ _ _ _ Hβ1 Hβ2 Hav')
+      (conj (swaps_atoms_cons_transport _ _ _ _ _ _ HS1t HS') (conj HX' _))).
+    cbn [swaps_cstrs]. exact HC'.
 
   - (* LE-UnivGhost2 — ⭐ THE GUARDED ROW: the subject's ⫯ is stripped *)
     assert (Hα' : α `in` ftvar_in_pskl Qs) by (simpl in HαP; exact HαP).
@@ -838,11 +835,10 @@ Proof.
                        clear - Hcov Hup; simpl in *; fsetdec)
 )
       as [ps' [Hav' [HS' [HX' HC']]]].
-    exists ((β1, β2) :: ps'). repeat apply conj.
-    + eapply swaps_fresh_cons; eassumption.
-    + eapply swaps_atoms_cons_transport; eassumption.
-    + cbn [swaps_aenv]. exact HX'.
-    + cbn [swaps_cstrs]. exact HC'.
+    exists ((β1, β2) :: ps').
+    refine (conj (swaps_fresh_cons _ _ _ _ Hβ1 Hβ2 Hav')
+      (conj (swaps_atoms_cons_transport _ _ _ _ _ _ HS1t HS') (conj HX' _))).
+    cbn [swaps_cstrs]. exact HC'.
 
   - (* LS-Arrow — EQ first half, SUB second half *)
     destruct (e_looksub_inv_arrow D1 HαP)
@@ -902,11 +898,10 @@ Proof.
                        clear - Hcov Hup; simpl in *; fsetdec)
 )
       as [ps' [Hav' [HS' [HX' HC']]]].
-    exists ((β1, β2) :: ps'). repeat apply conj.
-    + eapply swaps_fresh_cons; eassumption.
-    + eapply swaps_atoms_cons_transport; eassumption.
-    + cbn [swaps_aenv]. exact HX'.
-    + cbn [swaps_cstrs]. exact HC'.
+    exists ((β1, β2) :: ps').
+    refine (conj (swaps_fresh_cons _ _ _ _ Hβ1 Hβ2 Hav')
+      (conj (swaps_atoms_cons_transport _ _ _ _ _ _ HS1t HS') (conj HX' _))).
+    cbn [swaps_cstrs]. exact HC'.
 
   - (* LS-UnivGhostL — the subject's ⫯ is stripped *)
     assert (Hα' : α `in` ftvar_in_pskl Ps) by (simpl in HαP; exact HαP).
@@ -1193,11 +1188,10 @@ Proof.
                        clear - Hcov Hu1 Hu2; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
-    exists ((β1, β2) :: ps'). repeat apply conj.
-    + eapply swaps_fresh_cons; eassumption.
-    + eapply swaps_atoms_cons_transport; eassumption.
-    + cbn [swaps_aenv]. exact HX'.
-    + eapply swaps_pskl_close_binder; eassumption.
+    exists ((β1, β2) :: ps').
+    refine (conj (swaps_fresh_cons _ _ _ _ Hβ1 Hβ2 Hav')
+      (conj (swaps_atoms_cons_transport _ _ _ _ _ _ HS1t HS') (conj HX' _))).
+    eapply swaps_pskl_close_binder; eassumption.
 
   - (* SE-UnivGhost — both ⫯s vanish and reappear on the output *)
     match type of D1 with
@@ -1237,11 +1231,10 @@ Proof.
                        clear - Hcov Hu2; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
-    exists ((β1, β2) :: ps'). repeat apply conj.
-    + eapply swaps_fresh_cons; eassumption.
-    + eapply swaps_atoms_cons_transport; eassumption.
-    + cbn [swaps_aenv]. exact HX'.
-    + eapply swaps_pskl_close_binder; eassumption.
+    exists ((β1, β2) :: ps').
+    refine (conj (swaps_fresh_cons _ _ _ _ Hβ1 Hβ2 Hav')
+      (conj (swaps_atoms_cons_transport _ _ _ _ _ _ HS1t HS') (conj HX' _))).
+    eapply swaps_pskl_close_binder; eassumption.
 
   - (* SE-GhostGuarded — the subject's ⫯ is stripped, the yield passes *)
     match goal with
@@ -1276,11 +1269,10 @@ Proof.
                        clear - Hcov Hu1; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
-    exists ((β1, β2) :: ps'). repeat apply conj.
-    + eapply swaps_fresh_cons; eassumption.
-    + eapply swaps_atoms_cons_transport; eassumption.
-    + cbn [swaps_aenv]. exact HX'.
-    + eapply swaps_pskl_close_binder; eassumption.
+    exists ((β1, β2) :: ps').
+    refine (conj (swaps_fresh_cons _ _ _ _ Hβ1 Hβ2 Hav')
+      (conj (swaps_atoms_cons_transport _ _ _ _ _ _ HS1t HS') (conj HX' _))).
+    eapply swaps_pskl_close_binder; eassumption.
 
   - (* SE-GuardedGhost — ⚠️ a VARIABLE subject is a second route *)
     match goal with
@@ -1571,11 +1563,10 @@ Proof.
                        clear - Hcov Hu1; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
-    exists ((β1, β2) :: ps'). repeat apply conj.
-    + eapply swaps_fresh_cons; eassumption.
-    + eapply swaps_atoms_cons_transport; eassumption.
-    + cbn [swaps_aenv]. exact HX'.
-    + eapply swaps_pskl_close_binder; eassumption.
+    exists ((β1, β2) :: ps').
+    refine (conj (swaps_fresh_cons _ _ _ _ Hβ1 Hβ2 Hav')
+      (conj (swaps_atoms_cons_transport _ _ _ _ _ _ HS1t HS') (conj HX' _))).
+    eapply swaps_pskl_close_binder; eassumption.
 
   - (* SS-UnivGhostL — the subject's ⫯ is stripped and re-wrapped *)
     match type of D1 with
@@ -1640,11 +1631,10 @@ Proof.
                        clear - Hcov Hu1; simpl in *; fsetdec)
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
-    exists ((β1, β2) :: ps'). repeat apply conj.
-    + eapply swaps_fresh_cons; eassumption.
-    + eapply swaps_atoms_cons_transport; eassumption.
-    + cbn [swaps_aenv]. exact HX'.
-    + cbn [swaps_pskl]. exact HY'.
+    exists ((β1, β2) :: ps').
+    refine (conj (swaps_fresh_cons _ _ _ _ Hβ1 Hβ2 Hav')
+      (conj (swaps_atoms_cons_transport _ _ _ _ _ _ HS1t HS') (conj HX' _))).
+    cbn [swaps_pskl]. exact HY'.
 
   - (* SS-Arrow — the THREADING row: an EQ half then a SUB half *)
     match type of D1 with
