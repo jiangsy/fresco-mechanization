@@ -2132,3 +2132,59 @@ Proof.
       [ exact Hfun | exact Hext | exact HD | exact Hblk | ].
     intros a Ha Hn. clear - Hn HV. fsetdec.
 Qed.
+
+(** Restore the ambient correspondence after removing a local binder pair. *)
+Lemma rel_pskl_restore_pairs : forall ρe ρ V x y P Q,
+  rel_pskl (ρe ++ (x, y) :: restrict_pairs x y ρ) V P Q ->
+  x `notin` ftvar_in_pskl P -> rel_pskl (ρe ++ ρ) V P Q.
+Proof.
+  intros * Hr Hfresh. eapply rel_pskl_mono.
+  - eapply rel_pskl_drop_mid; eassumption.
+  - intros a b Hin. apply in_app_or in Hin. apply in_or_app.
+    destruct Hin as [Hin | Hin];
+      [left; exact Hin | right; eapply restrict_pairs_incl; exact Hin].
+  - intros z Hz; exact Hz.
+Qed.
+
+Lemma rel_aenv_restore_pairs : forall ρe ρ V x y Θ Θ',
+  rel_aenv (ρe ++ (x, y) :: restrict_pairs x y ρ) V Θ Θ' ->
+  x `notin` ftvar_in_aenv Θ -> rel_aenv (ρe ++ ρ) V Θ Θ'.
+Proof.
+  intros * Hr Hfresh. eapply rel_aenv_mono.
+  - eapply rel_aenv_drop_mid; eassumption.
+  - intros a b Hin. apply in_app_or in Hin. apply in_or_app.
+    destruct Hin as [Hin | Hin];
+      [left; exact Hin | right; eapply restrict_pairs_incl; exact Hin].
+  - intros z Hz; exact Hz.
+Qed.
+
+(** A preserved term binding determines the corresponding output split. *)
+Lemma rel_aenv_split_preserved_binding : forall ρe ρ V x y bd bd' Ξ Θ Θout,
+  rel_aenv (ρe ++ (x, y) :: restrict_pairs x y ρ) V
+    (Ξ ++ (x ~ bd) ++ Θ) Θout ->
+  (forall b, ~ In (x, b) ρe) -> x `notin` V ->
+  binds y bd' Θout -> uniq Θout ->
+  exists Ξ' Θ', Θout = Ξ' ++ (y ~ bd') ++ Θ' /\
+    rel_aenv (ρe ++ (x, y) :: restrict_pairs x y ρ) V Ξ Ξ' /\
+    rel_aenv (ρe ++ (x, y) :: restrict_pairs x y ρ) V Θ Θ'.
+Proof.
+  intros * Hr Hfresh HxV Hb Huq.
+  assert (Honly : forall z,
+    rel_atom (ρe ++ (x, y) :: restrict_pairs x y ρ) V x z -> z = y).
+  { intros z Hz. inversion Hz as [a b Hin | a HinV]; subst.
+    - apply in_app_or in Hin. destruct Hin as [Hin | [Heq | Hin]].
+      + exfalso; exact (Hfresh _ Hin).
+      + inversion Heq; reflexivity.
+      + exfalso. apply (@restrict_pairs_notin_l x y ρ).
+        eapply cols_l_in; exact Hin.
+    - exfalso; exact (HxV HinV). }
+  destruct (@rel_aenv_app_inv_l Ξ _ _ _ _ Hr) as (Ξ' & Θrest & Eout & HrΞ & HrTail).
+  subst Θout.
+  destruct (rel_aenv_cons_inv_l HrTail)
+    as (z & bd2 & Θ' & Erest & Hz & Hbd & HrΘ).
+  subst Θrest. assert (Ez : z = y) by auto. subst z.
+  assert (Hmid : binds y bd2 (Ξ' ++ (y ~ bd2) ++ Θ'))
+    by (unfold binds; apply in_or_app; right; left; reflexivity).
+  assert (Ebd : bd2 = bd') by (eapply binds_unique; eauto).
+  subst bd2. exists Ξ', Θ'; auto.
+Qed.

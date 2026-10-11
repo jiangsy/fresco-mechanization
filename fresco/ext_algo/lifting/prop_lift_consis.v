@@ -258,12 +258,7 @@ Proof.
   (* ---- peel the opener off BOTH contexts ---- *)
   inversion HrΘout as [ | a0 b0 bd1 bd2 Θa Θb Hat0 Hbd0 HrΘtail Ea Eb ]; subst.
   assert (HrΘfin : rel_aenv (ρe ++ ρ) V Θ1 Θ1').
-  { eapply rel_aenv_mono.
-    - eapply rel_aenv_drop_mid; [exact HrΘtail | exact HαfΘ1].
-    - intros a b Hin. apply in_app_or in Hin. apply in_or_app.
-      destruct Hin as [Hin | Hin];
-        [left; exact Hin | right; eapply restrict_pairs_incl; exact Hin].
-    - intros x Hx; exact Hx. }
+  { eapply rel_aenv_restore_pairs; eassumption. }
   (* ---- and the FLEX AGREEMENT, which is where the owed fact is spent ---- *)
   assert (Hagrpeel : flex_agree_rel (ρe ++ (α, α2) :: restrict_pairs α α2 ρ)
                        V Θ1 Θ1').

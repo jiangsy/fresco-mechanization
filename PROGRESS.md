@@ -181,6 +181,28 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+
+## 2026-10-11 — Share abstraction output correspondence
+
+Factor the output-context split used by both abstraction lifting cores into
+`rel_aenv_split_preserved_binding`. The shared proof identifies the binder's
+unique corresponding name, splits at its context entry, and uses binding
+preservation and context uniqueness to identify the target binding.
+
+Add `rel_pskl_restore_pairs` and `rel_aenv_restore_pairs` to remove a local
+binder pair and restore the ambient correspondence. Use them in skeleton,
+type and consistency lifting, replacing repeated drop-and-widen arguments.
+
+Net reduction: **17 physical Coq lines / 18 nonblank, noncomment lines**.
+All 138 existing theorem statements across the four edited Coq files are
+unchanged; inline tactic terms remain at 28, with none added.
+
+Validation: `make coq` passed, with all 34 headline assumption reports closed
+under the global context and no axioms or errors. Statement comparison and
+`git diff --check` passed. The initial call-site argument inference error was
+fixed by giving the shared split lemma's parameters explicitly.
+
+
 ## 2026-10-11 — Derive supply respect from identity equivariance
 
 Replace eleven supply-respect proofs with identity-swap instances of the

@@ -354,49 +354,19 @@ Proof.
   { intros a Hin. destruct Hexto as [Hxfr _].
     destruct (Hxfr _ _ Hin) as [_ Hnb].
     apply Hnb. clear; fsetdec. }
-  assert (Hxonly : forall y,
-            rel_atom (ρe ++ (x, x2) :: restrict_pairs x x2 ρ) V x y ->
-            y = x2).
-  { intros y Hat. inversion Hat as [ a0 b0 Hin | a0 HinV ]; subst.
-    - apply in_app_or in Hin. destruct Hin as [Hin | [Ehd | Hin]].
-      + exfalso. exact (Hxρe _ Hin).
-      + inversion Ehd; reflexivity.
-      + exfalso. apply Hxl. eapply cols_l_in; exact Hin.
-    - exfalso. exact (HxV HinV). }
-  (* ---- SPLIT the output at the junk suffix, then at the term entry ---- *)
-  destruct (@rel_aenv_app_inv_l Ξ
-              (ρe ++ (x, x2) :: restrict_pairs x x2 ρ) V
-              ((x ~ bd) ++ Θc) Θout' HrΘo)
-    as (Ξ2 & Θrest & Eout & HrΞ2 & HrTail).
-  subst Θout'.
-  destruct (rel_aenv_cons_inv_l HrTail)
-    as (b & bd2' & Θc2' & E2 & Hab2 & Hbd2 & HrΘc2).
-  subst Θrest.
-  assert (Eb : b = x2) by (apply Hxonly; exact Hab2).
-  subst b.
-  (* ---- the term entry is PRESERVED, so side 2's mid binding is [bd'] ---- *)
-  assert (Hb'out : binds x2 bd' (Ξ2 ++ (x2 ~ bd2') ++ Θc2')).
+  assert (Hb'out : binds x2 bd' Θout').
   { apply (a_pat_tm_le HaDe);
       [ exact Htm' | unfold binds; simpl; left; reflexivity ]. }
-  assert (Ebd : bd2' = bd').
-  { assert (Hbmid : binds x2 bd2' (Ξ2 ++ (x2 ~ bd2') ++ Θc2'))
-      by (unfold binds; apply in_or_app; right; left; reflexivity).
-    eapply binds_unique; [ exact Hbmid | exact Hb'out | exact HuqOut2 ]. }
-  subst bd2'.
+  destruct (@rel_aenv_split_preserved_binding ρe ρ V x x2 bd bd' Ξ Θc Θout'
+              HrΘo Hxρe HxV Hb'out HuqOut2)
+    as (Ξ2 & Θc2' & Eout & HrΞ2 & HrΘc2).
+  subst Θout'.
   (* Remove the unused source binder from the output correspondence. *)
   assert (HrOut : rel_aenv (ρe ++ (x, x2) :: restrict_pairs x x2 ρ) V
                     (Ξ ++ Θc) (Ξ2 ++ Θc2'))
     by (apply rel_aenv_app; [ exact HrΞ2 | exact HrΘc2 ]).
-  assert (Hincl : forall a b0,
-            In (a, b0) (ρe ++ restrict_pairs x x2 ρ) ->
-            In (a, b0) (ρe ++ ρ)).
-  { intros a b0 Hin. apply in_app_or in Hin. apply in_or_app.
-    destruct Hin as [Hin | Hin];
-      [left; exact Hin | right; apply Hρrincl; exact Hin]. }
-  assert (HrFinal : rel_aenv (ρe ++ ρ) V (Ξ ++ Θc) (Ξ2 ++ Θc2')).
-  { eapply rel_aenv_mono;
-      [ eapply rel_aenv_drop_mid; [ exact HrOut | exact HxftvOut ]
-      | exact Hincl | intros z Hz; exact Hz ]. }
+  assert (HrFinal : rel_aenv (ρe ++ ρ) V (Ξ ++ Θc) (Ξ2 ++ Θc2'))
+    by (eapply rel_aenv_restore_pairs; eassumption).
   (* ---- the yield: drop the pair via ftvar-correspondence ---- *)
   assert (HwfQout : {{ (Ξ ++ (x ~ bd) ++ Θc) ⨟ empty ⊢ₚₛ Q }}a)
     by (eapply a_pat_output_wf;
@@ -405,9 +375,7 @@ Proof.
   assert (HxQ : x `notin` ftvar_in_pskl Q).
   { eapply a_wf_pskl_tm_entry_fresh; eassumption. }
   assert (HrQfin : rel_pskl (ρe ++ ρ) V Q Q').
-  { eapply rel_pskl_mono;
-      [ eapply rel_pskl_drop_mid; [ exact HrQo | exact HxQ ]
-      | exact Hincl | intros z Hz; exact Hz ]. }
+  { eapply rel_pskl_restore_pairs; eassumption. }
   assert (Hextfin : rel_ext ρe (ftvar_in_aenv Θb) S0).
   { destruct Hexto as [Hxfr [Hri Hlf]]. unfold rel_ext.
     split; [ | split ].
