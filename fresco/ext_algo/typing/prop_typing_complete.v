@@ -624,10 +624,7 @@ Proof.
   unfold typing_spec in Hr.
   destruct (e_typing_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]].
   assert (Hfix2a : swaps_atom ps2 (supply_fresh S0) = supply_fresh S0)
-    by (apply swaps_atom_notin; intros a0 b0 Hin;
-        destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-        split; intro Heq0; [ apply Hka | apply Hkb ];
-        rewrite <- Heq0; clear; fsetdec).
+    by (apply (swaps_atom_dodge_in Hav2); clear; fsetdec).
   (* the answer's context, split at the runner's own marker *)
   assert (Hctx : ty_ctx r
             = swaps_aenv ps2 (swaps_aenv ((αd, supply_fresh S0) :: nil)
@@ -939,10 +936,7 @@ Proof.
         destruct (e_typing_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]].
         assert (Hfix2a : swaps_atom ps2 (supply_fresh (sp_supply rs))
                          = supply_fresh (sp_supply rs))
-          by (apply swaps_atom_notin; intros a0 b0 Hin;
-              destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-              split; intro Heq0; [ apply Hka | apply Hkb ];
-              rewrite <- Heq0; clear; fsetdec).
+          by (apply (swaps_atom_dodge_in Hav2); clear; fsetdec).
         assert (Hfix2A : swaps_ptyp ps2 (swaps_ptyp ps1 A)
                          = swaps_ptyp ps1 A)
           by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2);
@@ -1187,10 +1181,7 @@ Proof.
       destruct (e_typing_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]];
       assert (Hfix2a : swaps_atom ps2 (supply_fresh (gr_supply rg))
                        = supply_fresh (gr_supply rg))
-        by (apply swaps_atom_notin; intros a0 b0 Hin;
-            destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-            split; intro Heq0; [ apply Hka | apply Hkb ];
-            rewrite <- Heq0; clear; fsetdec);
+        by (apply (swaps_atom_dodge_in Hav2); clear; fsetdec);
       assert (Hfix2T : swaps_ptyp ps2 (gr_type rg) = gr_type rg)
         by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2);
             clear - HftyG; fsetdec);
@@ -1568,9 +1559,8 @@ Proof.
             assert (Hfx : swaps_ptyp ((swaps_atom psc (swaps_atom ps1 xd),
                             supply_fresh (cs_supply rc)) :: nil)
                             (swaps_ptyp ps1 A') = swaps_ptyp ps1 A')
-              by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-                  destruct Hin as [Heqi | []]; inversion Heqi; subst;
-                  split; clear - Hx1S Hsfc HcAd Hgrc; fsetdec).
+              by (apply swaps_ptyp_fresh_id, swaps_dodge_one;
+                  clear - Hx1S Hsfc HcAd Hgrc; fsetdec).
             rewrite Hfx.
             apply swaps_ptyp_fresh_id. intros a0 b0 Hin.
             destruct (Hav2 a0 b0 Hin) as [Hka Hkb].

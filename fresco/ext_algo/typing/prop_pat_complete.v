@@ -864,10 +864,7 @@ Proof.
       (* the recursive answer's context, split at the runner's own marker *)
       destruct (e_pat_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]].
       assert (Hfix2a : swaps_atom ps2 (supply_fresh S0) = supply_fresh S0).
-      { apply swaps_atom_notin. intros a0 b0 Hin.
-        destruct (Hav2 a0 b0 Hin) as [Hka Hkb].
-        split; intro Heq0; [ apply Hka | apply Hkb ];
-          rewrite <- Heq0; clear; fsetdec. }
+      { apply (swaps_atom_dodge_in Hav2); clear; fsetdec. }
       assert (Hctx : pt_ctx r
                 = swaps_aenv (((xd, supply_fresh S0) :: nil) ++ ps2) Ξ
                   ++ (supply_fresh S0 ~ abind_var_skl pskl_ghost)
@@ -948,26 +945,22 @@ Proof.
       assert (HfixCtx : swaps_aenv ((swaps_atom ps1 xd,
                           supply_fresh (sp_supply rs)) :: nil) (sp_ctx rs)
                         = sp_ctx rs)
-        by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            split; clear - Hx1S Hsf Hcvs; fsetdec);
+        by (apply swaps_aenv_fresh_id, swaps_dodge_one;
+            clear - Hx1S Hsf Hcvs; fsetdec);
       assert (HfixDom : swaps_pskl ((swaps_atom ps1 xd,
                           supply_fresh (sp_supply rs)) :: nil) (sp_dom rs)
                         = sp_dom rs)
-        by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            split; clear - Hx1S Hsf Hpqs; fsetdec);
+        by (apply swaps_pskl_fresh_id, swaps_dodge_one;
+            clear - Hx1S Hsf Hpqs; fsetdec);
       assert (HfixCod : swaps_pskl ((swaps_atom ps1 xd,
                           supply_fresh (sp_supply rs)) :: nil) (sp_cod rs)
                         = sp_cod rs)
-        by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            split; clear - Hx1S Hsf Hpqs; fsetdec);
+        by (apply swaps_pskl_fresh_id, swaps_dodge_one;
+            clear - Hx1S Hsf Hpqs; fsetdec);
       assert (Hfixe2 : swaps_exp ((swaps_atom ps1 xd,
                          supply_fresh (sp_supply rs)) :: nil) e1 = e1)
-        by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            split; clear - Hx10 Hsf Hgrs Hcov; simpl in *; fsetdec);
+        by (apply swaps_exp_fresh_id, swaps_dodge_one;
+            clear - Hx10 Hsf Hgrs Hcov; simpl in *; fsetdec);
       destruct (e_pat_swaps ((swaps_atom ps1 xd,
                     supply_fresh (sp_supply rs)) :: nil) Db1
                   (S0' := add (supply_fresh (sp_supply rs)) (sp_supply rs)))
@@ -1019,10 +1012,7 @@ Proof.
       destruct (e_pat_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]];
       assert (Hfix2a : swaps_atom ps2 (supply_fresh (sp_supply rs))
                        = supply_fresh (sp_supply rs))
-        by (apply swaps_atom_notin; intros a0 b0 Hin;
-            destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-            split; intro Heq0; [ apply Hka | apply Hkb ];
-            rewrite <- Heq0; clear; fsetdec);
+        by (apply (swaps_atom_dodge_in Hav2); clear; fsetdec);
       assert (Hfix2P : swaps_pskl ps2 (sp_dom rs) = sp_dom rs)
         by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav2);
             clear - Hpqs; fsetdec);
@@ -1142,10 +1132,7 @@ Proof.
         HΘ1 HD1 Hu1 Hcov1 Db1 r Hr ps2 Hav2 HS2 HT2 HQ2.
       destruct (e_pat_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]].
       assert (Hfix2a : swaps_atom ps2 (supply_fresh S0) = supply_fresh S0).
-      { apply swaps_atom_notin. intros a0 b0 Hin.
-        destruct (Hav2 a0 b0 Hin) as [Hka Hkb].
-        split; intro Heq0; [ apply Hka | apply Hkb ];
-          rewrite <- Heq0; clear; fsetdec. }
+      { apply (swaps_atom_dodge_in Hav2); clear; fsetdec. }
       assert (Hfix2A : swaps_ptyp ps2 A = A).
       { apply swaps_ptyp_fresh_id. intros a0 b0 Hin.
         destruct (Hav2 a0 b0 Hin) as [Hka Hkb].
@@ -1300,25 +1287,21 @@ Proof.
       assert (HfixCtx : swaps_aenv ((swaps_atom psc (swaps_atom ps1 xd),
                           supply_fresh (cs_supply rc)) :: nil) (cs_ctx rc)
                         = cs_ctx rc)
-        by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            split; clear - Hx1S Hsf Hcvc; fsetdec);
+        by (apply swaps_aenv_fresh_id, swaps_dodge_one;
+            clear - Hx1S Hsf Hcvc; fsetdec);
       assert (HfixCod : swaps_pskl ((swaps_atom psc (swaps_atom ps1 xd),
                           supply_fresh (cs_supply rc)) :: nil) (sp_cod rs)
                         = sp_cod rs)
-        by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            split; clear - Hx1S Hsf Hpqs Hgrc; fsetdec);
+        by (apply swaps_pskl_fresh_id, swaps_dodge_one;
+            clear - Hx1S Hsf Hpqs Hgrc; fsetdec);
       assert (HfixA3 : swaps_ptyp ((swaps_atom psc (swaps_atom ps1 xd),
                          supply_fresh (cs_supply rc)) :: nil) A = A)
-        by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            split; clear - Hx10 Hsf Hgrs Hgrc Hcov; simpl in *; fsetdec);
+        by (apply swaps_ptyp_fresh_id, swaps_dodge_one;
+            clear - Hx10 Hsf Hgrs Hgrc Hcov; simpl in *; fsetdec);
       assert (Hfixe2 : swaps_exp ((swaps_atom psc (swaps_atom ps1 xd),
                          supply_fresh (cs_supply rc)) :: nil) e1 = e1)
-        by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            split; clear - Hx10 Hsf Hgrs Hgrc Hcov; simpl in *; fsetdec);
+        by (apply swaps_exp_fresh_id, swaps_dodge_one;
+            clear - Hx10 Hsf Hgrs Hgrc Hcov; simpl in *; fsetdec);
       destruct (e_pat_swaps ((swaps_atom psc (swaps_atom ps1 xd),
                     supply_fresh (cs_supply rc)) :: nil) Db1
                   (S0' := add (supply_fresh (cs_supply rc)) (cs_supply rc)))
@@ -1371,10 +1354,7 @@ Proof.
       destruct (e_pat_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]];
       assert (Hfix2a : swaps_atom ps2 (supply_fresh (cs_supply rc))
                        = supply_fresh (cs_supply rc))
-        by (apply swaps_atom_notin; intros a0 b0 Hin;
-            destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-            split; intro Heq0; [ apply Hka | apply Hkb ];
-            rewrite <- Heq0; clear; fsetdec);
+        by (apply (swaps_atom_dodge_in Hav2); clear; fsetdec);
       assert (Hfix2A : swaps_ptyp ps2 A = A)
         by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2);
             clear - Hcov Hgrs Hgrc; simpl in *; fsetdec);
