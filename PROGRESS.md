@@ -181,6 +181,26 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share term-opener transport in executable typing
+
+Add `e_typing_draw_term`: a typing derivation whose inputs are scoped by
+the supply can move its fresh term opener to the runner's draw while
+fixing those inputs. The lemma returns the transported derivation, its
+supply equation, and the context/type equalities used by closing proofs.
+
+Replace four repeated swap-and-rewrite sequences in the ordinary and
+annotated abstraction cases, at both checking and inference modes. Each
+caller now supplies its own scope bound and uses the common transport.
+
+Net reduction: **121 physical Coq lines / 124 nonblank, noncomment lines**.
+All 26 existing theorem statements are unchanged. No inline tactic terms
+added; executable definitions are unchanged.
+
+Validation: focused compilation and final `make coq` passed. All 34
+headline assumption reports are closed under the global context, with no
+axiom reports or errors. Statement comparison and `git diff --check` passed.
+
+
 ## 2026-10-11 — Share the executable typing forall-check step
 
 Extract `typing_complete_forall_step` from the ordinary and annotated

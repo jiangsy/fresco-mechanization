@@ -469,6 +469,56 @@ Local Ltac kill_pat_call Hp0 He0 HΘ0 HD0 Hu0 Hcov0 Hder r Hr ps
       | discriminate ]
   end.
 
+(** Move a term opener to the runner's draw while fixing all scoped inputs. *)
+Lemma e_typing_draw_term : forall S m Θ P e A x Sd Ξ Θd B,
+  x `notin` S ->
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_ptyp A
+    ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S ->
+  {{ (add x S) ↝ Sd ⊨ ((x ~ abind_var_typ A) ++ Θ)
+     ⊢[ m ; P ] open_exp_wrt_exp e (exp_var_f x) ⦂ B
+     ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θd) }}e ->
+  exists Sd', Sd' [=] swaps_atoms ((x, supply_fresh S) :: nil) Sd /\
+    swaps_aenv ((x, supply_fresh S) :: nil) Θ = Θ /\
+    swaps_ptyp ((x, supply_fresh S) :: nil) A = A /\
+    {{ (add (supply_fresh S) S) ↝ Sd' ⊨
+       ((supply_fresh S ~ abind_var_typ A) ++ Θ)
+       ⊢[ m ; P ] open_exp_wrt_exp e (exp_var_f (supply_fresh S))
+       ⦂ swaps_ptyp ((x, supply_fresh S) :: nil) B
+       ⊣ (swaps_aenv ((x, supply_fresh S) :: nil) Ξ
+           ++ (supply_fresh S ~ abind_var_typ A)
+           ++ swaps_aenv ((x, supply_fresh S) :: nil) Θd) }}e.
+Proof.
+  intros * Hx Hscope Hd.
+  pose proof (supply_fresh_notin S) as Hfresh.
+  assert (Hpair : forall a b, In (a, b) ((x, supply_fresh S) :: nil) ->
+    a `notin` S /\ b `notin` S).
+  { intros a b [Heq | []]. inversion Heq; subst; auto. }
+  assert (Hatom : swaps_atom ((x, supply_fresh S) :: nil) x = supply_fresh S)
+    by (cbn [swaps_atom]; apply swap_atom_l).
+  assert (HΘ : swaps_aenv ((x, supply_fresh S) :: nil) Θ = Θ).
+  { apply swaps_aenv_fresh_id. intros a b Hin.
+    destruct (Hpair _ _ Hin) as [Ha Hb]. split; clear - Ha Hb Hscope; fsetdec. }
+  assert (HA : swaps_ptyp ((x, supply_fresh S) :: nil) A = A).
+  { apply swaps_ptyp_fresh_id. intros a b Hin.
+    destruct (Hpair _ _ Hin) as [Ha Hb]. split; clear - Ha Hb Hscope; fsetdec. }
+  assert (HP : swaps_pskl ((x, supply_fresh S) :: nil) P = P).
+  { apply swaps_pskl_fresh_id. intros a b Hin.
+    destruct (Hpair _ _ Hin) as [Ha Hb]. split; clear - Ha Hb Hscope; fsetdec. }
+  assert (He : swaps_exp ((x, supply_fresh S) :: nil) e = e).
+  { apply swaps_exp_fresh_id. intros a b Hin.
+    destruct (Hpair _ _ Hin) as [Ha Hb]. split; clear - Ha Hb Hscope; fsetdec. }
+  destruct (e_typing_swaps ((x, supply_fresh S) :: nil) Hd
+    (S0' := add (supply_fresh S) S)) as (Sd' & HS & Hd').
+  { cbn [swaps_atoms]. rewrite swap_atoms_add, swap_atom_l.
+    rewrite swap_atoms_notin by (clear - Hx Hfresh; fsetdec). reflexivity. }
+  rewrite !swaps_aenv_app_dist, !swaps_aenv_one_var_typ,
+    swaps_exp_open_var, Hatom, HΘ, HA, HP, He in Hd'.
+  exists Sd'. split; [ exact HS | ].
+  split; [ exact HΘ | ]. split; [ exact HA | exact Hd' ].
+Qed.
+
+Arguments e_typing_draw_term {S m Θ P} e {A x Sd Ξ Θd B} _ _ _.
+
 (** The forall-check step is independent of the abstraction constructor.
     Move its opener to the supply draw, check the body, and close its result. *)
 Lemma typing_complete_forall_step : forall S0 Θ0 A0 e Sd Θd A Ξ αd,
@@ -823,55 +873,17 @@ Proof.
         rewrite ! swaps_exp_open_var, ! swaps_pskl_ptyp_to_pskl in Db1.
         rewrite HT1, Hfixe1 in Db1.
         (* onto the runner's own draw *)
-        assert (Hsx1 : swaps_atom ((swaps_atom ps1 xd,
-                          supply_fresh (sp_supply rs)) :: nil)
-                         (swaps_atom ps1 xd) = supply_fresh (sp_supply rs))
-          by (cbn [swaps_atom]; unfold swap_atom;
-              destruct (swaps_atom ps1 xd == swaps_atom ps1 xd);
-              [ reflexivity | congruence ]).
         assert (HcAd : ftvar_in_ptyp (swaps_ptyp ps1 A) [<=] sp_supply rs).
         { pose proof (ftvar_ptyp_to_pskl (swaps_ptyp ps1 A)) as Hpa.
           rewrite HdomR in Hpqs. clear - Hpqs Hpa. fsetdec. }
         assert (HcBd : ftvar_in_ptyp (swaps_ptyp ps1 B) [<=] sp_supply rs).
         { pose proof (ftvar_ptyp_to_pskl (swaps_ptyp ps1 B)) as Hpb.
           rewrite HcodR in Hpqs. clear - Hpqs Hpb. fsetdec. }
-        assert (HfixCtx : swaps_aenv ((swaps_atom ps1 xd,
-                            supply_fresh (sp_supply rs)) :: nil) (sp_ctx rs)
-                          = sp_ctx rs)
-          by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-              destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-              split; clear - Hx1S Hsfs Hcvs; fsetdec).
-        assert (HfixAd : swaps_ptyp ((swaps_atom ps1 xd,
-                           supply_fresh (sp_supply rs)) :: nil)
-                           (swaps_ptyp ps1 A) = swaps_ptyp ps1 A)
-          by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-              destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-              split; clear - Hx1S Hsfs HcAd; fsetdec).
-        assert (HfixBd : swaps_ptyp ((swaps_atom ps1 xd,
-                           supply_fresh (sp_supply rs)) :: nil)
-                           (swaps_ptyp ps1 B) = swaps_ptyp ps1 B)
-          by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-              destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-              split; clear - Hx1S Hsfs HcBd; fsetdec).
-        assert (Hfixe2 : swaps_exp ((swaps_atom ps1 xd,
-                           supply_fresh (sp_supply rs)) :: nil) e1 = e1)
-          by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-              destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-              split; clear - Hx10 Hsfs Hgrs Hcov; simpl in *; fsetdec).
-        destruct (e_typing_swaps ((swaps_atom ps1 xd,
-                      supply_fresh (sp_supply rs)) :: nil) Db1
-                    (S0' := add (supply_fresh (sp_supply rs))
-                              (sp_supply rs))) as [Sd2 [HSd2 Db2]].
-        { cbn [swaps_atoms]. rewrite swap_atoms_add,
-            (swap_atoms_notin (swaps_atom ps1 xd)
-               (supply_fresh (sp_supply rs)) (sp_supply rs))
-              by (clear - Hx1S Hsfs; fsetdec).
-          unfold swap_atom.
-          destruct (swaps_atom ps1 xd == swaps_atom ps1 xd);
-            [ reflexivity | congruence ]. }
-        rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ in Db2.
-        rewrite ! swaps_exp_open_var, ! swaps_pskl_ptyp_to_pskl in Db2.
-        rewrite ! Hsx1, ! HfixCtx, ! HfixAd, ! HfixBd, ! Hfixe2 in Db2.
+        assert (HdrawScope : ftvar_in_aenv (sp_ctx rs) ∪ ftvar_in_pskl (ptyp_to_pskl (swaps_ptyp ps1 B))
+          ∪ ftvar_in_ptyp (swaps_ptyp ps1 A) ∪ fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] sp_supply rs)
+          by (rewrite ftvar_ptyp_to_pskl; clear - Hcvs HcAd HcBd Hcov Hgrs; simpl in *; fsetdec).
+        destruct (e_typing_draw_term e1 Hx1S HdrawScope Db1)
+          as (Sd2 & HSd2 & HfixCtx & HfixAd & Db2).
         (* the recursive call's own side conditions *)
         assert (Hsfd : supply_fresh (sp_supply rs) `notin` dom (sp_ctx rs))
           by (clear - Hsfs Hdoms Hcvs; fsetdec).
@@ -1101,62 +1113,11 @@ Proof.
       rewrite swaps_exp_app in Hfixe1;
       rewrite Hfixe1 in Db1;
       (* onto the runner's own draw *)
-      assert (Hsx1 : swaps_atom ((swaps_atom psg (swaps_atom ps1 xd),
-                        supply_fresh (gr_supply rg)) :: nil)
-                       (swaps_atom psg (swaps_atom ps1 xd))
-                     = supply_fresh (gr_supply rg))
-        by (cbn [swaps_atom]; unfold swap_atom;
-            destruct (swaps_atom psg (swaps_atom ps1 xd)
-                      == swaps_atom psg (swaps_atom ps1 xd));
-            [ reflexivity | congruence ]);
-      assert (HfixCtx : swaps_aenv ((swaps_atom psg (swaps_atom ps1 xd),
-                          supply_fresh (gr_supply rg)) :: nil) (sp_ctx rs)
-                        = sp_ctx rs)
-        by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            split; clear - Hx1S Hsf Hcvs Hgrs Hgrg; fsetdec);
-      assert (HfixBlk : swaps_aenv ((swaps_atom psg (swaps_atom ps1 xd),
-                          supply_fresh (gr_supply rg)) :: nil) (gr_block rg)
-                        = gr_block rg)
-        by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            split; clear - Hx1S Hsf HdomG HftG; fsetdec);
-      assert (HfixTy : swaps_ptyp ((swaps_atom psg (swaps_atom ps1 xd),
-                         supply_fresh (gr_supply rg)) :: nil) (gr_type rg)
-                       = gr_type rg)
-        by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            split; clear - Hx1S Hsf HftyG; fsetdec);
-      assert (HfixCod : swaps_pskl ((swaps_atom psg (swaps_atom ps1 xd),
-                          supply_fresh (gr_supply rg)) :: nil) (sp_cod rs)
-                        = sp_cod rs)
-        by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            split; clear - Hx1S Hsf Hpqs Hgrg; fsetdec);
-      assert (Hfixe2 : swaps_exp ((swaps_atom psg (swaps_atom ps1 xd),
-                         supply_fresh (gr_supply rg)) :: nil) e1 = e1)
-        by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            split; clear - Hx10 Hsf Hgrs Hgrg Hcov; simpl in *; fsetdec);
-      destruct (e_typing_swaps ((swaps_atom psg (swaps_atom ps1 xd),
-                    supply_fresh (gr_supply rg)) :: nil) Db1
-                  (S0' := add (supply_fresh (gr_supply rg)) (gr_supply rg)))
-        as [Sd2 [HSd2 Db2]];
-      [ cbn [swaps_atoms];
-        rewrite swap_atoms_add,
-          (swap_atoms_notin (swaps_atom psg (swaps_atom ps1 xd))
-             (supply_fresh (gr_supply rg)) (gr_supply rg))
-            by (clear - Hx1S Hsf; fsetdec);
-        unfold swap_atom;
-        destruct (swaps_atom psg (swaps_atom ps1 xd)
-                  == swaps_atom psg (swaps_atom ps1 xd));
-        [ reflexivity | congruence ]
-      | ];
-      rewrite ! swaps_aenv_app_dist in Db2;
-      rewrite ! swaps_aenv_one_var_typ in Db2;
-      rewrite ! swaps_exp_open_var in Db2;
-      rewrite ! Hsx1, ! HfixCtx, ! HfixBlk, ! HfixTy, ! HfixCod,
-        ! Hfixe2 in Db2;
+      assert (HdrawScope : ftvar_in_aenv (gr_block rg ++ sp_ctx rs) ∪ ftvar_in_pskl (sp_cod rs)
+        ∪ ftvar_in_ptyp (gr_type rg) ∪ fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] gr_supply rg)
+        by (rewrite ftvar_in_aenv_app; clear - HftG HdomG HftyG Hcvs Hpqs Hgrs Hgrg Hcov; simpl in *; fsetdec);
+      destruct (e_typing_draw_term e1 Hx1S HdrawScope Db1)
+        as (Sd2 & HSd2 & HfixCtx & HfixTy & Db2);
       (* the recursive call's own side conditions *)
       assert (Hublk : uniq (gr_block rg ++ sp_ctx rs))
         by (eapply e_guess_mono_uniq_app;
@@ -1489,51 +1450,11 @@ Proof.
         rewrite swaps_exp_app in Hfixe1. rewrite Hfixe1 in Db1.
         rewrite ! swaps_ptyp_app in HfixA2. rewrite HfixA2 in Db1.
         (* onto the runner's own draw *)
-        assert (Hsx1 : swaps_atom ((swaps_atom psc (swaps_atom ps1 xd),
-                          supply_fresh (cs_supply rc)) :: nil)
-                         (swaps_atom psc (swaps_atom ps1 xd))
-                       = supply_fresh (cs_supply rc))
-          by (cbn [swaps_atom]; unfold swap_atom;
-              destruct (swaps_atom psc (swaps_atom ps1 xd)
-                        == swaps_atom psc (swaps_atom ps1 xd));
-              [ reflexivity | congruence ]).
-        assert (HfixCtx : swaps_aenv ((swaps_atom psc (swaps_atom ps1 xd),
-                            supply_fresh (cs_supply rc)) :: nil) (cs_ctx rc)
-                          = cs_ctx rc)
-          by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-              destruct Hin as [Heqi | []]; inversion Heqi; subst;
-              split; clear - Hx1S Hsfc Hcvc; fsetdec).
-        assert (HfixAnn : swaps_ptyp ((swaps_atom psc (swaps_atom ps1 xd),
-                            supply_fresh (cs_supply rc)) :: nil) A = A)
-          by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-              destruct Hin as [Heqi | []]; inversion Heqi; subst;
-              split; clear - Hx10 Hsfc Hgrs Hgrc Hcov; simpl in *; fsetdec).
-        assert (HfixBb : swaps_ptyp ((swaps_atom psc (swaps_atom ps1 xd),
-                           supply_fresh (cs_supply rc)) :: nil)
-                           (swaps_ptyp ps1 B) = swaps_ptyp ps1 B)
-          by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-              destruct Hin as [Heqi | []]; inversion Heqi; subst;
-              split; clear - Hx1S Hsfc HcBd Hgrc; fsetdec).
-        assert (Hfixe2 : swaps_exp ((swaps_atom psc (swaps_atom ps1 xd),
-                           supply_fresh (cs_supply rc)) :: nil) e1 = e1)
-          by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-              destruct Hin as [Heqi | []]; inversion Heqi; subst;
-              split; clear - Hx10 Hsfc Hgrs Hgrc Hcov; simpl in *; fsetdec).
-        destruct (e_typing_swaps ((swaps_atom psc (swaps_atom ps1 xd),
-                      supply_fresh (cs_supply rc)) :: nil) Db1
-                    (S0' := add (supply_fresh (cs_supply rc))
-                              (cs_supply rc))) as [Sd2 [HSd2 Db2]].
-        { cbn [swaps_atoms]. rewrite swap_atoms_add,
-            (swap_atoms_notin (swaps_atom psc (swaps_atom ps1 xd))
-               (supply_fresh (cs_supply rc)) (cs_supply rc))
-              by (clear - Hx1S Hsfc; fsetdec).
-          unfold swap_atom.
-          destruct (swaps_atom psc (swaps_atom ps1 xd)
-                    == swaps_atom psc (swaps_atom ps1 xd));
-            [ reflexivity | congruence ]. }
-        rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ in Db2.
-        rewrite ! swaps_exp_open_var, ! swaps_pskl_ptyp_to_pskl in Db2.
-        rewrite ! Hsx1, ! HfixCtx, ! HfixAnn, ! HfixBb, ! Hfixe2 in Db2.
+        assert (HdrawScope : ftvar_in_aenv (cs_ctx rc) ∪ ftvar_in_pskl (ptyp_to_pskl (swaps_ptyp ps1 B))
+          ∪ ftvar_in_ptyp (A) ∪ fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] cs_supply rc)
+          by (rewrite ftvar_ptyp_to_pskl; clear - Hcvc HcBd Hcov Hgrs Hgrc; simpl in *; fsetdec).
+        destruct (e_typing_draw_term e1 Hx1S HdrawScope Db1)
+          as (Sd2 & HSd2 & HfixCtx & HfixAnn & Db2).
         (* the recursive call's own side conditions *)
         assert (Hsfd : supply_fresh (cs_supply rc) `notin` dom (cs_ctx rc))
           by (clear - Hsfc Hdoms Hcvc; fsetdec).
@@ -1792,53 +1713,11 @@ Proof.
       rewrite swaps_exp_app in Hfixe1;
       rewrite ! swaps_ptyp_app in HfixA2;
       rewrite HQ1, HTc, HfixQ0, Hfixe1, HfixA2 in Db1;
-      assert (Hsx1 : swaps_atom ((swaps_atom psc (swaps_atom ps1 xd),
-                        supply_fresh (cs_supply rc)) :: nil)
-                       (swaps_atom psc (swaps_atom ps1 xd))
-                     = supply_fresh (cs_supply rc))
-        by (cbn [swaps_atom]; unfold swap_atom;
-            destruct (swaps_atom psc (swaps_atom ps1 xd)
-                      == swaps_atom psc (swaps_atom ps1 xd));
-            [ reflexivity | congruence ]);
-      assert (HfixCtx : swaps_aenv ((swaps_atom psc (swaps_atom ps1 xd),
-                          supply_fresh (cs_supply rc)) :: nil) (cs_ctx rc)
-                        = cs_ctx rc)
-        by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heqi | []]; inversion Heqi; subst;
-            split; clear - Hx1S Hsfc Hcvc; fsetdec);
-      assert (HfixCod : swaps_pskl ((swaps_atom psc (swaps_atom ps1 xd),
-                          supply_fresh (cs_supply rc)) :: nil) (sp_cod rs)
-                        = sp_cod rs)
-        by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heqi | []]; inversion Heqi; subst;
-            split; clear - Hx1S Hsfc Hpqs Hgrc; fsetdec);
-      assert (HfixAnn : swaps_ptyp ((swaps_atom psc (swaps_atom ps1 xd),
-                          supply_fresh (cs_supply rc)) :: nil) A = A)
-        by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heqi | []]; inversion Heqi; subst;
-            split; clear - Hx10 Hsfc Hgrs Hgrc Hcov; simpl in *; fsetdec);
-      assert (Hfixe2 : swaps_exp ((swaps_atom psc (swaps_atom ps1 xd),
-                         supply_fresh (cs_supply rc)) :: nil) e1 = e1)
-        by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heqi | []]; inversion Heqi; subst;
-            split; clear - Hx10 Hsfc Hgrs Hgrc Hcov; simpl in *; fsetdec);
-      destruct (e_typing_swaps ((swaps_atom psc (swaps_atom ps1 xd),
-                    supply_fresh (cs_supply rc)) :: nil) Db1
-                  (S0' := add (supply_fresh (cs_supply rc)) (cs_supply rc)))
-        as [Sd2 [HSd2 Db2]];
-      [ cbn [swaps_atoms];
-        rewrite swap_atoms_add,
-          (swap_atoms_notin (swaps_atom psc (swaps_atom ps1 xd))
-             (supply_fresh (cs_supply rc)) (cs_supply rc))
-            by (clear - Hx1S Hsfc; fsetdec);
-        unfold swap_atom;
-        destruct (swaps_atom psc (swaps_atom ps1 xd)
-                  == swaps_atom psc (swaps_atom ps1 xd));
-        [ reflexivity | congruence ]
-      | ];
-      rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ in Db2;
-      rewrite ! swaps_exp_open_var in Db2;
-      rewrite ! Hsx1, ! HfixCtx, ! HfixCod, ! HfixAnn, ! Hfixe2 in Db2;
+      assert (HdrawScope : ftvar_in_aenv (cs_ctx rc) ∪ ftvar_in_pskl (sp_cod rs)
+        ∪ ftvar_in_ptyp (A) ∪ fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] cs_supply rc)
+        by ( clear - Hcvc Hpqs Hcov Hgrs Hgrc; simpl in *; fsetdec);
+      destruct (e_typing_draw_term e1 Hx1S HdrawScope Db1)
+        as (Sd2 & HSd2 & HfixCtx & HfixAnn & Db2);
       assert (Hsfd : supply_fresh (cs_supply rc) `notin` dom (cs_ctx rc))
         by (clear - Hsfc Hdoms Hcvc; fsetdec);
       assert (Hu1 : uniq ((supply_fresh (cs_supply rc)
