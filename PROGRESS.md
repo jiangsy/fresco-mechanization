@@ -181,6 +181,30 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share suffix removal across typing and subtyping lifting
+
+Add three shared facts to `prop_lift_context`: restoring the caller's
+relation after restricting new pairs (`restrict_l_app_restore`), preserving
+a relation extension under restriction (`rel_ext_restrict_l`), and locating
+surviving pairs in the surviving contexts (`rel_aenv_restrict_l_dom`). The
+last fact uses injectivity and the suffix relation to show that removing
+the left suffix also excludes the corresponding right suffix.
+
+Use these facts in both abstraction-check typing cases and the forall-right
+subtyping and typing cases. Remove repeated pair-membership scaffolding,
+injectivity arguments, and extension restriction proofs. Keep the distinct
+split/consistency domain bounds explicit at their call sites.
+
+Net reduction: **93 physical Coq lines / 97 nonblank, noncomment lines**.
+All 125 existing theorem statements in the three changed files are
+unchanged. No inline tactic terms added.
+
+Validation: dependency compilation through `prop_lift_typing` and final
+`make coq` passed. All 34 headline assumption reports are closed under the
+global context, with no axiom reports or errors. Statement comparison and
+`git diff --check` passed.
+
+
 ## 2026-10-11 — Remove deferred consistency case continuations
 
 Normalize sorted rigid substitution into replacement-leaf or structural

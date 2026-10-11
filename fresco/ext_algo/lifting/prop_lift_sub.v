@@ -753,27 +753,17 @@ Proof.
     remember (restrict_l (dom Ξ) ρe) as ρeo eqn:Eρeo.
     assert (Hρeoincl : forall a b0, In (a, b0) ρeo -> In (a, b0) ρe)
       by (subst ρeo; intros a b0 Hin; eapply restrict_l_incl; exact Hin).
-    assert (HρeoΞ : forall a b0, In (a, b0) ρeo -> a `notin` dom Ξ).
-    { subst ρeo. intros a b0 Hin Ha.
-      apply (restrict_l_notin ρe Ha). eapply cols_l_in; exact Hin. }
     assert (Hdomeo : forall a b0, In (a, b0) ρeo ->
               a `in` dom Θ1 /\ b0 `in` dom Θ1').
-    { intros a b0 Hin.
-      pose proof (Hρeoincl _ _ Hin) as Hin'.
-      pose proof (HρeoΞ _ _ Hin) as HaΞ.
-      destruct (Hdomout _ _ Hin') as [Hd1 Hd2].
-      destruct Hext as [Hxfr _]. destruct (Hxfr _ _ Hin') as [Hna Hnb].
-      assert (Hane : a <> α) by (intros ->; apply Hna; simpl; clear; fsetdec).
-      assert (Hbne : b0 <> α2) by (intros ->; apply Hnb; clear; fsetdec).
-      assert (HbΞ2 : b0 `notin` dom Ξ2).
-      { intros Hb2. destruct (rel_aenv_dom_r_inv HrΞ2 Hb2) as (a'' & Ha'' & Hat'').
-        assert (Ea : a'' = a).
-        { apply (Hinjout a'' a b0 Hat'').
-          apply rel_atom__pair. apply in_or_app; left; exact Hin'. }
-        subst a''. contradiction. }
-      simpl_env in Hd1. simpl_env in Hd2.
-      split; [ clear - Hd1 HaΞ Hane; fsetdec
-             | clear - Hd2 HbΞ2 Hbne; fsetdec ]. }
+    { subst ρeo. eapply rel_aenv_restrict_l_dom;
+        [ exact HrΞ2 | exact Hinjout
+        | intros a b Hin; apply in_or_app; auto | ].
+      intros a b Hin. destruct (Hdomout _ _ Hin) as [Hd1 Hd2].
+      destruct Hext as [Hfresh _]. destruct (Hfresh _ _ Hin) as [Hna Hnb].
+      assert (Ha : a <> α) by (intros ->; apply Hna; simpl; clear; fsetdec).
+      assert (Hb : b <> α2) by (intros ->; apply Hnb; clear; fsetdec).
+      simpl_env in Hd1. simpl_env in Hd2. rewrite !dom_app.
+      split; [ clear - Hd1 Ha; fsetdec | clear - Hd2 Hb; fsetdec ]. }
     exists S1, ρeo, Θ1', (pskl_all_syn B2).
     split; [ exact Dc | ].
     (* the CONTEXT relation: drop the JUNK pairs and the OPENER pair, then
@@ -785,15 +775,8 @@ Proof.
               In (a, b0) (restrict_l (dom Ξ)
                             (ρe ++ restrict_pairs α α2 ρ0)) ->
               In (a, b0) (ρeo ++ ρ)).
-    { intros a b0 Hin.
-      assert (HaΞ : a `notin` dom Ξ).
-      { intros Ha. apply (restrict_l_notin
-                           (ρe ++ restrict_pairs α α2 ρ0) Ha).
-        eapply cols_l_in; exact Hin. }
-      apply restrict_l_incl in Hin. apply in_app_or in Hin.
-      apply in_or_app. destruct Hin as [Hin | Hin].
-      - left. subst ρeo. apply restrict_l_in; assumption.
-      - right. apply Hρ0incl. eapply restrict_pairs_incl; exact Hin. }
+    { subst ρeo. apply restrict_l_app_restore.
+      intros a b Hin. apply Hρ0incl. eapply restrict_pairs_incl; exact Hin. }
     assert (HrΘfin : rel_aenv (ρeo ++ ρ) V Θ1 Θ1').
     { eapply rel_aenv_mono.
       - eapply rel_aenv_restrict_l; [ | exact HΞf1 ].

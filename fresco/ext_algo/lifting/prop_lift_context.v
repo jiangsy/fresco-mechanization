@@ -1488,6 +1488,56 @@ Proof.
   rewrite <- AtomSetFacts.not_mem_iff in E. contradiction.
 Qed.
 
+(** Restore the caller's relation after discarding newly generated names. *)
+Lemma restrict_l_app_restore : forall D ρe ρ0 ρ,
+  (forall a b, In (a, b) ρ0 -> In (a, b) ρ) ->
+  forall a b, In (a, b) (restrict_l D (ρe ++ ρ0)) ->
+    In (a, b) (restrict_l D ρe ++ ρ).
+Proof.
+  intros * Hbase a b Hin.
+  assert (Ha : a `notin` D).
+  { intros Ha. apply (restrict_l_notin (ρe ++ ρ0) Ha).
+    eapply cols_l_in; exact Hin. }
+  apply restrict_l_incl in Hin. apply in_app_or in Hin.
+  destruct Hin as [Hin | Hin]; apply in_or_app;
+    [ left; apply restrict_l_in; auto | right; apply Hbase; exact Hin ].
+Qed.
+
+Lemma rel_ext_restrict_l : forall D ρ W S,
+  rel_ext ρ W S -> rel_ext (restrict_l D ρ) W S.
+Proof.
+  intros * (Hfresh & Hinj & Hfun). split; [ | split ].
+  - intros a b Hin. apply Hfresh. eapply restrict_l_incl; exact Hin.
+  - intros a1 a2 b H1 H2. eapply Hinj;
+      eapply restrict_l_incl; eassumption.
+  - intros a b1 b2 H1 H2. eapply Hfun;
+      eapply restrict_l_incl; eassumption.
+Qed.
+
+(** Injectivity makes left-suffix removal discard the corresponding right
+    suffix too, so every retained pair belongs to the surviving contexts. *)
+Lemma rel_aenv_restrict_l_dom : forall ρ V Ξ Ξ' Θ Θ' ρe,
+  rel_aenv ρ V Ξ Ξ' -> rel_inj ρ V ->
+  (forall a b, In (a, b) ρe -> In (a, b) ρ) ->
+  (forall a b, In (a, b) ρe ->
+    a `in` dom (Ξ ++ Θ) /\ b `in` dom (Ξ' ++ Θ')) ->
+  forall a b, In (a, b) (restrict_l (dom Ξ) ρe) ->
+    a `in` dom Θ /\ b `in` dom Θ'.
+Proof.
+  intros * Hrel Hinj Hincl Hdom a b Hin.
+  assert (Ha : a `notin` dom Ξ).
+  { intros Ha. apply (restrict_l_notin ρe Ha). eapply cols_l_in; exact Hin. }
+  apply restrict_l_incl in Hin.
+  assert (Hb : b `notin` dom Ξ').
+  { intros Hb. destruct (rel_aenv_dom_r_inv Hrel Hb) as (a' & Ha' & Hat).
+    assert (Heq : a' = a).
+    { eapply Hinj; [ exact Hat | constructor; apply Hincl; exact Hin ]. }
+    subst a'. exact (Ha Ha'). }
+  destruct (Hdom _ _ Hin) as [Hd1 Hd2].
+  rewrite dom_app in Hd1, Hd2.
+  split; [ clear - Hd1 Ha; fsetdec | clear - Hd2 Hb; fsetdec ].
+Qed.
+
 Lemma cols_l_restrict_l : forall D ρ, cols_l (restrict_l D ρ) [<=] cols_l ρ.
 Proof.
   intros D ρ x Hx. destruct (cols_l_in_inv _ _ Hx) as [y Hin].
