@@ -1460,35 +1460,16 @@ Proof.
     (* now lift the equality solve to a subtyping one, by Pi's shape *)
     destruct Pi as [ | nPi | β | Pi1 Pi2 | Pi' | | Pi' ].
     + (* ⟨⟩ : guarded *)
-      exists Ξ, Pa, κ'.
-      repeat (split;
-        [ solve [ apply a_solve_sub__check;
-                    [ exact HgfP0 | apply guarded_pskl__unit | exact HgP0
-                    | exact Hs ]
-                | exact Hfm | exact Hu | exact Hk | exact Hfr | exact HF
-                | exact HwfPa ] | ]).
-      exact Hp.
+      exists Ξ, Pa, κ'. repeat split; try assumption.
+      apply a_solve_sub__check; auto using guarded_pskl__unit.
     + inversion HwfPi.
     + (* a variable : guarded *)
-      exists Ξ, Pa, κ'.
-      repeat (split;
-        [ solve [ apply a_solve_sub__check;
-                    [ exact HgfP0 | apply guarded_pskl__var | exact HgP0
-                    | exact Hs ]
-                | exact Hfm | exact Hu | exact Hk | exact Hfr | exact HF
-                | exact HwfPa ] | ]).
-      exact Hp.
+      exists Ξ, Pa, κ'. repeat split; try assumption.
+      apply a_solve_sub__check; auto using guarded_pskl__var.
     + (* an arrow : guarded *)
-      assert (Hg : guarded_pskl (pskl_arrow Pi1 Pi2)).
-      { pose proof (a_wf_pskl_lc HwfPi) as Hlc; inversion Hlc; subst.
-        apply guarded_pskl__arrow; assumption. }
-      exists Ξ, Pa, κ'.
-      repeat (split;
-        [ solve [ apply a_solve_sub__check;
-                    [ exact HgfP0 | exact Hg | exact HgP0 | exact Hs ]
-                | exact Hfm | exact Hu | exact Hk | exact Hfr | exact HF
-                | exact HwfPa ] | ]).
-      exact Hp.
+      pose proof (a_wf_pskl_lc HwfPi) as Hlc; inversion Hlc; subst.
+      exists Ξ, Pa, κ'. repeat split; try assumption.
+      apply a_solve_sub__check; auto using guarded_pskl__arrow.
     + (* ∀ : IMPOSSIBLE — precision forces a ∀-shaped GUESS, and ρ maps a ∀
          to a ∀ (or to a variable at a leaf), never to the GUARDED subject
          this rule requires *)
@@ -1561,41 +1542,26 @@ Proof.
        binder from the outputs with P6-Cs's ∀-kit. *)
     pose proof (HmodTY eq_refl) as Hmod.
     inversion Hmod as [ | A HeqA | ]; subst.
+    (* a GUARDED source refines only to a guarded target, never this ∀ *)
+    assert (Hng : guarded_pskl (ptyp_to_pskl A) -> False).
+    { intros Hg.
+      assert (Hbad : guarded_bskl (bskl_all_inh B)).
+      { eapply ad_refine_syn_guarded_r_all.
+        - exact HwfΘ.
+        - exact Hrefine.
+        - apply guarded_pskl_to_bskl_inh.
+          eapply guarded_pskl_msubst_inc; eassumption.
+        - eexists; left; reflexivity. }
+      inversion Hbad. }
     destruct A as [ | nA | αA | A1 A2 | A0 ];
-      cbn [ptyp_to_pskl] in HwfP0, Hrefine, Hapart, Hpre |- *.
-    + (* ⟨⟩ : guarded *)
-      exfalso;
-        assert (Hbad : guarded_bskl (bskl_all_inh B));
-        [ eapply ad_refine_syn_guarded_r_all;
-            [ exact HwfΘ | exact Hrefine
-            | apply guarded_pskl_to_bskl_inh;
-              eapply guarded_pskl_msubst_inc;
-                [ exact Hκ | apply guarded_pskl__unit ]
-            | eexists; left; reflexivity ]
-        | inversion Hbad ].
+      cbn [ptyp_to_pskl] in HwfP0, Hrefine, Hapart, Hpre, Hng |- *.
+    + (* ⟨⟩ : guarded *) exfalso. apply Hng. apply guarded_pskl__unit.
     + (* a bound variable is not well-formed *) inversion HwfP0.
-    + (* a variable : guarded *)
-      exfalso;
-        assert (Hbad : guarded_bskl (bskl_all_inh B));
-        [ eapply ad_refine_syn_guarded_r_all;
-            [ exact HwfΘ | exact Hrefine
-            | apply guarded_pskl_to_bskl_inh;
-              eapply guarded_pskl_msubst_inc;
-                [ exact Hκ | apply guarded_pskl__var ]
-            | eexists; left; reflexivity ]
-        | inversion Hbad ].
+    + (* a variable : guarded *) exfalso. apply Hng. apply guarded_pskl__var.
     + (* an arrow : guarded *)
-      exfalso.
-      assert (Hg : guarded_pskl (pskl_arrow (ptyp_to_pskl A1) (ptyp_to_pskl A2))).
-      { pose proof (a_wf_pskl_lc HwfP0) as Hlc; inversion Hlc; subst.
-        apply guarded_pskl__arrow; assumption. }
-      assert (Hbad : guarded_bskl (bskl_all_inh B));
-        [ eapply ad_refine_syn_guarded_r_all;
-            [ exact HwfΘ | exact Hrefine
-            | apply guarded_pskl_to_bskl_inh;
-              eapply guarded_pskl_msubst_inc; [ exact Hκ | exact Hg ]
-            | eexists; left; reflexivity ]
-        | inversion Hbad ].
+      exfalso. apply Hng.
+      pose proof (a_wf_pskl_lc HwfP0) as Hlc; inversion Hlc; subst.
+      apply guarded_pskl__arrow; assumption.
     + (* P0 = ∀.P0' : the real row *)
       cbn [msubst_pskl pskl_to_bskl_inh] in Hrefine.
       inversion Hrefine; subst.
