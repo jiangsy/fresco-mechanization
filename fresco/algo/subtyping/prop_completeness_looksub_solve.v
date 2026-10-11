@@ -2106,10 +2106,7 @@ Proof.
         assert (Hgc1 : ftvar_in_a_cstrs C1 ∩ dom Ξc2 [=] empty)
           by (apply inter_dom_empty_of_forall; exact HΞ2C1).
         assert (Hgc2 : ftvar_in_a_cstrs C2 ∩ dom Ξc1 [=] empty).
-        { intros x; split; intros Hx; [ | clear - Hx; fsetdec ].
-          exfalso.
-          assert (Hx1 : x `in` ftvar_in_a_cstrs C2) by (clear - Hx; fsetdec).
-          assert (Hx2 : x `in` dom Ξc1) by (clear - Hx; fsetdec).
+        { apply inter_dom_empty_of_forall. intros x Hx2 Hx1.
           assert (Hxin : x `in` ftvar_in_aenv (Ξs1 ++ Ξc1 ++ Θ0)).
           { pose proof (dom_subset_ftvar_in_aenv (Ξs1 ++ Ξc1 ++ Θ0)) as Hds.
             repeat rewrite dom_app in Hds. clear - Hds Hx2; fsetdec. }
