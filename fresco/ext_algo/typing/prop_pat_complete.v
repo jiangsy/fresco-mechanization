@@ -878,11 +878,7 @@ Proof.
       by (clear - Hcov; simpl in *; fsetdec).
     kill_sub Ds Hu Hcovs r Hr ps Hav HS HT HQ.
     eexists; exists ps.
-    split; [ cbn [pat_answer proj1_sig]; reflexivity | ].
-    repeat apply conj; [ exact Hav
-            | cbn [pt_supply]; exact HS
-            | cbn [pt_ctx]; exact HT
-            | cbn [pt_skel]; exact HQ ].
+    exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
 
   - (* ============ a bound index is unreachable ============ *)
     exfalso. exact (e_pat_inv_var_b Hd).
@@ -906,11 +902,7 @@ Proof.
         by (clear - Hcov Hbf HAe; simpl in *; fsetdec).
       kill_sub Ds Hu Hcovs r Hr ps Hav HS HT HQ.
       eexists; exists ps.
-      split; [ cbn [pat_answer proj1_sig]; reflexivity | ].
-      repeat apply conj; [ exact Hav
-              | cbn [pt_supply]; exact HS
-              | cbn [pt_ctx]; exact HT
-              | cbn [pt_skel]; exact HQ ].
+      exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
     + (* SKELETON payload *)
       assert (HA : lc_pskl P) by (exact (lc_aenv_binds HΘ Hbd)).
       destruct (lookup_binding_complete _ _ _ Hu Hbd) as [[b Hb] [Hlk Hpr]].
@@ -926,11 +918,7 @@ Proof.
         by (clear - Hcov Hbf; simpl in *; fsetdec).
       kill_sub Ds Hu Hcovs r Hr ps Hav HS HT HQ.
       eexists; exists ps.
-      split; [ cbn [pat_answer proj1_sig]; reflexivity | ].
-      repeat apply conj; [ exact Hav
-              | cbn [pt_supply]; exact HS
-              | cbn [pt_ctx]; exact HT
-              | cbn [pt_skel]; exact HQ ].
+      exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
 
   - (* ============ AP-Abs (infer / function) and AP-AbsCheck ============ *)
     assert (Hbody : forall y, lc_exp (open_exp_wrt_exp e1 (exp_var_f y)))
@@ -1347,11 +1335,7 @@ Proof.
       by (clear - Hcov HAe; simpl in *; fsetdec).
     kill_sub Ds Hu Hcovs r Hr ps Hav HS HT HQ.
     eexists; exists ps.
-    split; [ cbn [pat_answer proj1_sig]; reflexivity | ].
-    repeat apply conj; [ exact Hav
-            | cbn [pt_supply]; exact HS
-            | cbn [pt_ctx]; exact HT
-            | cbn [pt_skel]; exact HQ ].
+    exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
 
   - (* ================= AP-Freeze ================= *)
     destruct (e_pat_inv_freeze Hd) as [-> [-> Db]].
@@ -1363,11 +1347,7 @@ Proof.
     kill_pat (Hfz e1 eq_refl) lc_pskl_ghost He1 HΘ HD Hu Hcov1 Db
       r Hr ps Hav HS HT HQ.
     eexists; exists ps.
-    split; [ cbn [pat_answer proj1_sig]; reflexivity | ].
-    repeat apply conj; [ exact Hav
-            | cbn [pt_supply]; exact HS
-            | cbn [pt_ctx]; exact HT
-            | cbn [pt_skel]; exact HQ ].
+    exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
 Qed.
 
 (* ===================================================================== *)
@@ -1403,7 +1383,5 @@ Proof.
     try rewrite Hcl in Hx; cbn [pat_answer proj1_sig] in Hx;
     [ inversion Hx; subst r0 | discriminate ].
   eexists; exists ps.
-  split; [ reflexivity | ].
-  split; [ exact Hav | ]. split; [ exact HS | ].
-  split; [ exact HT | exact HQ ].
+  exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
 Qed.

@@ -1126,8 +1126,7 @@ Proof.
         assert (Hu0 : uniq (nil ++ Θ0)) by (clear - Hu; simpl; assumption).
         kill_scall (Hfm γ M' eq_refl eq_refl) Hu0 Hcov0 Df
           r Hr ps Hav HS HT HQ.
-        exists r, ps. split; [ reflexivity | ].
-        repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
+        exists r, ps. exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
       -- (* SI-Arrow, at an arrow pattern; every other pattern rejects *)
         destruct P0 as [ | n0 | γ0 | P0a P0b | B | | P0b ]; cbv beta iota;
           [ | | | | | | ];
@@ -1334,8 +1333,7 @@ Proof.
                 simpl in *; fsetdec).
           kill_scall (Hdep γ Θ0' eq_refl) Hu0 Hcov0 Dd
             r Hr ps Hav HS HT HQ.
-          exists r, ps. split; [ reflexivity | ].
-          repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
+          exists r, ps. exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
         -- (* SI-Flex-Skip — the head is re-wrapped *)
           destruct (sumbool_of_bool (mem γ (ftvar_in_pskl P0))) as [Hm | Hm];
             [ exfalso; apply mem_true_in in Hm; contradiction | ].
@@ -1408,7 +1406,5 @@ Proof.
     try rewrite Hcl in Heq; cbn [sub_call_answer proj1_sig] in Heq;
     [ inversion Heq; subst | discriminate ].
   eexists; exists ps.
-  split; [ reflexivity | ].
-  split; [ exact Hav | ]. split; [ exact HS | ].
-  split; [ exact HT | exact HQ ].
+  exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
 Qed.

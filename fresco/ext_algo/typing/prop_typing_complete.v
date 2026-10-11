@@ -681,9 +681,7 @@ Proof.
       by (rewrite <- HQ; apply swaps_pskl_ptyp_to_pskl).
     kill_dec (pskl_readback_complete_eq Hout) A0 HA0.
     eexists; exists ps.
-    split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
-    repeat apply conj; [ exact Hav | cbn [ty_supply]; exact HS
-            | cbn [ty_ctx]; exact HT | cbn [ty_out]; reflexivity ].
+    exact (conj eq_refl (conj Hav (conj HS (conj HT eq_refl)))).
 
   - (* ============ a bound index is unreachable ============ *)
     exfalso. exact (e_typing_inv_var_b Hd).
@@ -709,9 +707,7 @@ Proof.
       by (rewrite <- HQ; apply swaps_pskl_ptyp_to_pskl).
     kill_dec (pskl_readback_complete_eq Hout) B0 HB0.
     eexists; exists ps.
-    split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
-    repeat apply conj; [ exact Hav | cbn [ty_supply]; exact HS
-            | cbn [ty_ctx]; exact HT | cbn [ty_out]; reflexivity ].
+    exact (conj eq_refl (conj Hav (conj HS (conj HT eq_refl)))).
 
   - (* ============ AT-Abs, and the two check-mode abs rows ============ *)
     assert (Hbody : forall y, lc_exp (open_exp_wrt_exp e1 (exp_var_f y)))
@@ -1648,9 +1644,7 @@ Proof.
     try rewrite Hcl in Hx; cbn [typing_answer proj1_sig] in Hx;
     [ inversion Hx; subst r0 | discriminate ].
   eexists; exists ps.
-  split; [ reflexivity | ].
-  split; [ exact Hav | ]. split; [ exact HS | ].
-  split; [ exact HT | exact HQ ].
+  exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
 Qed.
 
 (** ⭐⭐ The type-inference headline, over the argument-free runner of
@@ -1674,7 +1668,5 @@ Proof.
     as [r [ps [Heq [Hav [HS [HT HQ]]]]]].
   rewrite Heq.
   exists (proj1_sig r), ps.
-  split; [ reflexivity | ].
-  split; [ exact Hav | ]. split; [ exact HS | ].
-  split; [ exact HT | exact HQ ].
+  exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
 Qed.

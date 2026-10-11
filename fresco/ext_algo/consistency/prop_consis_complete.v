@@ -1200,8 +1200,7 @@ Proof.
            kill_ccall (Hdep β0 Θ0 eq_refl) Hu0 Hcov0 Dd pskl_unit
              r Hr ps Hav HS HT HQ.
            exists r, ps.
-           split; [ reflexivity | ].
-           repeat apply conj; [ exact Hav | exact HS | exact HT | exact I ].
+           exact (conj eq_refl (conj Hav (conj HS (conj HT I)))).
         -- destruct (sumbool_of_bool (mem β0 (ftvar_in_pskl P)))
              as [Hm | Hm];
              [ exfalso; apply mem_true_in in Hm; contradiction | ].
@@ -1434,8 +1433,7 @@ Proof.
               cbn [consis_call_cover ftvar_in_pskl] in *; fsetdec).
         kill_ccall (Q6 Pb eq_refl) Hu Hcov0 Dc Qd r Hr ps Hav HS HT HQ.
         exists r, ps.
-        split; [ reflexivity | ].
-        repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
+        exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
     + (* a dangling index is no pattern *) inversion Hlc0.
     + (* ================= pattern [β̂] ================= *)
       destruct P as [ | n | α0 | Pa Pb | Pb | | Pb ]; cbv beta iota.
@@ -1634,8 +1632,7 @@ Proof.
                  cbn [consis_call_cover ftvar_in_pskl] in *; fsetdec).
            kill_ccall (Q6 Pb eq_refl) Hu Hcov0 Dc Qd r Hr ps Hav HS HT HQ.
            exists r, ps.
-           split; [ reflexivity | ].
-           repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
+           exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
     + (* ================= pattern [→] ================= *)
       destruct P as [ | n | α0 | Pa Pb | Pb | | Pb ]; cbv beta iota.
       * (* → ∼ 1 : no rule fires *) inversion Hd.
@@ -1967,7 +1964,5 @@ Proof.
     try rewrite Hcl in Heq; cbn [consis_call_answer proj1_sig] in Heq;
     [ inversion Heq; subst | discriminate ].
   eexists; exists ps.
-  split; [ reflexivity | ].
-  split; [ exact Hav | ]. split; [ exact HS | ].
-  split; [ exact HT | exact HQ ].
+  exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
 Qed.
