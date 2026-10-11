@@ -1,0 +1,3 @@
+-- Paper row A4: expected accepted.
+
+fun (x : forall a. a -> a) -> x x

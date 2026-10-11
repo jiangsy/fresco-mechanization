@@ -83,6 +83,37 @@ ${COQ_MAKEFILE} : ${COQ_PROJECT} ${LNGEN_OUTS} $(VFILES)
 # mkdir and it keeps the build self-contained.
 EXTRACT_DIR := fresco/ext_algo/extraction/extracted
 
+# The frontend uses only the OCaml standard library. Keep compiler products
+# separate from both hand-written sources and Coq's generated extraction.
+# Syntax, paper row mappings, and invocation examples: frontend/README.md.
+OCAMLC ?= ocamlc
+FRONTEND_BUILD := _build/frontend
+FRONTEND_SOURCES := frontend/parser.ml frontend/printer.ml frontend/main.ml
+EXAMPLES := $(sort $(wildcard examples/*.fresco))
+
+.PHONY: extract frontend examples test-frontend clean-frontend
+extract : ${COQ_MAKEFILE}
+	mkdir -p ${EXTRACT_DIR}
+	${MAKE} -j ${NJOBS} -f ${COQ_MAKEFILE} fresco/ext_algo/extraction/Extract.vo
+	@test -f ${EXTRACT_DIR}/fresco_guess.ml -a -f ${EXTRACT_DIR}/fresco_guess.mli || \
+	  coqc -R . src fresco/ext_algo/extraction/Extract.v
+
+frontend : extract
+	mkdir -p ${FRONTEND_BUILD}
+	cp ${EXTRACT_DIR}/fresco_guess.ml ${EXTRACT_DIR}/fresco_guess.mli $(FRONTEND_SOURCES) ${FRONTEND_BUILD}/
+	cd ${FRONTEND_BUILD} && $(OCAMLC) -w -a -c fresco_guess.mli && \
+	  $(OCAMLC) -w -a -c fresco_guess.ml && \
+	  $(OCAMLC) -o fresco fresco_guess.cmo parser.ml printer.ml main.ml
+
+examples : frontend
+	${FRONTEND_BUILD}/fresco $(EXAMPLES)
+
+test-frontend : frontend
+	python3 frontend/test_frontend.py ${FRONTEND_BUILD}/fresco
+
+clean-frontend :
+	rm -rf ${FRONTEND_BUILD}
+
 coq : ${COQ_MAKEFILE}
 	mkdir -p ${EXTRACT_DIR}
 	${MAKE} -j ${NJOBS} -f ${COQ_MAKEFILE}
@@ -95,7 +126,7 @@ quick : ${COQ_MAKEFILE}
 	mkdir -p ${EXTRACT_DIR}
 	${MAKE} -j ${NJOBS} -f ${COQ_MAKEFILE} vos
 
-clean : tidy
+clean : tidy clean-frontend
 	${MAKE} -f ${COQ_MAKEFILE} clean
 	rm -f */prop_ln.v */def_ott.v ${COQ_MAKEFILE} ${COQ_MAKEFILE}.conf .FILE_LIST
 	# Litter coq_makefile's own `clean` does not know about: the .aux

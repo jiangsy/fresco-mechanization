@@ -1,0 +1,6 @@
+-- Paper row A8: expected rejected.
+val choose : forall a. a -> a -> a;
+val id : forall a. a -> a;
+val auto' : forall b. (forall a. a -> a) -> b -> b;
+
+choose id auto'

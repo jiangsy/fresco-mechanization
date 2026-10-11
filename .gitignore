@@ -13,3 +13,4 @@ fresco/ext_algo/extraction/extracted/
 .FILE_LIST
 
 *.pyc
+_build/frontend/
