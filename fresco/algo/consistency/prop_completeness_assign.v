@@ -750,6 +750,19 @@ Proof.
 Qed.
 Arguments a_non_flex_strip_mid {Ξ x b Θ0 P}.
 
+(** A solution [ζ] extended at [α1] composed with an identity increment
+    split around [α1]: the composite splits there too. *)
+Lemma msubst_compose_mid_id : forall α1 τ ζ κ1a κ1b,
+  is_id_msubst κ1a -> is_id_msubst κ1b ->
+  α1 `notin` dom κ1a -> α1 `notin` dom κ1b ->
+  msubst_compose ((α1, τ) :: ζ) (κ1a ++ (α1, ptyp_var_f α1) :: κ1b)
+  = msubst_compose ζ κ1a ++ (α1, τ) :: msubst_compose ζ κ1b.
+Proof.
+  intros α1 τ ζ κ1a κ1b Hida Hidb Hα1κ1a Hα1κ1b.
+  rewrite msubst_compose_app, (msubst_compose_cons_l_id τ ζ Hida Hα1κ1a).
+  rewrite (msubst_compose_cons_id_head τ ζ Hidb Hα1κ1b). reflexivity.
+Qed.
+
 (** The three nonflexible skip rules recurse below a split source
     binding. Normalize the competing solution in that target suffix and
     establish the smaller recursive problem once, independently of the
@@ -1533,20 +1546,8 @@ Proof.
         -- apply a_inc__flex; [ exact Hζ' | exact Hwfτα1 | exact Hmτα1 ].
         -- (* compute ζ ∘ κ1 = (ζ' ∘ κ1a) ++ (α1,τα1) :: (ζ' ∘ κ1b), then
               mid-insert the matching flex pair *)
-           assert (Heqc : msubst_compose ((α1, τα1) :: ζ')
-                            (κ1a ++ (α1, ptyp_var_f α1) :: κ1b)
-                        = msubst_compose ζ' κ1a
-                          ++ (α1, τα1) :: msubst_compose ζ' κ1b).
-           { rewrite msubst_compose_app. f_equal.
-             - apply (msubst_compose_cons_l_id τα1 ζ' Hida Hα1κ1a).
-             - change (msubst_compose ((α1, τα1) :: ζ')
-                         ((α1, ptyp_var_f α1) :: κ1b))
-                 with ((α1, msubst_ptyp ((α1, τα1) :: ζ') (ptyp_var_f α1))
-                       :: msubst_compose ((α1, τα1) :: ζ') κ1b).
-               rewrite (msubst_compose_cons_l_id τα1 ζ' Hidb Hα1κ1b).
-               change (msubst_ptyp ((α1, τα1) :: ζ') (ptyp_var_f α1))
-                 with (msubst_lookup ((α1, τα1) :: ζ') α1).
-               rewrite msubst_lookup_cons_eq. reflexivity. }
+           pose proof (msubst_compose_mid_id τα1 ζ' Hida Hidb Hα1κ1a Hα1κ1b)
+             as Heqc.
            rewrite Heqκ1, Heqκ, Heqc.
            apply a_inc_equiv_mid_insert_flex;
              [ exact Hdecl
@@ -1849,20 +1850,8 @@ Proof.
         [ exact Hζ' | exact Hwfτα1 | exact Hmτα1 | ].
       eapply a_tyequiv__trans; [ exact Heqτα1' | exact Heqζτd ].
     + (* factoring : mid-insert the matching defined pair *)
-      assert (Heqc : msubst_compose ((α1, τα1) :: ζ')
-                       (κ1a ++ (α1, ptyp_var_f α1) :: κ1b)
-                   = msubst_compose ζ' κ1a
-                     ++ (α1, τα1) :: msubst_compose ζ' κ1b).
-      { rewrite msubst_compose_app. f_equal.
-        - apply (msubst_compose_cons_l_id τα1 ζ' Hida Hα1κ1a).
-        - change (msubst_compose ((α1, τα1) :: ζ')
-                    ((α1, ptyp_var_f α1) :: κ1b))
-            with ((α1, msubst_ptyp ((α1, τα1) :: ζ') (ptyp_var_f α1))
-                  :: msubst_compose ((α1, τα1) :: ζ') κ1b).
-          rewrite (msubst_compose_cons_l_id τα1 ζ' Hidb Hα1κ1b).
-          change (msubst_ptyp ((α1, τα1) :: ζ') (ptyp_var_f α1))
-            with (msubst_lookup ((α1, τα1) :: ζ') α1).
-          rewrite msubst_lookup_cons_eq. reflexivity. }
+      pose proof (msubst_compose_mid_id τα1 ζ' Hida Hidb Hα1κ1a Hα1κ1b)
+        as Heqc.
       rewrite Heqκ1, Heqκ, Heqc.
       apply a_inc_equiv_mid_insert_flex_def;
         [ exact Hdecl
