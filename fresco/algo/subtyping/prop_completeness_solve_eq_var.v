@@ -521,7 +521,7 @@ Proof.
     destruct Hor as [-> | Hτ].
     + pose proof (binds_In _ _ _ _ Hbr) as Hd. clear - Hd; fsetdec.
     + assert (Hd : ftvar_in_ptyp τ [<=] dom Θr)
-        by (eapply a_wf_aenv_def_ftv_dom; [ exact HwfΘr | exact Hbr ]).
+        by (eapply a_wf_aenv_def_ftv_dom; eassumption).
       clear - Hτ Hd; fsetdec.
 Qed.
 
@@ -901,7 +901,7 @@ Proof.
             [ exact Hrefine | reflexivity | reflexivity | exact HninR
             | exact HαΔr ]. }
         assert (HnhPa : pskl_no_ghost Pa)
-          by (eapply a_solve_eq_no_ghost_p0; [ exact Hsolve | exact HnhP0d ]).
+          by (eapply a_solve_eq_no_ghost_p0; eassumption).
         eapply ad_partial_precise_psi_cong;
           [ eapply ad_partial_precise_no_ghost_subject_delta_mono;
               [ exact Hprec | apply msubst_pskl_no_ghost; exact HnhPa
@@ -973,7 +973,7 @@ Proof.
                   ftvar_in_uskl (uskl_arrow R1 R2) `union` Δρ).
         { apply uskl_rsubst_ftv_target_bound with (NM := NM) (Θ := Θ)
             (Ψρ := Ψρ).
-          eapply ursubst__arrow; [ exact Hrho1 | exact Hrho2 | exact HΨρs ]. }
+          eapply ursubst__arrow; eassumption. }
         clear - HQB HftR HftA; fsetdec. }
       (* P0 = □ ⇒ Q synthesized ⇒ the consistency solves no tags *)
       assert (VACR : {{ Θr ⨟ Δr ⊢ᵣ bskl_ghost ⊳ (bskl_arrow Q1 Q2) }}ad ->
@@ -986,11 +986,9 @@ Proof.
         assert (HskQ1 : is_sskl Q1) by (inversion Hss; subst; assumption).
         assert (HskQ2 : is_sskl Q2) by (inversion Hss; subst; assumption).
         assert (HΨ1e : Ψ1 [=] empty)
-          by (eapply ad_pat_consis_sskl_tags;
-                [ exact Hconsis1 | exact HwfΘ | exact HskQ1 ]).
+          by (eapply ad_pat_consis_sskl_tags; eassumption).
         assert (HΨ2e : Ψ2 [=] empty)
-          by (eapply ad_pat_consis_sskl_tags;
-                [ exact Hconsis2 | exact HwfΘ | exact HskQ2 ]).
+          by (eapply ad_pat_consis_sskl_tags; eassumption).
         clear - Hsubeq2 H HΨ1e HΨ2e; fsetdec. }
       (* ⭐⭐ THE FLEXIBLE-P0 DISCHARGE (the SolE-FlexR repair).  Everything
          the SE-FlexR row below needs — the counterpart monotype, its
@@ -1059,8 +1057,7 @@ Proof.
         { intros α0 τ0 Hb.
           pose proof (Hdefs _ _ Hb) as Hbw.
           split; [ eapply binds_In; exact Hbw
-                 | eapply a_wf_aenv_def_ftv_dom;
-                     [ exact HwfΘw | exact Hbw ] ]. }
+                 | eapply a_wf_aenv_def_ftv_dom; eassumption ]. }
         assert (HftQ : ftvar_in_bskl (bskl_arrow Q1 Q2) [<=] dom Θw).
         { eapply ad_refine_mono_paint_ftv_bound;
             [ exact HwfΘ | exact Hrefβ' | reflexivity | exact Hml
@@ -1324,7 +1321,7 @@ Proof.
               pose proof (HΞ12 x Hin) as Hne.
               specialize (Hfr1 x Hin). clear - Hfr1 Hne HPa2; fsetdec. }
             exists (Ξ2 ++ Ξ1), (pskl_arrow Pa1 Pa2), (κb ++ κa).
-            split; [ apply a_solve_eq__arrow; [ exact Hs1 | exact Hs2' ] | ].
+            split; [ apply a_solve_eq__arrow; eassumption | ].
             split; [ apply all_flex_mono_app; assumption | ].
             split; [ clear - Hu1 Hu2 Hdisj; solve_uniq | ].
             split; [ rewrite ! keys_app; rewrite Hk1, Hk2; reflexivity | ].
@@ -1623,16 +1620,14 @@ Proof.
             end. }
       assert (Hsz : size_pskl Pi + size_pskl P0
                       <= size_pskl Pi + size_pskl P0) by lia.
-      eapply CORE;
-        [ exact Hsz | exact HwfPi | exact HwfP0 | exact Hapart
-        | exact Hpre0 | exact Hrefine ]. }
+      eapply CORE; eassumption. }
   - (* forall_inh_tagged (case 1): rows A (Pi=∀) / B (Pi=□) / C (Pi=∀◇
        via the precision fill); everything else is absurd (guardedness /
        paint-shape / ε-tag contradictions).  DESIGN §6(o). *)
     assert (HwfΘr2 := HwfΘr).
     assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hκ).
     assert (Himav : forall p, In p κ -> ftvar_in_ptyp (snd p) [<=] dom Θ)
-      by (intros p Hp; eapply a_inc_image_ftv_dom; [ exact Hκ | exact Hp ]).
+      by (intros p Hp; eapply a_inc_image_ftv_dom; eassumption).
     destruct (uskl_rsubst_all_tag_cases Hrho Htags)
       as [Hleaf | (Lr & ψR & -> & Hrhof)].
     { destruct (@a_solve_eq_complete_rsubst_var _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
@@ -1860,7 +1855,7 @@ Proof.
             by (intros Hin; exact (HfrX α Hin ltac:(clear; solve_notin_auto))).
           assert (HdκX : dom κX [=] dom ΞX) by (apply keys_eq_dom; exact HkX).
           assert (HlcκX : msubst_lc (κX ++ κ))
-            by (eapply msubst_lc_app_wf; [ exact HFX | exact Hlcκ ]).
+            by (eapply msubst_lc_app_wf; eassumption).
           exists ΞX, (pskl_all_syn (close_pskl_wrt_pskl α PaX)), κX.
           split.
           { (* SE-Forall is EXISTS-FRESH + CLOSE now (DESIGN §4.3): the
@@ -1968,8 +1963,7 @@ Proof.
                 [ discriminate Hc | ].
               destruct (Yd == α') as [-> | Hne].
               + assert (Hd : ftvar_in_ptyp τ [<=] dom Θ)
-                  by (eapply a_wf_aenv_def_ftv_dom;
-                      [ exact HwfΘ | exact Hbd' ]).
+                  by (eapply a_wf_aenv_def_ftv_dom; eassumption).
                 clear - Hd HX'; destruct_notin; fsetdec.
               + eapply HS3; [ clear - HYd Hne; fsetdec | exact Hbd' ]. }
           eapply ad_partial_precise_delta_cong;
@@ -2039,7 +2033,7 @@ Proof.
               by (intros Hin; exact (HfrX α Hin ltac:(clear; solve_notin_auto))).
             assert (HdκX : dom κX [=] dom ΞX) by (apply keys_eq_dom; exact HkX).
             assert (HlcκX : msubst_lc (κX ++ κ))
-              by (eapply msubst_lc_app_wf; [ exact HFX | exact Hlcκ ]).
+              by (eapply msubst_lc_app_wf; eassumption).
             exists ΞX, (pskl_all_syn (close_pskl_wrt_pskl α PaX)), κX.
             split.
             { (* SE-GhostForall, exists-fresh + CLOSE (DESIGN §4.3); its
@@ -2068,8 +2062,7 @@ Proof.
                       as [[_ Hc] | Hbd']; [ discriminate Hc | ];
                     destruct (Yd == α) as [-> | Hne];
                     [ assert (Hd : ftvar_in_ptyp τ [<=] dom Θ)
-                        by (eapply a_wf_aenv_def_ftv_dom;
-                            [ exact HwfΘ | exact Hbd' ]);
+                        by (eapply a_wf_aenv_def_ftv_dom; eassumption);
                       clear - Hd Fr; destruct_notin; fsetdec
                     | eapply HS3;
                       [ clear - HYd Hne; fsetdec | exact Hbd' ] ] ]
@@ -2140,7 +2133,7 @@ Proof.
     assert (HwfΘr2 := HwfΘr).
     assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hκ).
     assert (Himav : forall p, In p κ -> ftvar_in_ptyp (snd p) [<=] dom Θ)
-      by (intros p Hp; eapply a_inc_image_ftv_dom; [ exact Hκ | exact Hp ]).
+      by (intros p Hp; eapply a_inc_image_ftv_dom; eassumption).
     destruct (uskl_rsubst_all_tag_cases Hrho Htags)
       as [Hleaf | (Lr & ψR & -> & Hrhof)].
     { destruct (@a_solve_eq_complete_rsubst_var _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
@@ -2428,7 +2421,7 @@ Proof.
             by (intros Hin; exact (HfrX α Hin ltac:(clear; solve_notin_auto))).
           assert (HdκX : dom κX [=] dom ΞX) by (apply keys_eq_dom; exact HkX).
           assert (HlcκX : msubst_lc (κX ++ κ))
-            by (eapply msubst_lc_app_wf; [ exact HFX | exact Hlcκ ]).
+            by (eapply msubst_lc_app_wf; eassumption).
           exists ΞX, (pskl_all_syn (close_pskl_wrt_pskl α PaX)), κX.
           split.
           { (* SE-ForallGhost, exists-fresh + CLOSE (DESIGN §4.3); the premise
@@ -2729,7 +2722,7 @@ Proof.
       assert (Htags1 : a_tags_sort NM Ψ' ψa0)
         by (apply a_tags_sort_dot_univ_ghost_inv; exact Htags0).
       assert (HngR : uskl_no_ghost R)
-        by (eapply uskl_rsubst_no_ghost; [ exact Hrho0 | exact Htags1 ]).
+        by (eapply uskl_rsubst_no_ghost; eassumption).
       (* the P0=□ rows' target bound: ψa0's variables are Θr- or
          Δρ-scoped once the counterpart is a synthesised fill *)
       assert (HψaB : ftvar_in_bskl Q [<=] dom Θr ->
@@ -2737,8 +2730,7 @@ Proof.
       { intros HQB.
         assert (HftR : ftvar_in_uskl R [<=]
                   ftvar_in_bskl Q `union` dom Θr)
-          by (eapply consis_subject_ftv_bag_bound;
-                [ exact Hconsis | exact HspΘ | exact Htvs | exact HwfΘr ]).
+          by (eapply consis_subject_ftv_bag_bound; eassumption).
         pose proof (uskl_rsubst_ftv_target_bound Hrho0) as HftA.
         clear - HQB HftR HftA; fsetdec. }
       destruct Pi as [ | nb | α | Pi1 Pi2 | Pib | | Pi' ].
@@ -3062,7 +3054,7 @@ Proof.
     assert (HdfΘr : delta_def_fresh Δr Θr).
     { intros β α0 τ0 Hβ Hb Hin.
       assert (HβR : β `in` dom Θr)
-        by (eapply a_wf_aenv_def_ftv_dom_in; [ exact HwfΘr | exact Hb | exact Hin ]).
+        by (eapply a_wf_aenv_def_ftv_dom_in; eassumption).
       pose proof (proj2 (proj2 HspΘ)) as Hdisj.
       clear - Hβ HβR HΔrd Hdisj; fsetdec. }
     eapply ad_refine_flexdef_target_unfold;
@@ -3168,7 +3160,7 @@ Proof.
                  just [a_inc_lookup_wf] — the premise costs the paper
                  statement nothing. *)
               ltac:(intros α Hf;
-                    eapply a_inc_lookup_flex_ftv_dom; [ exact Hκ | exact Hf ])
+                    eapply a_inc_lookup_flex_ftv_dom; eassumption)
               Hrho Htags Hsub Hinter Hfresh
               Hdelta Hapart Hdfresh Hpre Hsubeq1 Hsubeq2 Hconsis
               Hrefine L HL)

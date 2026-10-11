@@ -136,8 +136,8 @@ Proof.
   - simpl; clear - HαΘ Hβα; fsetdec.
   - simpl; clear - HαΘ0 Hβα; fsetdec.
   - apply a_inc_cons_tvar; exact Hκ.
-  - eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfP0 ].
-  - eapply a_wf_pskl_weaken; [ exact Hweak0 | exact HwfPi ].
+  - eapply a_wf_pskl_weaken; eassumption.
+  - eapply a_wf_pskl_weaken; eassumption.
 Qed.
 
 (* ===================================================================== *)
@@ -375,11 +375,11 @@ Proof.
   - assert (Hin : αx `notin` dom Ξm)
       by (intro Hc; apply (Hftv _ Hc); simpl; fsetdec).
     apply a_flex__var with (α := αx).
-    eapply binds_strengthen_mid; [ exact Hb | exact Hin ].
+    eapply binds_strengthen_mid; eassumption.
   - assert (Hin : αx `notin` dom Ξm)
       by (intro Hc; apply (Hftv _ Hc); simpl; fsetdec).
     apply a_flex__var_def with (α := αx) (τ := τ).
-    eapply binds_strengthen_mid; [ exact Hb | exact Hin ].
+    eapply binds_strengthen_mid; eassumption.
 Qed.
 
 (** The mid-insertion enlarges [ftvar_in_aenv] by exactly [dom Ξm] — which
@@ -589,7 +589,7 @@ Proof.
             clear - Hout; fsetdec
           | intros x Hx; specialize (Hblk x Hx); rewrite dom_app in Hblk;
             clear - Hblk; fsetdec ].
-    - (* SS-GhostL *) apply a_solve_sub__ghost_l; [ exact Hgf0 | exact Hg ]. }
+    - (* SS-GhostL *) apply a_solve_sub__ghost_l; eassumption. }
   (* ================= the [a_solve_eq] half ================= *)
   { intros Θ P P0 Ξ P' Hsz Hd.
     destruct Hd as
@@ -613,7 +613,7 @@ Proof.
          inserted names — which is [Hblk]. *)
       apply a_solve_eq__flex_r;
         [ apply a_flex_tvar_weaken_mid; exact Hflex
-        | apply a_non_flex_weaken_mid; [ exact Hftv | exact Hnf ]
+        | apply a_non_flex_weaken_mid; eassumption
         | exact Hng
         | eapply a_guess_mono_ctx_change; [ exact Hgu | ] ].
       intros α0 Hα0.
@@ -873,7 +873,7 @@ Proof.
   intros Θ Θ' κ' Hmon H; induction H as [ | p l0 Hp Hl IH ]; [ constructor | ].
   constructor; [ | exact IH ].
   destruct Hp as [Hw Hm]; split;
-    [ eapply a_wf_ptyp_weaken; [ exact Hmon | exact Hw ] | exact Hm ].
+    [ eapply a_wf_ptyp_weaken; eassumption | exact Hm ].
 Qed.
 
 (** A row that GENERATES NOTHING needs no extension. *)
@@ -1032,7 +1032,7 @@ Proof.
                 Hn HwfΘ HwfΘ0 HwfPi HwfP0 Hκ Hpre_u Href')
       as (Pa & Hsolve & Hprec).
     eapply solve_eq_mono_nil;
-      [ exact Hsolve | eapply ad_ppre_chain_fold; [ exact Hc | exact Hprec ] ].
+      [ exact Hsolve | eapply ad_ppre_chain_fold; eassumption ].
   - (* Pi = var_b: not wf *) inversion HwfPi.
   - (* Pi = var_f α: SE-Var / SE-FlexL *)
     eapply solve_eq_mono_nil; [ apply a_solve_eq__var | exact Hpre ].
@@ -1118,8 +1118,7 @@ Proof.
       assert (HwfP01 : {{ Θ0 ⨟ empty ⊢ₚₛ P01 }}a) by (inversion HwfP0; assumption).
       assert (HwfP02 : {{ Θ0 ⨟ empty ⊢ₚₛ P02 }}a) by (inversion HwfP0; assumption).
       assert (Hwfar : a_wf_ptyp Θw (ptyp_arrow τ1 τ2))
-        by (eapply a_def_chain_wf_at;
-              [ exact Hc | exact HwfΘw | exact Hdefs | exact Hwfτ' ]).
+        by (eapply a_def_chain_wf_at; eassumption).
       assert (Hwf1 : a_wf_ptyp Θw τ1) by (inversion Hwfar; assumption).
       assert (Hwf2 : a_wf_ptyp Θw τ2) by (inversion Hwfar; assumption).
       simpl in Href'.
@@ -1152,7 +1151,7 @@ Proof.
       assert (Hκ1 : (κa ++ κ) ∷ (Ξ1 ++ Θ0) ⊑ Θ)
         by (apply a_inc_flex_prefix_build;
               [ exact Hfm1 | exact Hk1
-              | eapply forall_wf_mono_weaken; [ exact Hmon | exact HF1 ]
+              | eapply forall_wf_mono_weaken; eassumption
               | exact Hκ ]).
       assert (HwfPi2' : {{ (Ξ1 ++ Θ0) ⨟ empty ⊢ₚₛ Pi2 }}a)
         by (apply a_wf_pskl_app_weaken; exact HwfPi2).
@@ -1210,7 +1209,7 @@ Proof.
         specialize (Hfr2 α0 Hin2). clear - Hfr2 HPa1; fsetdec. }
       cbn [app] in Heq1.
       exists (Ξ2 ++ Ξ1), (pskl_arrow Pa1 Pa2), (κb ++ κa).
-      split; [ apply a_solve_eq__arrow; [ exact Hs1 | exact Hs2 ] | ].
+      split; [ apply a_solve_eq__arrow; eassumption | ].
       split; [ apply all_flex_mono_app; assumption | ].
       split; [ clear - Hu1 Hu2 Hdisj; solve_uniq | ].
       split; [ rewrite ! keys_app; rewrite Hk1, Hk2; reflexivity | ].
@@ -1222,8 +1221,7 @@ Proof.
       eapply ad_ppre_chain_fold; [ exact Hc | ].
       rewrite list_app_assoc. cbn [msubst_pskl ptyp_to_uskl_syn].
       rewrite Heq1.
-      apply ad_ppre__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-        [ exact Hq1 | exact Hq2 | exact HΨ ].
+      apply ad_ppre__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); eassumption.
     + (* P0 = all_syn: refinement absurd *)
       simpl in Href'.
       exfalso.
@@ -1236,14 +1234,12 @@ Proof.
       assert (HwfP0' : {{ Θ0 ⨟ empty ⊢ₚₛ P0' }}a)
         by (inversion HwfP0; subst; rewrite aenv_minus_empty in *; assumption).
       assert (Hwfar : a_wf_ptyp Θw (ptyp_arrow τ1 τ2))
-        by (eapply a_def_chain_wf_at;
-              [ exact Hc | exact HwfΘw | exact Hdefs | exact Hwfτ' ]).
+        by (eapply a_def_chain_wf_at; eassumption).
       simpl in Href'.
       inversion Href'; subst.
       assert (Hpre' : {{ Θ ⨟ Δ ⊢ˢ msubst_pskl κ (pskl_arrow Pi1 Pi2) ⊑ᵖ[ Ψi ]
                         (ptyp_to_uskl_syn (ptyp_arrow τ1 τ2)) }}ad)
-        by (simpl; eapply ad_ppre__arrow;
-              [ exact Hp1 | exact Hp2 | exact HΨ ]).
+        by (simpl; eapply ad_ppre__arrow; eassumption).
       assert (Hcv : solve_eq_mono_concl Θ0 Θ Θw κ Δ Ψi (ptyp_arrow τ1 τ2)
                       (pskl_arrow Pi1 Pi2) P0' L).
       { match goal with
@@ -1272,7 +1268,7 @@ Proof.
       [ exact HwfΘ | clear; fsetdec | exact Hrefine | reflexivity | reflexivity
       | exact Hmτ
       | destruct Hwfτ as [Hw | (α0 & -> & Hrig0)];
-          [ eapply a_wf_ptyp_weaken; [ exact Hmon | exact Hw ]
+          [ eapply a_wf_ptyp_weaken; eassumption
           | apply a_wf_ptyp__var; left; exact Hrig0 ]
       | exact Hdf | exact Hpre ].
   - (* Pi = ∀◇.Pi' — every row here is a PASS-THROUGH, which is what
@@ -1287,8 +1283,7 @@ Proof.
     (* the disjunction PROPAGATES along the chain — no need to resolve it *)
     assert (Hwfe : a_wf_ptyp Θw τe \/
                    (exists α0, τe = ptyp_var_f α0 /\ binds α0 abind_tvar Θ))
-      by (eapply a_def_chain_wf_or_rigid;
-            [ exact Hc | exact HwfΘ | exact HwfΘw | exact Hdefs | exact Hwfτ ]).
+      by (eapply a_def_chain_wf_or_rigid; eassumption).
     pose proof (ad_refine_chain_unfold Hc HwfΘ Hrefine (delta_def_fresh_empty Θ))
       as Href'.
     destruct P0 as [ | nb0 | β | P01 P02 | P0b | | P0' ].
@@ -1343,9 +1338,7 @@ Proof.
         as (τf & Hc2 & Hmf & Hin).
       assert (Hwff : a_wf_ptyp Θw τf \/
                      (exists α0, τf = ptyp_var_f α0 /\ binds α0 abind_tvar Θ))
-        by (eapply a_def_chain_wf_or_rigid;
-              [ exact Hc2 | exact HwfΘ | exact HwfΘw | exact Hdefs
-              | exact Hwfe ]).
+        by (eapply a_def_chain_wf_or_rigid; eassumption).
       pose proof (ad_ppre_chain_unfold Hc2 HwfΘ Hdf Hp') as Hp''.
       destruct (IHn Θ0 Θ Θw κ Δ Ψi τf Pi' P0'
                   ltac:(simpl in Hn; simpl; lia)
@@ -1360,7 +1353,7 @@ Proof.
       split; [ exact Hfr | ].
       split; [ exact HF | ].
       eapply ad_ppre_chain_fold;
-        [ eapply a_def_chain_trans; [ exact Hc | exact Hc2 ] | ].
+        [ eapply a_def_chain_trans; eassumption | ].
       simpl. apply ad_ppre__univ_ghost_remove. exact Hq.
 Qed.
 
