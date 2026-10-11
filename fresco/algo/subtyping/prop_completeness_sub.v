@@ -591,31 +591,10 @@ Proof.
     { intros Ξ' α' P0' R'' Ψ' Θ'' κ' Q' HlenΞ.
       apply IHΘ0; simpl in Hlen; lia. }
     destruct b as [ | A | P | | τ ].
-    + (* β RIGID: the STUCK configuration, or Flex-SkipRigid *)
-      destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P0))
-        as [Hβin | Hβni];
-        [ | destruct (α == β) as [Heqαβ | Hne] ].
-      * (* ⭕ β ∈ ftv P0 : NO RULE FIRES — refute the solution (§5) *)
-        unfold sub_flex_complete_concl.
-        intros HdeclsΞ HdomΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD
-               Hrs HwfQ.
-        exfalso.
-        assert (Hne : α <> β).
-        { intro Heq; subst β.
-          assert (Huq : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ0'))
-            by (apply a_wf_aenv_uniq; exact Hwf).
-          destruct Hfα as [Hb | [τ0 Hb]];
-            (apply binds_cons_1 in Hb as [[_ Hc] | Hb];
-             [ discriminate Hc
-             | apply binds_In in Hb; simpl_env in Huq; solve_uniq ]). }
-        assert (Hfα0 : a_flex_tvar Θ0' α)
-          by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hne)); exact Hfα).
-        eapply sub_flex_rigid_head_absurd;
-          [ exact HdeclsΞ | exact HdomΞ | exact Hwf | exact Hwfth | exact HwfP0
-          | exact Hfα0 | exact Hβin | exact Hinc | exact Hslack | exact HD
-          | exact Hrs ].
+    + (* β RIGID: not the subject; then the STUCK configuration, or
+         Flex-SkipRigid *)
+      destruct (α == β) as [-> | Hne].
       * (* the subject cannot BE the rigid head *)
-        subst α.
         unfold sub_flex_complete_concl.
         intros HdeclsΞ HdomΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD
                Hrs HwfQ.
@@ -626,7 +605,18 @@ Proof.
           (apply binds_cons_1 in Hb as [[_ Hc] | Hb];
            [ discriminate Hc
            | apply binds_In in Hb; simpl_env in Huq; solve_uniq ]).
-      * apply (a_sub_flex_complete_skip_rigid IH' Hne Hβni).
+      * destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P0))
+          as [Hβin | Hβni].
+        -- (* ⭕ β ∈ ftv P0 : NO RULE FIRES — refute the solution (§5) *)
+           unfold sub_flex_complete_concl.
+           intros HdeclsΞ HdomΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack
+                  HD Hrs HwfQ.
+           exfalso.
+           assert (Hfα0 : a_flex_tvar Θ0' α)
+             by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hne)); exact Hfα).
+           eapply sub_flex_rigid_head_absurd with (Θ0 := Θ0') (β := β);
+             eassumption.
+        -- apply (a_sub_flex_complete_skip_rigid IH' Hne Hβni).
     + (* β a TERM variable, type binding: Flex-SkipTmVar (§6).  Unlike the
          rigid head there is no stuck configuration and no side condition —
          the row derives [α ≠ β] and [β ∉ ftv P0] itself. *)
@@ -969,18 +959,13 @@ Proof.
       destruct (@msubst_uskl_syn_all_tag_inv κ R εa X0 HX) as [R0 [HR _]].
       exists R0; exact HR. }
     destruct Hhd as [R0 HR0]. subst R.
-    destruct (p0_wlog_trichotomy Hmodsk Hmodty (a_wf_pskl_lc HwfP0))
-      as [Hwlog | [Hwlog | [HeqNM [HeqM [Pb HeqP0]]]]].
+    destruct (proj2 (or_assoc _ _ _)
+                (p0_wlog_trichotomy Hmodsk Hmodty (a_wf_pskl_lc HwfP0)))
+      as [Hwlog | [HeqNM [HeqM [Pb HeqP0]]]].
     + exact (@a_sub_complete_forall_l_tagged n0 NM0 Ma Θ0 P0 P R0 Rj Ψ0 Θa κ
                Qa εa Ψ' ψj (Hfuel n0 ltac:(lia)) HM HΨ1 HΨ2 Htg Hwfψ Hsub
-               (or_introl Hwlog)
-               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ Hgf).
-    + exact (@a_sub_complete_forall_l_tagged n0 NM0 Ma Θ0 P0 P R0 Rj Ψ0 Θa κ
-               Qa εa Ψ' ψj (Hfuel n0 ltac:(lia)) HM HΨ1 HΨ2 Htg Hwfψ Hsub
-               (or_intror Hwlog)
-               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ Hgf).
+               Hwlog Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj
+               Hrs HwfQ Hgf).
     + (* ⭐ the WLOG's escaping shape: a ∀-headed [P0] forces a ∀-inh
          counterpart through the FILL, and §8b sends the row through ForallR *)
       subst NM0 Ma P0.
@@ -1002,18 +987,13 @@ Proof.
         as [R0 [HR _]].
       exists R0; exact HR. }
     destruct Hhd as [R0 HR0]. subst R.
-    destruct (p0_wlog_trichotomy Hmodsk Hmodty (a_wf_pskl_lc HwfP0))
-      as [Hwlog | [Hwlog | [HeqNM [HeqM [Pb HeqP0]]]]].
+    destruct (proj2 (or_assoc _ _ _)
+                (p0_wlog_trichotomy Hmodsk Hmodty (a_wf_pskl_lc HwfP0)))
+      as [Hwlog | [HeqNM [HeqM [Pb HeqP0]]]].
     + exact (@a_sub_complete_forall_l_untagged n0 NM0 Ma Θ0 P0 P R0 Rj Ψ0 Θa κ
                Qa Ψ' ψj (Hfuel n0 ltac:(lia)) HM HΨ1 HΨ2 Htg Hwfψ Hsub
-               (or_introl Hwlog)
-               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ Hgf).
-    + exact (@a_sub_complete_forall_l_untagged n0 NM0 Ma Θ0 P0 P R0 Rj Ψ0 Θa κ
-               Qa Ψ' ψj (Hfuel n0 ltac:(lia)) HM HΨ1 HΨ2 Htg Hwfψ Hsub
-               (or_intror Hwlog)
-               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ Hgf).
+               Hwlog Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj
+               Hrs HwfQ Hgf).
     + subst NM0 Ma P0.
       cbn in Hrs.
       destruct (ad_refine_syn_all_inh_l_shape Hrs) as [B HB]. subst Qa.
