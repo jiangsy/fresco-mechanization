@@ -532,8 +532,6 @@ Proof.
         [ reflexivity | contradiction ]. }
     rewrite Hsubj in Hrho.
     cbn in HΨs1.        (* ftag_in_uskl (uskl_var_f α) = empty *)
-    assert (Hlcψa : lc_uskl ψa)
-      by (apply is_dskl_lc; inversion Htags; assumption).
     (* ⭐ P6-Sv now returns the whole [solve_sub_ext] package, at the SAME
        [Θw] and the SAME avoid-set [L] — the collection generates nothing on
        this row, so the solve's block IS the conclusion's. *)
@@ -1921,27 +1919,9 @@ Proof.
     pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdf0.
     assert (HαΞs1 : α `notin` dom Ξs1)
       by (intro Hc; pose proof (Hfrs1 α Hc) as Hf; clear - Hf; fsetdec).
-    assert (HΞs1Θ : forall x, x `in` dom Ξs1 -> x `notin` dom Θ)
-      by (intros x Hx; pose proof (Hfrs1 x Hx) as Hf; clear - Hf; fsetdec).
     assert (HΞs1L : forall x, x `in` dom Ξs1 -> x `notin` Lav)
       by (intros x Hx; pose proof (Hfrs1 x Hx) as Hf; clear - Hf; fsetdec).
-    assert (Hfrs1c : forall x, x `in` dom Ξs1 ->
-              x `notin` ftvar_in_aenv (Ξc1 ++ Θ0))
-      by (intros x Hx; eapply a_solve_cstr_generated_fresh;
-            [ exact HSolve1 | exact Hx ]).
-    assert (HwfΞs1 : {{ ⊢ (Ξs1 ++ Ξc1 ++ Θ0) }}a).
-    { apply a_wf_aenv_flex_prefix; [ exact Hfms1 | | exact HwfΞ1 ].
-      assert (Hdd : dom Ξs1 ∩ dom (Ξc1 ++ Θ0) [<=] empty).
-      { intros x Hx.
-        assert (Hx1 : x `in` dom Ξs1) by (clear - Hx; fsetdec).
-        assert (Hx2 : x `in` dom (Ξc1 ++ Θ0)) by (clear - Hx; fsetdec).
-        pose proof (Hfrs1c x Hx1) as Hf.
-        pose proof (dom_subset_ftvar_in_aenv (Ξc1 ++ Θ0)) as Hds.
-        exfalso; clear - Hf Hds Hx2; fsetdec. }
-      apply uniq_app_4;
-        [ exact Hus1 | eapply a_wf_aenv_uniq; exact HwfΞ1 | exact Hdd ]. }
-    assert (HF1Θ : Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κs1)
-      by (eapply forall_wf_mono_weaken; [ exact Hmon | exact HFs1 ]).
+    pose proof (a_wf_aenv_solve_block HwfΞ1 HSolve1 Hfms1 Hus1) as HwfΞs1.
     assert (Himg1F : forall p, In p κc1 ->
               ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa)
       by (rewrite Forall_forall in Himg1; exact Himg1).
@@ -1975,28 +1955,21 @@ Proof.
             | exact HwfP02 ]).
     (* the two blocks the LEFT branch generated are peeled off the ρ and
        refinement premises: [κc1] by [Hκf1], [κs1] by [Hfrs1c] *)
-    assert (Htr_c1 : msubst_uskl_syn (κc1 ++ κ) Rb = msubst_uskl_syn κ Rb).
-    { apply msubst_uskl_syn_prepend_fresh. intros α0 Hα0.
-      specialize (Hκf1 α0 Hα0).
-      clear - Hκf1 HscopeR; cbn in HscopeR; fsetdec. }
+    pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd02.
     assert (Htr_c : msubst_uskl_syn (κs1 ++ κc1 ++ κ) Rb
                     = msubst_uskl_syn κ Rb).
-    { rewrite <- Htr_c1. apply msubst_uskl_syn_prepend_fresh.
-      intros α0 Hα0.
-      assert (Hin1 : α0 `in` dom Ξs1) by (clear - Hα0 Hd_s1; fsetdec).
-      pose proof (Hfrs1 α0 Hin1) as Hf.
-      clear - Hf HscopeR HLav Hdf0; cbn in HscopeR; fsetdec. }
-    assert (Htr_r1 : msubst_pskl (κc1 ++ κ) P02 = msubst_pskl κ P02).
-    { apply msubst_pskl_prepend_fresh. intros α0 Hα0.
-      specialize (Hκf1 α0 Hα0).
-      pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd.
-      clear - Hκf1 Hfd; fsetdec. }
+    { cbn in HscopeR.
+      apply msubst_uskl_syn_prepend_fresh2; intros α0 Hα0.
+      - assert (Hin1 : α0 `in` dom Ξs1) by (clear - Hα0 Hd_s1; fsetdec).
+        pose proof (Hfrs1 α0 Hin1) as Hf.
+        clear - Hf HscopeR HLav Hdf0; fsetdec.
+      - specialize (Hκf1 α0 Hα0). clear - Hκf1 HscopeR; fsetdec. }
     assert (Htr_r : msubst_pskl (κs1 ++ κc1 ++ κ) P02 = msubst_pskl κ P02).
-    { rewrite <- Htr_r1. apply msubst_pskl_prepend_fresh. intros α0 Hα0.
-      assert (Hin1 : α0 `in` dom Ξs1) by (clear - Hα0 Hd_s1; fsetdec).
-      pose proof (Hfrs1 α0 Hin1) as Hf.
-      pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd.
-      clear - Hf Hfd HLav Hdf0; fsetdec. }
+    { apply msubst_pskl_prepend_fresh2; intros α0 Hα0.
+      - assert (Hin1 : α0 `in` dom Ξs1) by (clear - Hα0 Hd_s1; fsetdec).
+        pose proof (Hfrs1 α0 Hin1) as Hf.
+        clear - Hf Hfd02 HLav Hdf0; fsetdec.
+      - specialize (Hκf1 α0 Hα0). clear - Hκf1 Hfd02; fsetdec. }
     rewrite <- Htr_c in Hrhob.
     assert (Href2' : {{ Θ ⨟ empty ⊢ᵣ
               (pskl_to_bskl_inh (msubst_pskl (κs1 ++ κc1 ++ κ) P02)) ⊳ Q2 }}ad)
@@ -2119,17 +2092,7 @@ Proof.
        [a_inc_flex_prefix_build] steps rather than permuted. --- *)
     pose proof (a_lookeq_all_flex_mono HLK1) as HfmΞ1.
     pose proof (a_looksub_all_flex_mono HLK2) as HfmΞ2.
-    destruct (@a_inc_flex_prefix_split Ξs1 κs1 (Ξc1 ++ Θ0) (κc1 ++ κ) Θ
-                Hfms1 Hks1 Hinc1) as [_ HincC1].
-    destruct (@a_inc_flex_prefix_split Ξc1 κc1 Θ0 κ Θ HfmΞ1 Hmap1 HincC1)
-      as [Hwm1 _].
-    destruct (@a_inc_flex_prefix_split Ξs2 κs2
-                (Ξc2 ++ Ξs1 ++ Ξc1 ++ Θ0) (κc2 ++ κs1 ++ κc1 ++ κ) Θ
-                Hfms2 Hks2 Hinc2) as [_ HincC2].
-    destruct (@a_inc_flex_prefix_split Ξc2 κc2 (Ξs1 ++ Ξc1 ++ Θ0)
-                (κs1 ++ κc1 ++ κ) Θ HfmΞ2 Hmap2 HincC2) as [Hwm2 _].
     pose proof (@keys_eq_dom _ _ κc2 Ξc2 Hmap2) as Hd2.
-    assert (Hd_s2 : dom κs2 [=] dom Ξs2) by (apply keys_eq_dom; exact Hks2).
     assert (Hmapc : keys (κc1 ++ κc2) = keys (Ξc1 ++ Ξc2))
       by (rewrite !keys_app; rewrite Hmap1, Hmap2; reflexivity).
     assert (Hmaps : keys (κs2 ++ κs1) = keys (Ξs2 ++ Ξs1))
@@ -2138,9 +2101,6 @@ Proof.
               x `notin` dom (Ξs1 ++ Ξc1 ++ Θ0)).
     { intros x Hx. rewrite <- Hd2 in Hx. pose proof (Hκf2 x Hx) as Hf.
       clear - Hf; fsetdec. }
-    assert (HΞ2Ξs1 : forall x, x `in` dom Ξc2 -> x `notin` dom Ξs1)
-      by (intros x Hx; pose proof (HΞ2disj x Hx) as Hf;
-          repeat rewrite dom_app in Hf; clear - Hf; fsetdec).
     assert (HΞ2Ξc1Θ0 : forall x, x `in` dom Ξc2 ->
               x `notin` dom (Ξc1 ++ Θ0))
       by (intros x Hx; pose proof (HΞ2disj x Hx) as Hf;
@@ -2152,6 +2112,14 @@ Proof.
     assert (Hdisj2s1 : forall β0, β0 `in` dom κc2 -> β0 `notin` dom κs1).
     { intros β0 Hβ0. pose proof (Hκf2 β0 Hβ0) as Hf2.
       repeat rewrite dom_app in Hf2. clear - Hf2 Hd_s1; fsetdec. }
+    assert (HΞ2C1 : forall x, x `in` dom Ξc2 ->
+              x `notin` ftvar_in_a_cstrs C1).
+    { (* the exact bound is gone (the ∀ rules leak) and x is a name the
+         RIGHT run INVENTED, so the ctx corollary does not apply either;
+         what does is P6-Cs's OWN ftv-𝒞 bound *)
+      intros x Hx. rewrite <- Hd2 in Hx.
+      pose proof (Hκf2 x Hx) as Hf. repeat rewrite dom_app in Hf.
+      apply (a_cstrs_bound_fresh HwfΘ Hκ HftvC1). clear - Hf; fsetdec. }
     exists (C1 ++ C2), (Ξc1 ++ Ξc2), (Ξs2 ++ Ξs1), Pa2,
            (κc1 ++ κc2), (κs2 ++ κs1).
     repeat split.
@@ -2160,23 +2128,12 @@ Proof.
           avoid-set, which is the direction [a_looksub_ctx_ftv_mono] goes. *)
         (* ⭐ THE CROSS-HALF FRESHNESS GUARD (2026-08-19) — both conjuncts are
            facts this configuration already has: the RIGHT run's block dodges
-           the LEFT run's constraints (its own ftv-𝒞 bound, as [HΞ2C1] below
-           repeats), and the RIGHT run's constraints dodge the LEFT run's
+           the LEFT run's constraints (its own ftv-𝒞 bound, [HΞ2C1]), and the RIGHT run's constraints dodge the LEFT run's
            block (the look's DISJUNCTIVE ftv bound: the "outside the context"
            disjunct is impossible because [Ξc1] IS in the right run's
            context, and the other lands in [P02] or [Ξc2]). *)
-        assert (Hgc1 : ftvar_in_a_cstrs C1 ∩ dom Ξc2 [=] empty).
-        { intros x; split; intros Hx; [ | clear - Hx; fsetdec ].
-          exfalso.
-          assert (Hx1 : x `in` ftvar_in_a_cstrs C1) by (clear - Hx; fsetdec).
-          assert (Hx2 : x `in` dom Ξc2) by (clear - Hx; fsetdec).
-          rewrite <- Hd2 in Hx2.
-          pose proof (Hκf2 x Hx2) as Hf. repeat rewrite dom_app in Hf.
-          assert (Hxκ : x `notin` dom κ).
-          { intro Hc. destruct (a_inc_dom_flex Hκ Hc) as [Hb | [τ0 Hb]];
-              apply binds_In in Hb; clear - Hf Hb; fsetdec. }
-          pose proof (def_ftv_dom HwfΘ) as Hdf.
-          clear - HftvC1 Hf Hxκ Hdf Hx1; fsetdec. }
+        assert (Hgc1 : ftvar_in_a_cstrs C1 ∩ dom Ξc2 [=] empty)
+          by (apply inter_dom_empty_of_forall; exact HΞ2C1).
         assert (Hgc2 : ftvar_in_a_cstrs C2 ∩ dom Ξc1 [=] empty).
         { intros x; split; intros Hx; [ | clear - Hx; fsetdec ].
           exfalso.
@@ -2209,46 +2166,8 @@ Proof.
                 rewrite (@a_flex_tvar_app_notin Ξc1 Θ0 β0 Hnc);
                 reflexivity ] ].
     -- (* solve *)
-       assert (HΞ2Pi : forall x, x `in` dom Ξc2 -> x `notin` ftvar_in_pskl Pi).
-       { intros x Hx; pose proof (a_wf_pskl_ftv_dom HwfPi) as Hfd;
-         pose proof (HΞ2Ξc1Θ0 x Hx) as Hf; rewrite dom_app in Hf;
-         simpl in Hfd; clear - Hfd Hf; fsetdec. }
-       assert (HΞ2C1 : forall x, x `in` dom Ξc2 ->
-                 x `notin` ftvar_in_a_cstrs C1).
-       { (* the exact bound is gone (the ∀ rules leak) and x is a name the
-            RIGHT run INVENTED, so the ctx corollary does not apply either;
-            what does is P6-Cs's OWN ftv-𝒞 bound *)
-         intros x Hx. rewrite <- Hd2 in Hx.
-         pose proof (Hκf2 x Hx) as Hf. repeat rewrite dom_app in Hf.
-         assert (Hxκ : x `notin` dom κ).
-         { intro Hc. destruct (a_inc_dom_flex Hκ Hc) as [Hb | [τ0 Hb]];
-             apply binds_In in Hb; clear - Hf Hb; fsetdec. }
-         pose proof (def_ftv_dom HwfΘ) as Hdf.
-         clear - HftvC1 Hf Hxκ Hdf; fsetdec. }
-       assert (HΞ2Pa1 : forall x, x `in` dom Ξc2 ->
-                 x `notin` ftvar_in_pskl Pa1).
-       { intros x Hx;
-         pose proof (a_solve_cstr_ftv_eq HSolve1 (a_lookeq_cstr_eq HLK1))
-           as Hfe;
-         pose proof (HΞ2Pi x Hx) as HxPi;
-         pose proof (HΞ2C1 x Hx) as HxC1;
-         pose proof (HΞ2Ξs1 x Hx) as HxS1;
-         clear - Hfe HxPi HxC1 HxS1; fsetdec. }
-       rewrite (aenv_app_assoc Ξc1 Ξc2 Θ0).
-       eapply a_solve_cstr_app;
-         [ exact (a_lookeq_cstr_eq HLK1)
-         | apply a_solve_cstr_weaken_mid_flex;
-             [ exact HfmΞ2 | exact HΞ2Ξc1Θ0 | exact HΞ2Pi | exact HΞ2C1
-             | exact HΞ2Pa1 | exact HΞ2Ξs1 | exact HSolve1 ]
-         | eapply a_solve_cstr_ctx_change;
-             [ exact HSolve2
-             | repeat rewrite ftvar_in_aenv_app; clear; fsetdec
-             | intros α1 Hg; destruct Hg as [Hb | [τ Hb]];
-                 [ left | right; exists τ ]; apply binds_rot_app; exact Hb
-             | intros P0 Hf; inversion Hf; subst;
-                 [ apply a_flex__var with (α := α0)
-                 | apply a_flex__var_def with (α := α0) (τ := τ) ];
-                 apply binds_rot_app_rev; assumption ] ].
+       exact (a_solve_cstr_arrow_merge (a_lookeq_cstr_eq HLK1) HSolve1
+                HSolve2 HwfPi HfmΞ2 HΞ2disj HΞ2C1).
     -- (* all_flex_mono (Ξs2 ++ Ξs1) *) apply all_flex_mono_app; assumption.
     -- (* uniq (Ξs2 ++ Ξs1) *)
        assert (Hdd : dom Ξs2 ∩ dom Ξs1 [<=] empty).
@@ -2281,29 +2200,8 @@ Proof.
     -- (* keys *) exact Hmapc.
     -- (* κc images ⊆ ftv ψa *) apply Forall_app; split; assumption.
     -- (* a_inc : REBUILT from [Hκ] one block at a time *)
-       assert (Hb1 : (κc2 ++ κ) ∷ (Ξc2 ++ Θ0) ⊑ Θ)
-         by (apply a_inc_flex_prefix_build;
-               [ exact HfmΞ2 | exact Hmap2 | exact Hwm2 | exact Hκ ]).
-       assert (Hb2 : (κc1 ++ κc2 ++ κ) ∷ (Ξc1 ++ Ξc2 ++ Θ0) ⊑ Θ)
-         by (apply a_inc_flex_prefix_build;
-               [ exact HfmΞ1 | exact Hmap1 | exact Hwm1 | exact Hb1 ]).
-       assert (Hb3 : (κs1 ++ κc1 ++ κc2 ++ κ)
-                       ∷ (Ξs1 ++ Ξc1 ++ Ξc2 ++ Θ0) ⊑ Θ)
-         by (apply a_inc_flex_prefix_build;
-               [ exact Hfms1 | exact Hks1
-               | eapply forall_wf_mono_weaken; [ exact Hmon | exact HFs1 ]
-               | exact Hb2 ]).
-       assert (Hb4 : (κs2 ++ κs1 ++ κc1 ++ κc2 ++ κ)
-                       ∷ (Ξs2 ++ Ξs1 ++ Ξc1 ++ Ξc2 ++ Θ0) ⊑ Θ)
-         by (apply a_inc_flex_prefix_build;
-               [ exact Hfms2 | exact Hks2
-               | eapply forall_wf_mono_weaken; [ exact Hmon | exact HFs2 ]
-               | exact Hb3 ]).
-       rewrite (list_app_assoc κs2 κs1 ((κc1 ++ κc2) ++ κ)).
-       rewrite (list_app_assoc κc1 κc2 κ).
-       rewrite (aenv_app_assoc Ξs2 Ξs1 ((Ξc1 ++ Ξc2) ++ Θ0)).
-       rewrite (aenv_app_assoc Ξc1 Ξc2 Θ0).
-       exact Hb4.
+       exact (a_inc_arrow_merge Hfms1 HfmΞ1 Hfms2 HfmΞ2 Hks1 Hmap1 Hks2 Hmap2
+                Hκ Hinc1 Hinc2).
     -- (* a_inc_equiv *) apply a_inc_equiv_refl; exact Hκ.
     -- (* κc fresh *)
        intros α0 Hα0. rewrite dom_app in Hα0.
@@ -2314,16 +2212,8 @@ Proof.
     -- (* precision.  [Hpre2] is under [κs2 ++ κc2 ++ κs1 ++ κc1 ++ κ] and the
           goal wants [(κs2 ++ κs1) ++ (κc1 ++ κc2) ++ κ] — the same bindings on
           pairwise-disjoint domains, so it is a lookup-level identity. *)
-       assert (Hperm : msubst_pskl ((κs2 ++ κs1) ++ (κc1 ++ κc2) ++ κ) Pa2
-                     = msubst_pskl (κs2 ++ κc2 ++ κs1 ++ κc1 ++ κ) Pa2).
-       { rewrite (list_app_assoc κs2 κs1 ((κc1 ++ κc2) ++ κ)).
-         rewrite (list_app_assoc κc1 κc2 κ).
-         apply msubst_pskl_lookup_congr. intro β0.
-         apply msubst_lookup_app_agree.
-         rewrite (@msubst_lookup_app_swap κc2 κs1 (κc1 ++ κ) β0 Hdisj2s1).
-         apply msubst_lookup_app_agree.
-         apply (@msubst_lookup_app_swap κc1 κc2 κ β0 Hdisj12). }
-       rewrite Hperm.
+       rewrite (@msubst_pskl_arrow_merge κs1 κc1 κs2 κc2 κ Pa2
+                  Hdisj12 Hdisj2s1).
        eapply ad_partial_precise_psi_cong;
          [ exact Hpre2 | clear - HΨa; fsetdec ].
     -- (* ftv 𝒞 : VACUOUS.  Sub-Arrow concludes at [mode_fn M], never at
