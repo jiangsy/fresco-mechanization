@@ -4087,12 +4087,9 @@ Proof.
                      ltac:(eapply rsubst_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; solve_notin_auto
                           | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
-          as (𝒞 & Ξc & Ξs & Pa & κc & κs
-                & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
-                & HwfPa & HwfΞ & HαΞ
-                & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+          as (𝒞 & Ξc & Ξs & Pa & κc & κs & HLK & Hrest).
         exists 𝒞, Ξc, Ξs, Pa, κc, κs.
-        repeat split; try assumption.
+        refine (conj _ Hrest).
         apply a_lookeq__univ_ghost_r;
           [ exact HPnα
           | apply guarded_pskl__arrow; apply lc_uskl_to_pskl; assumption
@@ -4552,12 +4549,9 @@ Proof.
                    Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rsubst_ftv_apart_mono;
                           [ exact HΔρftv | cbn; clear; solve_notin_auto
                           | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
-        as (𝒞 & Ξc & Ξs & Pa & κc & κs
-              & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
-              & HwfPa & HwfΞ & HαΞ
-              & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+        as (𝒞 & Ξc & Ξs & Pa & κc & κs & HLK & Hrest).
       exists 𝒞, Ξc, Ξs, Pa, κc, κs.
-      repeat split; try assumption.
+      refine (conj _ Hrest).
       apply a_lookeq__univ_ghost; exact HLK.
 Qed.
 

@@ -1465,25 +1465,19 @@ Proof.
        an ftv-𝒞 conclusion this statement does not carry. *)
     (* the guess-FIXED conjunct, straight off the shield: no guard, since
        this closure never descends ψa (DESIGN §14.3) *)
-    edestruct (@a_lookeq_solve_complete_gen
-                 (size_uskl R' + size_pskl P0)
-                 a_sub_mode_ty Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψ ψa (pskl_to_bskl_inh B)
-                 P'' P0 Pi R' α Θ Δρ Ψρ T)
+    destruct (@a_lookeq_solve_complete_gen
+                (size_uskl R' + size_pskl P0)
+                a_sub_mode_ty Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψ ψa (pskl_to_bskl_inh B)
+                P'' P0 Pi R' α Θ Δρ Ψρ T
+                (le_n _) HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0 HwfPi Hκ Hκw Hψaw
+                HαΘ HαΘ0 HeraseR HscopeR HlcR Htags Hdisj Hsub' Hdfresh Hpre
+                HΨs1 HΨs2 (ad_consis_join_consis H1) HlcQ HwfSubj Hrefine
+                Hrho (fun x b Hb => Hb) HΨρ Hrfr HΔρΔ HΔρw HΔρftv HΔρPi
+                Hψaap Lav HLav)
       as (𝒞 & Ξc & Ξs & Pa & κc & κs
           & Hlook & Hsolve & Hfms & Hus & Hks & Hfrs & HFs
           & HwfPa & HwfΞ & HαΞ & Hkeys
-          & HFor & Hftv & Hinc & Heqv & Hκcfresh0 & Hprec & Hapart0);
-      [ exact (le_n _) | exact HwfΘ | exact HwfΘ0
-      | exact HwfΘw | exact Hmon | exact Hnr
-      | exact HwfP0 | exact HwfPi | exact Hκ | exact Hκw | exact Hψaw
-      | exact HαΘ | exact HαΘ0 | exact HeraseR
-      | exact HscopeR | exact HlcR | exact Htags | exact Hdisj
-      | exact Hsub' | exact Hdfresh | exact Hpre | exact HΨs1
-      | exact HΨs2 | exact (ad_consis_join_consis H1) | exact HlcQ | exact HwfSubj
-      | exact Hrefine
-      | exact Hrho | intros x b Hb; exact Hb | exact HΨρ | exact Hrfr
-      | exact HΔρΔ | exact HΔρw | exact HΔρftv | exact HΔρPi
-      | exact Hψaap | exact HLav | ].
+          & HFor & Hftv & Hinc & Heqv & Hκcfresh0 & Hprec & Hapart0).
     (* P6-Cs's generated-names conjunct is STRONGER since cluster 3 (it also
        avoids [ftvar_in_uskl ψa]); P6-Ss states the weaker form, so drop the
        extra disjunct here rather than carry it through every row *)
@@ -1882,32 +1876,29 @@ Proof.
        instantiate [?L] structurally. *)
     assert (HLav1 : ftvar_in_aenv Θ0 [<=] add α (union Lav (dom Θ)))
       by (clear - HLav; fsetdec).
-    edestruct (@a_lookeq_solve_complete_gen
-                 (size_uskl Ra + size_pskl P01)
-                 NM Θ0 Θ Θw κ Δ Ψ' Ψi (Ψ1 ∩ Ψ') Ψ1 ψa Q1
-                 (uskl_to_pskl Ra) P01 Pi Ra α Θ Δρ Ψρ1 R1)
+    assert (HscopeRa : ftvar_in_uskl Ra [<=] add α (dom Θ0 `union` dom Θ))
+      by (clear - HscopeR; cbn in HscopeR; fsetdec).
+    assert (HdisjRa : (ftag_in_uskl Ra) ∩ Ψ' [=] empty)
+      by (clear - Hdisj; cbn in Hdisj; fsetdec).
+    assert (HlcQ1 : lc_bskl Q1) by lc_tgt.
+    (* ⭐ the LEFT branch's avoid-set is WIDENED by [α] and [dom Θ]: the row
+       needs [α ∉ dom Ξs1] to rebuild [α ∉ dom (Ξs1 ++ Ξc1 ++ Θ0)], and the
+       ρ- and refinement-transports carry [Rb] (scoped at α, Θ0 and Θ)
+       across the LEFT solve's block.  Same widening as P6-Cs's arrow row. *)
+    destruct (@a_lookeq_solve_complete_gen
+                (size_uskl Ra + size_pskl P01)
+                NM Θ0 Θ Θw κ Δ Ψ' Ψi (Ψ1 ∩ Ψ') Ψ1 ψa Q1
+                (uskl_to_pskl Ra) P01 Pi Ra α Θ Δρ Ψρ1 R1
+                (le_n _) HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP01 HwfPi Hκ Hκw Hψaw
+                HαΘ HαΘ0 eq_refl HscopeRa HlcRa Htags HdisjRa HsubL Hdfresh Hpre
+                HΨs1L HΨs2L (ad_consis_join_consis H) HlcQ1 HwfSubjA Href1
+                Hrhoa (fun x b Hb => Hb) HΨρ1e Hrfr HΔρΔ HΔρw HΔρftvL HΔρPi
+                Hψaap _ HLav1)
       as (C1 & Ξc1 & Ξs1 & Pa1 & κc1 & κs1
           & HLK1 & HSolve1 & Hfms1 & Hus1 & Hks1 & Hfrs1 & HFs1
           & HwfPa1 & HwfΞ1 & HαΞ1
           & Hmap1 & Himg1 & HftvC1 & Hinc1 & Hinceq1 & Hκf1 & Hpre1
-          & Hapart1);
-      [ exact (le_n _) | exact HwfΘ | exact HwfΘ0
-      | exact HwfΘw | exact Hmon | exact Hnr
-      | exact HwfP01 | exact HwfPi
-      | exact Hκ | exact Hκw | exact Hψaw | exact HαΘ | exact HαΘ0 | reflexivity
-      | clear - HscopeR; cbn in HscopeR; fsetdec
-      | exact HlcRa | exact Htags
-      | clear - Hdisj; cbn in Hdisj; fsetdec
-      | exact HsubL | exact Hdfresh | exact Hpre | exact HΨs1L | exact HΨs2L
-      | exact (ad_consis_join_consis H) | lc_tgt | exact HwfSubjA | exact Href1
-      | exact Hrhoa | intros x b Hb; exact Hb | exact HΨρ1e | exact Hrfr
-      | exact HΔρΔ | exact HΔρw | exact HΔρftvL | exact HΔρPi
-      | exact Hψaap
-      (* ⭐ the LEFT branch's avoid-set is WIDENED by [α] and [dom Θ]: the row
-         needs [α ∉ dom Ξs1] to rebuild [α ∉ dom (Ξs1 ++ Ξc1 ++ Θ0)], and the
-         ρ- and refinement-transports carry [Rb] (scoped at α, Θ0 and Θ)
-         across the LEFT solve's block.  Same widening as P6-Cs's arrow row. *)
-      | exact HLav1 | ].
+          & Hapart1).
     (* ⭐ THE RIGHT BRANCH RUNS AT [Ξs1 ++ Ξc1 ++ Θ0] UNDER [κs1 ++ κc1 ++ κ]
        (2026-08-05, the SolE-FlexR repair).  [Pa1] is the LEFT SOLVE's output
        and mentions the flexibles solve invented, so the precision it consumes
