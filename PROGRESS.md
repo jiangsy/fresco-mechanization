@@ -181,6 +181,29 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share solution swap erasure and binder closing
+
+Use `a_inc_kswap_paint` in five subtyping completeness cases to derive
+swap erasure from output well-formedness and the solution increase. The
+cases no longer repeat the flexible-binding and substitution-key argument.
+Use `ad_precise_downarrow_restore` in the three rigid/term skip cases to
+restore precision from the normalized target and its smaller context.
+Use `consis_swaps_close` to share output closing and swap composition in
+three executable consistency binder cases. Rule-specific cases remain explicit.
+
+Net reduction: **67 physical Coq lines / 77 nonblank, noncomment lines**.
+All 151 existing theorem statements in the two edited files are unchanged;
+no inline tactic terms added.
+
+Validation: focused compilation and final `make coq` passed. All 34
+headline assumption reports are closed under the global context, with no
+axiom reports or errors. Statement comparison and `git diff --check` passed.
+
+The larger follow-up is to freshen an entire optimal subtyping result once,
+including its solution property, rather than repeat swap transport in each
+skip/assignment consumer. This batch does not yet remove that layer.
+
+
 ## 2026-10-11 — Share consistency binder context invariants
 
 Use `lift_consis_open_pair` to share context relation, flex agreement,

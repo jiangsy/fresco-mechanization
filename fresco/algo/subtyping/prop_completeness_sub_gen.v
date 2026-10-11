@@ -2636,6 +2636,31 @@ Qed.
 (*  (F)  P7a ROW — Flex-Depend                                            *)
 (* ===================================================================== *)
 
+(** A generated flexible name is solved by the increase whenever it occurs
+    in the output. Swapping that name away therefore preserves its solution. *)
+Lemma a_inc_kswap_paint : forall α β κ Θ0 Θ P,
+  κ ∷ Θ0 ⊑ Θ ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
+  (forall bd, binds α bd Θ0 ->
+    bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ) ->
+  β `notin` dom Θ0 `union` ftvar_in_pskl P `union` singleton α ->
+  msubst_bskl (kswap_msubst α β κ) (pskl_to_bskl_syn (swap_pskl α β P)) =
+    msubst_bskl κ (pskl_to_bskl_syn P).
+Proof.
+  intros α β κ Θ0 Θ P Hinc Hwf Hflex Hfresh.
+  apply msubst_bskl_kswap_paint.
+  - clear - Hfresh; fsetdec.
+  - intros Hin. pose proof (@a_inc_keys_dom κ Θ0 Θ β Hinc Hin) as Hdom.
+    clear - Hdom Hfresh; fsetdec.
+  - clear - Hfresh; fsetdec.
+  - destruct (AtomSetProperties.In_dec α (ftvar_in_pskl P)) as [Hin | Hout];
+      [ right | left; exact Hout ].
+    apply (a_wf_pskl_ftv_binds Hwf) in Hin.
+    eapply a_inc_flex_in_keys; [exact Hinc |].
+    destruct Hin as [Hb | Hb]; [ | exact Hb ].
+    destruct (Hflex abind_tvar Hb) as [Heq | [τ Heq]]; discriminate.
+Qed.
+
 Lemma a_sub_flex_complete_depend : forall n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q,
   (* ⭐ THE IH IS LENGTH-GUARDED (P7c, 2026-08-03).  The dispatcher proves the
      flex half by a STRUCTURAL induction on [Θ0] with [Ξ] generalized and the
@@ -2861,20 +2886,9 @@ Proof.
     { apply msubst_bskl_head_notin.
       rewrite ftvar_in_bskl_syn. exact Hnbsw. }
     rewrite Hhead.
-    rewrite (msubst_bskl_kswap_paint β β1 ζ P1);
-      [ exact Hprec
-      | clear - Fr; solve_notin_auto
-      | intro hc; pose proof (Hkeysζ β1 hc) as h; clear - h Fr; fsetdec
-      | clear - Fr; solve_notin_auto
-      | destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P1))
-          as [hin | hout]; [ right | left; exact hout ];
-        assert (hbt : a_binds_tvar β Θ1)
-          by (eapply a_wf_pskl_ftv_binds; [ exact HwfP1o | exact hin ]);
-        destruct hbt as [hbt | [hbt | [τ0 hbt]]];
-        [ exfalso; destruct (HβflexΘ1 abind_tvar hbt) as [hc | [τ1 hc]];
-            discriminate
-        | eapply a_inc_flex_in_keys; [ exact Hζ | left; exact hbt ]
-        | eapply a_inc_flex_in_keys; [ exact Hζ | right; eexists; exact hbt ] ] ]. }
+    rewrite (@a_inc_kswap_paint β β1 ζ Θ1 _ P1 Hζ HwfP1o HβflexΘ1)
+      by (clear - Fr; solve_notin_auto).
+    exact Hprec. }
 Qed.
 
 (* ===================================================================== *)
@@ -3374,20 +3388,9 @@ Proof.
     rewrite (msubst_bskl_head_notin β τβ (kswap_msubst β β1 ζ)
                (pskl_to_bskl_syn (swap_pskl β β1 P1))
                ltac:(rewrite ftvar_in_bskl_syn; exact Hnbsw)).
-    rewrite (msubst_bskl_kswap_paint β β1 ζ P1);
-      [ exact Hprec
-      | clear - Fr; solve_notin_auto
-      | intro hc; pose proof (Hkeysζ β1 hc) as h; clear - h Fr; fsetdec
-      | clear - Fr; solve_notin_auto
-      | destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P1))
-          as [hin | hout]; [ right | left; exact hout ];
-        assert (hbt : a_binds_tvar β Θ1)
-          by (eapply a_wf_pskl_ftv_binds; [ exact HwfP1o | exact hin ]);
-        destruct hbt as [hbt | [hbt | [τ0 hbt]]];
-        [ exfalso; destruct (HβflexΘ1 abind_tvar hbt) as [hc | [τ1 hc]];
-            discriminate
-        | eapply a_inc_flex_in_keys; [ exact Hζ | left; exact hbt ]
-        | eapply a_inc_flex_in_keys; [ exact Hζ | right; eexists; exact hbt ] ] ].
+    rewrite (@a_inc_kswap_paint β β1 ζ Θ1 _ P1 Hζ HwfP1o HβflexΘ1)
+      by (clear - Fr; solve_notin_auto).
+    exact Hprec.
   }
 Qed.
 
@@ -5436,6 +5439,27 @@ Proof.
   apply (@ad_precise_downarrow_gen Θ Δ P H Θ Δ Hwf). intros α Hα; exact Hα.
 Qed.
 
+(** Restore precision from a normalized target in a smaller context. *)
+Lemma ad_precise_downarrow_restore : forall Θ0 Θ P Q,
+  {{ Θ0 ⨟ empty ⊢ₚᵣ P ⊑ (bskl_to_pskl (⇓ᵇ[ Θ ] Q)) }}ad ->
+  (forall α bd, binds α bd Θ0 -> binds α bd Θ) ->
+  {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
+  {{ ⊢ Θ }}a ->
+  {{ Θ ⨟ empty ⊢ₚᵣ P ⊑ (bskl_to_pskl Q) }}ad.
+Proof.
+  intros Θ0 Θ P Q Hprec Hsub HwfQ Hwf.
+  assert (HprecΘ : {{ Θ ⨟ empty ⊢ₚᵣ P ⊑ (bskl_to_pskl (⇓ᵇ[ Θ ] Q)) }}ad).
+  { unfold ad_precise in *. eapply ad_refine_syn_weaken; eauto. }
+  unfold ad_precise in *.
+  rewrite (bskl_to_pskl_msubst_bskl (aenv_msubst Θ) Q) in HprecΘ.
+  eapply ad_refine_syn_trans;
+    [ apply ad_precise_downarrow; assumption
+    | exact Hwf
+    | intros α Hα; clear - Hα; fsetdec
+    | rewrite bskl_to_pskl_pskl_to_bskl_inh; exact HwfQ
+    | exact HprecΘ ].
+Qed.
+
 (** Normalization below a skipped binding. The source increase splits at
     the binding, and the target has a suffix containing the subject's image.
     The same argument supplies the recursive problem for rigid, type-term,
@@ -5796,32 +5820,9 @@ Proof.
   { (* the precision : the swap erases, then the package comes back from
        [(Θ', ⇓ᵇQ)] to [(Θ, Q)] — weaken the context, then compose with
        [⇓ˢ(⌊Q⌋) ⊑ ⌊Q⌋] *)
-    rewrite (msubst_bskl_kswap_paint β β1 ζ P1);
-      [ | clear - Fr; solve_notin_auto
-        | intro hc; pose proof (Hkeysζ β1 hc) as h; clear - h Fr; fsetdec
-        | clear - Fr; solve_notin_auto
-        | destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P1))
-            as [hin | hout]; [ right | left; exact hout ];
-          assert (hbt : a_binds_tvar β Θ1)
-            by (eapply a_wf_pskl_ftv_binds; [ exact HwfP1o | exact hin ]);
-          destruct hbt as [hbt | [hbt | [τ0 hbt]]];
-          [ exfalso; destruct (HβflexΘ1 abind_tvar hbt) as [hc | [τ1 hc]];
-              discriminate
-          | eapply a_inc_flex_in_keys; [ exact Hζ | left; exact hbt ]
-          | eapply a_inc_flex_in_keys; [ exact Hζ | right; eexists; exact hbt ] ] ].
-    assert (HprecΘ : {{ Θ ⨟ empty ⊢ₚᵣ (msubst_bskl ζ (pskl_to_bskl_syn P1))
-                       ⊑ (bskl_to_pskl (⇓ᵇ[ Θ ] Q)) }}ad).
-    { unfold ad_precise in *.
-      eapply ad_refine_syn_weaken;
-        [ exact Hprec | exact Hsub' ]. }
-    unfold ad_precise in *.
-    rewrite (bskl_to_pskl_msubst_bskl (aenv_msubst Θ) Q) in HprecΘ.
-    eapply ad_refine_syn_trans;
-      [ apply ad_precise_downarrow; [ exact HwfQ | exact Hwfth ]
-      | exact Hwfth
-      | intros x Hx; exfalso; clear - Hx; fsetdec
-      | rewrite bskl_to_pskl_pskl_to_bskl_inh; exact HwfQ
-      | exact HprecΘ ]. }
+    rewrite (@a_inc_kswap_paint β β1 ζ Θ1 _ P1 Hζ HwfP1o HβflexΘ1)
+      by (clear - Fr; solve_notin_auto).
+    eapply ad_precise_downarrow_restore; eauto. }
 Qed.
 
 (* ===================================================================== *)
@@ -6066,32 +6067,9 @@ Proof.
     simpl in Hself. apply Hself; [ exact Hwfth | exact HuqΘ | exact Hwf ]. }
   { (* the precision — verbatim from §(M): the swap erases, then the package
        comes back from [(Θ', ⇓ᵇQ)] to [(Θ, Q)] *)
-    rewrite (msubst_bskl_kswap_paint β β1 ζ P1);
-      [ | clear - Fr; solve_notin_auto
-        | intro hc; pose proof (Hkeysζ β1 hc) as h; clear - h Fr; fsetdec
-        | clear - Fr; solve_notin_auto
-        | destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P1))
-            as [hin | hout]; [ right | left; exact hout ];
-          assert (hbt : a_binds_tvar β Θ1)
-            by (eapply a_wf_pskl_ftv_binds; [ exact HwfP1o | exact hin ]);
-          destruct hbt as [hbt | [hbt | [τ0 hbt]]];
-          [ exfalso; destruct (HβflexΘ1 abind_tvar hbt) as [hc | [τ1 hc]];
-              discriminate
-          | eapply a_inc_flex_in_keys; [ exact Hζ | left; exact hbt ]
-          | eapply a_inc_flex_in_keys; [ exact Hζ | right; eexists; exact hbt ] ] ].
-    assert (HprecΘ : {{ Θ ⨟ empty ⊢ₚᵣ (msubst_bskl ζ (pskl_to_bskl_syn P1))
-                       ⊑ (bskl_to_pskl (⇓ᵇ[ Θ ] Q)) }}ad).
-    { unfold ad_precise in *.
-      eapply ad_refine_syn_weaken;
-        [ exact Hprec | exact Hsub' ]. }
-    unfold ad_precise in *.
-    rewrite (bskl_to_pskl_msubst_bskl (aenv_msubst Θ) Q) in HprecΘ.
-    eapply ad_refine_syn_trans;
-      [ apply ad_precise_downarrow; [ exact HwfQ | exact Hwfth ]
-      | exact Hwfth
-      | intros x Hx; exfalso; clear - Hx; fsetdec
-      | rewrite bskl_to_pskl_pskl_to_bskl_inh; exact HwfQ
-      | exact HprecΘ ]. }
+    rewrite (@a_inc_kswap_paint β β1 ζ Θ1 _ P1 Hζ HwfP1o HβflexΘ1)
+      by (clear - Fr; solve_notin_auto).
+    eapply ad_precise_downarrow_restore; eauto. }
 Qed.
 
 (* ===================================================================== *)
@@ -6324,32 +6302,9 @@ Proof.
     simpl in Hself. apply Hself; [ exact Hwfth | exact HuqΘ | exact Hwf ]. }
   { (* the precision — verbatim from §(M): the swap erases, then the package
        comes back from [(Θ', ⇓ᵇQ)] to [(Θ, Q)] *)
-    rewrite (msubst_bskl_kswap_paint β β1 ζ P1);
-      [ | clear - Fr; solve_notin_auto
-        | intro hc; pose proof (Hkeysζ β1 hc) as h; clear - h Fr; fsetdec
-        | clear - Fr; solve_notin_auto
-        | destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P1))
-            as [hin | hout]; [ right | left; exact hout ];
-          assert (hbt : a_binds_tvar β Θ1)
-            by (eapply a_wf_pskl_ftv_binds; [ exact HwfP1o | exact hin ]);
-          destruct hbt as [hbt | [hbt | [τ0 hbt]]];
-          [ exfalso; destruct (HβflexΘ1 abind_tvar hbt) as [hc | [τ1 hc]];
-              discriminate
-          | eapply a_inc_flex_in_keys; [ exact Hζ | left; exact hbt ]
-          | eapply a_inc_flex_in_keys; [ exact Hζ | right; eexists; exact hbt ] ] ].
-    assert (HprecΘ : {{ Θ ⨟ empty ⊢ₚᵣ (msubst_bskl ζ (pskl_to_bskl_syn P1))
-                       ⊑ (bskl_to_pskl (⇓ᵇ[ Θ ] Q)) }}ad).
-    { unfold ad_precise in *.
-      eapply ad_refine_syn_weaken;
-        [ exact Hprec | exact Hsub' ]. }
-    unfold ad_precise in *.
-    rewrite (bskl_to_pskl_msubst_bskl (aenv_msubst Θ) Q) in HprecΘ.
-    eapply ad_refine_syn_trans;
-      [ apply ad_precise_downarrow; [ exact HwfQ | exact Hwfth ]
-      | exact Hwfth
-      | intros x Hx; exfalso; clear - Hx; fsetdec
-      | rewrite bskl_to_pskl_pskl_to_bskl_inh; exact HwfQ
-      | exact HprecΘ ]. }
+    rewrite (@a_inc_kswap_paint β β1 ζ Θ1 _ P1 Hζ HwfP1o HβflexΘ1)
+      by (clear - Fr; solve_notin_auto).
+    eapply ad_precise_downarrow_restore; eauto. }
 Qed.
 
 (* ===================================================================== *)

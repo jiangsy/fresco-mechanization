@@ -1101,6 +1101,41 @@ Local Ltac do_flex_r Hmot Hd Hu Hcov :=
           | cbn [cs_ctx proj1_sig]; exact HT | ];
   cbn [cs_out proj1_sig]; out_var_id Hav Hcov.
 
+(** Close a recursive consistency result after moving its fresh binder.
+    The recursive swap chain fixes the new binder because it avoids the
+    extended supply. *)
+Lemma consis_swaps_close : forall S Sd St Θ Q α β ps r,
+  α `notin` S -> β `notin` S ->
+  (forall a b, In (a, b) ps -> a `notin` add β S /\ b `notin` add β S) ->
+  St [=] swap_atoms α β Sd -> swaps_atoms ps St [=] cs_supply r ->
+  swaps_aenv ps ((β ~ abind_tvar) ++ swap_aenv α β Θ) = cs_ctx r ->
+  swaps_pskl ps (swap_pskl α β Q) = cs_out r ->
+  cs_ctx r = (β ~ abind_tvar) ++ swaps_aenv ps (swap_aenv α β Θ) /\
+  (forall a b, In (a, b) ((α, β) :: ps) -> a `notin` S /\ b `notin` S) /\
+  swaps_atoms ((α, β) :: ps) Sd [=] cs_supply r /\
+  swaps_pskl ((α, β) :: ps) (pskl_all_syn (close_pskl_wrt_pskl α Q)) =
+    pskl_all_syn (close_pskl_wrt_pskl β (cs_out r)).
+Proof.
+  intros * Hα Hβ Hav HSt HS HT HQ.
+  assert (Hfix : swaps_atom ps β = β).
+  { apply swaps_atom_notin. intros a b Hin.
+    destruct (Hav _ _ Hin) as [Ha Hb].
+    split; intro Heq; subst; clear - Ha Hb; fsetdec. }
+  split.
+  - rewrite <- HT, swaps_aenv_cons_tvar, Hfix. reflexivity.
+  - split.
+    + intros a b [Heq | Hin].
+      * inversion Heq; subst; auto.
+      * destruct (Hav _ _ Hin) as [Ha Hb]. split; clear - Ha Hb; fsetdec.
+    + split.
+      * cbn [swaps_atoms]. rewrite <- HS.
+        apply swaps_atoms_cong. symmetry. exact HSt.
+      * cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close, swap_atom_l.
+        rewrite swaps_pskl_all_syn, swaps_pskl_close, Hfix, HQ. reflexivity.
+Qed.
+
+Arguments consis_swaps_close {S Sd St Θ Q α β ps r} _ _ _ _ _ _ _.
+
 Lemma e_consis_call_impl_complete : forall S0 Θ c
     (H0 : e_consis_call_order S0 Θ c), consis_call_complete S0 Θ c.
 Proof.
@@ -1778,36 +1813,17 @@ Proof.
           clear - Hcov Hup1 Hup2. simpl in *. fsetdec. }
         kill_ccall (Q2 P0' Pb eq_refl eq_refl) Hu' Hcov' Dpt
           (swap_pskl α (supply_fresh S1) Qb) r Hr ps Hav HS HT HQ.
-        assert (HTz : cs_ctx r = (supply_fresh S1 ~ abind_tvar)
-                  ++ swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd)).
-        { rewrite <- HT. rewrite swaps_aenv_cons_tvar. repeat f_equal.
-          apply swaps_atom_notin. intros a0 b0 Hin.
-          destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
-          split; intro Heq; subst; clear - Ha0 Hb0; fsetdec. }
+        destruct (consis_swaps_close Hα Hz Hav HS1t HS HT HQ)
+          as (HTz & HavAll & HSAll & HQAll).
         destruct (@split_tvar_head_hit_eq _ _ _ HTz) as [pf Hsp].
         rewrite Hsp. cbv beta iota.
         exists (mk_consis_result (cs_supply r)
                   (swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd))
-                  (pskl_all_syn (close_pskl_wrt_pskl (supply_fresh S1)
-                                   (cs_out r)))),
+                  (pskl_all_syn (close_pskl_wrt_pskl (supply_fresh S1) (cs_out r)))),
                ((α, supply_fresh S1) :: ps).
         split; [ reflexivity | ].
-        repeat apply conj.
-        -- intros a0 b0 [Heqp | Hin];
-             [ inversion Heqp; subst; split; assumption | ].
-           destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
-           split; clear - Ha0 Hb0; fsetdec.
-        -- cbn [swaps_atoms cs_supply proj1_sig]. rewrite <- HS.
-           apply swaps_atoms_cong. symmetry. exact HS1t.
-        -- cbn [swaps_aenv cs_ctx proj1_sig]. reflexivity.
-        -- cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close.
-           replace (swap_atom α (supply_fresh S1) α) with (supply_fresh S1)
-             by (unfold swap_atom; destruct (α == α); congruence).
-           rewrite swaps_pskl_all_syn, swaps_pskl_close.
-           rewrite (swaps_atom_notin ps (supply_fresh S1))
-             by (intros a0 b0 Hin; destruct (Hav a0 b0 Hin) as [Ha0 Hb0];
-                 split; intro Heq; subst; clear - Ha0 Hb0; fsetdec).
-           cbn [cs_out proj1_sig]. rewrite HQ. reflexivity.
+        repeat apply conj;
+          [ exact HavAll | exact HSAll | reflexivity | exact HQAll ].
       * (* ⭐ ∀ ∼ ◇ — U-Ghost is the only rule at a ◇ subject *)
         destruct (e_consis_inv_ghost_subject Hd
                     ltac:(intros ? Habs; discriminate Habs))
@@ -1859,36 +1875,17 @@ Proof.
           clear - Hcov Hup1. simpl in *. fsetdec. }
         kill_ccall (Q5 P0' Pb eq_refl eq_refl) Hu' Hcov' Dpt
           (swap_pskl α (supply_fresh S1) Qb) r Hr ps Hav HS HT HQ.
-        assert (HTz : cs_ctx r = (supply_fresh S1 ~ abind_tvar)
-                  ++ swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd)).
-        { rewrite <- HT. rewrite swaps_aenv_cons_tvar. repeat f_equal.
-          apply swaps_atom_notin. intros a0 b0 Hin.
-          destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
-          split; intro Heq; subst; clear - Ha0 Hb0; fsetdec. }
+        destruct (consis_swaps_close Hα Hz Hav HS1t HS HT HQ)
+          as (HTz & HavAll & HSAll & HQAll).
         destruct (@split_tvar_head_hit_eq _ _ _ HTz) as [pf Hsp].
         rewrite Hsp. cbv beta iota.
         exists (mk_consis_result (cs_supply r)
                   (swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd))
-                  (pskl_all_syn (close_pskl_wrt_pskl (supply_fresh S1)
-                                   (cs_out r)))),
+                  (pskl_all_syn (close_pskl_wrt_pskl (supply_fresh S1) (cs_out r)))),
                ((α, supply_fresh S1) :: ps).
         split; [ reflexivity | ].
-        repeat apply conj.
-        -- intros a0 b0 [Heqp | Hin];
-             [ inversion Heqp; subst; split; assumption | ].
-           destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
-           split; clear - Ha0 Hb0; fsetdec.
-        -- cbn [swaps_atoms cs_supply proj1_sig]. rewrite <- HS.
-           apply swaps_atoms_cong. symmetry. exact HS1t.
-        -- cbn [swaps_aenv cs_ctx proj1_sig]. reflexivity.
-        -- cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close.
-           replace (swap_atom α (supply_fresh S1) α) with (supply_fresh S1)
-             by (unfold swap_atom; destruct (α == α); congruence).
-           rewrite swaps_pskl_all_syn, swaps_pskl_close.
-           rewrite (swaps_atom_notin ps (supply_fresh S1))
-             by (intros a0 b0 Hin; destruct (Hav a0 b0 Hin) as [Ha0 Hb0];
-                 split; intro Heq; subst; clear - Ha0 Hb0; fsetdec).
-           cbn [cs_out proj1_sig]. rewrite HQ. reflexivity.
+        repeat apply conj;
+          [ exact HavAll | exact HSAll | reflexivity | exact HQAll ].
     + (* ⭐ ================= pattern [◇] =================
          FORMERLY OUT OF THE FRAGMENT.  [U-GhostR] is the only rule: it
          coincides with [U-Ghost] at [(◇,◇)] (same triple), and [U-FlexL]
@@ -1996,36 +1993,17 @@ Proof.
           clear - Hcov Hup2. simpl in *. fsetdec. }
         kill_ccall (Q3 P0' Pb eq_refl eq_refl) Hu' Hcov' Dpt
           (swap_pskl α (supply_fresh S1) Qb) r Hr ps Hav HS HT HQ.
-        assert (HTz : cs_ctx r = (supply_fresh S1 ~ abind_tvar)
-                  ++ swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd)).
-        { rewrite <- HT. rewrite swaps_aenv_cons_tvar. repeat f_equal.
-          apply swaps_atom_notin. intros a0 b0 Hin.
-          destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
-          split; intro Heq; subst; clear - Ha0 Hb0; fsetdec. }
+        destruct (consis_swaps_close Hα Hz Hav HS1t HS HT HQ)
+          as (HTz & HavAll & HSAll & HQAll).
         destruct (@split_tvar_head_hit_eq _ _ _ HTz) as [pf Hsp].
         rewrite Hsp. cbv beta iota.
         exists (mk_consis_result (cs_supply r)
                   (swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd))
-                  (pskl_all_syn (close_pskl_wrt_pskl (supply_fresh S1)
-                                   (cs_out r)))),
+                  (pskl_all_syn (close_pskl_wrt_pskl (supply_fresh S1) (cs_out r)))),
                ((α, supply_fresh S1) :: ps).
         split; [ reflexivity | ].
-        repeat apply conj.
-        -- intros a0 b0 [Heqp | Hin];
-             [ inversion Heqp; subst; split; assumption | ].
-           destruct (Hav a0 b0 Hin) as [Ha0 Hb0].
-           split; clear - Ha0 Hb0; fsetdec.
-        -- cbn [swaps_atoms cs_supply proj1_sig]. rewrite <- HS.
-           apply swaps_atoms_cong. symmetry. exact HS1t.
-        -- cbn [swaps_aenv cs_ctx proj1_sig]. reflexivity.
-        -- cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close.
-           replace (swap_atom α (supply_fresh S1) α) with (supply_fresh S1)
-             by (unfold swap_atom; destruct (α == α); congruence).
-           rewrite swaps_pskl_all_syn, swaps_pskl_close.
-           rewrite (swaps_atom_notin ps (supply_fresh S1))
-             by (intros a0 b0 Hin; destruct (Hav a0 b0 Hin) as [Ha0 Hb0];
-                 split; intro Heq; subst; clear - Ha0 Hb0; fsetdec).
-           cbn [cs_out proj1_sig]. rewrite HQ. reflexivity.
+        repeat apply conj;
+          [ exact HavAll | exact HSAll | reflexivity | exact HQAll ].
       * (* ⭐ ⫯P0 ∼ ◇ — U-Ghost is the only rule at a ◇ subject *)
         destruct (e_consis_inv_ghost_subject Hd
                     ltac:(intros ? Habs; discriminate Habs))
