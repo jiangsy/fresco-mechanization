@@ -181,6 +181,26 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share precision binder folding
+
+Replace the two large local `FOLD` assertions in
+`a_solve_eq_complete_var_gen` with the standalone lemma
+`ad_partial_precise_msubst_fold`. Its three callers supply the scoped
+metasubstitution images and binder freshness directly. The lemma shares
+context strengthening, binder renaming, substitution commutation, and
+restoration of the fresh-variable set. Drop three unused disjointness
+premises from the former local interface.
+
+Net reduction: **110 physical Coq lines / 107 nonblank, noncomment lines**.
+All 20 existing theorem statements are unchanged. Inline tactic terms
+fall from 123 to 109; none are introduced.
+
+Validation: focused compilation and `make coq` passed. All 34 headline
+assumption reports are closed under the global context, with no axiom
+reports or errors. Existing theorem statements were compared against HEAD,
+and `git diff --check` passes.
+
+
 
 ## 2026-10-11 — Let lookup induction cover leaf cases directly
 
