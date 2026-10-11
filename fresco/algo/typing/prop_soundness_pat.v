@@ -521,6 +521,25 @@ Proof.
     end.
 Qed.
 
+(** …and so, at a well-formed input, the split's pieces are well-formed
+    and the codomain is mode-compatible one mode down. *)
+Lemma a_split_ty_pieces : forall m Θ0 P0 P Q0 Θ1,
+  {{ Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 }}a ->
+  a_ty_mode_compat m P0 ->
+  m <> mode_tc ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  ({{ Θ0 ⨟ empty ⊢ₚₛ P }}a) /\ ({{ Θ0 ⨟ empty ⊢ₚₛ Q0 }}a) /\
+  a_ty_mode_compat (decr_mode m) Q0.
+Proof.
+  intros m Θ0 P0 P Q0 Θ1 Hs Hmod Hne HwfP0.
+  destruct (a_split_ty_shape Hs Hmod Hne) as [_ [[HP0 [HP HQ]] | HP0]]; subst.
+  - repeat split; try apply a_wf_pskl__ghost.
+    rewrite (a_ty_mode_compat_ghost_inv Hmod). apply a_ty_mode_compat__ti.
+  - inversion HwfP0; subst.
+    destruct (a_ty_mode_compat_arrow_inv Hmod Hne) as [m' [Hm Hm']];
+      subst m. repeat split; assumption.
+Qed.
+
 (* --- §3c  the SK-sorted subtyping's target is mode-compatible ---------- *)
 
 (** The inferred-skeleton half of the paper's (commented-out) "refinement

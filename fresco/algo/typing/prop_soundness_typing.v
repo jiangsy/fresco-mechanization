@@ -1722,15 +1722,7 @@ Proof.
        ⊴-peel has to cross it — [a_guess_mono_decls] says it is
        flexible-only, and [a_isub_strengthen_decls_src] is that crossing. *)
     destruct (a_split_ty_shape H0 Hmod H) as [HeqΘ Hshape]; subst Θ1.
-    assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
-                   a_ty_mode_compat (decr_mode m) Q).
-    { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
-      - repeat split; try apply a_wf_pskl__ghost.
-        rewrite (a_ty_mode_compat_ghost_inv Hmod). apply a_ty_mode_compat__ti.
-      - inversion HwfP0; subst.
-        destruct (a_ty_mode_compat_arrow_inv Hmod H) as [m' [Hm Hm']];
-          subst m. repeat split; assumption. }
-    destruct Hpre as [HwfPP [HwfQ Hmod']].
+    destruct (a_split_ty_pieces H0 Hmod H HwfP0) as [HwfPP [HwfQ Hmod']].
     assert (Hdecls : a_decls αs) by (eapply a_guess_mono_decls; eassumption).
     assert (Hwfαs : {{ ⊢ (αs ++ Θ0) }}a)
       by (apply a_wf_aenv_decls_app; assumption).
@@ -1833,15 +1825,7 @@ Proof.
   - (* AT-AbsAnno *)
     destruct (a_split_ty_shape H0 Hmod H) as [HeqΘ Hshape]; subst Θ1.
     pose proof (a_wf_exp_abs_anno_inv Hexp) as HwfA.
-    assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
-                   a_ty_mode_compat (decr_mode m) Q).
-    { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
-      - repeat split; try apply a_wf_pskl__ghost.
-        rewrite (a_ty_mode_compat_ghost_inv Hmod). apply a_ty_mode_compat__ti.
-      - inversion HwfP0; subst.
-        destruct (a_ty_mode_compat_arrow_inv Hmod H) as [m' [Hm Hm']];
-          subst m. repeat split; assumption. }
-    destruct Hpre as [HwfPP [HwfQ Hmod']].
+    destruct (a_split_ty_pieces H0 Hmod H HwfP0) as [HwfPP [HwfQ Hmod']].
     destruct (a_consis_chk_sound H1 Hwf HwfPP
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA))
       as [Hlec [Hwfc _]].

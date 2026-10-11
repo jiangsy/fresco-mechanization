@@ -1775,15 +1775,7 @@ Proof.
   - (* AT-Abs : the core lives in the CODOMAIN, so the guessed domain and
        the [guess^TY] block are outside it entirely *)
     destruct (a_split_ty_shape H0 Hmod H) as [HeqΘ Hshape]; subst Θ1.
-    assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
-                   a_ty_mode_compat (decr_mode m) Q).
-    { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
-      - repeat split; try apply a_wf_pskl__ghost.
-        rewrite (a_ty_mode_compat_ghost_inv Hmod). apply a_ty_mode_compat__ti.
-      - inversion HwfP0; subst.
-        destruct (a_ty_mode_compat_arrow_inv Hmod H) as [m' [Hm Hm']];
-          subst m. repeat split; assumption. }
-    destruct Hpre as [HwfPP [HwfQ Hmod']].
+    destruct (a_split_ty_pieces H0 Hmod H HwfP0) as [HwfPP [HwfQ Hmod']].
     (* the core forces the FN shape, which pins the split's codomain *)
     inversion Hcore; subst; [ exfalso; apply H; reflexivity | ].
     match goal with
@@ -1846,15 +1838,7 @@ Proof.
        guess block *)
     destruct (a_split_ty_shape H0 Hmod H) as [HeqΘ Hshape]; subst Θ1.
     pose proof (a_wf_exp_abs_anno_inv Hexp) as HwfA.
-    assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
-                   a_ty_mode_compat (decr_mode m) Q).
-    { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
-      - repeat split; try apply a_wf_pskl__ghost.
-        rewrite (a_ty_mode_compat_ghost_inv Hmod). apply a_ty_mode_compat__ti.
-      - inversion HwfP0; subst.
-        destruct (a_ty_mode_compat_arrow_inv Hmod H) as [m' [Hm Hm']];
-          subst m. repeat split; assumption. }
-    destruct Hpre as [HwfPP [HwfQ Hmod']].
+    destruct (a_split_ty_pieces H0 Hmod H HwfP0) as [HwfPP [HwfQ Hmod']].
     inversion Hcore; subst; [ exfalso; apply H; reflexivity | ].
     match goal with
     | Hs : a_split _ (pskl_arrow _ _) _ _ _ |- _ => inversion Hs; subst
