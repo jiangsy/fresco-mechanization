@@ -128,23 +128,11 @@ Proof.
     end.
     unfold lookeq_spec in Hr.
     destruct (e_lookeq_rel Hhead Hr Hcov1) as (ps & Hav & HS & HX & HC).
-    assert (HΘ : swaps_aenv ps Θ = Θ).
-    { apply swaps_aenv_fresh_id. intros a b Hin.
-      destruct (Hav a b Hin) as [Ha Hb]. split; clear - Ha Hb Hcov; fsetdec. }
-    assert (Hα : swaps_atom ps α = α).
-    { apply swaps_atom_notin. intros a b Hin.
-      destruct (Hav a b Hin) as [Ha Hb]. split; clear - Ha Hb Hcov; fsetdec. }
-    assert (HP2 : swaps_pskl ps P2 = P2).
-    { apply swaps_pskl_fresh_id. intros a b Hin.
-      destruct (Hav a b Hin) as [Ha Hb]. split;
-        clear - Ha Hb Hcov; simpl in *; fsetdec. }
-    assert (HQ2 : swaps_pskl ps Q2 = Q2).
-    { apply swaps_pskl_fresh_id. intros a b Hin.
-      destruct (Hav a b Hin) as [Ha Hb]. split;
-        clear - Ha Hb Hcov; simpl in *; fsetdec. }
-    symmetry in HS.
-    destruct (e_lookeq_swaps ps Htail HS) as (Sf & _ & Htail').
-    rewrite HΘ, Hα, HP2, HQ2 in Htail'.
+    destruct (e_lookeq_swaps ps Htail (symmetry HS)) as (Sf & _ & Htail').
+    rewrite (swaps_atom_dodge_in Hav) in Htail' by (clear - Hcov; fsetdec).
+    rewrite (swaps_aenv_fresh_id ps Θ), (swaps_pskl_fresh_id ps P2),
+      (swaps_pskl_fresh_id ps Q2) in Htail'
+      by (apply (swaps_dodge_sub Hav); clear - Hcov; simpl in *; fsetdec).
     pose proof (e_lookeq_supply_grows Hr) as Hgrow.
     assert (Hcov2 : add α (ftvar_in_aenv Θ
         ∪ ftvar_in_pskl P2 ∪ ftvar_in_pskl Q2) [<=] lk_supply r)
@@ -155,11 +143,8 @@ Proof.
   all: lazymatch goal with
     | Hb : ?b `notin` ?S,
       D : e_lookeq (add ?b ?S) ((?b ~ abind_tvar) ++ ?T) ?a _ _ _ _ _ |- _ =>
-        assert (HS : add (supply_fresh S) S
-            [=] swap_atoms b (supply_fresh S) (add b S))
-          by (rewrite swap_atoms_add, swap_atom_l, swap_atoms_notin;
-              [reflexivity | exact Hb | exact Hfresh]);
-        destruct (e_lookeq_swap D HS) as (Sf & _ & Hbody);
+        destruct (e_lookeq_swap D (swap_atoms_fresh_add _ _ _ Hb Hfresh))
+          as (Sf & _ & Hbody);
         rewrite swap_aenv_app, swap_aenv_one_tvar in Hbody;
         rewrite (swap_aenv_fresh_id b (supply_fresh S) T) in Hbody
           by (clear - Hb Hfresh Hcov; simpl in *; fsetdec);
@@ -236,23 +221,11 @@ Proof.
     end.
     unfold lookeq_spec in Hr.
     destruct (e_lookeq_rel Hhead Hr Hcov1) as (ps & Hav & HS & HX & HC).
-    assert (HΘ : swaps_aenv ps Θ = Θ).
-    { apply swaps_aenv_fresh_id. intros a b Hin.
-      destruct (Hav a b Hin) as [Ha Hb]. split; clear - Ha Hb Hcov; fsetdec. }
-    assert (Hα : swaps_atom ps α = α).
-    { apply swaps_atom_notin. intros a b Hin.
-      destruct (Hav a b Hin) as [Ha Hb]. split; clear - Ha Hb Hcov; fsetdec. }
-    assert (HP2 : swaps_pskl ps P2 = P2).
-    { apply swaps_pskl_fresh_id. intros a b Hin.
-      destruct (Hav a b Hin) as [Ha Hb]. split;
-        clear - Ha Hb Hcov; simpl in *; fsetdec. }
-    assert (HQ2 : swaps_pskl ps Q2 = Q2).
-    { apply swaps_pskl_fresh_id. intros a b Hin.
-      destruct (Hav a b Hin) as [Ha Hb]. split;
-        clear - Ha Hb Hcov; simpl in *; fsetdec. }
-    symmetry in HS.
-    destruct (e_looksub_swaps ps Htail HS) as (Sf & _ & Htail').
-    rewrite HΘ, Hα, HP2, HQ2 in Htail'.
+    destruct (e_looksub_swaps ps Htail (symmetry HS)) as (Sf & _ & Htail').
+    rewrite (swaps_atom_dodge_in Hav) in Htail' by (clear - Hcov; fsetdec).
+    rewrite (swaps_aenv_fresh_id ps Θ), (swaps_pskl_fresh_id ps P2),
+      (swaps_pskl_fresh_id ps Q2) in Htail'
+      by (apply (swaps_dodge_sub Hav); clear - Hcov; simpl in *; fsetdec).
     pose proof (e_lookeq_supply_grows Hr) as Hgrow.
     assert (Hcov2 : add α (ftvar_in_aenv Θ
         ∪ ftvar_in_pskl P2 ∪ ftvar_in_pskl Q2) [<=] lk_supply r)
@@ -263,11 +236,8 @@ Proof.
   all: lazymatch goal with
     | Hb : ?b `notin` ?S,
       D : e_looksub (add ?b ?S) ((?b ~ abind_tvar) ++ ?T) ?a _ _ _ _ _ _ |- _ =>
-        assert (HS : add (supply_fresh S) S
-            [=] swap_atoms b (supply_fresh S) (add b S))
-          by (rewrite swap_atoms_add, swap_atom_l, swap_atoms_notin;
-              [reflexivity | exact Hb | exact Hfresh]);
-        destruct (e_looksub_swap D HS) as (Sf & _ & Hbody);
+        destruct (e_looksub_swap D (swap_atoms_fresh_add _ _ _ Hb Hfresh))
+          as (Sf & _ & Hbody);
         rewrite swap_aenv_app, swap_aenv_one_tvar in Hbody;
         rewrite (swap_aenv_fresh_id b (supply_fresh S) T) in Hbody
           by (clear - Hb Hfresh Hcov; simpl in *; fsetdec);

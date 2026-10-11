@@ -119,20 +119,10 @@ Proof.
     end.
     unfold solve_eq_spec in Hr.
     destruct (e_solve_eq_rel Hhead Hr Hcov1) as (ps & Hav & HS & HX & HY).
-    assert (HΘ : swaps_aenv ps Θ = Θ).
-    { apply swaps_aenv_fresh_id. intros a b Hin.
-      destruct (Hav a b Hin) as [Ha Hb]. split; clear - Ha Hb Hcov; fsetdec. }
-    assert (HP2 : swaps_pskl ps P2 = P2).
-    { apply swaps_pskl_fresh_id. intros a b Hin.
-      destruct (Hav a b Hin) as [Ha Hb]. split;
-        clear - Ha Hb Hcov; simpl in *; fsetdec. }
-    assert (HQ2 : swaps_pskl ps Q2 = Q2).
-    { apply swaps_pskl_fresh_id. intros a b Hin.
-      destruct (Hav a b Hin) as [Ha Hb]. split;
-        clear - Ha Hb Hcov; simpl in *; fsetdec. }
-    symmetry in HS.
-    destruct (e_solve_eq_swaps ps Htail HS) as (Sf & _ & Htail').
-    rewrite swaps_aenv_app_dist, HX, HΘ, HP2, HQ2 in Htail'.
+    destruct (e_solve_eq_swaps ps Htail (symmetry HS)) as (Sf & _ & Htail').
+    rewrite swaps_aenv_app_dist, HX, (swaps_aenv_fresh_id ps Θ),
+      (swaps_pskl_fresh_id ps P2), (swaps_pskl_fresh_id ps Q2) in Htail'
+      by (apply (swaps_dodge_sub Hav); clear - Hcov; simpl in *; fsetdec).
     pose proof (e_solve_eq_supply_grows Hr) as Hgrow.
     pose proof (e_solve_eq_block_ftvar Hr) as Hblock.
     pose proof (e_solve_eq_block_in_supply Hr) as Hdom.
@@ -146,11 +136,8 @@ Proof.
   all: lazymatch goal with
     | Hb : ?b `notin` ?S,
       D : e_solve_eq (add ?b ?S) ((?b ~ abind_tvar) ++ ?T) _ _ _ _ _ |- _ =>
-        assert (HS : add (supply_fresh S) S
-            [=] swap_atoms b (supply_fresh S) (add b S))
-          by (rewrite swap_atoms_add, swap_atom_l, swap_atoms_notin;
-              [reflexivity | exact Hb | exact Hfresh]);
-        destruct (e_solve_eq_swap D HS) as (Sf & _ & Hbody);
+        destruct (e_solve_eq_swap D (swap_atoms_fresh_add _ _ _ Hb Hfresh))
+          as (Sf & _ & Hbody);
         rewrite swap_aenv_app, swap_aenv_one_tvar in Hbody;
         rewrite (swap_aenv_fresh_id b (supply_fresh S) T) in Hbody
           by (clear - Hb Hfresh Hcov; simpl in *; fsetdec);
@@ -213,18 +200,10 @@ Proof.
         [cbv beta iota; clear Hne | exact (False_ind _ (Hne eq_refl))];
         unfold solve_eq_spec in Hr;
         destruct (e_solve_eq_rel D1 Hr Hcov1) as (ps & Hav & HS & HX & HY);
-        assert (HΘ : swaps_aenv ps T = T)
-          by (apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav);
-              clear - Hcov; fsetdec);
-        assert (HP2 : swaps_pskl ps p2 = p2)
-          by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav);
-              clear - Hcov; simpl in *; fsetdec);
-        assert (HQ2 : swaps_pskl ps q2 = q2)
-          by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav);
-              clear - Hcov; simpl in *; fsetdec);
-        symmetry in HS;
-        destruct (e_solve_sub_swaps ps D2 HS) as (Sf & _ & Htail');
-        rewrite swaps_aenv_app_dist, HX, HΘ, HP2, HQ2 in Htail';
+        destruct (e_solve_sub_swaps ps D2 (symmetry HS)) as (Sf & _ & Htail');
+        rewrite swaps_aenv_app_dist, HX, (swaps_aenv_fresh_id ps T),
+          (swaps_pskl_fresh_id ps p2), (swaps_pskl_fresh_id ps q2) in Htail'
+          by (apply (swaps_dodge_sub Hav); clear - Hcov; simpl in *; fsetdec);
         pose proof (e_solve_eq_supply_grows Hr) as Hgrow;
         pose proof (e_solve_eq_block_ftvar Hr) as Hblock;
         pose proof (e_solve_eq_block_in_supply Hr) as Hdom;
@@ -239,11 +218,8 @@ Proof.
   all: lazymatch goal with
     | Hb : ?b `notin` ?S,
       D : e_solve_sub (add ?b ?S) ((?b ~ abind_tvar) ++ ?T) _ _ _ _ _ _ |- _ =>
-        assert (HS : add (supply_fresh S) S
-            [=] swap_atoms b (supply_fresh S) (add b S))
-          by (rewrite swap_atoms_add, swap_atom_l, swap_atoms_notin;
-              [reflexivity | exact Hb | exact Hfresh]);
-        destruct (e_solve_sub_swap D HS) as (Sf & _ & Hbody);
+        destruct (e_solve_sub_swap D (swap_atoms_fresh_add _ _ _ Hb Hfresh))
+          as (Sf & _ & Hbody);
         rewrite swap_aenv_app, swap_aenv_one_tvar in Hbody;
         rewrite (swap_aenv_fresh_id b (supply_fresh S) T) in Hbody
           by (clear - Hb Hfresh Hcov; simpl in *; fsetdec);
