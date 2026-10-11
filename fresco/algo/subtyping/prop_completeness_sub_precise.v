@@ -194,15 +194,15 @@ Proof.
           exfalso; exact (Hb HβΔ) ] end.
   - (* flex_l: subject α unfolds to its mono def; ψ unchanged *)
     assert (Hmono : mono_ptyp τ)
-      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact H ]).
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
     eapply ad_refine_syn__flex_l; [ exact H | ].
     rewrite <- (ptyp_to_bskl_inh_syn_eq Hmono).
     eapply IHad_partial_precise; eauto.
   - (* flex_r: target α unfolds to its mono def (tag-free, wf since flex-free) *)
     assert (Hmono : mono_ptyp τ)
-      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact H ]).
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
     assert (Hwfτ : a_wf_ptyp Θ τ)
-      by (eapply a_wf_aenv_binds_def_wf; [ exact Hwf | exact H ]).
+      by (eapply a_wf_aenv_binds_def_wf; eassumption).
     assert (HΨ : Ψ [=] empty)
       by exact (d_tags_skl_var_inv (a_tags_sort_d_tags Htags)).
     eapply ad_refine_syn__flex_r; [ exact H | ].
@@ -217,7 +217,7 @@ Proof.
       apply a_wf_pskl_of_ptyp_vis.
       * eapply a_wf_ptyp_lc; exact Hwfτ.
       * intros α0 Hα0.
-        eapply a_wf_ptyp_ftv_tvarish; [ exact Hwfτ | exact Hα0 ].
+        eapply a_wf_ptyp_ftv_tvarish; eassumption.
 Qed.
 
 (* ===================================================================== *)
@@ -330,7 +330,7 @@ Proof.
     apply IHHD; [ exact HNM | exact Hwf | ].
     rewrite uskl_to_pskl_ptyp_to_uskl_syn.
     apply mono_ptyp_pskl_no_forall.
-    eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact H ].
+    eapply a_wf_aenv_binds_def_mono; eassumption.
 Qed.
 
 (** A painted monotype is a guarded subject. *)
@@ -372,14 +372,14 @@ Proof.
   - apply guarded_uskl__var.
   - apply IHHup; [ exact Hwfb | | exact Hgf ].
     assert (Hm : mono_ptyp τ)
-      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwfb | exact H ]).
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
     apply mono_paint_guarded; [ exact Hm | ].
     assert (Hwfτ : a_wf_ptyp Θb τ)
-      by (eapply a_wf_aenv_binds_def_wf; [ exact Hwfb | exact H ]).
+      by (eapply a_wf_aenv_binds_def_wf; eassumption).
     rewrite <- pskl_to_uskl_ptyp.
     apply pskl_to_uskl_lc.
     apply a_wf_pskl_lc with (Θ := Θb) (Δ := empty).
-    apply a_wf_pskl_mono_ptyp; [ exact Hm | exact Hwfτ ].
+    apply a_wf_pskl_mono_ptyp; eassumption.
 Qed.
 
 (* ===================================================================== *)
@@ -486,7 +486,7 @@ Proof.
     eapply ad_refine_pskl__flex_r; [ exact Hb | ].
     apply ad_refine_pskl_refl.
     apply a_wf_ptyp_to_wf_pskl.
-    eapply a_wf_aenv_binds_def_wf; [ exact Hwf | exact Hb ].
+    eapply a_wf_aenv_binds_def_wf; eassumption.
   - (* flex_l : the premise IS the unfolded refinement *)
     inversion HeqS; subst.
     assert (Hu : uniq Θ) by (apply a_wf_aenv_uniq; exact Hwf).
@@ -494,7 +494,7 @@ Proof.
     exact Href.
   - (* flex_r : recurse into the target's definition *)
     eapply ad_refine_pskl__flex_r; [ exact H | ].
-    apply IHHref; [ exact HeqS | exact Hwf | exact Hb ].
+    apply IHHref; eassumption.
 Qed.
 
 (* ===================================================================== *)
@@ -683,32 +683,32 @@ Proof.
     eapply ad_pat_sub_fuel__arrow; eassumption.
   - (* forall_l_tagged — a painted monotype has no quantifier *)
     assert (Hm : mono_ptyp τ0)
-      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb ]).
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
     destruct Hm; unfold ptyp_to_uskl_syn in HeqS; simpl in HeqS;
       discriminate HeqS.
   - (* forall_l_untagged *)
     assert (Hm : mono_ptyp τ0)
-      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb ]).
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
     destruct Hm; unfold ptyp_to_uskl_syn in HeqS; simpl in HeqS;
       discriminate HeqS.
   - (* ghost *)
     assert (Hm : mono_ptyp τ0)
-      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb ]).
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
     destruct Hm; unfold ptyp_to_uskl_syn in HeqS; simpl in HeqS;
       discriminate HeqS.
   - (* ghostg *)
     assert (Hm : mono_ptyp τ0)
-      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb ]).
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
     destruct Hm; unfold ptyp_to_uskl_syn in HeqS; simpl in HeqS;
       discriminate HeqS.
   - (* univ_ghost_l *)
     assert (Hm : mono_ptyp τ0)
-      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb ]).
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
     destruct Hm; unfold ptyp_to_uskl_syn in HeqS; simpl in HeqS;
       discriminate HeqS.
   - (* univ_ghost_lg *)
     assert (Hm : mono_ptyp τ0)
-      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb ]).
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
     destruct Hm; unfold ptyp_to_uskl_syn in HeqS; simpl in HeqS;
       discriminate HeqS.
   - (* flex_mono *)
@@ -811,12 +811,11 @@ Proof.
     assert (Hb' : binds α (abind_flex_mono_def τ) Θ')
       by (apply Hmon; exact H).
     assert (Hm : mono_ptyp τ)
-      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb' ]).
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
     assert (Hlf' : {{ Θ' ⨟ empty ⊢ᵣₚ ⌊ ptyp_to_uskl_syn τ ⌋ˢ
                      ⊳ (bskl_to_pskl Q0) }}ad).
     { rewrite uskl_to_pskl_ptyp.
-      eapply ad_refine_pskl_unfold_def_subject;
-        [ exact Hlf | exact Hwf | exact Hb' ]. }
+      eapply ad_refine_pskl_unfold_def_subject; eassumption. }
     eapply IHHup with (Ψsup := Ψsup);
       [ exact Hwfb | exact HΨsup | exact Hftag | exact Hmon | exact Hwf
       | apply mono_paint_guarded;
@@ -825,7 +824,7 @@ Proof.
             apply a_wf_pskl_lc with (Θ := Θ') (Δ := empty);
             apply a_wf_pskl_mono_ptyp;
               [ exact Hm
-              | eapply a_wf_aenv_binds_def_wf; [ exact Hwf | exact Hb' ] ] ]
+              | eapply a_wf_aenv_binds_def_wf; eassumption ] ]
       | split;
           [ eapply consis_unfold_def_subject;
               [ exact Hc3 | exact Hwf | reflexivity | exact Hb' ]
@@ -1266,7 +1265,7 @@ Proof.
     subst R.
     eapply ad_pat_sub_fuel_ghost_intro with
       (n := n) (Ψfull := Ψfull) (R := uskl_univ_ghost Rg0);
-      [ apply ad_pat_sub_fuel__univ_ghost_l; [ exact HMti | exact HDp ]
+      [ apply ad_pat_sub_fuel__univ_ghost_l; eassumption
       | reflexivity | exact Hwf | exact H0 | exact Hwfq
       | clear - HΨf; fsetdec ].
   - (* univ_ghost_remove *)
@@ -1331,7 +1330,7 @@ Proof.
     subst R.
     eapply ad_pat_sub_fuel_ghost_intro with
       (n := n) (Ψfull := Ψfull) (R := uskl_dot_univ_ghost Rg0);
-      [ apply ad_pat_sub_fuel__univ_ghost_lg; [ exact HMti | exact HDp ]
+      [ apply ad_pat_sub_fuel__univ_ghost_lg; eassumption
       | reflexivity | exact Hwf | exact H0 | exact Hwfq
       | clear - HΨf; fsetdec ].
   - (* univ_ghost_remove *)
