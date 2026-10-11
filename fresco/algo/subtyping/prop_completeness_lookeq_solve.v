@@ -2152,6 +2152,49 @@ Proof.
   apply msubst_pskl_ftv_avoid; [ exact Hκim | exact (HP α0 Hα0) ].
 Qed.
 
+(** The merged blocks' scoping: the solve blocks stack without a clash (the
+    right run dodged [dom Ξs1] by its avoid-set), the right run's result and
+    context reorder into the merged ones ([binds] over an append is plain
+    membership), and the merged solve block misses the merged constraints. *)
+Lemma arrow_merge_scopes : forall {Θ0 Ξs1 Ξc1 Ξs2 Ξc2 Pa2 C1 C2},
+  uniq Ξs1 -> uniq Ξs2 -> all_flex_mono Ξc1 -> all_flex_mono Ξc2 ->
+  {{ ⊢ Θ0 }}a ->
+  (forall x, x `in` dom Ξs2 -> x `notin` dom Ξs1 `union` ftvar_in_a_cstrs C1) ->
+  (forall x, x `in` dom Ξs2 -> x `notin` ftvar_in_a_cstrs C2) ->
+  (forall x, x `in` dom Ξs1 -> x `notin` ftvar_in_a_cstrs C1) ->
+  (forall x, x `in` dom Ξs1 -> x `notin` ftvar_in_a_cstrs C2) ->
+  {{ ⊢ (Ξc2 ++ Ξs1 ++ Ξc1 ++ Θ0) }}a ->
+  {{ (Ξs2 ++ Ξc2 ++ Ξs1 ++ Ξc1 ++ Θ0) ⨟ empty ⊢ₚₛ Pa2 }}a ->
+  uniq (Ξs2 ++ Ξs1) /\
+  {{ ((Ξs2 ++ Ξs1) ++ (Ξc1 ++ Ξc2) ++ Θ0) ⨟ empty ⊢ₚₛ Pa2 }}a /\
+  {{ ⊢ ((Ξc1 ++ Ξc2) ++ Θ0) }}a /\
+  (forall x, x `in` dom (Ξs2 ++ Ξs1) -> x `notin` ftvar_in_a_cstrs (C1 ++ C2)).
+Proof.
+  intros Θ0 Ξs1 Ξc1 Ξs2 Ξc2 Pa2 C1 C2 Hus1 Hus2 HfmΞ1 HfmΞ2 HwfΘ0
+    HΞs2 Hapart2 Hapart1 HC2s1 HwfΞ2 HwfPa2.
+  refine (conj _ (conj _ (conj _ _))).
+  - assert (Hdd : dom Ξs2 ∩ dom Ξs1 [<=] empty).
+    { intros x Hx.
+      assert (Hx2 : x `in` dom Ξs2) by (clear - Hx; fsetdec).
+      assert (Hx1 : x `in` dom Ξs1) by (clear - Hx; fsetdec).
+      pose proof (HΞs2 x Hx2) as Hf. exfalso; clear - Hf Hx1; fsetdec. }
+    apply uniq_app_4; [ exact Hus2 | exact Hus1 | exact Hdd ].
+  - eapply a_wf_pskl_weaken; [ | exact HwfPa2 ].
+    intros x b Hb.
+    rewrite (aenv_app_assoc Ξs2 Ξs1 ((Ξc1 ++ Ξc2) ++ Θ0)).
+    rewrite (aenv_app_assoc Ξc1 Ξc2 Θ0).
+    apply binds_app_perm5; exact Hb.
+  - apply a_wf_aenv_flex_prefix; [ apply all_flex_mono_app; assumption | | exact HwfΘ0 ].
+    pose proof (a_wf_aenv_uniq HwfΞ2) as Huq. clear - Huq; solve_uniq.
+  - intros x Hx. rewrite dom_app in Hx. rewrite ftvar_in_a_cstrs_app.
+    destruct (AtomSetProperties.In_dec x (dom Ξs2)) as [Hin2 | Hnin2].
+    + pose proof (Hapart2 x Hin2) as Ha2. pose proof (HΞs2 x Hin2) as Hf2.
+      clear - Ha2 Hf2. fsetdec.
+    + assert (Hin1 : x `in` dom Ξs1) by (clear - Hx Hnin2; fsetdec).
+      pose proof (Hapart1 x Hin1) as Ha1. pose proof (HC2s1 x Hin1) as Hc2.
+      clear - Ha1 Hc2. fsetdec.
+Qed.
+
 (** The merged metasubstitution is the right run's, reordered: the same
     bindings on pairwise-disjoint domains, so a lookup-level identity — peel
     [κs2], swap [κc2] past [κs1], peel [κs1], swap [κc2] past [κc1]. *)
@@ -3972,6 +4015,11 @@ Proof.
             | intro Hc; rewrite <- Hd2 in Hc;
               pose proof (Hκf2 x Hc) as Hf2;
               repeat rewrite dom_app in Hf2; clear - Hf2 Hx; fsetdec ]. }
+        assert (HΞs2 : forall x, x `in` dom Ξs2 ->
+                  x `notin` dom Ξs1 `union` ftvar_in_a_cstrs C1)
+          by (intros x Hx; pose proof (Hfrs2 x Hx) as Hf; clear - Hf; fsetdec).
+        destruct (arrow_merge_scopes Hus1 Hus2 HfmΞ1 HfmΞ2 HwfΘ0 HΞs2 Hapart2 Hapart1
+                    HC2s1 HwfΞ2 HwfPa2) as (Hus & HwfPa & HwfΞ & Hapart).
         exists (C1 ++ C2), (Ξc1 ++ Ξc2), (Ξs2 ++ Ξs1), Pa2,
                (κc1 ++ κc2), (κs2 ++ κs1).
         repeat split.
@@ -4030,13 +4078,7 @@ Proof.
         -- (* all_flex_mono (Ξs2 ++ Ξs1) *)
            apply all_flex_mono_app; assumption.
         -- (* uniq (Ξs2 ++ Ξs1) — this is what [dom Ξs1] in the right IH's
-              avoid-set was for; [uniq Ξ] is not re-derivable (hand-off §4c) *)
-           assert (Hdd : dom Ξs2 ∩ dom Ξs1 [<=] empty).
-           { intros x Hx.
-             assert (Hx2 : x `in` dom Ξs2) by (clear - Hx; fsetdec).
-             assert (Hx1 : x `in` dom Ξs1) by (clear - Hx; fsetdec).
-             pose proof (Hfrs2 x Hx2) as Hf. exfalso; clear - Hf Hx1; fsetdec. }
-           apply uniq_app_4; [ exact Hus2 | exact Hus1 | exact Hdd ].
+              avoid-set was for *) exact Hus.
         -- (* keys κs = keys Ξs *) exact Hmaps.
         -- (* dom Ξs ∩ L = ∅ : both blocks dodged a SUPERSET of L *)
            intros α0 Hα0. rewrite dom_app in Hα0.
@@ -4044,18 +4086,8 @@ Proof.
              [ pose proof (Hfrs2 α0 Hα0) as Hf | pose proof (Hfrs1 α0 Hα0) as Hf ];
              clear - Hf; fsetdec.
         -- (* the SOLVE blocks' payloads *) apply Forall_app; split; assumption.
-        -- (* wf Pa2 : [Ξs2,Ξc2,Ξs1,Ξc1,Θ0] → [Ξs2,Ξs1,Ξc1,Ξc2,Θ0] *)
-           eapply a_wf_pskl_weaken; [ | exact HwfPa2 ].
-           intros x b Hb.
-           rewrite (aenv_app_assoc Ξs2 Ξs1 ((Ξc1 ++ Ξc2) ++ Θ0)).
-           rewrite (aenv_app_assoc Ξc1 Ξc2 Θ0).
-           apply binds_app_perm5; exact Hb.
-        -- (* {{ ⊢ ((Ξc1 ++ Ξc2) ++ Θ0) }}a *)
-           apply a_wf_aenv_flex_prefix;
-             [ apply all_flex_mono_app; assumption
-             | pose proof (a_wf_aenv_uniq HwfΞ2) as Huq;
-               clear - Huq; solve_uniq
-             | exact HwfΘ0 ].
+        -- (* wf Pa2 : [Ξs2,Ξc2,Ξs1,Ξc1,Θ0] → [Ξs2,Ξs1,Ξc1,Ξc2,Θ0] *) exact HwfPa.
+        -- (* {{ ⊢ ((Ξc1 ++ Ξc2) ++ Θ0) }}a *) exact HwfΞ.
         -- (* α ∉ dom (Ξc1++Ξc2) *)
            rewrite dom_app; clear - HαΞ1 HαΞ2; fsetdec.
         -- (* keys κc = keys Ξc *) exact Hmapc.
@@ -4091,16 +4123,7 @@ Proof.
               Two are the IHs'; [dom Ξs2 ∩ ftv 𝒞1] is bought by the RIGHT
               IH's enlarged avoid-set; and [dom Ξs1 ∩ ftv 𝒞2] is [HC2s1] —
               the RIGHT run's look ran at a context CONTAINING [Ξs1]. *)
-           intros α0 Hα0. rewrite dom_app in Hα0.
-           rewrite ftvar_in_a_cstrs_app.
-           destruct (AtomSetProperties.In_dec α0 (dom Ξs2)) as [Hin2 | Hnin2].
-           { pose proof (Hapart2 α0 Hin2) as Ha2.
-             pose proof (Hfrs2 α0 Hin2) as Hf2.
-             clear - Ha2 Hf2. fsetdec. }
-           assert (Hin1 : α0 `in` dom Ξs1) by (clear - Hα0 Hnin2; fsetdec).
-           pose proof (Hapart1 α0 Hin1) as Ha1.
-           pose proof (HC2s1 α0 Hin1) as Hc2.
-           clear - Ha1 Hc2. fsetdec.
+           exact Hapart.
       * (* P0 = all_syn : refinement bskl_all_inh ⊳ arrow — absurd *)
         cbn [msubst_pskl pskl_to_bskl_inh] in Hrefine; inversion Hrefine.
       * (* P0 = ghost : excluded by HP0nh *)

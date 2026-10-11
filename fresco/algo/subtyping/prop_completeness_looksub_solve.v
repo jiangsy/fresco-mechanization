@@ -2091,6 +2091,23 @@ Proof.
       intros x Hx. rewrite <- Hd2 in Hx.
       pose proof (Hκf2 x Hx) as Hf. repeat rewrite dom_app in Hf.
       apply (a_cstrs_bound_fresh HwfΘ Hκ HftvC1). clear - Hf; fsetdec. }
+    (* the RIGHT look ran at a context CONTAINING [Ξs1], so
+       [a_looksub_ftv_ctx] applies to it *)
+    assert (HC2s1 : forall x, x `in` dom Ξs1 ->
+              x `notin` ftvar_in_a_cstrs C2).
+    { intros x Hx. eapply a_looksub_ftv_ctx;
+        [ exact HLK2
+        | repeat rewrite dom_app; clear - Hx; fsetdec
+        | pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd;
+          pose proof (HΞs1L x Hx) as Hf;
+          clear - Hfd Hf Hdf0 HLav; fsetdec
+        | intro Hc; pose proof (HΞ2disj x Hc) as Hf2;
+          repeat rewrite dom_app in Hf2; clear - Hf2 Hx; fsetdec ]. }
+    assert (HΞs2 : forall x, x `in` dom Ξs2 ->
+              x `notin` dom Ξs1 `union` ftvar_in_a_cstrs C1)
+      by (intros x Hx; pose proof (Hfrs2 x Hx) as Hf; clear - Hf; fsetdec).
+    destruct (arrow_merge_scopes Hus1 Hus2 HfmΞ1 HfmΞ2 HwfΘ0 HΞs2 Hapart2 Hapart1
+                HC2s1 HwfΞ2 HwfPa2) as (Hus & HwfPa & HwfΞ & Hapart).
     exists (C1 ++ C2), (Ξc1 ++ Ξc2), (Ξs2 ++ Ξs1), Pa2,
            (κc1 ++ κc2), (κs2 ++ κs1).
     repeat split.
@@ -2140,13 +2157,8 @@ Proof.
        exact (a_solve_cstr_arrow_merge (a_lookeq_cstr_eq HLK1) HSolve1
                 HSolve2 HwfPi HfmΞ2 HΞ2disj HΞ2C1).
     -- (* all_flex_mono (Ξs2 ++ Ξs1) *) apply all_flex_mono_app; assumption.
-    -- (* uniq (Ξs2 ++ Ξs1) *)
-       assert (Hdd : dom Ξs2 ∩ dom Ξs1 [<=] empty).
-       { intros x Hx.
-         assert (Hx2 : x `in` dom Ξs2) by (clear - Hx; fsetdec).
-         assert (Hx1 : x `in` dom Ξs1) by (clear - Hx; fsetdec).
-         pose proof (Hfrs2 x Hx2) as Hf. exfalso; clear - Hf Hx1; fsetdec. }
-       apply uniq_app_4; [ exact Hus2 | exact Hus1 | exact Hdd ].
+    -- (* uniq (Ξs2 ++ Ξs1) — this is what [dom Ξs1] in the right IH's
+          avoid-set was for *) exact Hus.
     -- (* keys *) exact Hmaps.
     -- (* dom Ξs ∩ Lav = ∅ *)
        intros α0 Hα0. rewrite dom_app in Hα0.
@@ -2154,18 +2166,8 @@ Proof.
          [ pose proof (Hfrs2 α0 Hα0) as Hf | pose proof (Hfrs1 α0 Hα0) as Hf ];
          clear - Hf; fsetdec.
     -- (* the SOLVE blocks' payloads *) apply Forall_app; split; assumption.
-    -- (* wf Pa2 : [Ξs2,Ξc2,Ξs1,Ξc1,Θ0] → [Ξs2,Ξs1,Ξc1,Ξc2,Θ0] *)
-       eapply a_wf_pskl_weaken; [ | exact HwfPa2 ].
-       intros x b Hb.
-       rewrite (aenv_app_assoc Ξs2 Ξs1 ((Ξc1 ++ Ξc2) ++ Θ0)).
-       rewrite (aenv_app_assoc Ξc1 Ξc2 Θ0).
-       apply binds_app_perm5; exact Hb.
-    -- (* a_wf_aenv *)
-       apply a_wf_aenv_flex_prefix;
-         [ apply all_flex_mono_app; assumption
-         | pose proof (a_wf_aenv_uniq HwfΞ2) as Huq;
-           clear - Huq; solve_uniq
-         | exact HwfΘ0 ].
+    -- (* wf Pa2 : [Ξs2,Ξc2,Ξs1,Ξc1,Θ0] → [Ξs2,Ξs1,Ξc1,Ξc2,Θ0] *) exact HwfPa.
+    -- (* {{ ⊢ ((Ξc1 ++ Ξc2) ++ Θ0) }}a *) exact HwfΞ.
     -- (* α ∉ dom (Ξc1++Ξc2) *)
        rewrite dom_app; clear - HαΞ1 HαΞ2; fsetdec.
     -- (* keys *) exact Hmapc.
@@ -2198,26 +2200,7 @@ Proof.
           recursion's enlarged avoid-set; and [dom Ξs1 ∩ ftv 𝒞2] holds
           because the RIGHT look ran at a context CONTAINING [Ξs1], so
           [a_looksub_ftv_ctx] applies to it. *)
-       assert (HC2s1 : forall x, x `in` dom Ξs1 ->
-                 x `notin` ftvar_in_a_cstrs C2).
-       { intros x Hx. eapply a_looksub_ftv_ctx;
-           [ exact HLK2
-           | repeat rewrite dom_app; clear - Hx; fsetdec
-           | pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd;
-             pose proof (HΞs1L x Hx) as Hf;
-             clear - Hfd Hf Hdf0 HLav; fsetdec
-           | intro Hc; pose proof (HΞ2disj x Hc) as Hf2;
-             repeat rewrite dom_app in Hf2; clear - Hf2 Hx; fsetdec ]. }
-       intros α0 Hα0. rewrite dom_app in Hα0.
-       rewrite ftvar_in_a_cstrs_app.
-       destruct (AtomSetProperties.In_dec α0 (dom Ξs2)) as [Hin2 | Hnin2].
-       { pose proof (Hapart2 α0 Hin2) as Ha2.
-         pose proof (Hfrs2 α0 Hin2) as Hf2.
-         clear - Ha2 Hf2. fsetdec. }
-       assert (Hin1 : α0 `in` dom Ξs1) by (clear - Hα0 Hnin2; fsetdec).
-       pose proof (Hapart1 α0 Hin1) as Ha1.
-       pose proof (HC2s1 α0 Hin1) as Hc2.
-       clear - Ha1 Hc2. fsetdec.
+       exact Hapart.
   - (* ForallL, tagged : the subject's ∀ is instantiated, so the IH must run
        at [open R' ψb] — this is why the induction is on the DERIVATION and
        not on P6-Cs's measure.
