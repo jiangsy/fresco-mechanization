@@ -375,15 +375,15 @@ Lemma slack_arrow_rigid_absurd : forall Θ0 κ Θ α R1' R2',
 Proof.
   intros Θ0 κ Θ α R1' R2' Hwf0 Hwf Hinc Hb Hslack.
   assert (Hnd : α `notin` dom κ)
-    by (eapply a_inc_tvar_notin_dom; [ exact Hinc | exact Hwf0 | exact Hb ]).
+    by (eapply a_inc_tvar_notin_dom; eassumption).
   assert (HbΘ : binds α abind_tvar Θ)
-    by (eapply a_inc_binds_tvar; [ exact Hinc | exact Hb ]).
+    by (eapply a_inc_binds_tvar; eassumption).
   cbn in Hslack. rewrite (msubst_lookup_notin κ Hnd) in Hslack.
   destruct (@a_uskl_tyequiv_mono_r_inv Θ _ _ Hslack (ptyp_var_f α) eq_refl
               (mono_ptyp__var α) (@a_wf_ptyp__var Θ α (or_introl HbΘ)))
     as [τ' [Heqτ' [Hm' [Hwf' Heq']]]].
   destruct τ'; cbn in Heqτ'; try discriminate Heqτ'.
-  eapply tyequiv_arrow_rigid_absurd; [ exact Hwf | exact HbΘ | exact Heq' ].
+  eapply tyequiv_arrow_rigid_absurd; eassumption.
 Qed.
 
 (* ===================================================================== *)
@@ -435,7 +435,7 @@ Proof.
     by (apply a_wf_aenv_uniq; exact Hwf).
   assert (HuqΘ : uniq Θ) by (apply a_wf_aenv_uniq; exact Hwfth).
   assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
-    by (eapply a_wf_aenv_strip_mid; [ exact HdeclsΞ | exact Hwf ]).
+    by (eapply a_wf_aenv_strip_mid; eassumption).
   assert (HwfΘ0 : {{ ⊢ Θ0 }}a) by (eapply a_wf_aenv_strip_prefix; exact Hwf').
   assert (Hαb0 : a_binds_tvar α Θ0)
     by (destruct Hfα as [h | [τ0 h]];
@@ -464,13 +464,13 @@ Proof.
   assert (Hmκα : mono_ptyp (msubst_lookup κ α))
     by (eapply a_inc_lookup_mono; exact Hinc).
   assert (Hwfκα : a_wf_ptyp Θ (msubst_lookup κ α))
-    by (eapply a_inc_lookup_wf; [ exact Hinc | exact Hwf | exact Hαbfull ]).
+    by (eapply a_inc_lookup_wf; eassumption).
   destruct (a_uskl_tyequiv_mono_r_inv Hslack
               (eq_refl (ptyp_to_uskl_syn (msubst_lookup κ α))) Hmκα Hwfκα)
     as [τ' [HeqR' [Hmτ' [Hwfτ' Heqττ']]]].
   subst R'.
   assert (Hddτ' : ⇓ᵗ[ Θ ] τ' = ⇓ᵗ[ Θ ] (msubst_lookup κ α))
-    by (apply a_tyequiv_downarrow; [ exact Hwfth | exact Heqττ' ]).
+    by (apply a_tyequiv_downarrow; eassumption).
   (* ---- 3. the subject's image is scoped in the TRUNCATION ---- *)
   assert (Hακa : α `notin` dom κa).
   { rewrite Hdκa.
@@ -479,7 +479,7 @@ Proof.
     clear - Huq hd. simpl_env in Huq. solve_uniq. }
   assert (Hwfα' : a_wf_ptyp Θ' (msubst_lookup κ α)).
   { rewrite Heqκ. rewrite (msubst_lookup_app_notin κa κb Hακa).
-    eapply a_inc_lookup_wf; [ exact Hincb | exact HwfΘ0 | exact Hαb0 ]. }
+    eapply a_inc_lookup_wf; eassumption. }
   assert (Hftvα : ftvar_in_ptyp (msubst_lookup κ α) [<=] dom Θ')
     by (apply a_wf_ptyp_ftv_dom; exact Hwfα').
   assert (Hddα : ⇓ᵗ[ Θ ] (msubst_lookup κ α) = ⇓ᵗ[ Θ' ] (msubst_lookup κ α)).
@@ -487,8 +487,7 @@ Proof.
     apply downarrow_app_agree_ptyp; [ rewrite HeqW; exact HuqΘ | exact Hftvα ]. }
   assert (HO1 : ftvar_in_ptyp (⇓ᵗ[ Θ ] τ') [<=] dom Θ').
   { rewrite Hddτ'. rewrite Hddα. apply a_wf_ptyp_ftv_dom.
-    apply a_wf_ptyp_downarrow_mono;
-      [ exact HwfΘ' | exact Hwfα' | exact Hmκα ]. }
+    apply a_wf_ptyp_downarrow_mono; eassumption. }
   (* ---- 4. the JOIN's ⇓-confinement, and the FILL's source below it ---- *)
   assert (Hmono_img : forall γ, mono_ptyp (msubst_lookup (aenv_msubst Θ) γ))
     by (intros; apply aenv_msubst_image_mono; exact Hwfth).
@@ -504,8 +503,7 @@ Proof.
     clear - h HO2. fsetdec. }
   (* ---- 5. …but β SURVIVES the solution, and it is NOT in the truncation ---- *)
   assert (HβκP0 : β `in` ftvar_in_pskl (msubst_pskl κ P0))
-    by (eapply rigid_survives_solution;
-        [ exact Hinc | exact Hwf | exact Hbβ | exact Hβin ]).
+    by (eapply rigid_survives_solution; eassumption).
   assert (HβΘdn : β `notin` dom (aenv_msubst Θ)).
   { intro Hin.
     assert (HbβΘ : binds β abind_tvar Θ)
@@ -513,7 +511,7 @@ Proof.
     destruct (@aenv_msubst_dom_inv Θ β Hin) as [Hbf | [τ0 Hbf]];
       pose proof (binds_unique _ _ _ _ _ HbβΘ Hbf HuqΘ) as Hc; discriminate Hc. }
   assert (Hβdn : β `in` ftvar_in_pskl (⇓ˢ[ Θ ] (msubst_pskl κ P0)))
-    by (apply msubst_pskl_ftv_keep; [ exact HβΘdn | exact HβκP0 ]).
+    by (apply msubst_pskl_ftv_keep; eassumption).
   clear - Hβdn HO3 HβΘ'. fsetdec.
 Qed.
 
@@ -593,31 +591,10 @@ Proof.
     { intros Ξ' α' P0' R'' Ψ' Θ'' κ' Q' HlenΞ.
       apply IHΘ0; simpl in Hlen; lia. }
     destruct b as [ | A | P | | τ ].
-    + (* β RIGID: the STUCK configuration, or Flex-SkipRigid *)
-      destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P0))
-        as [Hβin | Hβni];
-        [ | destruct (α == β) as [Heqαβ | Hne] ].
-      * (* ⭕ β ∈ ftv P0 : NO RULE FIRES — refute the solution (§5) *)
-        unfold sub_flex_complete_concl.
-        intros HdeclsΞ HdomΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD
-               Hrs HwfQ.
-        exfalso.
-        assert (Hne : α <> β).
-        { intro Heq; subst β.
-          assert (Huq : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ0'))
-            by (apply a_wf_aenv_uniq; exact Hwf).
-          destruct Hfα as [Hb | [τ0 Hb]];
-            (apply binds_cons_1 in Hb as [[_ Hc] | Hb];
-             [ discriminate Hc
-             | apply binds_In in Hb; simpl_env in Huq; solve_uniq ]). }
-        assert (Hfα0 : a_flex_tvar Θ0' α)
-          by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hne)); exact Hfα).
-        eapply sub_flex_rigid_head_absurd;
-          [ exact HdeclsΞ | exact HdomΞ | exact Hwf | exact Hwfth | exact HwfP0
-          | exact Hfα0 | exact Hβin | exact Hinc | exact Hslack | exact HD
-          | exact Hrs ].
+    + (* β RIGID: not the subject; then the STUCK configuration, or
+         Flex-SkipRigid *)
+      destruct (α == β) as [-> | Hne].
       * (* the subject cannot BE the rigid head *)
-        subst α.
         unfold sub_flex_complete_concl.
         intros HdeclsΞ HdomΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack HD
                Hrs HwfQ.
@@ -628,7 +605,18 @@ Proof.
           (apply binds_cons_1 in Hb as [[_ Hc] | Hb];
            [ discriminate Hc
            | apply binds_In in Hb; simpl_env in Huq; solve_uniq ]).
-      * apply (a_sub_flex_complete_skip_rigid IH' Hne Hβni).
+      * destruct (AtomSetProperties.In_dec β (ftvar_in_pskl P0))
+          as [Hβin | Hβni].
+        -- (* ⭕ β ∈ ftv P0 : NO RULE FIRES — refute the solution (§5) *)
+           unfold sub_flex_complete_concl.
+           intros HdeclsΞ HdomΞ Hwf Hwfth HwfP0 Hfα HmodSK HmodTY Hinc Hslack
+                  HD Hrs HwfQ.
+           exfalso.
+           assert (Hfα0 : a_flex_tvar Θ0' α)
+             by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hne)); exact Hfα).
+           eapply sub_flex_rigid_head_absurd with (Θ0 := Θ0') (β := β);
+             eassumption.
+        -- apply (a_sub_flex_complete_skip_rigid IH' Hne Hβni).
     + (* β a TERM variable, type binding: Flex-SkipTmVar (§6).  Unlike the
          rigid head there is no stuck configuration and no side condition —
          the row derives [α ≠ β] and [β ∉ ftv P0] itself. *)
@@ -971,18 +959,13 @@ Proof.
       destruct (@msubst_uskl_syn_all_tag_inv κ R εa X0 HX) as [R0 [HR _]].
       exists R0; exact HR. }
     destruct Hhd as [R0 HR0]. subst R.
-    destruct (p0_wlog_trichotomy Hmodsk Hmodty (a_wf_pskl_lc HwfP0))
-      as [Hwlog | [Hwlog | [HeqNM [HeqM [Pb HeqP0]]]]].
+    destruct (proj2 (or_assoc _ _ _)
+                (p0_wlog_trichotomy Hmodsk Hmodty (a_wf_pskl_lc HwfP0)))
+      as [Hwlog | [HeqNM [HeqM [Pb HeqP0]]]].
     + exact (@a_sub_complete_forall_l_tagged n0 NM0 Ma Θ0 P0 P R0 Rj Ψ0 Θa κ
                Qa εa Ψ' ψj (Hfuel n0 ltac:(lia)) HM HΨ1 HΨ2 Htg Hwfψ Hsub
-               (or_introl Hwlog)
-               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ Hgf).
-    + exact (@a_sub_complete_forall_l_tagged n0 NM0 Ma Θ0 P0 P R0 Rj Ψ0 Θa κ
-               Qa εa Ψ' ψj (Hfuel n0 ltac:(lia)) HM HΨ1 HΨ2 Htg Hwfψ Hsub
-               (or_intror Hwlog)
-               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ Hgf).
+               Hwlog Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj
+               Hrs HwfQ Hgf).
     + (* ⭐ the WLOG's escaping shape: a ∀-headed [P0] forces a ∀-inh
          counterpart through the FILL, and §8b sends the row through ForallR *)
       subst NM0 Ma P0.
@@ -1004,18 +987,13 @@ Proof.
         as [R0 [HR _]].
       exists R0; exact HR. }
     destruct Hhd as [R0 HR0]. subst R.
-    destruct (p0_wlog_trichotomy Hmodsk Hmodty (a_wf_pskl_lc HwfP0))
-      as [Hwlog | [Hwlog | [HeqNM [HeqM [Pb HeqP0]]]]].
+    destruct (proj2 (or_assoc _ _ _)
+                (p0_wlog_trichotomy Hmodsk Hmodty (a_wf_pskl_lc HwfP0)))
+      as [Hwlog | [HeqNM [HeqM [Pb HeqP0]]]].
     + exact (@a_sub_complete_forall_l_untagged n0 NM0 Ma Θ0 P0 P R0 Rj Ψ0 Θa κ
                Qa Ψ' ψj (Hfuel n0 ltac:(lia)) HM HΨ1 HΨ2 Htg Hwfψ Hsub
-               (or_introl Hwlog)
-               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ Hgf).
-    + exact (@a_sub_complete_forall_l_untagged n0 NM0 Ma Θ0 P0 P R0 Rj Ψ0 Θa κ
-               Qa Ψ' ψj (Hfuel n0 ltac:(lia)) HM HΨ1 HΨ2 Htg Hwfψ Hsub
-               (or_intror Hwlog)
-               Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs
-               HwfQ Hgf).
+               Hwlog Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj
+               Hrs HwfQ Hgf).
     + subst NM0 Ma P0.
       cbn in Hrs.
       destruct (ad_refine_syn_all_inh_l_shape Hrs) as [B HB]. subst Qa.
@@ -1050,7 +1028,7 @@ Proof.
                 Hsub Hrs HwfQ Hgf0)
       as [P1 [Θ1 [Hrun Hopt]]].
     exists P1, Θ1. split;
-      [ apply a_sub__univ_ghost_l; [ exact HM | exact Hrun ] | exact Hopt ].
+      [ apply a_sub__univ_ghost_l; eassumption | exact Hopt ].
   - (* __univ_ghost_lg : ⌊∀◈ R⌋ˢ IS ∀◇⌊R⌋ˢ, so the SAME rule applies *)
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
            Hgf.
@@ -1071,20 +1049,20 @@ Proof.
                 Hsub Hrs HwfQ Hgf0)
       as [P1 [Θ1 [Hrun Hopt]]].
     exists P1, Θ1. split;
-      [ apply a_sub__univ_ghost_l; [ exact HM | exact Hrun ] | exact Hopt ].
+      [ apply a_sub__univ_ghost_l; eassumption | exact Hopt ].
   - (* __flex_mono : a pure PEEL — chase the Θ-definition on the JOIN's side
        and re-establish the ≡ᵘ slack; [R] is untouched *)
     intros Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack HDj Hrs HwfQ
            Hgf.
     assert (Hslack' : {{ Θa ⊢ (ptyp_to_uskl_syn τd) ≡ᵘ (msubst_uskl_syn κ R) }}a).
     { eapply a_uskl_tyequiv_trans;
-        [ apply flex_def_paint_tyequiv; [ exact Hbd | exact Hwfth ]
+        [ apply flex_def_paint_tyequiv; eassumption
         | exact Hslack ]. }
     (* the peeled subject IS a monotype painting, ghost-free outright *)
     assert (Hgfd : NM0 = a_sub_mode_ty ->
               uskl_ghost_free (ptyp_to_uskl_syn τd))
       by (intros _; apply mono_ptyp_to_uskl_syn_ghost_free;
-          eapply a_wf_aenv_binds_def_mono; [ exact Hwfth | exact Hbd ]).
+          eapply a_wf_aenv_binds_def_mono; eassumption).
     exact (IHsub Hfuel Θ0 PIH He1 He2 He3 P0 P R κ HPIH
              Hwf0 Hwfth HwfP0 HwfP Hmodsk Hmodty HeqR Hinc Hslack'
              Hsub Hrs HwfQ Hgfd).

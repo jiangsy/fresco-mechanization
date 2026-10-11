@@ -614,7 +614,7 @@ Proof.
               [ apply Hmono; exact Hb
               | split; [ exact Hlc | intro Hf0; exact (Hnf' (Hfl _ Hf0)) ]
               | exact Hng
-              | eapply a_guess_mono_ctx_shrink; [ exact Hgu | exact Hf ] ]
+              | eapply a_guess_mono_ctx_shrink; eassumption ]
         end ];
     (* the structural rows *)
     try solve [ econstructor; eauto ].
@@ -818,10 +818,10 @@ Proof.
   - apply union_1 in Hα; destruct Hα as [Hα | Hα];
       [ apply IHa | apply IHb ];
       solve [ clear - Hni; fsetdec | exact Hα ].
-  - apply IHall; [ exact Hni | exact Hα ].
+  - apply IHall; eassumption.
   - fsetdec.
   - (* univ_ghost: the whole body's ftv *)
-    revert Hα. apply msubst_pskl_ftv_avoid; [ exact Hav | exact Hni ].
+    revert Hα. apply msubst_pskl_ftv_avoid; eassumption.
 Qed.
 
 (** msubst-image of a var: recover the var (α avoided by κ's images). *)
@@ -2352,7 +2352,7 @@ Proof.
   eapply a_binds_tvar_strengthen_kit;
     [ apply a_wf_aenv_uniq; exact HwfΘ
     | exact Hmon
-    | eapply a_wf_ptyp_ftv_tvarish; [ exact Hwf | exact Hα ]
+    | eapply a_wf_ptyp_ftv_tvarish; eassumption
     | clear - Hsub Hα; fsetdec ].
 Qed.
 
@@ -2386,7 +2386,7 @@ Proof.
   assert (Hb : binds α (abind_flex_mono_def τd) Θw)
     by (apply Hdefs; assumption).
   assert (Hd : ftvar_in_ptyp τd [<=] dom Θw)
-    by (eapply a_wf_aenv_def_ftv_dom; [ exact HwfΘw | exact Hb ]).
+    by (eapply a_wf_aenv_def_ftv_dom; eassumption).
   clear - Hd; fsetdec.
 Qed.
 
@@ -2451,8 +2451,7 @@ Lemma a_def_chain_wf_or_rigid : forall Θ Θw τ τe,
      (exists α0, τe = ptyp_var_f α0 /\ binds α0 abind_tvar Θ)).
 Proof.
   intros Θ Θw τ τe Hc HwfΘ HwfΘw Hdefs [Hw | (α0 & Heq & Hrig)].
-  - left. eapply a_def_chain_wf_at;
-      [ exact Hc | exact HwfΘw | exact Hdefs | exact Hw ].
+  - left. eapply a_def_chain_wf_at; eassumption.
   - subst τ. rewrite (a_def_chain_rigid_var_inv Hc HwfΘ Hrig).
     right. exists α0. split; [ reflexivity | exact Hrig ].
 Qed.
@@ -2517,11 +2516,9 @@ Proof.
     destruct (ad_ppre_arrow_subject_chain_inv HwfΘ Hpre eq_refl eq_refl Hmτ)
       as (τ1 & τ2 & Ψ1 & Ψ2 & Hc & Hm1 & Hm2 & Hp1 & Hp2 & HΨ).
     assert (Hwfar : a_wf_ptyp Θ (ptyp_arrow τ1 τ2))
-      by (eapply a_def_chain_wf;
-            [ exact Hc | exact HwfΘ | exact Hwfτ ]).
+      by (eapply a_def_chain_wf; eassumption).
     assert (Hftar : ftvar_in_ptyp (ptyp_arrow τ1 τ2) [<=] dom Θw `union` Δ)
-      by (eapply a_def_chain_ftv_at;
-            [ exact Hc | exact HwfΘw | exact Hdefs | exact Hftτ ]).
+      by (eapply a_def_chain_ftv_at; eassumption).
     cbn [ftvar_in_ptyp] in Hftar.
     assert (Hwf1 : a_wf_ptyp Θ τ1) by (inversion Hwfar; assumption).
     assert (Hwf2 : a_wf_ptyp Θ τ2) by (inversion Hwfar; assumption).
@@ -2592,8 +2589,7 @@ Proof.
     eapply ad_ppre_chain_fold; [ exact Hc | ].
     rewrite list_app_assoc. cbn [ptyp_to_pskl msubst_pskl ptyp_to_uskl_syn].
     rewrite Heq1, Heq2.
-    apply ad_ppre__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-      [ exact Hpr1 | exact Hpr2 | exact HΨ ].
+    apply ad_ppre__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); eassumption.
   - (* ∀ subject into a MONO target : absurd *)
     exfalso.
     cbn [msubst_pskl] in Hpre.
@@ -2624,7 +2620,7 @@ Proof.
              assert (Heq : α0 = α1) by (clear - Hα0; fsetdec);
              subst α0; exact Hα1 | ].
     split; [ apply Forall_cons;
-             [ split; [ exact Hwfw | exact Hmτ ] | apply Forall_nil ] | ].
+             [ split; eassumption | apply Forall_nil ] | ].
     cbn [app ptyp_to_pskl msubst_pskl msubst_lookup].
     destruct (α1 == α1) as [_ | Hne]; [ | contradiction ].
     eapply ad_partial_precise_psi_cong;
@@ -2639,11 +2635,9 @@ Proof.
     destruct (ad_ppre_univ_ghost_subject_chain_inv HwfΘ Hpre eq_refl eq_refl Hmτ)
       as (τe & Hc & Hme & Hp').
     assert (Hwfe : a_wf_ptyp Θ τe)
-      by (eapply a_def_chain_wf;
-            [ exact Hc | exact HwfΘ | exact Hwfτ ]).
+      by (eapply a_def_chain_wf; eassumption).
     assert (Hfte : ftvar_in_ptyp τe [<=] dom Θw `union` Δ)
-      by (eapply a_def_chain_ftv_at;
-            [ exact Hc | exact HwfΘw | exact Hdefs | exact Hftτ ]).
+      by (eapply a_def_chain_ftv_at; eassumption).
     destruct (IH Θ0 Θ Θw κ Δ Ψi τe Pi' ltac:(lia) HwfΘ HwfΘw Hmon Hdefs
                 HwfPi' Hme Hwfe Hfte Hp' L)
       as (Ξ0 & A0 & κ0 & Hgu & Hfm & Hu & Hk & Hfr & HF & Hpr).
@@ -2655,7 +2649,7 @@ Proof.
     split; [ exact Hk | ].
     split; [ exact Hfr | ].
     split; [ exact HF | ].
-    eapply ad_ppre_chain_fold; [ exact Hc | exact Hpr ].
+    eapply ad_ppre_chain_fold; eassumption.
 Qed.
 
 (** The ORIGINAL interface, as the [ftv τ ⊆ dom Θw] instance: a counterpart
@@ -2687,7 +2681,7 @@ Proof.
   eapply a_guess_ty_witness_mono_gen;
     [ exact Hsz | exact HwfΘ | exact HwfΘw | exact Hmon | exact Hdefs
     | exact HwfPi | exact Hmτ
-    | eapply a_wf_ptyp_weaken; [ exact Hmon | exact Hwfτ ]
+    | eapply a_wf_ptyp_weaken; eassumption
     | (* the scope slack is unused: [τ] already sits inside [dom Θw] *)
       pose proof (a_wf_ptyp_ftv_dom Hwfτ) as Hd; clear - Hd; fsetdec
     | exact Hpre ].
@@ -2795,7 +2789,7 @@ Lemma uskl_rsubst_mono_target : forall NM Θ Δρ Ψρ ψsub ψa τ,
 Proof.
   intros NM Θ Δρ Ψρ ψsub ψa τ H. revert τ.
   induction H; intros τ Heq Hm.
-  - (* refl *) exists τ; split; [ exact Heq | exact Hm ].
+  - (* refl *) exists τ; split; eassumption.
   - (* leaf: the guess IS a bare variable, hence a monotype *)
     exists (ptyp_var_f α); split; [ reflexivity | apply mono_ptyp__var ].
   - (* arrow *)
@@ -2832,4 +2826,57 @@ Proof.
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f α)).
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R' (uskl_var_f α)).
     simpl in *. clear - Hα H1 H2 Fr. fsetdec.
+Qed.
+
+(** The body family of a well-formed [∀], at the empty Δ. *)
+Lemma a_wf_pskl_all_inv_empty : forall Θ P,
+  {{ Θ ⨟ empty ⊢ₚₛ (pskl_all_syn P) }}a ->
+  exists L, forall α, α `notin` L ->
+    {{ ((α ~ abind_tvar) ++ Θ) ⨟ empty ⊢ₚₛ
+         (open_pskl_wrt_pskl P (pskl_var_f α)) }}a.
+Proof.
+  intros Θ P H.
+  destruct (a_wf_pskl_all_inv H) as [L Hb].
+  exists L. intros α Hα.
+  eapply a_wf_pskl_delta_mono.
+  - apply Hb; exact Hα.
+  - intros β _ Hβ. clear - Hβ; fsetdec.
+Qed.
+
+(** Partial precision of a substituted [∀] against an ε-tagged [∀]: the body
+    family under the metasubstitution, with ε split off the tag set, and the
+    body's tags inside any tag set that sorts the target's body. *)
+Lemma ad_partial_precise_msubst_all_tag_inv : forall NM Θ Δ Ψ Ψt κ P ε ψ Lt,
+  {{ ⊢ Θ }}a ->
+  msubst_lc κ ->
+  (forall α, α `notin` Lt ->
+     a_tags_sort NM Ψt (open_uskl_wrt_uskl ψ (uskl_var_f α))) ->
+  {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ (pskl_all_syn P)) ⊑ᵖ[ Ψ ]
+       (uskl_all_tag ε ψ) }}ad ->
+  exists L Ψ0,
+    (forall α, α `notin` L ->
+       {{ Θ ⨟ (add α Δ) ⊢ˢ
+         (msubst_pskl κ (open_pskl_wrt_pskl P (pskl_var_f α)))
+         ⊑ᵖ[ Ψ0 ] (open_uskl_wrt_uskl ψ (uskl_var_f α)) }}ad) /\
+    Ψ [=] add ε Ψ0 /\ Ψ0 [<=] Ψt.
+Proof.
+  intros NM Θ Δ Ψ Ψt κ P ε ψ Lt Hwf Hlcκ Htags H.
+  simpl in H.
+  inversion H as [ | | | L Θ1 Δ1 Ψ1 Ψ0 ε1 P1 ψ1 Hb HΨ | | | | | | ]; subst.
+  assert (Hfam : forall α, α `notin` L `union` dom κ ->
+            {{ Θ ⨟ (add α Δ) ⊢ˢ
+              (msubst_pskl κ (open_pskl_wrt_pskl P (pskl_var_f α)))
+              ⊑ᵖ[ Ψ0 ] (open_uskl_wrt_uskl ψ (uskl_var_f α)) }}ad).
+  { intros α Hα.
+    rewrite msubst_pskl_open_lc.
+    - eapply ad_partial_precise_strengthen_tvar. apply Hb. solve_notin_auto.
+    - exact Hlcκ.
+    - solve_notin_auto. }
+  exists (L `union` dom κ), Ψ0.
+  refine (conj Hfam (conj HΨ _)).
+  pick fresh α for (L `union` dom κ `union` Lt).
+  eapply ad_partial_precise_tags_sub.
+  - exact Hwf.
+  - apply Hfam. solve_notin_auto.
+  - apply a_tags_sort_d_tags with (NM := NM). apply Htags. solve_notin_auto.
 Qed.
