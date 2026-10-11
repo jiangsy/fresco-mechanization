@@ -14,6 +14,7 @@ Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
 
+Require Import src.fresco.algo.subtyping.prop_soundness_subtag.   (* a_binds_tvar_strip_mid_{neq,tm} *)
 Require Import src.fresco.notations.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.coercions.
@@ -3286,11 +3287,7 @@ Proof.
     { exact Hsuf. }
     { eapply a_wf_aenv_strip_mid; eauto. }
     { eapply a_wf_pskl_strip_mid; eauto. }
-    { eapply a_binds_tvar_strip_mid;
-        [ exact Hαb
-        | intro He; inversion He; subst; exact (Hne eq_refl)
-        | intro He; inversion He; subst; exact (Hne eq_refl)
-        | intros τ1 He; inversion He; subst; exact (Hne eq_refl) ]. }
+    { exact (a_binds_tvar_strip_mid_neq Hne Hαb). }
     { exact Hmod. }
     { exact Hgf0. }
   - (* Flex-SkipRigid : as Flex-Skip with a rigid head. *)
@@ -3301,11 +3298,7 @@ Proof.
     { exact Hsuf. }
     { eapply a_wf_aenv_strip_mid; eauto. }
     { eapply a_wf_pskl_strip_mid; eauto. }
-    { eapply a_binds_tvar_strip_mid;
-        [ exact Hαb
-        | intro He; inversion He; subst; exact (Hne eq_refl)
-        | intro He; inversion He; subst; exact (Hne eq_refl)
-        | intros τ1 He; inversion He; subst; exact (Hne eq_refl) ]. }
+    { exact (a_binds_tvar_strip_mid_neq Hne Hαb). }
     { exact Hmod. }
     { exact Hgf0. }
   - (* Flex-SkipTmVar : the head is a TERM entry, so the strip lemmas'
@@ -3322,11 +3315,7 @@ Proof.
     { exact Hsuf. }
     { eapply a_wf_aenv_strip_mid; eauto. }
     { eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ]. }
-    { eapply a_binds_tvar_strip_mid;
-        [ exact Hαb
-        | intro He; discriminate He
-        | intro He; discriminate He
-        | intros τ1 He; discriminate He ]. }
+    { exact (a_binds_tvar_strip_mid_tm Hαb I). }
     { exact Hmod. }
     { exact Hgf0. }
   - (* Flex-SkipTmVar (skl) *)
@@ -3342,11 +3331,7 @@ Proof.
     { exact Hsuf. }
     { eapply a_wf_aenv_strip_mid; eauto. }
     { eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ]. }
-    { eapply a_binds_tvar_strip_mid;
-        [ exact Hαb
-        | intro He; discriminate He
-        | intro He; discriminate He
-        | intros τ1 He; discriminate He ]. }
+    { exact (a_binds_tvar_strip_mid_tm Hαb I). }
     { exact Hmod. }
     { exact Hgf0. }
 Qed.
