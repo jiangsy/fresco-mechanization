@@ -464,21 +464,15 @@ Proof.
   (* ---- the pair restriction and the PUSH ---- *)
   assert (Hcl0 : cols_l (restrict_pairs α α2 ρ0) [<=] cols_l ρ0)
     by apply cols_l_restrict_pairs.
-  assert (Hcr0 : cols_r (restrict_pairs α α2 ρ0) [<=] cols_r ρ0)
-    by apply cols_r_restrict_pairs.
-  assert (Hαl : α `notin` cols_l (restrict_pairs α α2 ρ0))
-    by apply restrict_pairs_notin_l.
-  assert (Hα2r : α2 `notin` cols_r (restrict_pairs α α2 ρ0))
-    by apply restrict_pairs_notin_r.
-  assert (HrΘr : rel_aenv (restrict_pairs α α2 ρ0) V Θa Θ0')
-    by (apply rel_aenv_restrict; [ exact HrΘ0 | exact HfrΘ | exact Hα2f ]).
-  assert (HrΘ' : rel_aenv ((α, α2) :: restrict_pairs α α2 ρ0) V
-                   ((α ~ abind_tvar) ++ Θa) ((α2 ~ abind_tvar) ++ Θ0')).
-  { apply rel_aenv__cons;
-      [ apply rel_atom__pair; left; reflexivity | constructor | ].
-    eapply rel_aenv_mono;
-      [ exact HrΘr | intros z y Hz; right; exact Hz
-      | intros z Hz; exact Hz ]. }
+  destruct (lift_consis_open_pair HrΘ0 Hagr0 Hinj0 Hfun0 HfrΘ Hα2f HαV Hα2V)
+    as (HrΘ' & Hagr' & Hinj' & Hfun').
+  assert (Hblk0 : forall a, a `in` dom Θb -> a `notin` dom Θa ->
+                  a `notin` cols_l ρ0)
+    by (intros a Ha Hn; pose proof (Hblk a Ha Hn) as Hc;
+        clear - Hc Hcl00; fsetdec).
+  destruct (lift_consis_open_scope Hwf Huq2p Hftv2 Hscp Hblk0 HdΘ Hcov0 Hαd
+              Hα2d)
+    as (Hwf' & Huq2' & Hftv2' & Hscp' & _ & HdΘ' & Hcov').
   assert (Hα2A0' : α2 `notin` ftvar_in_pskl (ptyp_to_pskl A0'))
     by (simpl in HcovP; clear - Hα2 HcovP; fsetdec).
   assert (HαA0 : α `notin` ftvar_in_pskl (ptyp_to_pskl A0)).
@@ -496,39 +490,6 @@ Proof.
   { eapply rel_exp_mono;
       [ apply rel_exp_restrict; [ exact HrE0 | exact Hαe | exact Hα2e ]
       | intros z y Hz; right; exact Hz | intros z Hz; exact Hz ]. }
-  assert (Hagr' : flex_agree_rel ((α, α2) :: restrict_pairs α α2 ρ0) V
-                    ((α ~ abind_tvar) ++ Θa) ((α2 ~ abind_tvar) ++ Θ0')).
-  { apply flex_agree_rel_push_look; [ | exact Hαd | exact Hα2d ].
-    eapply flex_agree_rel_weaken;
-      [ exact Hagr0 | intros z y Hz; eapply restrict_pairs_incl; exact Hz
-      | intros z Hz; exact Hz ]. }
-  assert (Hinj' : rel_inj ((α, α2) :: restrict_pairs α α2 ρ0) V)
-    by (apply rel_inj_push;
-        [ eapply rel_inj_sub;
-            [ exact Hinj0
-            | intros z y Hz; eapply restrict_pairs_incl; exact Hz ]
-        | exact Hα2V | exact Hα2r ]).
-  assert (Hfun' : rel_fun ((α, α2) :: restrict_pairs α α2 ρ0) V
-                    (dom ((α ~ abind_tvar) ++ Θa))).
-  { simpl. apply rel_fun_push;
-      [ eapply rel_fun_weaken;
-          [ exact Hfun0
-          | intros z y Hz; eapply restrict_pairs_incl; exact Hz
-          | intros z Hz; exact Hz ]
-      | exact HαV | exact Hαl ]. }
-  assert (Hwf' : {{ ⊢ ((α ~ abind_tvar) ++ Θa) }}a)
-    by (apply a_wf_aenv__tvar; [ exact Hαd | exact Hwf ]).
-  assert (Huq2' : uniq ((α2 ~ abind_tvar) ++ Θ0'))
-    by (clear - Huq2p Hα2d; solve_uniq).
-  assert (Hftv2' : ftvar_in_aenv ((α2 ~ abind_tvar) ++ Θ0') [<=] add α2 S0)
-    by (simpl; clear - Hftv2; fsetdec).
-  assert (Hscp' : V [<=] ftvar_in_aenv ((α ~ abind_tvar) ++ Θa))
-    by (simpl; clear - Hscp; fsetdec).
-  assert (HdΘ' : dom ((α2 ~ abind_tvar) ++ Θ0') [<=] add α2 S0)
-    by (simpl; clear - HdΘ; fsetdec).
-  assert (Hcov' : V ∪ cols_r ((α, α2) :: restrict_pairs α α2 ρ0)
-                  [<=] add α2 S0)
-    by (simpl; clear - Hcov0 Hcr0; fsetdec).
   assert (HcovP' : ftvar_in_pskl
                      (ptyp_to_pskl (open_ptyp_wrt_ptyp A0' (ptyp_var_f α2)))
                    ∪ ftvar_in_exp t'
@@ -1537,7 +1498,6 @@ Proof.
     assert (Hdm0 : dom Θa [<=] dom Θb) by (exact (a_split_dom_mono Hsp)).
     pose proof (a_typing_dom_mono Ht) as Hdmb.
     pose proof Hxf as Hxf2. rewrite dom_app in Hxf2.
-    assert (HxΞ : x `notin` dom Ξ) by (clear - Hxf2; fsetdec).
     assert (HxΘb : x `notin` dom Θb) by (clear - Hxf2; fsetdec).
     assert (HxΘc : x `notin` dom Θc) by (clear - Hxf2; fsetdec).
     assert (HxΘa : x `notin` dom Θa) by (clear - HxΘb Hdm0; fsetdec).

@@ -500,20 +500,15 @@ Proof.
     set (ρ0 := restrict_l (dom Ξ) ρ) in *. clearbody ρ0.
     assert (Hcl0 : cols_l (restrict_pairs α α2 ρ0) [<=] cols_l ρ0)
       by apply cols_l_restrict_pairs.
-    assert (Hcr0 : cols_r (restrict_pairs α α2 ρ0) [<=] cols_r ρ0)
-      by apply cols_r_restrict_pairs.
-    assert (Hαl : α `notin` cols_l (restrict_pairs α α2 ρ0))
-      by apply restrict_pairs_notin_l.
-    assert (Hα2r : α2 `notin` cols_r (restrict_pairs α α2 ρ0))
-      by apply restrict_pairs_notin_r.
-    assert (HrΘr : rel_aenv (restrict_pairs α α2 ρ0) V Θ0 Θ0')
-      by (apply rel_aenv_restrict; [ exact HrΘ0 | exact HfrΘ | exact Hα2f ]).
-    assert (HrΘ' : rel_aenv ((α, α2) :: restrict_pairs α α2 ρ0) V
-                     ((α ~ abind_tvar) ++ Θ0) ((α2 ~ abind_tvar) ++ Θ0')).
-    { apply rel_aenv__cons;
-        [ apply rel_atom__pair; left; reflexivity | constructor | ].
-      eapply rel_aenv_mono;
-        [ exact HrΘr | intros x y Hx; right; exact Hx | intros x Hx; exact Hx ]. }
+    destruct (lift_consis_open_pair HrΘ0 Hagr0 Hinj0 Hfun0 HfrΘ Hα2f HαV Hα2V)
+      as (HrΘ' & Hagr' & Hinj' & Hfun').
+    assert (Hblk0 : forall a, a `in` dom Θ1 -> a `notin` dom Θ0 ->
+                    a `notin` cols_l ρ0)
+      by (intros a Ha Hn; pose proof (Hblk a Ha Hn) as Hc;
+          clear - Hc Hcl00; fsetdec).
+    destruct (lift_consis_open_scope Hwf Huq2p Hftv2 Hscp Hblk0 HdΘ Hcov0 Hαd
+                Hα2d)
+      as (Hwf' & Huq2' & Hftv2' & Hscp' & _ & HdΘ' & Hcov').
     assert (HrBr : rel_pskl (restrict_pairs α α2 ρ0) V B B2)
       by (apply rel_pskl_restrict;
           [ exact HrB0 | clear - HfrB; fsetdec
@@ -530,37 +525,6 @@ Proof.
       by (eapply rel_pskl_mono;
           [ exact HrAr | intros x y Hx; right; exact Hx
           | intros x Hx; exact Hx ]).
-    assert (Hagr' : flex_agree_rel ((α, α2) :: restrict_pairs α α2 ρ0) V
-                      ((α ~ abind_tvar) ++ Θ0) ((α2 ~ abind_tvar) ++ Θ0')).
-    { apply flex_agree_rel_push_look; [ | exact Hαd | exact Hα2d ].
-      eapply flex_agree_rel_weaken;
-        [ exact Hagr0 | intros x y Hx; eapply restrict_pairs_incl; exact Hx
-        | intros x Hx; exact Hx ]. }
-    assert (Hinj' : rel_inj ((α, α2) :: restrict_pairs α α2 ρ0) V)
-      by (apply rel_inj_push;
-          [ eapply rel_inj_sub;
-              [ exact Hinj0 | intros x y Hx; eapply restrict_pairs_incl; exact Hx ]
-          | exact Hα2V | exact Hα2r ]).
-    assert (Hfun' : rel_fun ((α, α2) :: restrict_pairs α α2 ρ0) V
-                      (dom ((α ~ abind_tvar) ++ Θ0))).
-    { simpl. apply rel_fun_push;
-        [ eapply rel_fun_weaken;
-            [ exact Hfun0 | intros x y Hx; eapply restrict_pairs_incl; exact Hx
-            | intros x Hx; exact Hx ]
-        | exact HαV | exact Hαl ]. }
-    assert (Hwf' : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
-      by (apply a_wf_aenv__tvar; [ exact Hαd | exact Hwf ]).
-    assert (Huq2' : uniq ((α2 ~ abind_tvar) ++ Θ0'))
-      by (clear - Huq2p Hα2d; solve_uniq).
-    assert (Hftv2' : ftvar_in_aenv ((α2 ~ abind_tvar) ++ Θ0') [<=] add α2 S0)
-      by (simpl; clear - Hftv2; fsetdec).
-    assert (Hscp' : V [<=] ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0))
-      by (simpl; clear - Hscp; fsetdec).
-    assert (HdΘ' : dom ((α2 ~ abind_tvar) ++ Θ0') [<=] add α2 S0)
-      by (simpl; clear - HdΘ; fsetdec).
-    assert (Hcov' : V ∪ cols_r ((α, α2) :: restrict_pairs α α2 ρ0)
-                    [<=] add α2 S0)
-      by (simpl; clear - Hcov0 Hcr0; fsetdec).
     assert (HcovP' : ftvar_in_pskl (open_pskl_wrt_pskl B2 (pskl_var_f α2))
                      ∪ ftvar_in_pskl P' [<=] add α2 S0).
     { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B2 (pskl_var_f α2))
@@ -883,8 +847,6 @@ Proof.
     pose proof (Hfam α' ltac:(clear - Hα'; solve_notin_auto)) as Hex'.
     assert (Hα'S0 : α' `notin` S0) by (clear - Hα'; solve_notin_auto).
     assert (Hα'cl : α' `notin` cols_l ρ) by (clear - Hα'; solve_notin_auto).
-    assert (Hα'Θ0 : α' `notin` ftvar_in_aenv Θ0)
-      by (clear - Hα'; solve_notin_auto).
     assert (Hα'd0 : α' `notin` dom Θ0) by (clear - Hα'; solve_notin_auto).
     assert (Hα'Ξ : α' `notin` dom Ξ) by (clear - Hα'; solve_notin_auto).
     assert (Hα'cr : α' `notin` cols_r ρ) by (clear - Hα'S0 Hcov; fsetdec).
