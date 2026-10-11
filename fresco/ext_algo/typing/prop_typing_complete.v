@@ -967,8 +967,6 @@ Proof.
       pose proof (e_guess_mono_generated_in_supply Hrg) as HdomG;
       pose proof (e_guess_mono_generated_ftvar Hrg) as HftG;
       pose proof (e_guess_mono_ftv_supply Hrg HcovD) as HftyG;
-      pose proof (supply_fresh_notin (gr_supply rg)) as Hsf;
-      pose proof (dom_subset_ftvar_in_aenv (sp_ctx rs)) as Hdoms;
       (* the binder, along BOTH chains and then onto the runner's draw *)
       assert (Hx1S : swaps_atom psg (swaps_atom ps1 xd)
                      `notin` gr_supply rg)
@@ -1015,34 +1013,14 @@ Proof.
       assert (Hublk : uniq (gr_block rg ++ sp_ctx rs))
         by (eapply e_guess_mono_uniq_app;
             [ exact Hrg | exact Hcvs | exact Hus ]);
-      assert (Hsfblk : supply_fresh (gr_supply rg) `notin` dom (gr_block rg))
-        by (clear - Hsf HdomG; fsetdec);
-      assert (Hsfctx : supply_fresh (gr_supply rg) `notin` dom (sp_ctx rs))
-        by (clear - Hsf Hdoms Hcvs Hgrg; fsetdec);
-      assert (Hsfd : supply_fresh (gr_supply rg)
-                     `notin` dom (gr_block rg ++ sp_ctx rs))
-        by (rewrite dom_app; clear - Hsfblk Hsfctx; fsetdec);
-      assert (Hu1 : uniq ((supply_fresh (gr_supply rg)
-                             ~ abind_var_typ (gr_type rg))
-                          ++ gr_block rg ++ sp_ctx rs))
-        by (clear - Hublk Hsfd; solve_uniq);
-      assert (HΘ1 : lc_aenv ((supply_fresh (gr_supply rg)
-                                ~ abind_var_typ (gr_type rg))
-                             ++ gr_block rg ++ sp_ctx rs))
-        by (apply lc_aenv_app_intro;
-            [ constructor;
-              [ apply lc_abind_var_typ;
-                eapply e_guess_mono_lc_type; [ exact Hrg | exact Hlcd ]
-              | apply lc_aenv_nil ]
-            | apply lc_aenv_app_intro;
-              [ eapply e_guess_mono_block_lc; exact Hrg | exact HΘs ] ]);
-      assert (HD1 : aenv_defs_mono ((supply_fresh (gr_supply rg)
-                       ~ abind_var_typ (gr_type rg))
-                    ++ gr_block rg ++ sp_ctx rs))
-        by (simpl; constructor;
-            [ apply entry_def_mono_var_typ
-            | apply Forall_app_intro;
-              [ eapply e_guess_mono_block_defs_mono; exact Hrg | exact HDs ] ]);
+      assert (HcB : ftvar_in_aenv (gr_block rg ++ sp_ctx rs) [<=] gr_supply rg)
+        by (rewrite ftvar_in_aenv_app; clear - HftG HdomG Hcvs Hgrg; fsetdec);
+      destruct (push_fresh_invariants Hublk
+                  (lc_aenv_app_intro (e_guess_mono_block_lc Hrg) HΘs)
+                  (Forall_app_intro (e_guess_mono_block_defs_mono Hrg) HDs) HcB
+                  (lc_abind_var_typ (e_guess_mono_lc_type Hrg Hlcd))
+                  (entry_def_mono_var_typ _ _))
+        as (Hu1 & HΘ1 & HD1);
       (* ⚠️⚠️ the coverage side condition is assembled SUMMAND BY SUMMAND:
          one [fsetdec] over the seven set variables at once does not
          return.  Each step below stays at four or five. *)
