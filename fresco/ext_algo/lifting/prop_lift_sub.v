@@ -1630,10 +1630,12 @@ Proof.
       as (b & bdd & Θ0'' & E0' & Hab & Hbd & Hrest).
     subst Θ0'.
     inversion Hbd as [ | | t1 t2 Hrτ | A1 A2 HrA | Q1 Q2 HrQ0 ]; subst.
-    destruct (lift_assign_subst_pre HrΞ Hrest Hab Hrτ Hagr Hinj Hfun Hwf Hdec
-                Huq2p Hftv2 Hscp Hblk Hβd HdΘ Hcov)
-      as (VC & HVC & HVCsplit & Hβfun & Hτdom & HrΘC & HagrC & HinjC & HfunC
-          & HwfC & Huq2C & Hftv2C & HscpC & HblkC & HdΘC & HcovC & Hsubst).
+    destruct (lift_drop_mid HrΞ Hrest Hab Hagr Hinj Hfun Hwf Hdec Huq2p Hftv2
+                Hscp Hblk Hβd HdΘ Hcov)
+      as (VC & HVC & HVCsplit & Hβfun & Hβnd & Hbnd & HrΞC & HrΘ0C & HagrC
+          & HinjC & HfunC & HwfC & Huq2C & Hftv2C & HscpC & HblkC & HdΘC & HcovC).
+    assert (HrΘC : rel_aenv ρ VC (Ξ ++ Θ0) (Ξ' ++ Θ0''))
+      by (apply rel_aenv_app; [ exact HrΞC | exact HrΘ0C ]).
     assert (HrV : rel_pskl ρ V (pskl_var_f α) (pskl_var_f α'))
       by (constructor; exact Hrα).
     assert (HwfV : {{ (Ξ ++ (β ~ abind_flex_mono_def τ) ++ Θ0) ⨟ empty ⊢ₚₛ
@@ -1641,9 +1643,10 @@ Proof.
       by (apply a_wf_pskl__var; exact HbαM).
     assert (HcovV : ftvar_in_pskl (pskl_var_f α') [<=] S0).
     { simpl. pose proof (rel_atom_r_in Hrα) as Hin. clear - Hin Hcov. fsetdec. }
-    destruct (Hsubst P0 P0' HrP0 Hwfp0 HcovP) as (HrPsubC & HwfPsubC & HcovPs).
-    destruct (Hsubst (pskl_var_f α) (pskl_var_f α') HrV HwfV HcovV)
-      as (HrVsubC & HwfVsubC & HcovVs).
+    destruct (lift_subst_def Hab Hrτ Hinj Hβfun HVCsplit Hwf Hdec Hftv2 HrP0
+                Hwfp0 HcovP) as (HrPsubC & HwfPsubC & HcovPs).
+    destruct (lift_subst_def Hab Hrτ Hinj Hβfun HVCsplit Hwf Hdec Hftv2 HrV HwfV
+                HcovV) as (HrVsubC & HwfVsubC & HcovVs).
     assert (HcovS : ftvar_in_pskl (subst_pskl_in_pskl (ptyp_to_pskl t2) b P0')
                     ∪ ftvar_in_pskl
                         (subst_pskl_in_pskl (ptyp_to_pskl t2) b
@@ -1655,8 +1658,15 @@ Proof.
                 ρ VC HrΘC HrPsubC HrVsubC HagrC HinjC HfunC HwfC Huq2C
                 Hftv2C HscpC HblkC HdΘC HcovC HcovS HwfPsubC HwfVsubC)
       as (S1 & ρe & Θ1' & Q' & D2 & HrΘ1 & Hagr1 & HrQ & Hext1 & Hdom1).
-    destruct (lift_assign_subst_post Hab Hrτ Hinj Hcov HVC HVCsplit Hβfun Hτdom
-                HrΘ1 Hagr1 Hext1 Hdom1 Hβd)
+    assert (Hτdom : ftvar_in_abind (abind_flex_mono_def τ) [<=] dom Θ0)
+      by (apply a_wf_ptyp_ftv_dom;
+          exact (proj1 (@a_wf_aenv_mid_def_inv Ξ β τ Θ0 Hdec Hwf))).
+    assert (Hflag : a_flex_tvar ((β ~ abind_flex_mono_def τ) ++ Θ1) β
+                    <-> a_flex_tvar ((b ~ abind_flex_mono_def t2) ++ Θ1') b)
+      by (split; intros _; apply a_flex_tvar_head_flexish;
+          right; eexists; reflexivity).
+    destruct (lift_reattach_mid Hab Hbd Hinj Hcov HVC HVCsplit Hβfun Hτdom
+                Hflag HrΘ1 Hagr1 Hext1 Hdom1 Hβd)
       as (HrF & HagrF & HextF & HdomF).
     exists S1, ρe, ((b ~ abind_flex_mono_def t2) ++ Θ1'), Q'.
     split; [ apply e_sub_flex__assign with (τ := t2); exact D2 | ].
