@@ -181,6 +181,27 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+
+## 2026-10-11 — Share assignment normalization and its measure proof
+
+Factor the rigid, type-term, and skeleton-term assignment skip cases through
+one local `assign_skip_normalize` lemma in
+`algo/consistency/prop_completeness_assign.v`. It derives the normalized
+increase, transported consistency judgment, and strict measure decrease in
+the target suffix. Each caller keeps its rule-specific optimality argument.
+The shared proof also derives subject-image well-formedness once instead of
+repeating it for scoping and consistency transport.
+
+Net reduction: **269 physical lines**, including **270 nonblank, noncomment
+Coq lines**, relative to `edccec7`. A comment/whitespace-insensitive comparison
+confirms every existing theorem statement is unchanged. No inline tactic
+terms were introduced.
+
+Validation: `make coq` passed. All 34 headline assumption reports are
+closed under the global context, with no axiom reports or errors.
+`git diff --check` passes.
+
+
 ## 2026-10-11 — Share normalization across the three binding-skip cases
 
 The type-term and skeleton-term skip proofs repeat the same normalization
