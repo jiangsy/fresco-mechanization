@@ -181,6 +181,30 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Replace declarative structural case lists with bounded automation
+
+Both context-independent refinement proofs now consist of one induction line
+with depth-4 automation. A local, explicitly selected `refinement` hint
+database supplies their constructors, including the cofinite cases.
+
+Seven declarative context-monotonicity proofs likewise use an explicitly
+selected local constructor database and their existing monotonicity lemmas,
+with search bounded at depth 3–5. Pattern and typing lookup transport expose
+a copy of the context relation as a lookup function. Only the typing
+application's witness-sensitive construction remains explicit. The old
+cofinite-IH wrapper `mono_cof` is deleted. Neither hint database changes the
+core hint set or exports rules to callers.
+
+**Reduction:** 68 nonblank, noncomment Coq lines, including both hint
+declarations. Proof bodies shrink: refinement 10→1 and 9→1; consistency
+monotonicity 8→2; subtyping 7→3; skeleton consistency 14→2; consistency join
+3→2; skeleton subtyping 10→2; patterns 16→6; typing 17→6. All nine refactored
+proofs are shorter. Every statement and computational definition is unchanged.
+Their construction times range from 0.001s to 0.020s in the full build.
+
+**Validation:** full `make coq`, all 34 flagship assumption checks closed,
+byte-identical extracted OCaml, and `git diff --check`.
+
 ## 2026-10-11 — Share supply transport and automate solver context equivalence
 
 Collection and solver supply transport now reconstruct routine constructors

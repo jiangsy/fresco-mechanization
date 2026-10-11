@@ -20,33 +20,18 @@ Set Implicit Arguments.
     rules carry no scoping premise; well-formedness is an external
     presupposition), so a derivation transports to ANY context.  This one
     lemma replaces weakening, strengthening and every other context change. *)
+#[local] Hint Constructors d_refine_syn d_refine_pskl : refinement.
+
 Lemma d_refine_syn_any_ctx : forall Γ Δ Q Q',
     {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d -> forall Γ', {{ Γ' ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d.
 Proof.
-  intros Γ Δ Q Q' H; induction H; intros Γ'.
-  - apply d_refine_syn__unit.
-  - apply d_refine_syn__var.
-  - apply d_refine_syn__arrow; auto.
-  - apply d_refine_syn__all with (L := L); [ assumption | ]. intros α Hα. auto.
-  - apply d_refine_syn__ghost. assumption.
-  - apply d_refine_syn__univ_ghost_remove; auto.
-  - apply d_refine_syn__univ_ghost_fill with (L := L); [ assumption | ].
-    intros α Hα. auto.
-  - apply d_refine_syn__univ_ghost_keep; auto.
+  intros Γ Δ Q Q' H; induction H; intros Γ'; eauto 4 with refinement.
 Qed.
 
 Lemma d_refine_pskl_any_ctx : forall Γ Δ P P',
     {{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}d -> forall Γ', {{ Γ' ⨟ Δ ⊢ᵣₚ P ⊳ P' }}d.
 Proof.
-  intros Γ Δ P P' H; induction H; intros Γ'.
-  - apply d_refine_pskl__unit.
-  - apply d_refine_pskl__var.
-  - apply d_refine_pskl__arrow; auto.
-  - apply d_refine_pskl__all with (L := L). intros α Hα. auto.
-  - apply d_refine_pskl__ghost. assumption.
-  - apply d_refine_pskl__univ_ghost_remove; auto.
-  - apply d_refine_pskl__univ_ghost_fill with (L := L). intros α Hα. auto.
-  - apply d_refine_pskl__univ_ghost_keep; auto.
+  intros Γ Δ P P' H; induction H; intros Γ'; eauto 4 with refinement.
 Qed.
 
 (** * Local closure for shape predicates. *)
@@ -61,7 +46,6 @@ Proof.
   induction H; subst; try discriminate; auto.
   apply is_ityp__all with (L := L). intros α Hα. auto.
 Qed.
-
 
 Lemma is_ityp_lc : forall B, is_ityp B -> lc_btyp B.
 Proof.
