@@ -1865,6 +1865,31 @@ Proof.
     + apply IH; [ intros p Hp; apply Hav; right; exact Hp | exact Hα ].
 Qed.
 
+(** Freshness survives substitution when all images avoid the atom. *)
+Lemma msubst_pskl_ftv_avoid : forall κ P α',
+  (forall p, In p κ -> α' `notin` ftvar_in_ptyp (snd p)) ->
+  α' `notin` ftvar_in_pskl P ->
+  α' `notin` ftvar_in_pskl (msubst_pskl κ P).
+Proof.
+  intros κ P α' Hav.
+  induction P as [ | n | β | Pa IHa Pb IHb | Pall IHall | | Pt IHt ];
+    intros Hni Hα; simpl in *.
+  - fsetdec.
+  - fsetdec.
+  - (* var *)
+    pose proof (ftvar_ptyp_to_pskl (msubst_lookup κ β)) as Hp.
+    assert (HX' : α' `in` ftvar_in_ptyp (msubst_lookup κ β))
+      by (clear - Hα Hp; fsetdec).
+    apply msubst_lookup_ftv_avoid in HX'; [ subst | exact Hav ].
+    clear - Hni; fsetdec.
+  - apply union_1 in Hα; destruct Hα as [Hα | Hα];
+      [ apply IHa | apply IHb ];
+      solve [ clear - Hni; fsetdec | exact Hα ].
+  - apply IHall; [ clear - Hni; fsetdec | exact Hα ].
+  - fsetdec.
+  - apply IHt; [ clear - Hni; fsetdec | exact Hα ].
+Qed.
+
 (** Ghost-freeness, renaming commutation and scoped substitution images. *)
 
 Lemma msubst_pskl_no_ghost : forall κ P,

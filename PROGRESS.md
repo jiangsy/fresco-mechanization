@@ -181,6 +181,24 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share consistency binder optimality
+
+Extract `consis_complete_close_optimal` from the ForallInh, ForallSyn and
+UnivGhost1 completeness cases. Keep the rule constructions explicit and
+share the extension, rigid-head cancellation and precision-closing argument.
+Reuse `ad_refine_syn_close_all` instead of repeating its renaming proof.
+Move the existing `msubst_pskl_ftv_avoid` into the basic metasubstitution
+module so the closing proof can use it without a higher-level dependency.
+
+Net reduction: **98 physical Coq lines / 100 nonblank, noncomment lines**.
+All 177 existing theorem statements across the three edited files are unchanged.
+Inline tactic terms decrease from 40 to 39; none were added.
+
+Validation: final `make coq` passed; all 34 headline assumption reports are
+closed under the global context, with no axiom reports or errors. The statement
+comparison and `git diff --check` passed.
+
+
 ## 2026-10-11 — Share decorated binder preparation and rigid-head cancellation
 
 Share fresh-opener preparation and output context invariants for the tagged

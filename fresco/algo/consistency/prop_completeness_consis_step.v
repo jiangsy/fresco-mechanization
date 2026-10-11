@@ -101,6 +101,75 @@ Proof.
     inversion Hfl; subst; [ left | right; eexists ]; eassumption.
 Qed.
 
+(** Close the optimal solution returned under a fresh rigid binder.
+    The three binder rules differ only in which Δ component records it. *)
+Lemma consis_complete_close_optimal : forall Θ0 Θ1 Θ κ P1 Q α Δ Δr,
+  {{ ⊢ Θ }}a ->
+  α `notin` dom Θ `union` dom Θ1 `union` ftvar_in_bskl Q ->
+  Δr [=] add α Δ ->
+  (forall κ1, is_id_msubst κ1 ->
+    κ1 ∷ ((α ~ abind_tvar) ++ Θ0) ⊑ ((α ~ abind_tvar) ++ Θ1) ->
+    exists ζ, ζ ∷ ((α ~ abind_tvar) ++ Θ1) ⊑ ((α ~ abind_tvar) ++ Θ) /\
+      a_inc_equiv ((α ~ abind_tvar) ++ Θ0) κ (msubst_compose ζ κ1)
+        ((α ~ abind_tvar) ++ Θ) /\
+      {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δr ⊢ₚᵣ
+        (msubst_bskl ζ (pskl_to_bskl_syn P1))
+        ⊑ (bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f α))) }}ad) ->
+  forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
+    exists ζ, ζ ∷ Θ1 ⊑ Θ /\
+      a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
+      {{ Θ ⨟ Δ ⊢ₚᵣ
+        (msubst_bskl ζ (pskl_to_bskl_syn (pskl_all_syn (close_pskl_wrt_pskl α P1))))
+        ⊑ (pskl_all_syn (bskl_to_pskl Q)) }}ad.
+Proof.
+  intros Θ0 Θ1 Θ κ P1 Q α Δ Δr Hwfth Hfr HΔ Hopt'.
+  assert (HαΘ : α `notin` dom Θ) by (clear - Hfr; fsetdec).
+  assert (HαΘ1 : α `notin` dom Θ1) by (clear - Hfr; fsetdec).
+  intros κ1 Hid Hinc1.
+  assert (Hinc1' : κ1 ∷ ((α ~ abind_tvar) ++ Θ0) ⊑
+                     ((α ~ abind_tvar) ++ Θ1)).
+  { apply (a_inc__tvar (Ξ:=nil) α Hinc1).
+    apply a_decls_suffix. apply a_decls__nil. }
+  destruct (Hopt' κ1 Hid Hinc1') as [ζ [Hζ [Hie Hprec]]].
+  exists ζ.
+  (* strip the rigid head off the algorithm-side increments *)
+  assert (Hζ' : ζ ∷ Θ1 ⊑ Θ).
+  { eapply a_inc_tvar_head_inv; exact Hζ. }
+  assert (Hie' : a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ).
+  { eapply a_inc_equiv_tvar_head_inv; exact Hie. }
+  split; [ exact Hζ' | ]. split; [ exact Hie' | ].
+  (* precision : rebind the quantifier *)
+  assert (Hlcζ : msubst_lc ζ) by (eapply a_inc_msubst_lc; exact Hζ').
+  assert (Hαζ : α `notin` dom ζ).
+  { intro Hin.
+    destruct (a_inc_dom_flex Hζ' Hin) as [Hb | [τ Hb]];
+      apply binds_In in Hb; clear - Hb HαΘ1; fsetdec. }
+  assert (Himg : forall α1 τ, In (α1, τ) ζ -> α `notin` ftvar_in_ptyp τ).
+  { intros α1 τ Hin.
+    pose proof (a_inc_images_ftv_dom Hζ' _ _ Hin) as Hsc.
+    clear - Hsc HαΘ. fsetdec. }
+  unfold ad_precise in Hprec |- *.
+  rewrite bskl_to_pskl_msubst_bskl in Hprec |- *.
+  rewrite bskl_to_pskl_pskl_to_bskl_syn in Hprec |- *.
+  change ({{ Θ ⨟ Δ ⊢ᵣ (bskl_all_inh (pskl_to_bskl_inh
+       (msubst_pskl ζ (close_pskl_wrt_pskl α P1)))) ⊳ (bskl_all_inh (pskl_to_bskl_inh (bskl_to_pskl Q))) }}ad).
+  replace (pskl_to_bskl_inh (bskl_to_pskl Q)) with
+    (close_bskl_wrt_bskl α (open_bskl_wrt_bskl
+      (pskl_to_bskl_inh (bskl_to_pskl Q)) (bskl_var_f α))).
+  2: { rewrite close_bskl_wrt_bskl_open_bskl_wrt_bskl; [reflexivity |].
+       rewrite ftvar_in_bskl_inh, ftvar_bskl_to_pskl.
+       clear - Hfr; fsetdec. }
+  apply ad_refine_syn_close_all; [exact Hwfth | exact HαΘ | |].
+  - apply msubst_pskl_ftv_avoid.
+    + intros [β τ] Hin; apply (Himg β τ Hin).
+    + rewrite ftvar_in_pskl_close_pskl_wrt_pskl. clear; fsetdec.
+  - rewrite <- !pskl_to_bskl_inh_open.
+    rewrite <- (msubst_pskl_open_lc (close_pskl_wrt_pskl α P1) Hlcζ Hαζ).
+    rewrite open_pskl_wrt_pskl_close_pskl_wrt_pskl.
+    rewrite <- bskl_to_pskl_open.
+    eapply ad_refine_syn_delta_mono; [exact Hprec | clear - HΔ; fsetdec].
+Qed.
+
 (** Part 1's MAIN DISPATCH (paper :2582-3167), by induction on the last rule
     of the declarative join derivation, ASSUMING the layer-0 special cases
     (flexible subject / flexible input / P0 = ◇ / P0 = ∀◇ with P guarded)
@@ -725,70 +794,13 @@ Proof.
     split.
     { eapply avoid_truncate_cons; [ exact Hnew | ].
       pose proof (auc_uniq_consis Hc Huq0) as Hu1. clear - Hu1. solve_uniq. }
-    (* optimality *)
-    intros κ1 Hid Hinc1.
-    assert (Hinc1' : κ1 ∷ ((α ~ abind_tvar) ++ Θ0) ⊑
-                       ((α ~ abind_tvar) ++ Θ1)).
-    { apply (a_inc__tvar (Ξ:=nil) α Hinc1).
-      apply a_decls_suffix. apply a_decls__nil. }
-    destruct (Hopt' κ1 Hid Hinc1') as [ζ [Hζ [Hie Hprec]]].
-    exists ζ.
-    (* strip the rigid head off the algorithm-side increments *)
-    assert (Hζ' : ζ ∷ Θ1 ⊑ Θ).
-    { eapply a_inc_tvar_head_inv; exact Hζ. }
-    assert (Hie' : a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ).
-    { eapply a_inc_equiv_tvar_head_inv; exact Hie. }
-    split; [ exact Hζ' | ]. split; [ exact Hie' | ].
-    (* precision : rebind the quantifier *)
-    assert (Hlcζ : msubst_lc ζ) by (eapply a_inc_msubst_lc; exact Hζ').
-    assert (Huq1' : uniq ((α ~ abind_tvar) ++ Θ1))
-      by (exact (auc_uniq_consis Hc Huq0)).
-    assert (HαΘ1 : α `notin` dom Θ1) by solve_uniq.
-    assert (Hαζ : α `notin` dom ζ).
-    { intro Hin.
-      destruct (a_inc_dom_flex Hζ' Hin) as [Hb | [τ Hb]];
-        apply binds_In in Hb; clear - Hb HαΘ1; fsetdec. }
-    assert (Himg : forall α1 τ, In (α1, τ) ζ -> α `notin` ftvar_in_ptyp τ).
-    { intros α1 τ Hin.
-      pose proof (a_inc_images_ftv_dom Hζ' _ _ Hin) as Hsc.
-      clear - Hsc HαΘ. fsetdec. }
-    unfold ad_precise in Hprec |- *.
-    rewrite bskl_to_pskl_msubst_bskl in Hprec |- *.
-    rewrite bskl_to_pskl_pskl_to_bskl_syn in Hprec |- *.
-    change ({{ Θ ⨟ (Δ1 `union` Δ2) ⊢ᵣ (bskl_all_inh (pskl_to_bskl_inh
-         (msubst_pskl ζ (close_pskl_wrt_pskl α P1)))) ⊳ (bskl_all_inh (pskl_to_bskl_inh (bskl_to_pskl Q))) }}ad).
-    apply ad_refine_syn_all_intro with
-      (L := singleton α `union` dom Θ `union` dom Θ1
-            `union` Δ1 `union` Δ2
-            `union` ftvar_in_bskl Q `union` ftvar_in_pskl P1).
-    intros α0 Hα0.
-    assert (Hα0ζ : α0 `notin` dom ζ).
-    { intro Hin.
-      destruct (a_inc_dom_flex Hζ' Hin) as [Hb | [τ Hb]];
-        apply binds_In in Hb; clear - Hb Hα0; fsetdec. }
-    rewrite <- !pskl_to_bskl_inh_open.
-    rewrite <- (msubst_pskl_open_lc (close_pskl_wrt_pskl α P1) Hlcζ Hα0ζ).
-    rewrite <- (subst_pskl_in_pskl_spec P1 (pskl_var_f α0) α).
-    rewrite <- bskl_to_pskl_open.
-    (* rename the α-instance α ↦ α0, in the context and in Δ at once *)
-    assert (Hα0Θ : α0 `notin` dom Θ) by (clear - Hα0; fsetdec).
-    assert (Hα0Q : α0 `notin` ftvar_in_bskl
-              (pskl_to_bskl_inh (bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f α))))).
-    { rewrite ftvar_in_bskl_inh, ftvar_bskl_to_pskl.
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f α)) as Hup.
-      simpl in Hup. clear - Hup Hα0. fsetdec. }
-    pose proof (@ad_refine_syn_rename_gen _ _ _ _ Hprec ((α0 ~ abind_tvar) ++ Θ) α α0
-                  ltac:(clear; fsetdec) Hα0Q
-                  (rename_defs_cons_tvar Hwfth HαΘ Hα0Θ)) as Hp2.
-    rewrite !subst_var_bskl_inh in Hp2.
-    rewrite (msubst_pskl_subst_var ζ P1 Hαζ Hα0ζ Himg) in Hp2.
-    rewrite bskl_to_pskl_subst_var in Hp2.
-    assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f α0)
-                = subst_bskl_in_bskl (bskl_var_f α0) α
-                    (open_bskl_wrt_bskl Q (bskl_var_f α)))
-      by (apply subst_bskl_in_bskl_intro; clear - Fr; solve_notin_auto).
-    rewrite <- HoQ in Hp2.
-    eapply ad_refine_syn_delta_mono; [ exact Hp2 | clear; fsetdec ].
+    (* Reattach the optimal solution after closing the binder. *)
+    eapply consis_complete_close_optimal with (α := α) (Q := Q)
+      (Δr := add α Δ1 `union` add α Δ2);
+      [exact Hwfth | | clear; fsetdec | exact Hopt'].
+    pose proof (auc_uniq_consis Hc Huq0) as Hu1.
+    assert (HαΘ1 : α `notin` dom Θ1) by (clear - Hu1; solve_uniq).
+    clear - Fr HαΘ1; solve_notin_auto.
   (* ------------------------------------------- forall_syn (impossible) *)
   - destruct (msubst_pskl κ PP); simpl in HeqS; discriminate.
   (* ------------------------------------------------------ forall_syn *)
@@ -977,69 +989,13 @@ Proof.
     split.
     { eapply avoid_truncate_cons; [ exact Hnew | ].
       pose proof (auc_uniq_consis Hc Huq0) as Hu1. clear - Hu1. solve_uniq. }
-    (* optimality *)
-    intros κ1 Hid Hinc1.
-    assert (Hinc1' : κ1 ∷ ((α ~ abind_tvar) ++ Θ0) ⊑
-                       ((α ~ abind_tvar) ++ Θ1)).
-    { apply (a_inc__tvar (Ξ:=nil) α Hinc1).
-      apply a_decls_suffix. apply a_decls__nil. }
-    destruct (Hopt' κ1 Hid Hinc1') as [ζ [Hζ [Hie Hprec]]].
-    exists ζ.
-    assert (Hζ' : ζ ∷ Θ1 ⊑ Θ).
-    { eapply a_inc_tvar_head_inv; exact Hζ. }
-    assert (Hie' : a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ).
-    { eapply a_inc_equiv_tvar_head_inv; exact Hie. }
-    split; [ exact Hζ' | ]. split; [ exact Hie' | ].
-    (* precision : rebind the quantifier *)
-    assert (Hlcζ : msubst_lc ζ) by (eapply a_inc_msubst_lc; exact Hζ').
-    assert (Huq1' : uniq ((α ~ abind_tvar) ++ Θ1))
-      by (exact (auc_uniq_consis Hc Huq0)).
-    assert (HαΘ1 : α `notin` dom Θ1) by solve_uniq.
-    assert (Hαζ : α `notin` dom ζ).
-    { intro Hin.
-      destruct (a_inc_dom_flex Hζ' Hin) as [Hb | [τ Hb]];
-        apply binds_In in Hb; clear - Hb HαΘ1; fsetdec. }
-    assert (Himg : forall α1 τ, In (α1, τ) ζ -> α `notin` ftvar_in_ptyp τ).
-    { intros α1 τ Hin.
-      pose proof (a_inc_images_ftv_dom Hζ' _ _ Hin) as Hsc.
-      clear - Hsc HαΘ. fsetdec. }
-    unfold ad_precise in Hprec |- *.
-    rewrite bskl_to_pskl_msubst_bskl in Hprec |- *.
-    rewrite bskl_to_pskl_pskl_to_bskl_syn in Hprec |- *.
-    change ({{ Θ ⨟ (Δ1 `union` Δ2) ⊢ᵣ (bskl_all_inh (pskl_to_bskl_inh
-         (msubst_pskl ζ (close_pskl_wrt_pskl α P1)))) ⊳ (bskl_all_inh (pskl_to_bskl_inh (bskl_to_pskl Q))) }}ad).
-    apply ad_refine_syn_all_intro with
-      (L := singleton α `union` dom Θ `union` dom Θ1
-            `union` Δ1 `union` Δ2
-            `union` ftvar_in_bskl Q `union` ftvar_in_pskl P1).
-    intros α0 Hα0.
-    assert (Hα0ζ : α0 `notin` dom ζ).
-    { intro Hin.
-      destruct (a_inc_dom_flex Hζ' Hin) as [Hb | [τ Hb]];
-        apply binds_In in Hb; clear - Hb Hα0; fsetdec. }
-    rewrite <- !pskl_to_bskl_inh_open.
-    rewrite <- (msubst_pskl_open_lc (close_pskl_wrt_pskl α P1) Hlcζ Hα0ζ).
-    rewrite <- (subst_pskl_in_pskl_spec P1 (pskl_var_f α0) α).
-    rewrite <- bskl_to_pskl_open.
-    assert (HαF : α `in` (Δ1 `union` add α Δ2))
-      by (clear; fsetdec).
-    assert (Hα0Θ : α0 `notin` dom Θ) by (clear - Hα0; fsetdec).
-    assert (Hα0Q : α0 `notin` ftvar_in_bskl
-              (pskl_to_bskl_inh (bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f α))))).
-    { rewrite ftvar_in_bskl_inh, ftvar_bskl_to_pskl.
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f α)) as Hup.
-      simpl in Hup. clear - Hup Hα0. fsetdec. }
-    pose proof (@ad_refine_syn_rename_gen _ _ _ _ Hprec ((α0 ~ abind_tvar) ++ Θ) α α0
-                  HαF Hα0Q (rename_defs_cons_tvar Hwfth HαΘ Hα0Θ)) as Hp2.
-    rewrite !subst_var_bskl_inh in Hp2.
-    rewrite (msubst_pskl_subst_var ζ P1 Hαζ Hα0ζ Himg) in Hp2.
-    rewrite bskl_to_pskl_subst_var in Hp2.
-    assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f α0)
-                = subst_bskl_in_bskl (bskl_var_f α0) α
-                    (open_bskl_wrt_bskl Q (bskl_var_f α)))
-      by (apply subst_bskl_in_bskl_intro; clear - Fr; solve_notin_auto).
-    rewrite <- HoQ in Hp2.
-    eapply ad_refine_syn_delta_mono; [ exact Hp2 | clear; fsetdec ].
+    (* Reattach the optimal solution after closing the binder. *)
+    eapply consis_complete_close_optimal with (α := α) (Q := Q)
+      (Δr := Δ1 `union` add α Δ2);
+      [exact Hwfth | | clear; fsetdec | exact Hopt'].
+    pose proof (auc_uniq_consis Hc Huq0) as Hu1.
+    assert (HαΘ1 : α `notin` dom Θ1) by (clear - Hu1; solve_uniq).
+    clear - Fr HαΘ1; solve_notin_auto.
   (* ---------------------------------------------- ghostg (impossible) *)
   - destruct (msubst_pskl κ PP); simpl in HeqS; discriminate.
   (* -------------------------------------------- dot_univ_ghost (impossible) *)
@@ -1412,68 +1368,13 @@ Proof.
     split.
     { eapply avoid_truncate_cons; [ exact Hnew | ].
       pose proof (auc_uniq_consis Hc Huq0) as Hu1. clear - Hu1. solve_uniq. }
-    (* optimality *)
-    intros κ1 Hid Hinc1.
-    assert (Hinc1' : κ1 ∷ ((α ~ abind_tvar) ++ Θ0) ⊑
-                       ((α ~ abind_tvar) ++ Θ1)).
-    { apply (a_inc__tvar (Ξ:=nil) α Hinc1).
-      apply a_decls_suffix. apply a_decls__nil. }
-    destruct (Hopt' κ1 Hid Hinc1') as [ζ [Hζ [Hie Hprec]]].
-    exists ζ.
-    assert (Hζ' : ζ ∷ Θ1 ⊑ Θ).
-    { eapply a_inc_tvar_head_inv; exact Hζ. }
-    assert (Hie' : a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ).
-    { eapply a_inc_equiv_tvar_head_inv; exact Hie. }
-    split; [ exact Hζ' | ]. split; [ exact Hie' | ].
-    assert (Hlcζ : msubst_lc ζ) by (eapply a_inc_msubst_lc; exact Hζ').
-    assert (Huq1' : uniq ((α ~ abind_tvar) ++ Θ1))
-      by (exact (auc_uniq_consis Hc Huq0)).
-    assert (HαΘ1 : α `notin` dom Θ1) by solve_uniq.
-    assert (Hαζ : α `notin` dom ζ).
-    { intro Hin.
-      destruct (a_inc_dom_flex Hζ' Hin) as [Hb | [τ Hb]];
-        apply binds_In in Hb; clear - Hb HαΘ1; fsetdec. }
-    assert (Himg : forall α1 τ, In (α1, τ) ζ -> α `notin` ftvar_in_ptyp τ).
-    { intros α1 τ Hin.
-      pose proof (a_inc_images_ftv_dom Hζ' _ _ Hin) as Hsc.
-      clear - Hsc HαΘ. fsetdec. }
-    unfold ad_precise in Hprec |- *.
-    rewrite bskl_to_pskl_msubst_bskl in Hprec |- *.
-    rewrite bskl_to_pskl_pskl_to_bskl_syn in Hprec |- *.
-    change ({{ Θ ⨟ (Δ1 `union` Δ2) ⊢ᵣ (bskl_all_inh (pskl_to_bskl_inh
-         (msubst_pskl ζ (close_pskl_wrt_pskl α P1)))) ⊳ (bskl_all_inh (pskl_to_bskl_inh (bskl_to_pskl Q))) }}ad).
-    apply ad_refine_syn_all_intro with
-      (L := singleton α `union` dom Θ `union` dom Θ1
-            `union` Δ1 `union` Δ2
-            `union` ftvar_in_bskl Q `union` ftvar_in_pskl P1).
-    intros α0 Hα0.
-    assert (Hα0ζ : α0 `notin` dom ζ).
-    { intro Hin.
-      destruct (a_inc_dom_flex Hζ' Hin) as [Hb | [τ Hb]];
-        apply binds_In in Hb; clear - Hb Hα0; fsetdec. }
-    rewrite <- !pskl_to_bskl_inh_open.
-    rewrite <- (msubst_pskl_open_lc (close_pskl_wrt_pskl α P1) Hlcζ Hα0ζ).
-    rewrite <- (subst_pskl_in_pskl_spec P1 (pskl_var_f α0) α).
-    rewrite <- bskl_to_pskl_open.
-    assert (HαF : α `in` (add α Δ1 `union` Δ2))
-      by (clear; fsetdec).
-    assert (Hα0Θ : α0 `notin` dom Θ) by (clear - Hα0; fsetdec).
-    assert (Hα0Q : α0 `notin` ftvar_in_bskl
-              (pskl_to_bskl_inh (bskl_to_pskl (open_bskl_wrt_bskl Q (bskl_var_f α))))).
-    { rewrite ftvar_in_bskl_inh, ftvar_bskl_to_pskl.
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f α)) as Hup.
-      simpl in Hup. clear - Hup Hα0. fsetdec. }
-    pose proof (@ad_refine_syn_rename_gen _ _ _ _ Hprec ((α0 ~ abind_tvar) ++ Θ) α α0
-                  HαF Hα0Q (rename_defs_cons_tvar Hwfth HαΘ Hα0Θ)) as Hp2.
-    rewrite !subst_var_bskl_inh in Hp2.
-    rewrite (msubst_pskl_subst_var ζ P1 Hαζ Hα0ζ Himg) in Hp2.
-    rewrite bskl_to_pskl_subst_var in Hp2.
-    assert (HoQ : open_bskl_wrt_bskl Q (bskl_var_f α0)
-                = subst_bskl_in_bskl (bskl_var_f α0) α
-                    (open_bskl_wrt_bskl Q (bskl_var_f α)))
-      by (apply subst_bskl_in_bskl_intro; clear - Fr; solve_notin_auto).
-    rewrite <- HoQ in Hp2.
-    eapply ad_refine_syn_delta_mono; [ exact Hp2 | clear; fsetdec ].
+    (* Reattach the optimal solution after closing the binder. *)
+    eapply consis_complete_close_optimal with (α := α) (Q := Q)
+      (Δr := add α Δ1 `union` Δ2);
+      [exact Hwfth | | clear; fsetdec | exact Hopt'].
+    pose proof (auc_uniq_consis Hc Huq0) as Hu1.
+    assert (HαΘ1 : α `notin` dom Θ1) by (clear - Hu1; solve_uniq).
+    clear - Fr HαΘ1; solve_notin_auto.
   (* ----------------------------------------------------- univ_ghost_drop *)
   - (* C-UnivGhost2 (paper :3072-3164): the subject strips its ∀◇; the
        guarded subject body makes the join target Q guarded, which drives
