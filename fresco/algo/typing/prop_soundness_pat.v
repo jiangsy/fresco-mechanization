@@ -496,6 +496,26 @@ Proof.
   - inversion Hm.
 Qed.
 
+(** …and so, at a well-formed input, the split's pieces are well-formed
+    and the codomain is mode-compatible one mode down. *)
+Lemma a_split_sk_pieces : forall m Θ0 P0 P Q0 Θ1,
+  {{ Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 }}a ->
+  a_sk_mode_compat m P0 ->
+  m <> mode_tc ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  ({{ Θ0 ⨟ empty ⊢ₚₛ P }}a) /\ ({{ Θ0 ⨟ empty ⊢ₚₛ Q0 }}a) /\
+  a_sk_mode_compat (decr_mode m) Q0.
+Proof.
+  intros m Θ0 P0 P Q0 Θ1 Hs Hmod Hne HwfP0.
+  destruct (a_split_sk_shape Hs Hmod) as [_ [[HP0 [HP HQ0]] | HP0]]; subst.
+  - repeat split; try apply a_wf_pskl__ghost.
+    destruct (a_sk_mode_compat_ghost_inv Hmod) as [Hm | Hm]; subst m;
+      [ apply a_sk_mode_compat__ti | congruence ].
+  - inversion HwfP0; subst.
+    destruct (a_sk_mode_compat_arrow_inv Hmod) as [m' [Hm Hm']]; subst m.
+    repeat split; assumption.
+Qed.
+
 (** The TY analogue of [a_split_sk_shape]: AWAY FROM
     CHECK MODE the split is arrow-or-ghost, so [a_split__flex] — and with it
     [a_split_refines] — is out of reach at [AT-Abs] / [AT-AbsAnno].  At TC
@@ -1951,16 +1971,7 @@ Proof.
      rules are still cofinite, so this half still regenerates a family. *)
   - (* AP-Abs *)
     destruct (a_split_sk_shape H0 Hmod) as [HeqΘ Hshape]; subst Θ1.
-    assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q0 }}a /\
-                   a_sk_mode_compat (decr_mode m) Q0).
-    { destruct Hshape as [[HP0 [HP HQ0]] | HP0]; subst.
-      - repeat split; try apply a_wf_pskl__ghost.
-        destruct (a_sk_mode_compat_ghost_inv Hmod) as [Hm | Hm]; subst m;
-          [ apply a_sk_mode_compat__ti | congruence ].
-      - inversion HwfP0; subst.
-        destruct (a_sk_mode_compat_arrow_inv Hmod) as [m' [Hm Hm']]; subst m.
-        repeat split; assumption. }
-    destruct Hpre as [HwfPP [HwfQ0 Hmod']].
+    destruct (a_split_sk_pieces H0 Hmod H HwfP0) as [HwfPP [HwfQ0 Hmod']].
     assert (Hxd : x `notin` dom Θ0) by (clear - H2; simpl_env in *; fsetdec).
     assert (Hwfx : {{ ⊢ ((x ~ abind_var_skl P) ++ Θ0) }}a).
     { apply a_wf_aenv__var; [ exact Hxd | exact HwfPP | exact Hwf ]. }
@@ -2011,16 +2022,7 @@ Proof.
   - (* AP-AbsAnno *)
     destruct (a_split_sk_shape H0 Hmod) as [HeqΘ Hshape]; subst Θ1.
     pose proof (a_wf_exp_abs_anno_inv Hexp) as HwfA.
-    assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q0 }}a /\
-                   a_sk_mode_compat (decr_mode m) Q0).
-    { destruct Hshape as [[HP0 [HP HQ0]] | HP0]; subst.
-      - repeat split; try apply a_wf_pskl__ghost.
-        destruct (a_sk_mode_compat_ghost_inv Hmod) as [Hm | Hm]; subst m;
-          [ apply a_sk_mode_compat__ti | congruence ].
-      - inversion HwfP0; subst.
-        destruct (a_sk_mode_compat_arrow_inv Hmod) as [m' [Hm Hm']]; subst m.
-        repeat split; assumption. }
-    destruct Hpre as [HwfPP [HwfQ0 Hmod']].
+    destruct (a_split_sk_pieces H0 Hmod H HwfP0) as [HwfPP [HwfQ0 Hmod']].
     destruct (a_consis_chk_sound H1 Hwf HwfPP
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA))
       as [Hlec [Hwfc _]].
