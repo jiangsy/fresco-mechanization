@@ -885,27 +885,10 @@ Proof.
                       (Ξv ++ (α1 ~ abind_tvar))) as Hs.
         rewrite HeqW in Hs. apply Hs; [ exact Hwfth | exact HuqΘ | exact Hwf0 ]. }
       assert (Hside : forall β, β `in` ftvar_in_pskl P ->
-                β `in` dom κ \/ β `notin` dom (aenv_msubst Θ)).
-      { intros β Hβ.
-        destruct (AtomSetProperties.In_dec β (dom κ)) as [Hin | Hni];
-          [ left; exact Hin | right ].
-        intro Hin2. apply aenv_msubst_dom_inv in Hin2.
-        pose proof (a_wf_pskl_ftv_binds HwfP Hβ) as Hbt.
-        destruct Hbt as [Htv | [Hfm | [τ0 Hfd]]].
-        - assert (HtvΘ : binds β abind_tvar Θ)
-            by (eapply a_inc_binds_tvar; [ exact Hinc | exact Htv ]).
-          destruct Hin2 as [Hb | [τ1 Hb]];
-            (pose proof (binds_unique _ _ _ _ _ HtvΘ Hb
-                           (a_wf_aenv_uniq Hwfth)) as Heqb;
-             discriminate Heqb).
-        - assert (Hyd : β `in` dom κ)
-            by (eapply a_inc_flex_dom;
-                [ exact Hinc | exact Hwf | left; exact Hfm ]).
-          contradiction.
-        - assert (Hyd : β `in` dom κ)
-            by (eapply a_inc_flex_dom;
-                [ exact Hinc | exact Hwf | right; exists τ0; exact Hfd ]).
-          contradiction. }
+                β `in` dom κ \/ β `notin` dom (aenv_msubst Θ))
+        by (intros x Hx; eapply a_inc_downarrow_vis;
+            [exact Hinc | exact Hwf | exact Hwfth
+            | eapply a_wf_pskl_ftv_binds; eassumption]).
       assert (Hmona : mono_ptyp (msubst_lookup κ α))
         by (eapply a_inc_lookup_mono; exact Hinc).
       assert (HO2 : ftvar_in_pskl (⇓ˢ[ Θ ] (msubst_pskl κ P)) [<=] dom Θ').
@@ -1160,27 +1143,10 @@ Proof.
                     (Ξv ++ (α1 ~ abind_var_typ A'))) as Hs.
       rewrite HeqW in Hs. apply Hs; [ exact Hwfth | exact HuqΘ | exact Hwf0 ]. }
     assert (Hside : forall β, β `in` ftvar_in_pskl P ->
-              β `in` dom κ \/ β `notin` dom (aenv_msubst Θ)).
-    { intros β Hβ.
-      destruct (AtomSetProperties.In_dec β (dom κ)) as [Hin | Hni];
-        [ left; exact Hin | right ].
-      intro Hin2. apply aenv_msubst_dom_inv in Hin2.
-      pose proof (a_wf_pskl_ftv_binds HwfP Hβ) as Hbt.
-      destruct Hbt as [Htv | [Hfm | [τ0 Hfd]]].
-      - assert (HtvΘ : binds β abind_tvar Θ)
-          by (eapply a_inc_binds_tvar; [ exact Hinc | exact Htv ]).
-        destruct Hin2 as [Hb | [τ1 Hb]];
-          (pose proof (binds_unique _ _ _ _ _ HtvΘ Hb
-                         (a_wf_aenv_uniq Hwfth)) as Heqb;
-           discriminate Heqb).
-      - assert (Hyd : β `in` dom κ)
-          by (eapply a_inc_flex_dom;
-              [ exact Hinc | exact Hwf | left; exact Hfm ]).
-        contradiction.
-      - assert (Hyd : β `in` dom κ)
-          by (eapply a_inc_flex_dom;
-              [ exact Hinc | exact Hwf | right; exists τ0; exact Hfd ]).
-        contradiction. }
+              β `in` dom κ \/ β `notin` dom (aenv_msubst Θ))
+      by (intros x Hx; eapply a_inc_downarrow_vis;
+          [exact Hinc | exact Hwf | exact Hwfth
+          | eapply a_wf_pskl_ftv_binds; eassumption]).
     assert (Hmona : mono_ptyp (msubst_lookup κ α))
       by (eapply a_inc_lookup_mono; exact Hinc).
     assert (HO2 : ftvar_in_pskl (⇓ˢ[ Θ ] (msubst_pskl κ P)) [<=] dom Θ').
@@ -1490,27 +1456,10 @@ Proof.
                     (Ξv ++ (α1 ~ abind_var_skl Q'))) as Hs.
       rewrite HeqW in Hs. apply Hs; [ exact Hwfth | exact HuqΘ | exact Hwf0 ]. }
     assert (Hside : forall β, β `in` ftvar_in_pskl P ->
-              β `in` dom κ \/ β `notin` dom (aenv_msubst Θ)).
-    { intros β Hβ.
-      destruct (AtomSetProperties.In_dec β (dom κ)) as [Hin | Hni];
-        [ left; exact Hin | right ].
-      intro Hin2. apply aenv_msubst_dom_inv in Hin2.
-      pose proof (a_wf_pskl_ftv_binds HwfP Hβ) as Hbt.
-      destruct Hbt as [Htv | [Hfm | [τ0 Hfd]]].
-      - assert (HtvΘ : binds β abind_tvar Θ)
-          by (eapply a_inc_binds_tvar; [ exact Hinc | exact Htv ]).
-        destruct Hin2 as [Hb | [τ1 Hb]];
-          (pose proof (binds_unique _ _ _ _ _ HtvΘ Hb
-                         (a_wf_aenv_uniq Hwfth)) as Heqb;
-           discriminate Heqb).
-      - assert (Hyd : β `in` dom κ)
-          by (eapply a_inc_flex_dom;
-              [ exact Hinc | exact Hwf | left; exact Hfm ]).
-        contradiction.
-      - assert (Hyd : β `in` dom κ)
-          by (eapply a_inc_flex_dom;
-              [ exact Hinc | exact Hwf | right; exists τ0; exact Hfd ]).
-        contradiction. }
+              β `in` dom κ \/ β `notin` dom (aenv_msubst Θ))
+      by (intros x Hx; eapply a_inc_downarrow_vis;
+          [exact Hinc | exact Hwf | exact Hwfth
+          | eapply a_wf_pskl_ftv_binds; eassumption]).
     assert (Hmona : mono_ptyp (msubst_lookup κ α))
       by (eapply a_inc_lookup_mono; exact Hinc).
     assert (HO2 : ftvar_in_pskl (⇓ˢ[ Θ ] (msubst_pskl κ P)) [<=] dom Θ').

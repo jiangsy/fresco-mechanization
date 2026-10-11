@@ -1566,6 +1566,28 @@ Proof.
       * apply Hstep. apply IH. clear - Hα Hne; fsetdec.
 Qed.
 
+(** An increase covers every flexible source variable; source rigids
+    remain rigid and are therefore untouched by target normalization. *)
+Lemma a_inc_downarrow_vis : forall Θ0 κ Θ,
+  κ ∷ Θ0 ⊑ Θ -> {{ ⊢ Θ0 }}a -> {{ ⊢ Θ }}a ->
+  forall α, a_binds_tvar α Θ0 ->
+  α `in` dom κ \/ α `notin` dom (aenv_msubst Θ).
+Proof.
+  intros Θ0 κ Θ Hinc Hwf Hwfth α Hbt.
+  destruct Hbt as [Hb | [Hb | [τ Hb]]].
+  - right. intro Hin.
+    assert (Hrigid : binds α abind_tvar Θ)
+      by (eapply a_inc_binds_tvar; eassumption).
+    apply aenv_msubst_dom_inv in Hin.
+    destruct Hin as [Hflex | [τ Hflex]];
+      pose proof (binds_unique _ _ _ _ _ Hrigid Hflex
+                    (a_wf_aenv_uniq Hwfth)); discriminate.
+  - left. eapply a_inc_flex_dom;
+      [exact Hinc | exact Hwf | left; exact Hb].
+  - left. eapply a_inc_flex_dom;
+      [exact Hinc | exact Hwf | right; exists τ; exact Hb].
+Qed.
+
 Lemma msubst_pskl_ftv_lower : forall κ P α',
   α' `in` ftvar_in_pskl P ->
   ftvar_in_ptyp (msubst_lookup κ α') [<=] ftvar_in_pskl (msubst_pskl κ P).

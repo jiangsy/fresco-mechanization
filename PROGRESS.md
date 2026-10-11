@@ -181,6 +181,36 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share normalization across the three binding-skip cases
+
+The type-term and skeleton-term skip proofs repeat the same normalization
+and strengthening argument as the rigid skip proof. Factor that argument
+into the local `sub_flex_skip_normalize` lemma in
+`algo/subtyping/prop_completeness_sub_gen.v`. It derives the five recursive
+premises in the target suffix from the split source increase. All three
+cases call it, then retain their distinct rule and payload-equivalence
+obligations. Remove the caller assertions that were needed only by the
+factored argument. The term cases also use the existing term-entry freshness
+and nonflexibility lemmas instead of re-proving those facts.
+
+The normalization composition condition appeared in three assignment cases
+as well. Prove `a_inc_downarrow_vis` once in `algo/basic/prop_metasubst.v`
+and use it in those three cases and the shared normalization proof. It
+states that source type variables are covered by the increase or remain
+untouched by normalization of its target.
+
+Net reduction: **306 physical lines**, including **296 nonblank, noncomment
+Coq lines**, relative to `d591f42`. Existing theorem statements are unchanged.
+The payload-specific proofs retain named obligations; no inline tactic
+terms were added to compress the scripts.
+
+Validation: `make coq` passed, including all assignment and subtyping
+callers. All 34 headline assumption reports are closed under the global
+context, with no axiom reports. A comment/whitespace-insensitive comparison
+confirms every existing theorem statement is unchanged.
+`git diff --check` passes.
+
+
 ## 2026-10-11 — Remove orphaned completeness support and exact duplicates
 
 After deleting raw runner completeness, remove its unused context-equivalence
