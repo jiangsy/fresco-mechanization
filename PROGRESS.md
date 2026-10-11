@@ -182,6 +182,25 @@ them (PAPER-GAPS has the details):
 # Part 2: Progress log (most recent first)
 
 
+## 2026-10-11 — Share the unification skip argument
+
+The rigid, type-term, and skeleton-term skip cases now use the local
+`unify_skip_strengthen` lemma in `algo/consistency/prop_completeness_unify.v`
+for solution-image well-formedness, equivalence strengthening, and the
+recursive measure decrease. Use `a_flex_tvar_cons_nonflex` directly to
+remove the skipped binding from flexibility premises, eliminating six
+separate inequality arguments. Keep each rule's optimality proof explicit.
+
+Net reduction: **52 physical lines**, including **55 nonblank, noncomment
+Coq lines**, relative to `ed13550`. Existing theorem statements are unchanged;
+no inline tactic terms were added.
+
+Validation: `make coq` passed. All 34 headline assumption reports are
+closed under the global context, with no axiom reports or errors.
+`git diff --check` passes.
+
+
+
 ## 2026-10-11 — Share assignment normalization and its measure proof
 
 Factor the rigid, type-term, and skeleton-term assignment skip cases through

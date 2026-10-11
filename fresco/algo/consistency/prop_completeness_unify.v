@@ -40,6 +40,44 @@ Require Export src.fresco.algo.consistency.prop_consis_solution.
 (*  §3  The three induction steps (one per part of the paper's proof)     *)
 (* ===================================================================== *)
 
+(** Removing a skipped binding preserves the two solution images and
+    decreases the context component of the unification measure. *)
+Local Lemma unify_skip_strengthen :
+  forall Θ0' Ξ α1 bd bd' Θ2 κ α β,
+  {{ ⊢ Θ0' }}a -> {{ ⊢ (Ξ ++ (α1 ~ bd') ++ Θ2) }}a ->
+  κ ∷ Θ0' ⊑ Θ2 -> a_flex_tvar Θ0' α -> a_flex_tvar Θ0' β ->
+  {{ (Ξ ++ (α1 ~ bd') ++ Θ2) ⊢
+      (msubst_lookup κ α) ≡ᵗ (msubst_lookup κ β) }}a ->
+  {{ ⊢ Θ2 }}a /\
+  {{ Θ2 ⊢ (msubst_lookup κ α) ≡ᵗ (msubst_lookup κ β) }}a /\
+  mu_lt (mu_unify Θ2 κ α β Θ0')
+        (mu_unify (Ξ ++ (α1 ~ bd') ++ Θ2) κ α β ((α1 ~ bd) ++ Θ0')).
+Proof.
+  intros Θ0' Ξ α1 bd bd' Θ2 κ α β Hwf0 Hwfth Hinc' Hfα0 Hfβ0 Heq.
+  assert (Hwfth2 : {{ ⊢ Θ2 }}a).
+  { rewrite <- app_assoc in Hwfth.
+    apply a_wf_aenv_strip_prefix in Hwfth. exact Hwfth. }
+  assert (Hwflα : a_wf_ptyp Θ2 (msubst_lookup κ α)).
+  { eapply a_inc_lookup_wf; [exact Hinc' | exact Hwf0 | right; exact Hfα0]. }
+  assert (Hwflβ : a_wf_ptyp Θ2 (msubst_lookup κ β)).
+  { eapply a_inc_lookup_wf; [exact Hinc' | exact Hwf0 | right; exact Hfβ0]. }
+  split; [exact Hwfth2 | ]. split.
+  - eapply a_tyequiv_strengthen_mono_mid;
+      [ exact Hwfth | exact Hwflα
+      | eapply a_inc_lookup_mono; exact Hinc'
+      | exact Hwflβ
+      | eapply a_inc_lookup_mono; exact Hinc'
+      | exact Heq ].
+  - assert (Huniq : uniq (Ξ ++ (α1 ~ bd') ++ Θ2))
+      by (apply a_wf_aenv_uniq; exact Hwfth).
+    unfold mu_unify. apply mu_lt_intro. right. split.
+    + unfold V_unify.
+      rewrite (@Vvar_strengthen_mid Ξ α1 bd' Θ2 κ α Huniq Hwflα).
+      rewrite (@Vvar_strengthen_mid Ξ α1 bd' Θ2 κ β Huniq Hwflβ).
+      reflexivity.
+    + left. simpl. lia.
+Qed.
+
 (** Part 2 of the paper's proof (:2260-2401): unification of flexible
     variables, by a walk of the context [Θ0] (n strictly decreases on the
     walk edges; the Flex-Flex-Assign back-edge re-enters part 1 with [V]
@@ -62,46 +100,16 @@ Proof.
   destruct b as [ | A | Q | | τdef ].
   - (* head [α1 ~ tvar] : Flex-Flex-Skip' (rigid). *)
     inversion Hwf as [ | | | | | γh Θh Hnd Hwf0 ]; subst.
-    assert (Hα1α : α <> α1)
-      by (intros ->; destruct Hfα as [Hb | [τ Hb]];
-          apply binds_cons_1 in Hb as [[_ Hb] | Hb];
-          solve [ discriminate | apply binds_In in Hb; auto ]).
-    assert (Hα1β : β <> α1)
-      by (intros ->; destruct Hfβ as [Hb | [τ Hb]];
-          apply binds_cons_1 in Hb as [[_ Hb] | Hb];
-          solve [ discriminate | apply binds_In in Hb; auto ]).
-    assert (Hfα0 : a_flex_tvar Θ0' α)
-      by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hα1α)); exact Hfα).
-    assert (Hfβ0 : a_flex_tvar Θ0' β)
-      by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hα1β)); exact Hfβ).
-    assert (Hbtα : a_binds_tvar α Θ0') by (right; exact Hfα0).
-    assert (Hbtβ : a_binds_tvar β Θ0') by (right; exact Hfβ0).
+    assert (Hnonflex : abind_nonflex abind_tvar)
+      by (unfold abind_nonflex; split; intros; discriminate).
+    assert (Hfα0 : a_flex_tvar Θ0' α).
+    { apply a_flex_tvar_cons_nonflex in Hfα; assumption. }
+    assert (Hfβ0 : a_flex_tvar Θ0' β).
+    { apply a_flex_tvar_cons_nonflex in Hfβ; assumption. }
     apply a_inc_tvar_inv in Hinc as [Ξ [Θ2 [-> [HΞ Hinc']]]].
-    assert (Hwfth2 : {{ ⊢ Θ2 }}a)
-      by (rewrite <- app_assoc in Hwfth;
-          apply a_wf_aenv_strip_prefix in Hwfth; exact Hwfth).
-    assert (Hwflα : a_wf_ptyp Θ2 (msubst_lookup κ α))
-      by (eapply a_inc_lookup_wf; [ exact Hinc' | exact Hwf0 | exact Hbtα ]).
-    assert (Hwflβ : a_wf_ptyp Θ2 (msubst_lookup κ β))
-      by (eapply a_inc_lookup_wf; [ exact Hinc' | exact Hwf0 | exact Hbtβ ]).
-    assert (Heq2 : {{ Θ2 ⊢ (msubst_lookup κ α) ≡ᵗ (msubst_lookup κ β) }}a).
-    { eapply a_tyequiv_strengthen_mono_mid;
-        [ exact Hwfth | exact Hwflα
-        | eapply a_inc_lookup_mono; exact Hinc'
-        | exact Hwflβ
-        | eapply a_inc_lookup_mono; exact Hinc'
-        | exact Heq ]. }
-    assert (Huniq : uniq (Ξ ++ (α1 ~ abind_tvar) ++ Θ2))
-      by (apply a_wf_aenv_uniq; exact Hwfth).
-    assert (Hlt : mu_lt (mu_unify Θ2 κ α β Θ0')
-                        (mu_unify (Ξ ++ (α1 ~ abind_tvar) ++ Θ2) κ α β
-                                  ((α1 ~ abind_tvar) ++ Θ0'))).
-    { unfold mu_unify. apply mu_lt_intro. right. split.
-      - unfold V_unify.
-        rewrite (@Vvar_strengthen_mid Ξ α1 abind_tvar Θ2 κ α Huniq Hwflα).
-        rewrite (@Vvar_strengthen_mid Ξ α1 abind_tvar Θ2 κ β Huniq Hwflβ).
-        reflexivity.
-      - left. simpl. lia. }
+    destruct (@unify_skip_strengthen Θ0' Ξ α1 abind_tvar abind_tvar Θ2 κ α β
+                Hwf0 Hwfth Hinc' Hfα0 Hfβ0 Heq)
+      as (Hwfth2 & Heq2 & Hlt).
     destruct (IH _ Hlt) as [_ [HuIH _]].
     destruct (HuIH (add α1 N) Θ0' α β κ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
                    Hinc' Hwfth2 Heq2) as [Θ1' [Hu [Hnew Hopt']]].
@@ -120,46 +128,16 @@ Proof.
     + apply a_inc_equiv__tvar; [ exact Hie' | exact HΞ ].
   - (* head [x ~ var_typ A] : Flex-Flex-Skip' (semantic type middle). *)
     destruct (a_wf_aenv_var_typ_inv Hwf) as [Hnd [HwfA Hwf0]].
-    assert (Hα1α : α <> α1)
-      by (intros ->; destruct Hfα as [Hb | [τ Hb]];
-          apply binds_cons_1 in Hb as [[_ Hb] | Hb];
-          solve [ discriminate | apply binds_In in Hb; auto ]).
-    assert (Hα1β : β <> α1)
-      by (intros ->; destruct Hfβ as [Hb | [τ Hb]];
-          apply binds_cons_1 in Hb as [[_ Hb] | Hb];
-          solve [ discriminate | apply binds_In in Hb; auto ]).
-    assert (Hfα0 : a_flex_tvar Θ0' α)
-      by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hα1α)); exact Hfα).
-    assert (Hfβ0 : a_flex_tvar Θ0' β)
-      by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hα1β)); exact Hfβ).
-    assert (Hbtα : a_binds_tvar α Θ0') by (right; exact Hfα0).
-    assert (Hbtβ : a_binds_tvar β Θ0') by (right; exact Hfβ0).
+    assert (Hnonflex : abind_nonflex (abind_var_typ A))
+      by (apply abind_is_tm_nonflex; simpl; exact I).
+    assert (Hfα0 : a_flex_tvar Θ0' α).
+    { apply a_flex_tvar_cons_nonflex in Hfα; assumption. }
+    assert (Hfβ0 : a_flex_tvar Θ0' β).
+    { apply a_flex_tvar_cons_nonflex in Hfβ; assumption. }
     apply a_inc_var_inv in Hinc as [Ξ [A' [Θ2 [-> [HA'eq [HΞ Hinc']]]]]].
-    assert (Hwfth2 : {{ ⊢ Θ2 }}a)
-      by (rewrite <- app_assoc in Hwfth;
-          apply a_wf_aenv_strip_prefix in Hwfth; exact Hwfth).
-    assert (Hwflα : a_wf_ptyp Θ2 (msubst_lookup κ α))
-      by (eapply a_inc_lookup_wf; [ exact Hinc' | exact Hwf0 | exact Hbtα ]).
-    assert (Hwflβ : a_wf_ptyp Θ2 (msubst_lookup κ β))
-      by (eapply a_inc_lookup_wf; [ exact Hinc' | exact Hwf0 | exact Hbtβ ]).
-    assert (Heq2 : {{ Θ2 ⊢ (msubst_lookup κ α) ≡ᵗ (msubst_lookup κ β) }}a).
-    { eapply a_tyequiv_strengthen_mono_mid;
-        [ exact Hwfth | exact Hwflα
-        | eapply a_inc_lookup_mono; exact Hinc'
-        | exact Hwflβ
-        | eapply a_inc_lookup_mono; exact Hinc'
-        | exact Heq ]. }
-    assert (Huniq : uniq (Ξ ++ (α1 ~ abind_var_typ A') ++ Θ2))
-      by (apply a_wf_aenv_uniq; exact Hwfth).
-    assert (Hlt : mu_lt (mu_unify Θ2 κ α β Θ0')
-                        (mu_unify (Ξ ++ (α1 ~ abind_var_typ A') ++ Θ2) κ α β
-                                  ((α1 ~ abind_var_typ A) ++ Θ0'))).
-    { unfold mu_unify. apply mu_lt_intro. right. split.
-      - unfold V_unify.
-        rewrite (@Vvar_strengthen_mid Ξ α1 (abind_var_typ A') Θ2 κ α Huniq Hwflα).
-        rewrite (@Vvar_strengthen_mid Ξ α1 (abind_var_typ A') Θ2 κ β Huniq Hwflβ).
-        reflexivity.
-      - left. simpl. lia. }
+    destruct (@unify_skip_strengthen Θ0' Ξ α1 (abind_var_typ A) (abind_var_typ A') Θ2 κ α β
+                Hwf0 Hwfth Hinc' Hfα0 Hfβ0 Heq)
+      as (Hwfth2 & Heq2 & Hlt).
     destruct (IH _ Hlt) as [_ [HuIH _]].
     destruct (HuIH (add α1 N) Θ0' α β κ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
                    Hinc' Hwfth2 Heq2) as [Θ1' [Hu [Hnew Hopt']]].
@@ -190,46 +168,16 @@ Proof.
     + apply a_inc_equiv__var; [ exact Hie' | exact HA'eq | exact HΞ ].
   - (* head [x ~ var_skl Q] : Flex-Flex-Skip' (semantic skeleton middle). *)
     destruct (a_wf_aenv_var_skl_inv Hwf) as [Hnd [HwfQ Hwf0]].
-    assert (Hα1α : α <> α1)
-      by (intros ->; destruct Hfα as [Hb | [τ Hb]];
-          apply binds_cons_1 in Hb as [[_ Hb] | Hb];
-          solve [ discriminate | apply binds_In in Hb; auto ]).
-    assert (Hα1β : β <> α1)
-      by (intros ->; destruct Hfβ as [Hb | [τ Hb]];
-          apply binds_cons_1 in Hb as [[_ Hb] | Hb];
-          solve [ discriminate | apply binds_In in Hb; auto ]).
-    assert (Hfα0 : a_flex_tvar Θ0' α)
-      by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hα1α)); exact Hfα).
-    assert (Hfβ0 : a_flex_tvar Θ0' β)
-      by (eapply (proj1 (a_flex_tvar_cons_other _ _ Hα1β)); exact Hfβ).
-    assert (Hbtα : a_binds_tvar α Θ0') by (right; exact Hfα0).
-    assert (Hbtβ : a_binds_tvar β Θ0') by (right; exact Hfβ0).
+    assert (Hnonflex : abind_nonflex (abind_var_skl Q))
+      by (apply abind_is_tm_nonflex; simpl; exact I).
+    assert (Hfα0 : a_flex_tvar Θ0' α).
+    { apply a_flex_tvar_cons_nonflex in Hfα; assumption. }
+    assert (Hfβ0 : a_flex_tvar Θ0' β).
+    { apply a_flex_tvar_cons_nonflex in Hfβ; assumption. }
     apply a_inc_var_skl_inv in Hinc as [Ξ [P' [Θ2 [-> [HP'eq [HΞ Hinc']]]]]].
-    assert (Hwfth2 : {{ ⊢ Θ2 }}a)
-      by (rewrite <- app_assoc in Hwfth;
-          apply a_wf_aenv_strip_prefix in Hwfth; exact Hwfth).
-    assert (Hwflα : a_wf_ptyp Θ2 (msubst_lookup κ α))
-      by (eapply a_inc_lookup_wf; [ exact Hinc' | exact Hwf0 | exact Hbtα ]).
-    assert (Hwflβ : a_wf_ptyp Θ2 (msubst_lookup κ β))
-      by (eapply a_inc_lookup_wf; [ exact Hinc' | exact Hwf0 | exact Hbtβ ]).
-    assert (Heq2 : {{ Θ2 ⊢ (msubst_lookup κ α) ≡ᵗ (msubst_lookup κ β) }}a).
-    { eapply a_tyequiv_strengthen_mono_mid;
-        [ exact Hwfth | exact Hwflα
-        | eapply a_inc_lookup_mono; exact Hinc'
-        | exact Hwflβ
-        | eapply a_inc_lookup_mono; exact Hinc'
-        | exact Heq ]. }
-    assert (Huniq : uniq (Ξ ++ (α1 ~ abind_var_skl P') ++ Θ2))
-      by (apply a_wf_aenv_uniq; exact Hwfth).
-    assert (Hlt : mu_lt (mu_unify Θ2 κ α β Θ0')
-                        (mu_unify (Ξ ++ (α1 ~ abind_var_skl P') ++ Θ2) κ α β
-                                  ((α1 ~ abind_var_skl Q) ++ Θ0'))).
-    { unfold mu_unify. apply mu_lt_intro. right. split.
-      - unfold V_unify.
-        rewrite (@Vvar_strengthen_mid Ξ α1 (abind_var_skl P') Θ2 κ α Huniq Hwflα).
-        rewrite (@Vvar_strengthen_mid Ξ α1 (abind_var_skl P') Θ2 κ β Huniq Hwflβ).
-        reflexivity.
-      - left. simpl. lia. }
+    destruct (@unify_skip_strengthen Θ0' Ξ α1 (abind_var_skl Q) (abind_var_skl P') Θ2 κ α β
+                Hwf0 Hwfth Hinc' Hfα0 Hfβ0 Heq)
+      as (Hwfth2 & Heq2 & Hlt).
     destruct (IH _ Hlt) as [_ [HuIH _]].
     destruct (HuIH (add α1 N) Θ0' α β κ Θ2 eq_refl Hwf0 Hfα0 Hfβ0
                    Hinc' Hwfth2 Heq2) as [Θ1' [Hu [Hnew Hopt']]].
