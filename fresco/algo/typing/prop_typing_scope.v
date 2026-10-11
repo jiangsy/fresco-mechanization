@@ -1193,6 +1193,51 @@ Definition sub_flex_scope_concl (NM : a_sub_mode) (M : mode) (P0 : pskl)
        binds m b (Ξ ++ Θ0) -> abind_marker b ->
        core_rigid_above m (Ξ ++ Θ0) C -> core_rigid_above m Θ1 C').
 
+(** The two Flex-SkipTmVar rows (type and skeleton entry): a marker again,
+    but a TERM one — the core cannot name it (its binding is not tvarish),
+    so the strip's side conditions are a binding mismatch. *)
+Lemma sub_flex_scope_skip_tm : forall {NM M P0 Θ0 Θ1 Ξ α x} {bx : abind} {Q},
+  x `notin` dom Θ1 ->
+  a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
+  sub_flex_scope_concl NM M P0 Θ0 Ξ α Q Θ1 ->
+  abind_is_tm bx ->
+  sub_flex_scope_concl NM M P0 ((x ~ bx) ++ Θ0) Ξ α Q ((x ~ bx) ++ Θ1).
+Proof.
+  intros NM M P0 Θ0 Θ1 Ξ α x bx Q Hxout Hs IH Htm Heq Hwf Hdecls HwfP0 Hbα
+         C Hcore.
+  assert (Hxfr : x `notin` ftvar_in_pskl P0)
+    by (eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact Htm | exact HwfP0 ]).
+  assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
+    by (eapply a_wf_aenv_strip_mid; eauto).
+  assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
+    by (eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ]).
+  assert (Hbα' : a_binds_tvar α (Ξ ++ Θ0))
+    by (eapply a_binds_tvar_strip_mid;
+          [ exact Hbα
+          | intros He; inversion He; subst; exact Htm
+          | intros He; inversion He; subst; exact Htm
+          | intros τ1 He; inversion He; subst; exact Htm ]).
+  destruct (IH Heq Hwf' Hdecls HwfP0' Hbα' C Hcore)
+    as [C' [Hcore' Hsc']].
+  exists C'. split; [ exact Hcore' | ].
+  intros m b Hbm Hmk Hcr.
+  destruct (x == m) as [-> | Hxm];
+    [ apply core_rigid_above_head_marker | ].
+  destruct (proj2 a_sub_output_wf_bundle _ _ _ _ _ _ _ _ Hs
+              Hwf' Hdecls HwfP0' Hbα') as [_ [_ HwfQ]].
+  apply core_rigid_above_cons_other;
+    [ eapply Hsc';
+        [ eapply binds_strip_mid;
+            [ exact Hbm | intros Hc; inversion Hc; subst; auto ]
+        | exact Hmk
+        | eapply core_rigid_above_strip_mid;
+            [ exact Hcr | exact Hxm
+            | intros γ0 _ _ Hc; inversion Hc; subst; exact Htm ] ]
+    | exact Hxm
+    | pose proof (core_ftv_dom Hcore' HwfQ) as Hsub;
+      clear - Hxout Hsub; fsetdec ].
+Qed.
+
 Lemma a_sub_sub_flex_scope :
   (forall NM M P0 Θ0 P Q Θ1,
      a_sub NM M P0 Θ0 P Q Θ1 -> sub_scope_concl NM M P0 Θ0 P Q Θ1) /\
@@ -1550,74 +1595,12 @@ Proof.
       | exact Hβm
       | pose proof (core_ftv_dom Hcore' HwfQ) as Hsub;
         clear - Hβ1 Hsub; fsetdec ].
-  - (* Flex-SkipTmVar (type entry) : a marker again, but a TERM one — the
-       core cannot name it (its binding is not tvarish), so the strip's
-       side condition is a constructor mismatch *)
-    intros NM M P0 Θ0 Θ1 Ξ α x Apay Q Hxout Hs IH Heq Hwf Hdecls HwfP0 Hbα
-           C Hcore.
-    assert (Hxfr : x `notin` ftvar_in_pskl P0)
-      by (eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact I | exact HwfP0 ]).
-    assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
-      by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
-      by (eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ]).
-    assert (Hbα' : a_binds_tvar α (Ξ ++ Θ0))
-      by (eapply a_binds_tvar_strip_mid;
-            [ exact Hbα
-            | intro He; discriminate He
-            | intro He; discriminate He
-            | intros τ1 He; discriminate He ]).
-    destruct (IH Heq Hwf' Hdecls HwfP0' Hbα' C Hcore)
-      as [C' [Hcore' Hsc']].
-    exists C'. split; [ exact Hcore' | ].
-    intros m b Hbm Hmk Hcr.
-    destruct (x == m) as [-> | Hxm];
-      [ apply core_rigid_above_head_marker | ].
-    destruct (proj2 a_sub_output_wf_bundle _ _ _ _ _ _ _ _ Hs
-                Hwf' Hdecls HwfP0' Hbα') as [_ [_ HwfQ]].
-    apply core_rigid_above_cons_other;
-      [ eapply Hsc';
-          [ eapply binds_strip_mid;
-              [ exact Hbm | intros Hc; inversion Hc; subst; auto ]
-          | exact Hmk
-          | eapply core_rigid_above_strip_mid;
-              [ exact Hcr | exact Hxm | intros γ0 _ _ Hc; inversion Hc ] ]
-      | exact Hxm
-      | pose proof (core_ftv_dom Hcore' HwfQ) as Hsub;
-        clear - Hxout Hsub; fsetdec ].
-  - (* Flex-SkipTmVar (skeleton entry) : verbatim the previous row *)
-    intros NM M P0 Θ0 Θ1 Ξ α x Qpay Q Hxout Hs IH Heq Hwf Hdecls HwfP0 Hbα
-           C Hcore.
-    assert (Hxfr : x `notin` ftvar_in_pskl P0)
-      by (eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact I | exact HwfP0 ]).
-    assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
-      by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
-      by (eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ]).
-    assert (Hbα' : a_binds_tvar α (Ξ ++ Θ0))
-      by (eapply a_binds_tvar_strip_mid;
-            [ exact Hbα
-            | intro He; discriminate He
-            | intro He; discriminate He
-            | intros τ1 He; discriminate He ]).
-    destruct (IH Heq Hwf' Hdecls HwfP0' Hbα' C Hcore)
-      as [C' [Hcore' Hsc']].
-    exists C'. split; [ exact Hcore' | ].
-    intros m b Hbm Hmk Hcr.
-    destruct (x == m) as [-> | Hxm];
-      [ apply core_rigid_above_head_marker | ].
-    destruct (proj2 a_sub_output_wf_bundle _ _ _ _ _ _ _ _ Hs
-                Hwf' Hdecls HwfP0' Hbα') as [_ [_ HwfQ]].
-    apply core_rigid_above_cons_other;
-      [ eapply Hsc';
-          [ eapply binds_strip_mid;
-              [ exact Hbm | intros Hc; inversion Hc; subst; auto ]
-          | exact Hmk
-          | eapply core_rigid_above_strip_mid;
-              [ exact Hcr | exact Hxm | intros γ0 _ _ Hc; inversion Hc ] ]
-      | exact Hxm
-      | pose proof (core_ftv_dom Hcore' HwfQ) as Hsub;
-        clear - Hxout Hsub; fsetdec ].
+  - (* Flex-SkipTmVar (type entry) *)
+    intros NM M P0 Θ0 Θ1 Ξ α x Apay Q Hxout Hs IH.
+    apply (sub_flex_scope_skip_tm Hxout Hs IH). exact I.
+  - (* Flex-SkipTmVar (skeleton entry) *)
+    intros NM M P0 Θ0 Θ1 Ξ α x Qpay Q Hxout Hs IH.
+    apply (sub_flex_scope_skip_tm Hxout Hs IH). exact I.
 Qed.
 
 (* ===================================================================== *)
@@ -1720,15 +1703,83 @@ Definition typing_scope_concl (M : mode) (Θ0 : aenv) (P0 : pskl)
        binds m0 b0 Θ0 -> abind_marker b0 ->
        core_rigid_above m0 Θ0 C -> core_rigid_above m0 Θ1 C').
 
+(** The body stage of the two [_check_base] rows (AT-AbsCheck (→) and
+    AT-AbsAnnoCheck (→)), from the context [Θc] the body is checked in: a
+    marker's rigid-above region carries the split's domain [A'] by the body
+    run's own increase, and the codomain by the body's IH, past the discarded
+    suffix (premise (2)) and the term binder. *)
+Lemma scope_check_base_body :
+  forall {x Θc A A' B B1 e} {Ξ Θo : aenv} {m0 b},
+  {{ ⊢ Θc }}a ->
+  a_wf_ptyp Θc A -> a_wf_ptyp Θc A' -> a_wf_ptyp Θc B ->
+  {{ Θc ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a ->
+  uniq (Ξ ++ Θc) ->
+  (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp B1) ->
+  x `notin` dom (Ξ ++ Θc) `union` dom Θo `union` fvar_in_exp e ->
+  {{ ((x ~ abind_var_typ A) ++ Θc) ⊢[ mode_tc ; (ptyp_to_pskl B) ]
+    (open_exp_wrt_exp e (exp_var_f x)) ⦂ B1
+    ⊣ (Ξ ++ (x ~ abind_var_typ A) ++ Θo) }}a ->
+  typing_scope_concl mode_tc ((x ~ abind_var_typ A) ++ Θc) (ptyp_to_pskl B)
+    (open_exp_wrt_exp e (exp_var_f x)) B1 (Ξ ++ (x ~ abind_var_typ A) ++ Θo) ->
+  binds m0 b Θc -> abind_marker b ->
+  core_rigid_above m0 Θc A' -> core_rigid_above m0 Θc B ->
+  core_rigid_above m0 Θo (ptyp_arrow A' B1).
+Proof.
+  intros x Θc A A' B B1 e Ξ Θo m0 b Hwfc HwfA HwfA' HwfB Hexpx Huq HΞ Hx
+         Hrun IH Hbm Hmk HcrA HcrB.
+  rewrite dom_app in Hx.
+  assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θc) }}a)
+    by (apply a_wf_aenv__var_typ;
+        [ clear - Hx; fsetdec | exact HwfA | exact Hwfc ]).
+  assert (HwfPB : {{ ((x ~ abind_var_typ A) ++ Θc) ⨟ empty ⊢ₚₛ (ptyp_to_pskl B) }}a)
+    by (apply a_wf_pskl_weaken_cons; apply a_wf_ptyp_to_wf_pskl; exact HwfB).
+  assert (Hexpx' : {{ ((x ~ abind_var_typ A) ++ Θc)
+                      ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a)
+    by (apply a_wf_exp_weaken_cons; exact Hexpx).
+  destruct (IH Hwfx HwfPB (a_ty_mode_compat__tc B) Hexpx' B (pskl_ty_core__tc _))
+    as [Cb [HcoreB Hsc']].
+  assert (HeqCb : Cb = B1) by (inversion HcoreB; subst; reflexivity).
+  subst Cb.
+  (* the body run's own increase, for the domain piece *)
+  destruct (a_typing_sound Hrun Hwfx HwfPB (a_ty_mode_compat__tc B) Hexpx')
+    as [Hle [Hwfout _]].
+  assert (Huniq2 : uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θo))
+    by (apply a_wf_aenv_uniq; exact Hwfout).
+  assert (Hisub1 : Θc ⊴ Θo)
+    by (eapply a_isub_strip_var_typ_mid;
+        [ exact Huniq2 | exact Huq | exact Hle ]).
+  assert (Hwf2 : {{ ⊢ Θo }}a).
+  { eapply a_wf_aenv_strip_prefix.
+    eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []. }
+  assert (Hm1d : m0 `in` dom Θc) by (apply binds_In in Hbm; exact Hbm).
+  assert (Hxm0 : x <> m0) by (intros ->; clear - Hx Hm1d; fsetdec).
+  assert (HmΞ : m0 `notin` dom Ξ)
+    by (clear - Huq Hm1d; destruct_uniq; unfold disjoint in *; fsetdec).
+  assert (HxB : x `notin` ftvar_in_ptyp B)
+    by (pose proof (a_wf_ptyp_ftv_dom HwfB) as Hd;
+        clear - Hd Hx; fsetdec).
+  apply core_rigid_above_arrow.
+  - eapply core_rigid_above_isub;
+      [ exact Hisub1 | exact Hbm | exact Hmk
+      | apply a_wf_aenv_uniq; exact Hwfc
+      | apply a_wf_aenv_uniq; exact Hwf2
+      | apply a_wf_ptyp_ftv_dom; exact HwfA'
+      | exact HcrA ].
+  - apply (@core_rigid_above_strip_prefix m0 Ξ Θo B1);
+      [ | exact HmΞ | intros γ Hγ Hc0; exact (HΞ γ Hc0 Hγ) ].
+    apply (@core_rigid_above_strip_mid m0 Ξ x (abind_var_typ A) Θo B1);
+      [ | exact Hxm0 | intros γ0 _ _ Hc0; inversion Hc0 ].
+    eapply Hsc'; [ apply binds_cons_3; exact Hbm | exact Hmk | ].
+    apply core_rigid_above_cons_other;
+      [ exact HcrB | exact Hxm0 | exact HxB ].
+Qed.
+
 Lemma a_typing_scope : forall M Θ0 P0 e A' Θ1,
   {{ Θ0 ⊢[ M ; P0 ] e ⦂ A' ⊣ Θ1 }}a ->
   typing_scope_concl M Θ0 P0 e A' Θ1.
 Proof.
   intros M Θ0 P0 e A' Θ1 H; unfold typing_scope_concl in *;
-    induction H; intros Hwf HwfP0 Hmod Hexp C Hcore;
-    pose proof (fun y Ps Hb =>
-                  @prop_inc_strengthen.a_wf_aenv_binds_var_skl_wf
-                    _ y Ps Hwf Hb) as Hskl.
+    induction H; intros Hwf HwfP0 Hmod Hexp C Hcore.
   - (* AT-Unit *)
     destruct (proj1 a_sub_sub_flex_scope _ _ _ _ _ _ _ H eq_refl Hwf HwfP0
                 ltac:(apply a_wf_pskl__unit) C Hcore)
@@ -1792,51 +1843,19 @@ Proof.
   - (* AT-Abs : the core lives in the CODOMAIN, so the guessed domain and
        the [guess^TY] block are outside it entirely *)
     destruct (a_split_ty_shape H0 Hmod H) as [HeqΘ Hshape]; subst Θ1.
-    assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
-                   a_ty_mode_compat (decr_mode m) Q).
-    { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
-      - repeat split; try apply a_wf_pskl__ghost.
-        rewrite (a_ty_mode_compat_ghost_inv Hmod). apply a_ty_mode_compat__ti.
-      - inversion HwfP0; subst.
-        destruct (a_ty_mode_compat_arrow_inv Hmod H) as [m' [Hm Hm']];
-          subst m. repeat split; assumption. }
-    destruct Hpre as [HwfPP [HwfQ Hmod']].
+    destruct (a_split_ty_pieces H0 Hmod H HwfP0) as [HwfPP [HwfQ Hmod']].
     (* the core forces the FN shape, which pins the split's codomain *)
     inversion Hcore; subst; [ exfalso; apply H; reflexivity | ].
     match goal with
     | Hs : a_split _ (pskl_arrow _ _) _ _ _ |- _ => inversion Hs; subst
     end.
     cbn [decr_mode] in *.
-    assert (Hdecls : a_decls αs) by (eapply a_guess_mono_decls; eassumption).
-    assert (Hwfαs : {{ ⊢ (αs ++ Θ0) }}a)
-      by (apply a_wf_aenv_decls_app; assumption).
-    assert (HΞtv : forall α1, binds α1 abind_flex_mono αs ->
-                     a_binds_tvar α1 (αs ++ Θ0)).
-    { intros α1 Hb. unfold a_binds_tvar. right; left.
-      unfold binds; apply in_or_app; left; exact Hb. }
-    assert (HPtv : forall α1, α1 `in` ftvar_in_pskl P ->
-                     a_binds_tvar α1 (αs ++ Θ0)).
-    { intros α1 Hα1.
-      pose proof (a_wf_pskl_ftv_binds HwfPP Hα1) as Ht;
-        apply a_binds_tvar_weaken_cons; exact Ht. }
-    assert (HwfAg : a_wf_ptyp (αs ++ Θ0) A)
-      by (eapply a_guess_mono_wf; [ exact H1 | exact HPtv | exact HΞtv ]).
+    destruct (a_typing_abs_body_input Hwf HwfPP HwfQ Hexp H1 H2 H4)
+      as [_ [_ [Hwfx [HwfQx Hexpx]]]].
     assert (Hx : x `notin` dom Θ0 `union` dom αs `union` dom Ξ
                    `union` dom Θ2 `union` fvar_in_exp e)
       by (clear - H4; rewrite !dom_app in H4; fsetdec).
-    assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ αs ++ Θ0) }}a).
-    { apply a_wf_aenv__var_typ;
-        [ rewrite dom_app; clear - Hx; fsetdec | exact HwfAg | exact Hwfαs ]. }
-    destruct (IHa_typing Hwfx
-                ltac:(eapply a_wf_pskl_weaken;
-                      [ intros z c Hbz; apply binds_app_3; apply binds_app_3;
-                        exact Hbz
-                      | exact HwfQ ])
-                Hmod'
-                ltac:(eapply a_wf_exp_mono;
-                      [ exact (a_wf_exp_abs_pick x Hexp)
-                      | intros z c Hty Hbz; apply binds_app_3;
-                        apply binds_app_3; exact Hbz ])
+    destruct (IHa_typing Hwfx HwfQx Hmod' Hexpx
                 C ltac:(assumption))
       as [C' [Hcore' Hsc']].
     exists C'. split; [ apply ptyp_ty_core__fn; exact Hcore' | ].
@@ -1863,15 +1882,7 @@ Proof.
        guess block *)
     destruct (a_split_ty_shape H0 Hmod H) as [HeqΘ Hshape]; subst Θ1.
     pose proof (a_wf_exp_abs_anno_inv Hexp) as HwfA.
-    assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a /\
-                   a_ty_mode_compat (decr_mode m) Q).
-    { destruct Hshape as [[HP0 [HP HQ]] | HP0]; subst.
-      - repeat split; try apply a_wf_pskl__ghost.
-        rewrite (a_ty_mode_compat_ghost_inv Hmod). apply a_ty_mode_compat__ti.
-      - inversion HwfP0; subst.
-        destruct (a_ty_mode_compat_arrow_inv Hmod H) as [m' [Hm Hm']];
-          subst m. repeat split; assumption. }
-    destruct Hpre as [HwfPP [HwfQ Hmod']].
+    destruct (a_split_ty_pieces H0 Hmod H HwfP0) as [HwfPP [HwfQ Hmod']].
     inversion Hcore; subst; [ exfalso; apply H; reflexivity | ].
     match goal with
     | Hs : a_split _ (pskl_arrow _ _) _ _ _ |- _ => inversion Hs; subst
@@ -1923,7 +1934,7 @@ Proof.
   - (* AT-AbsCheck (∀) *)
     scope_check_step_row Hcore H0 H1 H2 IHa_typing Hwf HwfP0 Hexp
       A0 A α Ξ Θ0 Θ1.
-  - (* AT-AbsCheck (→) : the split's pieces, then the body run's suffix *)
+  - (* AT-AbsCheck (→) : the split's pieces, then the body stage *)
     pose proof (@pskl_ty_core_of_painting _ _ _ Hcore) as Hpc.
     inversion Hpc; subst.
     destruct (a_split_wf H Hwf HwfP0) as [Hles [Hwfs [HwfPA HwfPB]]].
@@ -1931,64 +1942,16 @@ Proof.
       by (apply a_wf_ptyp_of_wf_pskl_empty; exact HwfPA).
     assert (HwfBs : a_wf_ptyp Θ1 B)
       by (apply a_wf_ptyp_of_wf_pskl_empty; exact HwfPB).
-    assert (Hx : x `notin` dom Θ1 `union` dom Ξ `union` dom Θ2
-                   `union` fvar_in_exp e)
-      by (clear - H3; rewrite !dom_app in H3; fsetdec).
-    assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ1) }}a)
-      by (apply a_wf_aenv__var_typ;
-          [ clear - Hx; fsetdec | exact HwfAs | exact Hwfs ]).
     assert (Hexpx : {{ Θ1 ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a)
       by (apply (a_wf_exp_isub (a_wf_exp_abs_pick x Hexp) Hles)).
-    destruct (IHa_typing Hwfx
-                (a_wf_pskl_weaken_cons x (abind_var_typ A) HwfPB)
-                (a_ty_mode_compat__tc B)
-                (a_wf_exp_weaken_cons x (abind_var_typ A) Hexpx)
-                B (pskl_ty_core__tc _))
-      as [Cb [HcoreB Hsc']].
-    assert (HeqCb : Cb = B1) by (inversion HcoreB; subst; reflexivity).
-    subst Cb.
-    (* the body run's own increase, for the domain piece *)
-    destruct (a_typing_sound H4 Hwfx
-                (a_wf_pskl_weaken_cons x (abind_var_typ A) HwfPB)
-                (a_ty_mode_compat__tc B)
-                (a_wf_exp_weaken_cons x (abind_var_typ A) Hexpx))
-      as [Hle [Hwfout _]].
-    assert (Huniq2 : uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θ2))
-      by (apply a_wf_aenv_uniq; exact Hwfout).
-    assert (Hisub1 : Θ1 ⊴ Θ2)
-      by (eapply a_isub_strip_var_typ_mid;
-          [ exact Huniq2 | exact H1 | exact Hle ]).
-    assert (Hwf2 : {{ ⊢ Θ2 }}a).
-    { eapply a_wf_aenv_strip_prefix.
-      eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []. }
     exists (ptyp_arrow A B1). split; [ apply ptyp_ty_core__tc | ].
     intros m0 b0 Hbm Hmk Hcr.
-    assert (Huq0 : uniq Θ0) by (apply a_wf_aenv_uniq; exact Hwf).
     destruct (@a_split_scope _ _ _ _ _ _ _ H Hwf HwfP0 Hbm Hmk Hcr)
       as [HcrA HcrB].
-    destruct (@a_isub_binds_marker Θ0 Θ1 m0 b0 Hles Hbm Hmk Huq0)
-      as [b1 [Hbm1 Hmk1]].
-    assert (Hm1d : m0 `in` dom Θ1) by (apply binds_In in Hbm1; exact Hbm1).
-    assert (Hxm0 : x <> m0) by (intros ->; clear - Hx Hm1d; fsetdec).
-    assert (HmΞ : m0 `notin` dom Ξ)
-      by (clear - H1 Hm1d; destruct_uniq; unfold disjoint in *; fsetdec).
-    assert (HxB : x `notin` ftvar_in_ptyp B)
-      by (pose proof (a_wf_ptyp_ftv_dom HwfBs) as Hd;
-          clear - Hd Hx; fsetdec).
-    apply core_rigid_above_arrow.
-    + eapply core_rigid_above_isub;
-        [ exact Hisub1 | exact Hbm1 | exact Hmk1
-        | apply a_wf_aenv_uniq; exact Hwfs
-        | apply a_wf_aenv_uniq; exact Hwf2
-        | apply a_wf_ptyp_ftv_dom; exact HwfAs
-        | exact HcrA ].
-    + apply (@core_rigid_above_strip_prefix m0 Ξ Θ2 B1);
-        [ | exact HmΞ | intros γ Hγ Hc0; exact (H2 γ Hc0 Hγ) ].
-      apply (@core_rigid_above_strip_mid m0 Ξ x (abind_var_typ A) Θ2 B1);
-        [ | exact Hxm0 | intros γ0 _ _ Hc0; inversion Hc0 ].
-      eapply Hsc'; [ apply binds_cons_3; exact Hbm1 | exact Hmk1 | ].
-      apply core_rigid_above_cons_other;
-        [ exact HcrB | exact Hxm0 | exact HxB ].
+    destruct (@a_isub_binds_marker Θ0 Θ1 m0 b0 Hles Hbm Hmk
+                (a_wf_aenv_uniq Hwf)) as [b1 [Hbm1 Hmk1]].
+    exact (scope_check_base_body Hwfs HwfAs HwfAs HwfBs Hexpx H1 H2 H3 H4
+             IHa_typing Hbm1 Hmk1 HcrA HcrB).
   - (* AT-AbsAnnoCheck (∀) : verbatim the AbsCheck ∀ row *)
     scope_check_step_row Hcore H0 H1 H2 IHa_typing Hwf HwfP0 Hexp
       A0 A α Ξ Θ0 Θ1.
@@ -2010,51 +1973,17 @@ Proof.
       as [Hlec Hwfc].
     assert (HwfAan2 : a_wf_ptyp Θ2 A)
       by (eapply a_wf_ptyp_isub; [ exact HwfAan1 | exact Hlec ]).
-    assert (Hx : x `notin` dom Θ2 `union` dom Ξ `union` dom Θ3
-                   `union` fvar_in_exp e)
-      by (clear - H4; rewrite !dom_app in H4; fsetdec).
-    assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ2) }}a)
-      by (apply a_wf_aenv__var_typ;
-          [ clear - Hx; fsetdec | exact HwfAan2 | exact Hwfc ]).
     assert (Hexpx : {{ Θ2 ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a)
       by (apply (a_wf_exp_isub (a_wf_exp_abs_anno_pick x Hexp)
                    (a_isub_trans Hles Hlec))).
-    assert (HwfPB2 : {{ Θ2 ⨟ empty ⊢ₚₛ (ptyp_to_pskl B) }}a)
-      by (eapply a_wf_pskl_isub; [ exact HwfPB | exact Hlec ]).
-    destruct (IHa_typing Hwfx
-                (a_wf_pskl_weaken_cons x (abind_var_typ A) HwfPB2)
-                (a_ty_mode_compat__tc B)
-                (a_wf_exp_weaken_cons x (abind_var_typ A) Hexpx)
-                B (pskl_ty_core__tc _))
-      as [Cb [HcoreB Hsc']].
-    assert (HeqCb : Cb = B1) by (inversion HcoreB; subst; reflexivity).
-    subst Cb.
-    destruct (a_typing_sound H5 Hwfx
-                (a_wf_pskl_weaken_cons x (abind_var_typ A) HwfPB2)
-                (a_ty_mode_compat__tc B)
-                (a_wf_exp_weaken_cons x (abind_var_typ A) Hexpx))
-      as [Hle [Hwfout _]].
-    assert (Huniq3 : uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θ3))
-      by (apply a_wf_aenv_uniq; exact Hwfout).
-    assert (Hisub2 : Θ2 ⊴ Θ3)
-      by (eapply a_isub_strip_var_typ_mid;
-          [ exact Huniq3 | exact H2 | exact Hle ]).
-    assert (Hwf3 : {{ ⊢ Θ3 }}a).
-    { eapply a_wf_aenv_strip_prefix.
-      eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []. }
     exists (ptyp_arrow A' B1). split; [ apply ptyp_ty_core__tc | ].
     intros m0 b0 Hbm Hmk Hcr.
-    assert (Huq0 : uniq Θ0) by (apply a_wf_aenv_uniq; exact Hwf).
     destruct (@a_split_scope _ _ _ _ _ _ _ H Hwf HwfP0 Hbm Hmk Hcr)
       as [HcrA HcrB].
-    destruct (@a_isub_binds_marker Θ0 Θ1 m0 b0 Hles Hbm Hmk Huq0)
-      as [b1 [Hbm1 Hmk1]].
+    destruct (@a_isub_binds_marker Θ0 Θ1 m0 b0 Hles Hbm Hmk
+                (a_wf_aenv_uniq Hwf)) as [b1 [Hbm1 Hmk1]].
     destruct (@a_isub_binds_marker Θ1 Θ2 m0 b1 Hlec Hbm1 Hmk1
-                ltac:(apply a_wf_aenv_uniq; exact Hwfs)) as [b2 [Hbm2 Hmk2]].
-    assert (Hm2d : m0 `in` dom Θ2) by (apply binds_In in Hbm2; exact Hbm2).
-    assert (Hxm0 : x <> m0) by (intros ->; clear - Hx Hm2d; fsetdec).
-    assert (HmΞ : m0 `notin` dom Ξ)
-      by (clear - H2 Hm2d; destruct_uniq; unfold disjoint in *; fsetdec).
+                (a_wf_aenv_uniq Hwfs)) as [b2 [Hbm2 Hmk2]].
     assert (HcrA2 : core_rigid_above m0 Θ2 A').
     { eapply core_rigid_above_isub;
         [ exact Hlec | exact Hbm1 | exact Hmk1
@@ -2069,26 +1998,9 @@ Proof.
         | apply a_wf_aenv_uniq; exact Hwfc
         | apply a_wf_ptyp_ftv_dom; exact HwfBs
         | exact HcrB ]. }
-    assert (HxB : x `notin` ftvar_in_ptyp B).
-    { pose proof (a_wf_ptyp_ftv_dom
-                    ltac:(eapply a_wf_ptyp_isub;
-                            [ exact HwfBs | exact Hlec ])) as Hd.
-      clear - Hd Hx; fsetdec. }
-    apply core_rigid_above_arrow.
-    + eapply core_rigid_above_isub;
-        [ exact Hisub2 | exact Hbm2 | exact Hmk2
-        | apply a_wf_aenv_uniq; exact Hwfc
-        | apply a_wf_aenv_uniq; exact Hwf3
-        | apply a_wf_ptyp_ftv_dom;
-          eapply a_wf_ptyp_isub; [ exact HwfAs | exact Hlec ]
-        | exact HcrA2 ].
-    + apply (@core_rigid_above_strip_prefix m0 Ξ Θ3 B1);
-        [ | exact HmΞ | intros γ Hγ Hc0; exact (H3 γ Hc0 Hγ) ].
-      apply (@core_rigid_above_strip_mid m0 Ξ x (abind_var_typ A) Θ3 B1);
-        [ | exact Hxm0 | intros γ0 _ _ Hc0; inversion Hc0 ].
-      eapply Hsc'; [ apply binds_cons_3; exact Hbm2 | exact Hmk2 | ].
-      apply core_rigid_above_cons_other;
-        [ exact HcrB2 | exact Hxm0 | exact HxB ].
+    exact (scope_check_base_body Hwfc HwfAan2
+             (a_wf_ptyp_isub HwfAs Hlec) (a_wf_ptyp_isub HwfBs Hlec) Hexpx
+             H2 H3 H4 H5 IHa_typing Hbm2 Hmk2 HcrA2 HcrB2).
   - (* AT-App : the core is threaded through the FUNCTION premise; the
        argument runs only move the context *)
     destruct (a_wf_exp_app_inv Hexp) as [Hexp1 Hexp2].

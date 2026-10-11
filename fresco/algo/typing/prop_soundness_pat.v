@@ -496,6 +496,26 @@ Proof.
   - inversion Hm.
 Qed.
 
+(** …and so, at a well-formed input, the split's pieces are well-formed
+    and the codomain is mode-compatible one mode down. *)
+Lemma a_split_sk_pieces : forall m Θ0 P0 P Q0 Θ1,
+  {{ Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 }}a ->
+  a_sk_mode_compat m P0 ->
+  m <> mode_tc ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  ({{ Θ0 ⨟ empty ⊢ₚₛ P }}a) /\ ({{ Θ0 ⨟ empty ⊢ₚₛ Q0 }}a) /\
+  a_sk_mode_compat (decr_mode m) Q0.
+Proof.
+  intros m Θ0 P0 P Q0 Θ1 Hs Hmod Hne HwfP0.
+  destruct (a_split_sk_shape Hs Hmod) as [_ [[HP0 [HP HQ0]] | HP0]]; subst.
+  - repeat split; try apply a_wf_pskl__ghost.
+    destruct (a_sk_mode_compat_ghost_inv Hmod) as [Hm | Hm]; subst m;
+      [ apply a_sk_mode_compat__ti | congruence ].
+  - inversion HwfP0; subst.
+    destruct (a_sk_mode_compat_arrow_inv Hmod) as [m' [Hm Hm']]; subst m.
+    repeat split; assumption.
+Qed.
+
 (** The TY analogue of [a_split_sk_shape]: AWAY FROM
     CHECK MODE the split is arrow-or-ghost, so [a_split__flex] — and with it
     [a_split_refines] — is out of reach at [AT-Abs] / [AT-AbsAnno].  At TC
@@ -519,6 +539,25 @@ Proof.
         remember (pskl_var_f α) as Ps eqn:HPs;
         destruct Hm; [ discriminate | apply Hne; reflexivity | discriminate ]
     end.
+Qed.
+
+(** …and so, at a well-formed input, the split's pieces are well-formed
+    and the codomain is mode-compatible one mode down. *)
+Lemma a_split_ty_pieces : forall m Θ0 P0 P Q0 Θ1,
+  {{ Θ0 ⊲ P0 ▹ P ⇢ Q0 ⊣ Θ1 }}a ->
+  a_ty_mode_compat m P0 ->
+  m <> mode_tc ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+  ({{ Θ0 ⨟ empty ⊢ₚₛ P }}a) /\ ({{ Θ0 ⨟ empty ⊢ₚₛ Q0 }}a) /\
+  a_ty_mode_compat (decr_mode m) Q0.
+Proof.
+  intros m Θ0 P0 P Q0 Θ1 Hs Hmod Hne HwfP0.
+  destruct (a_split_ty_shape Hs Hmod Hne) as [_ [[HP0 [HP HQ]] | HP0]]; subst.
+  - repeat split; try apply a_wf_pskl__ghost.
+    rewrite (a_ty_mode_compat_ghost_inv Hmod). apply a_ty_mode_compat__ti.
+  - inversion HwfP0; subst.
+    destruct (a_ty_mode_compat_arrow_inv Hmod Hne) as [m' [Hm Hm']];
+      subst m. repeat split; assumption.
 Qed.
 
 (* --- §3c  the SK-sorted subtyping's target is mode-compatible ---------- *)
@@ -1280,6 +1319,42 @@ Proof.
   exfalso. apply (Hfree γ); clear - Hγ; fsetdec.
 Qed.
 
+(** The two refinement rows every case of the transport passes through
+    unchanged: an answer for the premise is an answer for the conclusion. *)
+Lemma transport_answer_univ_ghost_remove : forall {Θ Δ Q A},
+  (exists B, btyp_to_ptyp B = A /\ {{ Θ ⨟ Δ ⊢ᵣ Q ⊳ (btyp_to_bskl B) }}ad) ->
+  exists B, btyp_to_ptyp B = A /\
+    {{ Θ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Q) ⊳ (btyp_to_bskl B) }}ad.
+Proof.
+  intros Θ Δ Q A [B [HeqB Href]]. exists B.
+  split; [ exact HeqB | apply ad_refine_syn_univ_ghost_remove_intro; exact Href ].
+Qed.
+
+Lemma transport_answer_flex_l : forall {Θ Δ α τ A},
+  binds α (abind_flex_mono_def τ) Θ ->
+  (exists B, btyp_to_ptyp B = A /\
+     {{ Θ ⨟ Δ ⊢ᵣ (ptyp_to_bskl_syn τ) ⊳ (btyp_to_bskl B) }}ad) ->
+  exists B, btyp_to_ptyp B = A /\
+    {{ Θ ⨟ Δ ⊢ᵣ (bskl_var_f α) ⊳ (btyp_to_bskl B) }}ad.
+Proof.
+  intros Θ Δ α τ A Hb [B [HeqB Href]]. exists B.
+  split; [ exact HeqB | eapply ad_refine_syn__flex_l; [ exact Hb | exact Href ] ].
+Qed.
+
+(** The transport's flexible tie survives pushing one rigid [α] on both
+    sides, as the two ∀ rows do ([flex_defs_cons_tvar] is the definitions'
+    tie). *)
+Lemma transport_flex_cons_tvar : forall α Θc Θr,
+  (forall γ, a_flex_tvar Θc γ -> a_binds_tvar γ Θr) ->
+  forall γ, a_flex_tvar ((α ~ abind_tvar) ++ Θc) γ ->
+            a_binds_tvar γ ((α ~ abind_tvar) ++ Θr).
+Proof.
+  intros α Θc Θr Hflex γ Hfl.
+  eapply a_binds_tvar_mono;
+    [ apply aenv_tbinds_le_of_binds_le; apply aenv_binds_le_weaken_l | ].
+  apply Hflex. apply (a_flex_tvar_cons_tvar_any α Θc γ). exact Hfl.
+Qed.
+
 (** ⭐ THE TARGET TRANSPORT.  See the plan below for why the two contexts
     are decoupled and what each hypothesis buys. *)
 Lemma ad_refine_syn_target_transport : forall Ψ Θc R Qt,
@@ -1349,13 +1424,11 @@ Proof.
         [ exact Hc | exact HnfΔ | exact HdfΔ | symmetry; exact HQt
         | exact Hwff ].
     + (* refine univ_ghost_remove *)
-      destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ) as [B [HeqB Href']].
-      exists B. split;
-        [ exact HeqB | apply ad_refine_syn_univ_ghost_remove_intro; exact Href' ].
+      apply transport_answer_univ_ghost_remove.
+      exact (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ).
     + (* refine flex_l *)
-      destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ) as [B [HeqB Href']].
-      exists B. split;
-        [ exact HeqB | eapply ad_refine_syn__flex_l; eassumption ].
+      apply (transport_answer_flex_l Hb).
+      exact (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ).
   - (* consis forall_inh_tagged : dead on the subject's shape *)
     destruct A; simpl in HeqA; discriminate.
   - (* consis forall_inh_untagged *)
@@ -1388,10 +1461,7 @@ Proof.
       assert (HnfΔ' : forall γ, γ `in` add α Δx ->
                         ~ a_flex_tvar ((α ~ abind_tvar) ++ Θ) γ).
       { intros γ Hγ Hfl.
-        assert (Hfl0 : a_flex_tvar Θ γ).
-        { destruct Hfl as [Hbd | [τ Hbd]];
-            destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hcx] | Hb'];
-            solve [ discriminate | left; exact Hb' | right; exists τ; exact Hb' ]. }
+        apply (a_flex_tvar_cons_tvar_any α Θ γ) in Hfl as Hfl0.
         destruct (γ == α) as [-> | Hne].
         - destruct Hfl0 as [Hb | [τ Hb]]; apply binds_In in Hb;
             clear - Hb Hα; destruct_notin; fsetdec.
@@ -1421,18 +1491,8 @@ Proof.
                   ((α ~ abind_tvar) ++ Θx) (add α Δx)
                   (open_bskl_wrt_bskl Qs (bskl_var_f α))
                   Hwfr'
-                  ltac:(intros β τ Hbd;
-                        destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hcx] | Hb'];
-                        [ discriminate
-                        | apply binds_app_3; apply Hdefs; exact Hb' ])
-                  ltac:(intros γ [Hbd | [τ Hbd]];
-                        (destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hcx] | Hb'];
-                         [ discriminate
-                         | eapply a_binds_tvar_mono;
-                             [ apply aenv_tbinds_le_of_binds_le;
-                               apply aenv_binds_le_weaken_l
-                             | apply Hflex; solve [ left; exact Hb'
-                                                  | right; exists τ; exact Hb' ] ] ]))
+                  (@flex_defs_cons_tvar α _ _ Hdefs)
+                  (@transport_flex_cons_tvar α _ _ Hflex)
                   ltac:(intros γ Hγ;
                         pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper
                                       A0 (ptyp_var_f α)) as Hup;
@@ -1484,13 +1544,11 @@ Proof.
         [ exact Hc | exact HnfΔ | exact HdfΔ | symmetry; exact HQt
         | exact Hwff ].
     + (* refine univ_ghost_remove *)
-      destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ) as [B [HeqB Href']].
-      exists B. split;
-        [ exact HeqB | apply ad_refine_syn_univ_ghost_remove_intro; exact Href' ].
+      apply transport_answer_univ_ghost_remove.
+      exact (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ).
     + (* refine flex_l *)
-      destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ) as [B [HeqB Href']].
-      exists B. split;
-        [ exact HeqB | eapply ad_refine_syn__flex_l; eassumption ].
+      apply (transport_answer_flex_l Hb).
+      exact (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ).
   - (* consis forall_syn_tagged : dead *)
     destruct A; simpl in HeqA; discriminate.
   - (* consis forall_syn *)
@@ -1519,9 +1577,8 @@ Proof.
         [ exact Hc | exact HnfΔ | exact HdfΔ | symmetry; exact HQt
         | exact Hwff ].
     + (* refine univ_ghost_remove *)
-      destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ) as [B [HeqB Href']].
-      exists B. split;
-        [ exact HeqB | apply ad_refine_syn_univ_ghost_remove_intro; exact Href' ].
+      apply transport_answer_univ_ghost_remove.
+      exact (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ).
     + (* refine univ_ghost_fill : the binder goes into Θr *)
       inversion HQt; subst.
       destruct (atom_fresh (L `union` Lx `union` dom Θ `union` dom Θx
@@ -1535,18 +1592,8 @@ Proof.
                   ltac:(inversion HlcA; subst; auto)
                   ((α ~ abind_tvar) ++ Θx) Δx (bskl_univ_ghost Qs)
                   ltac:(apply a_wf_aenv__tvar; [ clear - Hα; solve_notin_auto | exact Hwfr ])
-                  ltac:(intros β τ Hbd;
-                        destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hcx] | Hb'];
-                        [ discriminate
-                        | apply binds_app_3; apply Hdefs; exact Hb' ])
-                  ltac:(intros γ [Hbd | [τ Hbd]];
-                        (destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hcx] | Hb'];
-                         [ discriminate
-                         | eapply a_binds_tvar_mono;
-                             [ apply aenv_tbinds_le_of_binds_le;
-                               apply aenv_binds_le_weaken_l
-                             | apply Hflex; solve [ left; exact Hb'
-                                                  | right; exists τ; exact Hb' ] ] ]))
+                  (@flex_defs_cons_tvar α _ _ Hdefs)
+                  (@transport_flex_cons_tvar α _ _ Hflex)
                   ltac:(intros γ Hγ;
                         pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper
                                       A0 (ptyp_var_f α)) as Hup;
@@ -1561,11 +1608,8 @@ Proof.
                           | right; eapply a_binds_tvar_mono;
                               [ apply aenv_tbinds_le_of_binds_le;
                                 apply aenv_binds_le_weaken_l | exact Ht ] ] ])
-                  ltac:(intros γ Hγ Hfl; apply (HnfΔ γ Hγ);
-                        destruct Hfl as [Hbd | [τ Hbd]];
-                        destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hcx] | Hb'];
-                        solve [ discriminate | left; exact Hb'
-                              | right; exists τ; exact Hb' ])
+                  (fun γ Hγ Hfl =>
+                     HnfΔ γ Hγ (proj1 (a_flex_tvar_cons_tvar_any α Θ γ) Hfl))
                   ltac:(intros γ β τ Hγ Hbd;
                         destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hcx] | Hb'];
                         [ discriminate | exact (HdfΔ γ β τ Hγ Hb') ])
@@ -1593,9 +1637,8 @@ Proof.
         rewrite <- btyp_to_bskl_close in Hren.
         exact Hren.
     + (* refine flex_l *)
-      destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ) as [B [HeqB Href']].
-      exists B. split;
-        [ exact HeqB | eapply ad_refine_syn__flex_l; eassumption ].
+      apply (transport_answer_flex_l Hb).
+      exact (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ).
   - (* consis ghostg : dead *)
     destruct A; simpl in HeqA; discriminate.
   - (* consis dot_univ_ghost : dead *)
@@ -1666,15 +1709,11 @@ Proof.
         [ exact Hc | exact HnfΔ | exact HdfΔ | symmetry; exact HQt
         | exact Hwff ].
     + (* refine univ_ghost_remove *)
-      destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ Hbr Hmono Hwfτ)
-        as [B [HeqB Href']].
-      exists B. split;
-        [ exact HeqB | apply ad_refine_syn_univ_ghost_remove_intro; exact Href' ].
+      apply transport_answer_univ_ghost_remove.
+      exact (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ Hbr Hmono Hwfτ).
     + (* refine flex_l *)
-      destruct (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ Hbr Hmono Hwfτ)
-        as [B [HeqB Href']].
-      exists B. split;
-        [ exact HeqB | eapply ad_refine_syn__flex_l; eassumption ].
+      apply (transport_answer_flex_l Hb).
+      exact (IHr HQt Hwfr Hdefs Hflex Hvis HnfΔ HdfΔ Hbr Hmono Hwfτ).
     + (* refine flex_r : the same definition, by uniqueness *)
       inversion HQt; subst.
       assert (Hτ : τx = τ)
@@ -1932,16 +1971,7 @@ Proof.
      rules are still cofinite, so this half still regenerates a family. *)
   - (* AP-Abs *)
     destruct (a_split_sk_shape H0 Hmod) as [HeqΘ Hshape]; subst Θ1.
-    assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q0 }}a /\
-                   a_sk_mode_compat (decr_mode m) Q0).
-    { destruct Hshape as [[HP0 [HP HQ0]] | HP0]; subst.
-      - repeat split; try apply a_wf_pskl__ghost.
-        destruct (a_sk_mode_compat_ghost_inv Hmod) as [Hm | Hm]; subst m;
-          [ apply a_sk_mode_compat__ti | congruence ].
-      - inversion HwfP0; subst.
-        destruct (a_sk_mode_compat_arrow_inv Hmod) as [m' [Hm Hm']]; subst m.
-        repeat split; assumption. }
-    destruct Hpre as [HwfPP [HwfQ0 Hmod']].
+    destruct (a_split_sk_pieces H0 Hmod H HwfP0) as [HwfPP [HwfQ0 Hmod']].
     assert (Hxd : x `notin` dom Θ0) by (clear - H2; simpl_env in *; fsetdec).
     assert (Hwfx : {{ ⊢ ((x ~ abind_var_skl P) ++ Θ0) }}a).
     { apply a_wf_aenv__var; [ exact Hxd | exact HwfPP | exact Hwf ]. }
@@ -1992,16 +2022,7 @@ Proof.
   - (* AP-AbsAnno *)
     destruct (a_split_sk_shape H0 Hmod) as [HeqΘ Hshape]; subst Θ1.
     pose proof (a_wf_exp_abs_anno_inv Hexp) as HwfA.
-    assert (Hpre : {{ Θ0 ⨟ empty ⊢ₚₛ P }}a /\ {{ Θ0 ⨟ empty ⊢ₚₛ Q0 }}a /\
-                   a_sk_mode_compat (decr_mode m) Q0).
-    { destruct Hshape as [[HP0 [HP HQ0]] | HP0]; subst.
-      - repeat split; try apply a_wf_pskl__ghost.
-        destruct (a_sk_mode_compat_ghost_inv Hmod) as [Hm | Hm]; subst m;
-          [ apply a_sk_mode_compat__ti | congruence ].
-      - inversion HwfP0; subst.
-        destruct (a_sk_mode_compat_arrow_inv Hmod) as [m' [Hm Hm']]; subst m.
-        repeat split; assumption. }
-    destruct Hpre as [HwfPP [HwfQ0 Hmod']].
+    destruct (a_split_sk_pieces H0 Hmod H HwfP0) as [HwfPP [HwfQ0 Hmod']].
     destruct (a_consis_chk_sound H1 Hwf HwfPP
                 ltac:(apply a_wf_ptyp_to_wf_pskl; exact HwfA))
       as [Hlec [Hwfc _]].

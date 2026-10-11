@@ -207,6 +207,56 @@ Lemma a_rigid_only_notin_prefix : forall (Ξ Θ : aenv) γ,
   γ `notin` dom Ξ.
 Proof. intros Ξ Θ γ Hu Hd. solve_uniq. Qed.
 
+(** A rigid variable at the head of a context that does not bind it again. *)
+Lemma a_rigid_only_head_tvar : forall Θ γ,
+  γ `notin` dom Θ -> a_rigid_only ((γ ~ abind_tvar) ++ Θ) γ.
+Proof.
+  intros Θ γ Hd.
+  split; [ unfold binds; simpl; auto | ].
+  split;
+    [ intros Hc | intros τ Hc ];
+    destruct (binds_cons_1 _ _ _ _ _ _ Hc) as [[_ Heq] | Hc'];
+    try discriminate;
+    apply binds_In in Hc'; clear - Hd Hc'; fsetdec.
+Qed.
+
+(** A run under a fresh rigid [α] head transports rigidity of the outer
+    context's atoms. *)
+Lemma a_rigid_only_under_fresh_tvar : forall Θ0 Θ1 α γ,
+  (forall γ, a_rigid_only ((α ~ abind_tvar) ++ Θ0) γ ->
+             a_rigid_only ((α ~ abind_tvar) ++ Θ1) γ) ->
+  a_rigid_only Θ0 γ ->
+  α `notin` ftvar_in_aenv Θ0 ->
+  a_rigid_only Θ1 γ.
+Proof.
+  intros Θ0 Θ1 α γ IH H Hfr.
+  assert (Hγα : α <> γ).
+  { pose proof (a_rigid_only_in_dom H) as Hd.
+    pose proof (dom_subset_ftvar_in_aenv Θ0) as Hsub.
+    intros ->. clear - Hfr Hd Hsub. fsetdec. }
+  eapply a_rigid_only_strip_head_other; [ exact Hγα | ].
+  apply IH.
+  apply a_rigid_only_cons_nonsuffix; [ intros Hs; inversion Hs | exact H ].
+Qed.
+
+(** …and the same when the run deposits a flexible-only suffix [Ξ] above
+    the binder, which a fresh [α] (away from [dom Θ0]) discards. *)
+Lemma a_rigid_only_under_fresh_tvar_suffix : forall {Ξ Θ0 Θ1 α γ},
+  (forall γ, a_rigid_only ((α ~ abind_tvar) ++ Θ0) γ ->
+             a_rigid_only (Ξ ++ (α ~ abind_tvar) ++ Θ1) γ) ->
+  a_rigid_only Θ0 γ ->
+  a_suffix Ξ ->
+  α `notin` dom Θ0 ->
+  a_rigid_only Θ1 γ.
+Proof.
+  intros Ξ Θ0 Θ1 α γ IH Hr Hs Hα.
+  apply a_rigid_only_strip_head_other with (c := α) (b := abind_tvar).
+  - intros ->. apply Hα. apply a_rigid_only_in_dom. exact Hr.
+  - eapply a_rigid_only_strip_suffix; [ exact Hs | ].
+    apply IH.
+    apply a_rigid_only_cons_nonsuffix; [ intros Hb; inversion Hb | exact Hr ].
+Qed.
+
 (* ===================================================================== *)
 (*  Preservation, judgement by judgement                                  *)
 (* ===================================================================== *)
@@ -262,12 +312,7 @@ Proof.
     destruct (γ == β) as [-> | Hne].
     + (* the walked rigid IS γ: it is re-attached, and the run below it
          deposits only fresh names (β ∉ dom Θ1, the rule's Barendregt) *)
-      split; [ apply binds_app_2; unfold binds; simpl; auto | ].
-      split;
-        [ intros Hc | intros τ Hc ];
-        destruct (binds_cons_1 _ _ _ _ _ _ Hc) as [[_ Heq] | Hc'];
-        try discriminate;
-        apply binds_In in Hc'; clear - Hβd Hc'; fsetdec.
+      apply a_rigid_only_head_tvar. clear - Hβd. fsetdec.
     + apply a_rigid_only_cons_other; [ intros ->; apply Hne; reflexivity | ].
       apply IH.
       eapply a_rigid_only_strip_mid_other; [ | exact H ]; intros ->; apply Hne; reflexivity.
@@ -318,12 +363,7 @@ Proof.
     destruct (γ == c) as [-> | Hne].
     + destruct Hb as [-> | [[A ->] | [Q ->]]].
       * (* the walked entry is the rigid γ itself *)
-        split; [ apply binds_app_2; unfold binds; simpl; auto | ].
-        split;
-          [ intros Hc | intros τ Hc ];
-          destruct (binds_cons_1 _ _ _ _ _ _ Hc) as [[_ Heq] | Hc'];
-          try discriminate;
-          apply binds_In in Hc'; clear - Hcd Hc'; fsetdec.
+        apply a_rigid_only_head_tvar. clear - Hcd. fsetdec.
       * apply a_rigid_only_cons_nonsuffix; [ intros Hs; inversion Hs | ].
         apply IH.
         eapply a_rigid_only_strip_head_nonrigid; [ | exact H ]; discriminate.
@@ -339,32 +379,14 @@ Proof.
   - (* C-Arrow *) intros * Hc1 IH1 Hc2 IH2 γ H. apply IH2, IH1, H.
   - (* C-ForallInh *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hc IH γ H.
-    assert (Hγα : α <> γ).
-    { pose proof (a_rigid_only_in_dom H) as Hd.
-      pose proof (dom_subset_ftvar_in_aenv Θ0) as Hsub.
-      intros ->. clear - Hfr Hd Hsub. fsetdec. }
-    eapply a_rigid_only_strip_head_other; [ exact Hγα | ].
-    apply IH.
-    apply a_rigid_only_cons_nonsuffix; [ intros Hs; inversion Hs | exact H ].
+    apply (a_rigid_only_under_fresh_tvar IH H). clear - Hfr. fsetdec.
   - (* C-ForallSyn *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hc IH γ H.
-    assert (Hγα : α <> γ).
-    { pose proof (a_rigid_only_in_dom H) as Hd.
-      pose proof (dom_subset_ftvar_in_aenv Θ0) as Hsub.
-      intros ->. clear - Hfr Hd Hsub. fsetdec. }
-    eapply a_rigid_only_strip_head_other; [ exact Hγα | ].
-    apply IH.
-    apply a_rigid_only_cons_nonsuffix; [ intros Hs; inversion Hs | exact H ].
+    apply (a_rigid_only_under_fresh_tvar IH H). clear - Hfr. fsetdec.
   - (* C-UnivGhost *) intros * Hc IH γ H. apply IH, H.
   - (* C-UnivGhost1 *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hc IH γ H.
-    assert (Hγα : α <> γ).
-    { pose proof (a_rigid_only_in_dom H) as Hd.
-      pose proof (dom_subset_ftvar_in_aenv Θ0) as Hsub.
-      intros ->. clear - Hfr Hd Hsub. fsetdec. }
-    eapply a_rigid_only_strip_head_other; [ exact Hγα | ].
-    apply IH.
-    apply a_rigid_only_cons_nonsuffix; [ intros Hs; inversion Hs | exact H ].
+    apply (a_rigid_only_under_fresh_tvar IH H). clear - Hfr. fsetdec.
   - (* C-UnivGhost2 *) intros * Hg Hnf Hc IH γ H. apply IH, H.
   - (* C-Flex *) intros Δ1 Δ2 Θ0 Θ1 α β Hu IH γ H. exact (IH γ H).
   - (* C-FlexL *) intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hnhole Ha IH γ H. exact (IH γ H).
@@ -404,14 +426,8 @@ Proof.
     eapply a_consis_rigid_only; [ exact Hc | exact H ].
   - (* ForallR *)
     intros α Θ0 Θ1 Ξ A B Hgf Hsuf Huq Hfr Hs IH γ H.
-    pose proof (a_rigid_only_in_dom H) as Hd.
-    assert (Hbig : a_rigid_only (Ξ ++ (α ~ abind_tvar) ++ Θ1) γ).
-    { apply IH.
-      apply a_rigid_only_cons_nonsuffix;
-        [ intros Hb; inversion Hb | exact H ]. }
-    apply a_rigid_only_strip_suffix in Hbig; [ | exact Hsuf ].
-    eapply a_rigid_only_strip_head_other; [ | exact Hbig ].
-    rewrite dom_app in Hfr. intros ->. clear - Hfr Hd. fsetdec.
+    apply (a_rigid_only_under_fresh_tvar_suffix IH H Hsuf).
+    rewrite dom_app in Hfr. clear - Hfr. fsetdec.
   - (* UnivGhostR *) intros; assumption.
   - (* FlexMono *)
     intros * Hf IH γ H. apply IH. simpl. exact H.
@@ -462,12 +478,7 @@ Proof.
   - (* Flex-SkipRigid *)
     intros * Hne Hβ Hβd Hf IH γ H.
     destruct (γ == β) as [-> | Hγβ].
-    + split; [ apply binds_app_2; unfold binds; simpl; auto | ].
-      split;
-        [ intros Hc | intros τ Hc ];
-        destruct (binds_cons_1 _ _ _ _ _ _ Hc) as [[_ Heq] | Hc'];
-        try discriminate;
-        apply binds_In in Hc'; clear - Hβd Hc'; fsetdec.
+    + apply a_rigid_only_head_tvar. clear - Hβd. fsetdec.
     + apply a_rigid_only_cons_other;
         [ intros ->; apply Hγβ; reflexivity | ].
       apply IH.
@@ -486,6 +497,22 @@ Qed.
 
 Definition a_sub_rigid_only := proj1 a_sub_sub_flex_rigid_only.
 
+(** A body run under a TERM binder [x : b] transports rigidity of the outer
+    context's atoms past the (discarded) binder. *)
+Lemma a_rigid_only_under_tm_binder : forall {Ξ x b Θ0 Θ1 γ},
+  (forall γ, a_rigid_only ((x ~ b) ++ Θ0) γ ->
+             a_rigid_only (Ξ ++ (x ~ b) ++ Θ1) γ) ->
+  a_rigid_only Θ0 γ ->
+  abind_is_tm b ->
+  a_rigid_only (Ξ ++ Θ1) γ.
+Proof.
+  intros Ξ x b Θ0 Θ1 γ IH Hr Htm.
+  apply a_rigid_only_strip_mid_nonrigid with (c := x) (b := b).
+  - intros ->. exact Htm.
+  - apply IH. apply a_rigid_only_cons_nonsuffix; [ | exact Hr ].
+    intros Hs. destruct Hs; exact Htm.
+Qed.
+
 Lemma a_pat_rigid_only : forall m Θ0 P0 e Q Θ1,
   {{ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}a ->
   forall γ, a_rigid_only Θ0 γ -> a_rigid_only Θ1 γ.
@@ -498,36 +525,18 @@ Proof.
   - (* freeze *) apply IHa_pat, Hr.
   (* ⚙ EXISTS-FRESH (2026-08-13): the IH is already at the row's own binder. *)
   - (* abs *)
-    assert (Hr1 : a_rigid_only Θ1 γ)
-      by (eapply a_split_rigid_only; [ eassumption | exact Hr ]).
-    assert (Hbig : a_rigid_only (Ξ ++ (x ~ abind_var_skl P) ++ Θ2) γ).
-    { apply IHa_pat.
-      apply a_rigid_only_cons_nonsuffix;
-        [ intros Hb; inversion Hb | exact Hr1 ]. }
-    eapply a_rigid_only_strip_mid_nonrigid; [ | exact Hbig ]; discriminate.
+    apply (a_rigid_only_under_tm_binder IHa_pat (a_split_rigid_only H0 Hr)).
+    exact I.
   - (* abs_anno *)
     assert (Hr1 : a_rigid_only Θ1 γ)
       by (eapply a_split_rigid_only; [ eassumption | exact Hr ]).
     destruct H1 as [Qc Hc].
-    assert (Hr2 : a_rigid_only Θ2 γ)
-      by (eapply a_consis_rigid_only; [ exact Hc | exact Hr1 ]).
-    assert (Hbig : a_rigid_only (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) γ).
-    { apply IHa_pat.
-      apply a_rigid_only_cons_nonsuffix;
-        [ intros Hb; inversion Hb | exact Hr2 ]. }
-    eapply a_rigid_only_strip_mid_nonrigid; [ | exact Hbig ]; discriminate.
+    apply (a_rigid_only_under_tm_binder IHa_pat (a_consis_rigid_only Hc Hr1)).
+    exact I.
   - (* abs_check *)
-    assert (Hbig : a_rigid_only (Ξ ++ (x ~ abind_var_skl pskl_ghost) ++ Θ1) γ).
-    { apply IHa_pat.
-      apply a_rigid_only_cons_nonsuffix;
-        [ intros Hb; inversion Hb | exact Hr ]. }
-    eapply a_rigid_only_strip_mid_nonrigid; [ | exact Hbig ]; discriminate.
+    apply (a_rigid_only_under_tm_binder IHa_pat Hr). exact I.
   - (* abs_anno_check *)
-    assert (Hbig : a_rigid_only (Ξ ++ (x ~ abind_var_typ A) ++ Θ1) γ).
-    { apply IHa_pat.
-      apply a_rigid_only_cons_nonsuffix;
-        [ intros Hb; inversion Hb | exact Hr ]. }
-    eapply a_rigid_only_strip_mid_nonrigid; [ | exact Hbig ]; discriminate.
+    apply (a_rigid_only_under_tm_binder IHa_pat Hr). exact I.
   - (* app *) apply IHa_pat2, IHa_pat1, Hr.
 Qed.
 
@@ -556,52 +565,26 @@ Proof.
     assert (Hr1 : a_rigid_only Θ1 γ)
       by (eapply a_split_rigid_only; [ eassumption | exact Hr ]).
     destruct H1 as [Qc Hc].
-    assert (Hr2 : a_rigid_only Θ2 γ)
-      by (eapply a_consis_rigid_only; [ exact Hc | exact Hr1 ]).
-    assert (Hbig : a_rigid_only (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) γ).
-    { apply IHa_typing.
-      apply a_rigid_only_cons_nonsuffix;
-        [ intros Hb; inversion Hb | exact Hr2 ]. }
-    eapply a_rigid_only_strip_mid_nonrigid; [ | exact Hbig ]; discriminate.
+    apply (a_rigid_only_under_tm_binder IHa_typing (a_consis_rigid_only Hc Hr1)).
+    exact I.
   - (* abs_check_step — the rule's own α: γ ∈ dom Θ0 keeps them apart *)
-    pose proof (a_rigid_only_in_dom Hr) as Hd.
-    assert (Hbig : a_rigid_only (Ξ ++ (α ~ abind_tvar) ++ Θ1) γ).
-    { apply IHa_typing.
-      apply a_rigid_only_cons_nonsuffix;
-        [ intros Hb; inversion Hb | exact Hr ]. }
-    apply a_rigid_only_strip_suffix in Hbig; [ | assumption ].
-    eapply a_rigid_only_strip_head_other; [ | exact Hbig ];
-      intros ->; clear - H2 Hd; rewrite dom_app in H2; fsetdec.
+    apply (a_rigid_only_under_fresh_tvar_suffix IHa_typing Hr H).
+    rewrite dom_app in H2. clear - H2. fsetdec.
   - (* abs_check_base *)
     assert (Hr1 : a_rigid_only Θ1 γ)
       by (eapply a_split_rigid_only; [ eassumption | exact Hr ]).
-    assert (Hbig : a_rigid_only (Ξ ++ (x ~ abind_var_typ A) ++ Θ2) γ).
-    { apply IHa_typing.
-      apply a_rigid_only_cons_nonsuffix;
-        [ intros Hb; inversion Hb | exact Hr1 ]. }
     eapply a_rigid_only_strip_suffix; [ eassumption | ].
-    eapply a_rigid_only_strip_mid_nonrigid; [ | exact Hbig ]; discriminate.
+    apply (a_rigid_only_under_tm_binder IHa_typing Hr1). exact I.
   - (* abs_anno_check_step *)
-    pose proof (a_rigid_only_in_dom Hr) as Hd.
-    assert (Hbig : a_rigid_only (Ξ ++ (α ~ abind_tvar) ++ Θ1) γ).
-    { apply IHa_typing.
-      apply a_rigid_only_cons_nonsuffix;
-        [ intros Hb; inversion Hb | exact Hr ]. }
-    apply a_rigid_only_strip_suffix in Hbig; [ | assumption ].
-    eapply a_rigid_only_strip_head_other; [ | exact Hbig ];
-      intros ->; clear - H2 Hd; rewrite dom_app in H2; fsetdec.
+    apply (a_rigid_only_under_fresh_tvar_suffix IHa_typing Hr H).
+    rewrite dom_app in H2. clear - H2. fsetdec.
   - (* abs_anno_check_base *)
     assert (Hr1 : a_rigid_only Θ1 γ)
       by (eapply a_split_rigid_only; [ eassumption | exact Hr ]).
     destruct H0 as [Qc Hc].
-    assert (Hr2 : a_rigid_only Θ2 γ)
-      by (eapply a_consis_rigid_only; [ exact Hc | exact Hr1 ]).
-    assert (Hbig : a_rigid_only (Ξ ++ (x ~ abind_var_typ A) ++ Θ3) γ).
-    { apply IHa_typing.
-      apply a_rigid_only_cons_nonsuffix;
-        [ intros Hb; inversion Hb | exact Hr2 ]. }
     eapply a_rigid_only_strip_suffix; [ eassumption | ].
-    eapply a_rigid_only_strip_mid_nonrigid; [ | exact Hbig ]; discriminate.
+    apply (a_rigid_only_under_tm_binder IHa_typing (a_consis_rigid_only Hc Hr1)).
+    exact I.
   - (* app *)
     apply IHa_typing2, IHa_typing1.
     eapply a_pat_rigid_only; [ eassumption | exact Hr ].
@@ -672,21 +655,11 @@ Proof.
   - left. unfold binds; simpl; auto.
   - left. unfold binds; simpl; auto.
   - assumption.
-  - destruct IHa_assign as [Hm | [τ' Hd]];
-      [ left; apply binds_cons_3; exact Hm
-      | right; exists τ'; apply binds_cons_3; exact Hd ].
-  - destruct IHa_assign as [Hm | [τ' Hd]];
-      [ left; apply binds_cons_3; exact Hm
-      | right; exists τ'; apply binds_cons_3; exact Hd ].
-  - destruct IHa_assign as [Hm | [τ' Hd]];
-      [ left; apply binds_cons_3; exact Hm
-      | right; exists τ'; apply binds_cons_3; exact Hd ].
-  - destruct IHa_assign as [Hm | [τ' Hd]];
-      [ left; apply binds_cons_3; exact Hm
-      | right; exists τ'; apply binds_cons_3; exact Hd ].
-  - destruct IHa_assign as [Hm | [τ' Hd]];
-      [ left; apply binds_cons_3; exact Hm
-      | right; exists τ'; apply binds_cons_3; exact Hd ].
+  - apply a_flex_tvar_weaken_app. exact IHa_assign.
+  - apply a_flex_tvar_weaken_app. exact IHa_assign.
+  - apply a_flex_tvar_weaken_app. exact IHa_assign.
+  - apply a_flex_tvar_weaken_app. exact IHa_assign.
+  - apply a_flex_tvar_weaken_app. exact IHa_assign.
 Qed.
 
 (** The flexible-split row cannot fire on a RIGID-only variable. *)
@@ -857,6 +830,59 @@ Qed.
 
 Definition a_sub_ty_core := proj1 a_sub_sub_flex_ty_core.
 
+(** A check-mode split of a rigid-core type is the identity on an arrow:
+    the type IS that arrow and the split solves nothing. *)
+Lemma a_split_core_rigid_arrow : forall Θ0 A0 A B Θ1,
+  {{ Θ0 ⊲ (ptyp_to_pskl A0) ▹ (ptyp_to_pskl A) ⇢ (ptyp_to_pskl B) ⊣ Θ1 }}a ->
+  core_rigid Θ0 A0 ->
+  A0 = ptyp_arrow A B /\ Θ1 = Θ0.
+Proof.
+  intros Θ0 A0 A B Θ1 H Hr.
+  destruct A0 as [ | n | α | C1 C2 | C0 ]; simpl in H.
+  - inversion H.
+  - inversion H.
+  - exfalso.
+    eapply a_split_rigid_var_absurd; [ exact H | ].
+    apply Hr. simpl. clear; fsetdec.
+  - inversion H; subst.
+    repeat match goal with
+    | Heq : ptyp_to_pskl _ = ptyp_to_pskl _ |- _ =>
+        apply ptyp_to_pskl_inj in Heq
+    end.
+    subst. auto.
+  - inversion H.
+Qed.
+
+(** The check-mode ∀-step rows: a body run whose output core is the opened
+    input, at the rule's fresh [α], makes the ∀ output equal to the input. *)
+Lemma ptyp_ty_core_all_step : forall Θ0 A0 A α,
+  α `notin` dom Θ0 `union` ftvar_in_ptyp A0 `union` ftvar_in_ptyp A ->
+  core_rigid Θ0 (ptyp_all A0) ->
+  (core_rigid ((α ~ abind_tvar) ++ Θ0) (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)) ->
+   ptyp_ty_core mode_tc (open_ptyp_wrt_ptyp A (ptyp_var_f α))
+     (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) ->
+  ptyp_ty_core mode_tc (ptyp_all A) (ptyp_all A0).
+Proof.
+  intros Θ0 A0 A α Hα Hr Hbody.
+  assert (Hc : ptyp_ty_core mode_tc (open_ptyp_wrt_ptyp A (ptyp_var_f α))
+                 (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))).
+  { apply Hbody. intros β' Hβ'.
+    pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0 (ptyp_var_f α))
+      as Hup.
+    simpl in Hup.
+    destruct (β' == α) as [-> | Hne].
+    - apply a_rigid_only_head_tvar. clear - Hα. fsetdec.
+    - apply a_rigid_only_cons_nonsuffix; [ intros Hb; inversion Hb | ].
+      apply Hr. simpl. clear - Hβ' Hup Hne. fsetdec. }
+  inversion Hc; subst.
+  match goal with
+  | Heq : open_ptyp_wrt_ptyp _ _ = open_ptyp_wrt_ptyp _ _ |- _ =>
+      apply open_ptyp_wrt_ptyp_inj in Heq;
+        [ | clear - Hα; fsetdec | clear - Hα; fsetdec ]
+  end.
+  subst. apply ptyp_ty_core__tc.
+Qed.
+
 Lemma a_typing_ty_core : forall M Θ0 P0 e A' Θ1,
   {{ Θ0 ⊢[ M ; P0 ] e ⦂ A' ⊣ Θ1 }}a ->
   forall C, pskl_ty_core M P0 C ->
@@ -912,133 +938,39 @@ Proof.
     apply a_rigid_only_cons_nonsuffix; [ intros Hb; inversion Hb | ].
     eapply a_consis_rigid_only; [ exact Hc | apply Hr; exact Hα ].
   - (* AT-AbsCheckStep : the rule's own α; the body IH pins A = A0 *)
-    inversion Hcore; subst.
-    match goal with
-    | Heq : ptyp_to_pskl ?CC = pskl_all_syn _ |- _ =>
-        destruct CC as [ | | | | C0 ]; simpl in Heq; try discriminate;
-        inversion Heq as [Heq0];
-        apply ptyp_to_pskl_inj in Heq0; subst
-    end.
-    assert (Hbody : ptyp_ty_core mode_tc
-                      (open_ptyp_wrt_ptyp A (ptyp_var_f α))
-                      (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))).
-    { apply IHa_typing; [ apply pskl_ty_core__tc | ].
-      intros β' Hβ'.
-      pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0 (ptyp_var_f α))
-        as Hup.
-      simpl in Hup.
-      destruct (β' == α) as [-> | Hne].
-      - split; [ unfold binds; simpl; auto | ].
-        split;
-          [ intros Hcb | intros τ Hcb ];
-          destruct (binds_cons_1 _ _ _ _ _ _ Hcb) as [[_ Heqb] | Hcb'];
-          try discriminate;
-          apply binds_In in Hcb'; clear - H2 Hcb';
-          rewrite dom_app in H2; fsetdec.
-      - apply a_rigid_only_cons_nonsuffix; [ intros Hb; inversion Hb | ].
-        apply Hr. simpl. clear - Hβ' Hup Hne. fsetdec. }
-    inversion Hbody; subst.
-    match goal with
-    | Heq : open_ptyp_wrt_ptyp _ _ = open_ptyp_wrt_ptyp _ _ |- _ =>
-        apply open_ptyp_wrt_ptyp_inj in Heq;
-          [ | clear - H2; fsetdec | clear - H2; fsetdec ]
-    end.
-    subst. apply ptyp_ty_core__tc.
+    apply pskl_ty_core_of_painting in Hcore. inversion Hcore; subst.
+    apply ptyp_ty_core_all_step with (Θ0 := Θ0) (α := α).
+    + rewrite dom_app in H2. clear - H2. fsetdec.
+    + exact Hr.
+    + intros Hr'. apply IHa_typing; [ apply pskl_ty_core__tc | exact Hr' ].
   - (* AT-AbsCheckBase : the body IH pins B1 = the split codomain *)
-    inversion Hcore; subst.
-    match goal with
-    | Heq : ptyp_to_pskl _ = ptyp_to_pskl _ |- _ =>
-        apply ptyp_to_pskl_inj in Heq
-    end.
-    subst.
-    match goal with
-    | Hs : a_split _ (ptyp_to_pskl ?X) _ _ _ |- _ =>
-        destruct X as [ | n | α | C1 C2 | C0 ]; simpl in Hs
-    end.
-    + inversion H.
-    + inversion H.
-    + exfalso.
-      eapply a_split_rigid_var_absurd; [ exact H | ].
-      apply Hr. simpl. clear; fsetdec.
-    + inversion H; subst.
-      repeat match goal with
-      | Heq : ptyp_to_pskl _ = ptyp_to_pskl _ |- _ =>
-          apply ptyp_to_pskl_inj in Heq
-      end.
-      subst.
-      assert (Hbody : ptyp_ty_core mode_tc B1 B).
-      { apply IHa_typing; [ apply pskl_ty_core__tc | ].
-        intros β' Hβ'.
-        apply a_rigid_only_cons_nonsuffix; [ intros Hb; inversion Hb | ].
-        apply Hr. simpl. clear - Hβ'. fsetdec. }
-      inversion Hbody; subst.
-      apply ptyp_ty_core__tc.
-    + inversion H.
-  - (* AT-AbsAnnoCheckStep *)
-    inversion Hcore; subst.
-    match goal with
-    | Heq : ptyp_to_pskl ?CC = pskl_all_syn _ |- _ =>
-        destruct CC as [ | | | | C0 ]; simpl in Heq; try discriminate;
-        inversion Heq as [Heq0];
-        apply ptyp_to_pskl_inj in Heq0; subst
-    end.
-    assert (Hbody : ptyp_ty_core mode_tc
-                      (open_ptyp_wrt_ptyp A (ptyp_var_f α))
-                      (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))).
+    apply pskl_ty_core_of_painting in Hcore. inversion Hcore; subst.
+    destruct (@a_split_core_rigid_arrow _ _ _ _ _ H Hr) as [-> ->].
+    assert (Hbody : ptyp_ty_core mode_tc B1 B).
     { apply IHa_typing; [ apply pskl_ty_core__tc | ].
       intros β' Hβ'.
-      pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0 (ptyp_var_f α))
-        as Hup.
-      simpl in Hup.
-      destruct (β' == α) as [-> | Hne].
-      - split; [ unfold binds; simpl; auto | ].
-        split;
-          [ intros Hcb | intros τ Hcb ];
-          destruct (binds_cons_1 _ _ _ _ _ _ Hcb) as [[_ Heqb] | Hcb'];
-          try discriminate;
-          apply binds_In in Hcb'; clear - H2 Hcb';
-          rewrite dom_app in H2; fsetdec.
-      - apply a_rigid_only_cons_nonsuffix; [ intros Hb; inversion Hb | ].
-        apply Hr. simpl. clear - Hβ' Hup Hne. fsetdec. }
+      apply a_rigid_only_cons_nonsuffix; [ intros Hb; inversion Hb | ].
+      apply Hr. simpl. clear - Hβ'. fsetdec. }
     inversion Hbody; subst.
-    match goal with
-    | Heq : open_ptyp_wrt_ptyp _ _ = open_ptyp_wrt_ptyp _ _ |- _ =>
-        apply open_ptyp_wrt_ptyp_inj in Heq;
-          [ | clear - H2; fsetdec | clear - H2; fsetdec ]
-    end.
-    subst. apply ptyp_ty_core__tc.
+    apply ptyp_ty_core__tc.
+  - (* AT-AbsAnnoCheckStep *)
+    apply pskl_ty_core_of_painting in Hcore. inversion Hcore; subst.
+    apply ptyp_ty_core_all_step with (Θ0 := Θ0) (α := α).
+    + rewrite dom_app in H2. clear - H2. fsetdec.
+    + exact Hr.
+    + intros Hr'. apply IHa_typing; [ apply pskl_ty_core__tc | exact Hr' ].
   - (* AT-AbsAnnoCheckBase *)
-    inversion Hcore; subst.
-    match goal with
-    | Heq : ptyp_to_pskl _ = ptyp_to_pskl _ |- _ =>
-        apply ptyp_to_pskl_inj in Heq
-    end.
-    subst.
-    match goal with
-    | Hs : a_split _ (ptyp_to_pskl ?X) _ _ _ |- _ =>
-        destruct X as [ | n | α | C1 C2 | C0 ]; simpl in Hs
-    end.
-    + inversion H.
-    + inversion H.
-    + exfalso.
-      eapply a_split_rigid_var_absurd; [ exact H | ].
-      apply Hr. simpl. clear; fsetdec.
-    + inversion H; subst.
-      repeat match goal with
-      | Heq : ptyp_to_pskl _ = ptyp_to_pskl _ |- _ =>
-          apply ptyp_to_pskl_inj in Heq
-      end.
-      subst.
-      destruct H0 as [Qc Hc].
-      assert (Hbody : ptyp_ty_core mode_tc B1 B).
-      { apply IHa_typing; [ apply pskl_ty_core__tc | ].
-        intros β' Hβ'.
-        apply a_rigid_only_cons_nonsuffix; [ intros Hb; inversion Hb | ].
-        eapply a_consis_rigid_only; [ exact Hc | ].
-        apply Hr. simpl. clear - Hβ'. fsetdec. }
-      inversion Hbody; subst.
-      apply ptyp_ty_core__tc.
-    + inversion H.
+    apply pskl_ty_core_of_painting in Hcore. inversion Hcore; subst.
+    destruct (@a_split_core_rigid_arrow _ _ _ _ _ H Hr) as [-> ->].
+    destruct H0 as [Qc Hc].
+    assert (Hbody : ptyp_ty_core mode_tc B1 B).
+    { apply IHa_typing; [ apply pskl_ty_core__tc | ].
+      intros β' Hβ'.
+      apply a_rigid_only_cons_nonsuffix; [ intros Hb; inversion Hb | ].
+      eapply a_consis_rigid_only; [ exact Hc | ].
+      apply Hr. simpl. clear - Hβ'. fsetdec. }
+    inversion Hbody; subst.
+    apply ptyp_ty_core__tc.
   - (* AT-App *)
     assert (Hfn : ptyp_ty_core (mode_fn m) (ptyp_arrow A B) C).
     { apply IHa_typing1; [ apply pskl_ty_core__fn; exact Hcore | ].
