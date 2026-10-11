@@ -1878,7 +1878,9 @@ Proof.
                     as [[_ Hc] | Hbd']; [ discriminate Hc | ];
                   eapply HS3; [ clear - HYd; fsetdec | exact Hbd' ] ]
               | clear; fsetdec ]. }
-          eapply ad_partial_precise_forall_close with (8 := Hrun); eauto.
+          eapply ad_partial_precise_forall_close
+            with (1 := HwfΘ) (2 := Himav) (3 := HFX) (4 := Hmon) (5 := HlcκX)
+                 (8 := Hrun).
           { clear - Fr HαΞ HdκX; destruct_notin; solve_notin_auto. }
           { clear - HΨis Hεa; fsetdec. }
         + (* Pi = □ — ROW B: SE-GhostL; ONE fresh-α body-IH run at the row
@@ -2059,7 +2061,9 @@ Proof.
                     | eapply HS3;
                       [ clear - HYd Hne; fsetdec | exact Hbd' ] ] ]
                 | clear; fsetdec ]. }
-            eapply ad_partial_precise_forall_close with (8 := Hrun); eauto.
+            eapply ad_partial_precise_forall_close
+              with (1 := HwfΘ) (2 := Himav) (3 := HFX) (4 := Hmon) (5 := HlcκX)
+                   (8 := Hrun).
             { clear - Fr HαΞ HdκX; destruct_notin; solve_notin_auto. }
             { clear - Hεa; fsetdec. }
       - (* P0 = □: the fill would be an all_inh — not a syn paint *)
@@ -2427,7 +2431,9 @@ Proof.
                     as [[_ Hc] | Hbd']; [ discriminate Hc | ];
                   eapply HS3; [ clear - HYd; fsetdec | exact Hbd' ] ]
               | clear; fsetdec ]. }
-          eapply ad_partial_precise_forall_close with (8 := Hrun); eauto.
+          eapply ad_partial_precise_forall_close
+            with (1 := HwfΘ) (2 := Himav) (3 := HFX) (4 := Hmon) (5 := HlcκX)
+                 (8 := Hrun).
           { clear - Fr HαΞ HdκX; destruct_notin; solve_notin_auto. }
           { clear - HΨis; fsetdec. }
         + (* Pi = □ — GhostL row.  solve = a_solve_eq__ghost_l (Pa:=∀◇.P0');
