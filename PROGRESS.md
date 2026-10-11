@@ -181,6 +181,22 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share consistency free-variable binder cases
+
+Consolidate the four identical forall cases in `ad_pat_consis_ftv_bound`.
+Explicit numbered selectors cover the tagged and untagged inherited and
+synthesized rules. Share the opening argument and removal of the fresh
+rigid binding; name its freshness obligation instead of using inline Ltac.
+
+Net reduction: **42 physical Coq lines / 44 nonblank, noncomment lines**.
+All 51 existing theorem statements in the edited file are unchanged; inline
+tactic terms decrease from 33 to 29, with none added.
+
+Validation: focused compilation and `make coq` passed with all 34 headline
+assumption reports closed under the global context, no axioms and no errors.
+Statement comparison and `git diff --check` passed.
+
+
 ## 2026-10-11 — Share typing rigidity check-step cases
 
 Consolidate the identical `AT-AbsCheckStep` and `AT-AbsAnnoCheckStep`
