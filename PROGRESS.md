@@ -182,6 +182,31 @@ them (PAPER-GAPS has the details):
 # Part 2: Progress log (most recent first)
 
 
+## 2026-10-11 — Derive undefined-flex substitution from the defined case
+
+Replace the separate induction for `ad_pat_consis_subst_flex` in
+`algo_decl/prop_subtyping.v` with an instance of
+`ad_pat_consis_subst_flex_def`: transport the original consistency judgment
+to a context assigning `unit` to the undefined flexible, then substitute
+that definition. Transport preserves type-variable visibility and existing
+definition lookups. Both public theorem statements remain unchanged.
+
+The defined-flex proof handles its five binder constructors through one
+shared opening/substitution argument, with explicit named freshness facts.
+Two completeness obligations in `prop_completeness_assign.v` and
+`prop_completeness_unify.v` now use refinement reflexivity directly instead
+of rebuilding consistency and converting it back to refinement.
+
+Net reduction: **199 physical lines**, including **208 nonblank, noncomment
+Coq lines**, relative to `c1c8b95`. Every existing theorem statement is
+unchanged. No inline tactic terms were added.
+
+Validation: the targeted dependent rebuild and `make coq` passed. All 34
+headline assumption reports are closed under the global context, with no
+axiom reports or errors. `git diff --check` passes.
+
+
+
 ## 2026-10-11 — Drop unused binder pairs directly in lifting
 
 Add `rel_pskl_drop_mid` and `rel_aenv_drop_mid` in

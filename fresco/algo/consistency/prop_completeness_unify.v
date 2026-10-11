@@ -353,18 +353,8 @@ Proof.
       by (rewrite msubst_pskl_embed_ptyp, pskl_to_uskl_ptyp; exact Hjoin0).
     assert (Hrs' : {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κs (ptyp_to_pskl Bσ))) ⊳ (ptyp_to_bskl_syn (msubst_ptyp κs Bσ)) }}ad).
     { rewrite msubst_pskl_embed_ptyp.
-      replace (pskl_to_bskl_inh (ptyp_to_pskl (msubst_ptyp κs Bσ)))
-        with (pskl_to_bskl_inh (uskl_to_pskl (ptyp_to_uskl_syn (msubst_ptyp κs Bσ))))
-        by (rewrite uskl_to_pskl_ptyp; reflexivity).
-      eapply ad_pat_consis_refine_syn_mono;
-        [ apply consis_mono_refl;
-            [ exact HmB'
-            | intros α0 Hα0; eapply a_wf_ptyp_ftv_tvarish;
-                [ exact HwfB' | exact Hα0 ] ]
-        | exact Hwfth
-        | apply mono_ptyp_to_bskl_syn; exact HmB'
-        | clear; fsetdec
-        | intros β0 τ0 Hb0; clear; fsetdec ]. }
+      rewrite (ptyp_to_bskl_inh_syn_eq HmB').
+      apply ad_refine_syn_mono_refl. exact HmB'. }
     assert (Hrp' : {{ Θ ⨟ empty ⊢ᵣₚ (msubst_pskl κs (ptyp_to_pskl Aσ)) ⊳ (bskl_to_pskl (ptyp_to_bskl_syn (msubst_ptyp κs Bσ))) }}ad).
     { rewrite msubst_pskl_embed_ptyp.
       replace (ptyp_to_pskl (msubst_ptyp κs Aσ))

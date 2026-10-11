@@ -1805,7 +1805,7 @@ Proof.
     destruct (skl_tyequiv_consis_transport HeqS Hwfth
                 (fun x b Hb => Hb)) as [_ Hjback].
     pose proof (Hjback _ _ Hjrefl) as Hjsub.
-    (* sub-refinements : both from the node's join via the mono bridges *)
+    (* sub-refinements : transport the join and monotype reflexivity *)
     assert (Hrssub : {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl (κa ++ κb)
                  (subst_pskl_in_pskl (ptyp_to_pskl τdef) α1 P))) ⊳ (pskl_to_bskl_syn (ptyp_to_pskl (msubst_lookup κ α))) }}ad).
     { destruct (skl_tyequiv_refine_syn_transport HeqP Hwfth
@@ -1825,14 +1825,8 @@ Proof.
     { destruct (skl_tyequiv_refine_pskl_transport HeqS Hwfth
                   (fun x b Hb => Hb)) as [_ Hback].
       apply Hback.
-      replace (msubst_pskl κ (pskl_var_f α))
-        with (uskl_to_pskl (pskl_to_uskl (msubst_pskl κ (pskl_var_f α))))
-        by (rewrite uskl_to_pskl_pskl_to_uskl; reflexivity).
-      eapply ad_pat_consis_refine_pskl_mono;
-        [ exact Hjrefl | exact Hwfth
-        | apply mono_ptyp_to_bskl_syn; exact HmC
-        | clear; fsetdec
-        | intros β τ Hb; clear; fsetdec ]. }
+      cbn [msubst_pskl]. rewrite bskl_to_pskl_pskl_to_bskl_syn.
+      apply ad_refine_pskl_mono_refl; [exact HmC | exact HwfC]. }
     (* the measure : V exactly constant, n drops by one *)
     assert (Hlt : mu_lt
         (mu_consis Θ (κa ++ κb)
