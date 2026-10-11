@@ -734,6 +734,22 @@ Proof.
         subst α00. clear - Huq. simpl_env in Huq. solve_uniq.
 Qed.
 
+(** Dropping a middle entry keeps a skeleton non-flexible: a flexible
+    variable of the shorter context is one of the longer. *)
+Lemma a_non_flex_strip_mid : forall Ξ (x : atom) b Θ0 P,
+  a_non_flex (Ξ ++ (x ~ b) ++ Θ0) P -> a_non_flex (Ξ ++ Θ0) P.
+Proof.
+  intros Ξ x b Θ0 P [Hlc Hnfl]. split; [ exact Hlc | ].
+  intro Hfl. apply Hnfl.
+  assert (Hbw : forall (β1 : atom) (bb : abind),
+            binds β1 bb (Ξ ++ Θ0) -> binds β1 bb (Ξ ++ (x ~ b) ++ Θ0))
+    by (intros β1 bb Hb; apply binds_weaken; exact Hb).
+  inversion Hfl as [Θf β1 Hb | Θf β1 τ0 Hb]; subst.
+  - apply a_flex__var; apply Hbw; exact Hb.
+  - eapply a_flex__var_def; apply Hbw; exact Hb.
+Qed.
+Arguments a_non_flex_strip_mid {Ξ x b Θ0 P}.
+
 (** The three nonflexible skip rules recurse below a split source
     binding. Normalize the competing solution in that target suffix and
     establish the smaller recursive problem once, independently of the
@@ -775,13 +791,10 @@ Proof.
         | eapply a_wf_pskl_ftv_binds; eassumption]).
   assert (Hmona : mono_ptyp (msubst_lookup κ α))
     by (eapply a_inc_lookup_mono; exact Hinc).
-  assert (HαΘ0 : α `in` dom Θ0')
-    by (destruct Hfα0 as [Hb | [? Hb]]; apply binds_In in Hb; exact Hb).
+  pose proof (a_flex_tvar_in_dom Hfα0) as HαΘ0.
   assert (Hακa : α `notin` dom κa)
     by (rewrite Hdκa; clear - Huqf HαΘ0; simpl_env in Huqf; solve_uniq).
-  assert (Hbtα0 : a_binds_tvar α Θ0')
-    by (destruct Hfα0 as [Hb | [τ0 Hb]];
-        [ right; left; exact Hb | right; right; exists τ0; exact Hb ]).
+  pose proof (a_flex_tvar_binds_tvar Hfα0) as Hbtα0.
   assert (Hwfα' : a_wf_ptyp Θ' (msubst_lookup κ α)).
   { rewrite Heqκ. rewrite (msubst_lookup_app_notin κa κb' Hακa).
     eapply a_inc_lookup_wf; [ exact Hincb | exact Hwf0 | exact Hbtα0 ]. }
@@ -946,15 +959,8 @@ Proof.
       { rewrite HeqΘ in HuqΘ. clear - HuqΘ.
         simpl_env in HuqΘ. solve_uniq. }
       (* κα̂ is well-formed in the truncated target Θt, below α1 *)
-      assert (Hfα0 : a_flex_tvar Θ0' α).
-      { destruct Hfα as [Hb | [τ0 Hb]].
-        - apply binds_cons_1 in Hb as [[_ Heq2] | Hb];
-            [ discriminate Heq2 | left; exact Hb ].
-        - apply binds_cons_1 in Hb as [[_ Heq2] | Hb];
-            [ discriminate Heq2 | right; exists τ0; exact Hb ]. }
-      assert (Hbtα0 : a_binds_tvar α Θ0')
-        by (destruct Hfα0 as [Hb | [τ0 Hb]];
-            [ right; left; exact Hb | right; right; exists τ0; exact Hb ]).
+      pose proof (a_flex_tvar_strip_tvar Hfα) as Hfα0.
+      pose proof (a_flex_tvar_binds_tvar Hfα0) as Hbtα0.
       assert (HαΘ0' : α `in` dom Θ0')
         by (destruct Hfα0 as [Hb | [? Hb]]; apply binds_In in Hb; exact Hb).
       assert (Hακa : α `notin` dom κa).
@@ -1025,25 +1031,8 @@ Proof.
       pose proof Hγni as Hγfr.
       assert (HwfP' : {{ (Ξ ++ Θ0') ⨟ empty ⊢ₚₛ P }}a)
         by (eapply a_wf_pskl_strip_mid; [ exact HwfP | exact Hγfr ]).
-      assert (Hfα0 : a_flex_tvar Θ0' α).
-      { destruct Hfα as [Hb | [τ0 Hb]];
-          [ destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He1 He2] | Hb'];
-            [ discriminate | left; exact Hb' ]
-          | destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He1 He2] | Hb'];
-            [ discriminate | right; exists τ0; exact Hb' ] ]. }
-      assert (Hbw : forall (β1 : atom) (bb : abind),
-                binds β1 bb (Ξ ++ Θ0') ->
-                binds β1 bb (Ξ ++ (α1 ~ abind_tvar) ++ Θ0')).
-      { intros β1 bb Hb. unfold binds in *.
-        apply in_app_or in Hb. apply in_or_app.
-        destruct Hb as [Hb | Hb];
-          [ left; exact Hb | right; simpl; right; exact Hb ]. }
-      assert (Hnf' : a_non_flex (Ξ ++ Θ0') P).
-      { destruct Hnf as [Hlc Hnfl]. split; [ exact Hlc | ].
-        intro Hfl. apply Hnfl.
-        inversion Hfl as [Θf β1 Hb | Θf β1 τ0 Hb]; subst;
-          [ apply a_flex__var; apply Hbw; exact Hb
-          | eapply a_flex__var_def; apply Hbw; exact Hb ]. }
+      pose proof (a_flex_tvar_strip_tvar Hfα) as Hfα0.
+      pose proof (a_non_flex_strip_mid Hnf) as Hnf'.
       (* competing: strip Ξ, invert the α1-var middle *)
       destruct (@a_inc_strip_decls_prefix Ξ ((α1 ~ abind_tvar) ++ Θ0')
                   κ Θ Hdecl Hinc) as [κa [κb' [Heqκ [Hdκa Hincxb]]]].
@@ -1124,36 +1113,12 @@ Proof.
     assert (Huq' : uniq (Ξ ++ Θ0')) by (apply a_wf_aenv_uniq; exact Hwf').
     assert (Hwf0 : {{ ⊢ Θ0' }}a) by (eapply a_wf_aenv_strip_prefix; exact Hwf').
     assert (HuqΘ : uniq Θ) by (apply a_wf_aenv_uniq; exact Hwfth).
-    assert (Hγfr : α1 `notin` ftvar_in_pskl P).
-    { intro Hx. pose proof (a_wf_pskl_ftv_binds HwfP Hx) as Hbt.
-      assert (Hbx : binds α1 (abind_var_typ A)
-                (Ξ ++ (α1 ~ abind_var_typ A) ++ Θ0'))
-        by (apply binds_app_3; left; reflexivity).
-      destruct Hbt as [Hb | [Hb | [τ Hb]]];
-        (pose proof (binds_unique _ _ _ _ _ Hb Hbx
-                       (a_wf_aenv_uniq Hwf)) as Heq;
-         discriminate Heq). }
+    pose proof (a_wf_pskl_mid_tm_notin Huqf I HwfP) as Hγfr.
     assert (HwfP' : {{ (Ξ ++ Θ0') ⨟ empty ⊢ₚₛ P }}a)
       by (eapply a_wf_pskl_strip_mid; [ exact HwfP | exact Hγfr ]).
-    assert (Hfα0 : a_flex_tvar Θ0' α).
-    { destruct Hfα as [Hb | [τ0 Hb]];
-        [ destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He1 He2] | Hb'];
-          [ discriminate | left; exact Hb' ]
-        | destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He1 He2] | Hb'];
-          [ discriminate | right; exists τ0; exact Hb' ] ]. }
-    assert (Hbw : forall (β1 : atom) (bb : abind),
-              binds β1 bb (Ξ ++ Θ0') ->
-              binds β1 bb (Ξ ++ (α1 ~ abind_var_typ A) ++ Θ0')).
-    { intros β1 bb Hb. unfold binds in *.
-      apply in_app_or in Hb. apply in_or_app.
-      destruct Hb as [Hb | Hb];
-        [ left; exact Hb | right; simpl; right; exact Hb ]. }
-    assert (Hnf' : a_non_flex (Ξ ++ Θ0') P).
-    { destruct Hnf as [Hlc Hnfl]. split; [ exact Hlc | ].
-      intro Hfl. apply Hnfl.
-      inversion Hfl as [Θf β1 Hb | Θf β1 τ0 Hb]; subst;
-        [ apply a_flex__var; apply Hbw; exact Hb
-        | eapply a_flex__var_def; apply Hbw; exact Hb ]. }
+    pose proof (proj1 (a_flex_tvar_cons_nonflex _ _ _
+      (abind_is_tm_nonflex (abind_var_typ A) I)) Hfα) as Hfα0.
+    pose proof (a_non_flex_strip_mid Hnf) as Hnf'.
     (* competing: strip Ξ, invert the α1-var middle *)
     destruct (@a_inc_strip_decls_prefix Ξ ((α1 ~ abind_var_typ A) ++ Θ0')
                 κ Θ Hdecl Hinc) as [κa [κb' [Heqκ [Hdκa Hincxb]]]].
@@ -1289,36 +1254,12 @@ Proof.
     assert (Huq' : uniq (Ξ ++ Θ0')) by (apply a_wf_aenv_uniq; exact Hwf').
     assert (Hwf0 : {{ ⊢ Θ0' }}a) by (eapply a_wf_aenv_strip_prefix; exact Hwf').
     assert (HuqΘ : uniq Θ) by (apply a_wf_aenv_uniq; exact Hwfth).
-    assert (Hγfr : α1 `notin` ftvar_in_pskl P).
-    { intro Hx. pose proof (a_wf_pskl_ftv_binds HwfP Hx) as Hbt.
-      assert (Hbx : binds α1 (abind_var_skl Q)
-                (Ξ ++ (α1 ~ abind_var_skl Q) ++ Θ0'))
-        by (apply binds_app_3; left; reflexivity).
-      destruct Hbt as [Hb | [Hb | [τ Hb]]];
-        (pose proof (binds_unique _ _ _ _ _ Hb Hbx
-                       (a_wf_aenv_uniq Hwf)) as Heq;
-         discriminate Heq). }
+    pose proof (a_wf_pskl_mid_tm_notin Huqf I HwfP) as Hγfr.
     assert (HwfP' : {{ (Ξ ++ Θ0') ⨟ empty ⊢ₚₛ P }}a)
       by (eapply a_wf_pskl_strip_mid; [ exact HwfP | exact Hγfr ]).
-    assert (Hfα0 : a_flex_tvar Θ0' α).
-    { destruct Hfα as [Hb | [τ0 Hb]];
-        [ destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He1 He2] | Hb'];
-          [ discriminate | left; exact Hb' ]
-        | destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[He1 He2] | Hb'];
-          [ discriminate | right; exists τ0; exact Hb' ] ]. }
-    assert (Hbw : forall (β1 : atom) (bb : abind),
-              binds β1 bb (Ξ ++ Θ0') ->
-              binds β1 bb (Ξ ++ (α1 ~ abind_var_skl Q) ++ Θ0')).
-    { intros β1 bb Hb. unfold binds in *.
-      apply in_app_or in Hb. apply in_or_app.
-      destruct Hb as [Hb | Hb];
-        [ left; exact Hb | right; simpl; right; exact Hb ]. }
-    assert (Hnf' : a_non_flex (Ξ ++ Θ0') P).
-    { destruct Hnf as [Hlc Hnfl]. split; [ exact Hlc | ].
-      intro Hfl. apply Hnfl.
-      inversion Hfl as [Θf β1 Hb | Θf β1 τ0 Hb]; subst;
-        [ apply a_flex__var; apply Hbw; exact Hb
-        | eapply a_flex__var_def; apply Hbw; exact Hb ]. }
+    pose proof (proj1 (a_flex_tvar_cons_nonflex _ _ _
+      (abind_is_tm_nonflex (abind_var_skl Q) I)) Hfα) as Hfα0.
+    pose proof (a_non_flex_strip_mid Hnf) as Hnf'.
     (* competing: strip Ξ, invert the α1-var middle *)
     destruct (@a_inc_strip_decls_prefix Ξ ((α1 ~ abind_var_skl Q) ++ Θ0')
                 κ Θ Hdecl Hinc) as [κa [κb' [Heqκ [Hdκa Hincxb]]]].
@@ -1520,19 +1461,7 @@ Proof.
           by (eapply a_wf_aenv_strip_mid; [ exact Hdecl | exact Hwf ]).
         assert (HwfP' : {{ (Ξ ++ Θ0') ⨟ empty ⊢ₚₛ P }}a)
           by (eapply a_wf_pskl_strip_mid; [ exact HwfP | exact Hγni ]).
-        assert (Hbw : forall (β1 : atom) (bb : abind),
-                  binds β1 bb (Ξ ++ Θ0') ->
-                  binds β1 bb (Ξ ++ (α1 ~ abind_flex_mono) ++ Θ0')).
-        { intros β1 bb Hb. unfold binds in *.
-          apply in_app_or in Hb. apply in_or_app.
-          destruct Hb as [Hb | Hb];
-            [ left; exact Hb | right; simpl; right; exact Hb ]. }
-        assert (Hnf' : a_non_flex (Ξ ++ Θ0') P).
-        { destruct Hnf as [Hlc Hnfl]. split; [ exact Hlc | ].
-          intro Hfl. apply Hnfl.
-          inversion Hfl as [Θf β1 Hb | Θf β1 τ0 Hb]; subst;
-            [ apply a_flex__var; apply Hbw; exact Hb
-            | eapply a_flex__var_def; apply Hbw; exact Hb ]. }
+        pose proof (a_non_flex_strip_mid Hnf) as Hnf'.
         assert (HeqP : msubst_pskl (κa ++ κb) P = msubst_pskl κ P).
         { rewrite Heqκ. apply msubst_pskl_agree. intros α0 Hα0.
           symmetry. apply msubst_lookup_mid_drop.

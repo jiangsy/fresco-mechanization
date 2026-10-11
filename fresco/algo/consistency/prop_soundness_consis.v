@@ -1334,6 +1334,22 @@ Proof.
   pose proof (Hfaf _ _ _ _ Heq Hne) as Hh. clear - Hh. fsetdec.
 Qed.
 
+(** A TERM variable cannot occur in a well-formed SKELETON. *)
+Lemma a_wf_pskl_mid_tm_notin : forall Ξ (x : atom) b Θ Δ P,
+  uniq (Ξ ++ (x ~ b) ++ Θ) ->
+  abind_is_tm b ->
+  {{ (Ξ ++ (x ~ b) ++ Θ) ⨟ Δ ⊢ₚₛ P }}a ->
+  x `notin` ftvar_in_pskl P.
+Proof.
+  intros Ξ x b Θ Δ P Huniq Htm HwfP Hin.
+  assert (Hbx : binds x b (Ξ ++ (x ~ b) ++ Θ))
+    by (apply binds_app_3; left; reflexivity).
+  destruct (a_wf_pskl_ftv_binds HwfP Hin) as [Hb | [Hb | [τ Hb]]];
+    pose proof (binds_unique _ _ _ _ _ Hb Hbx Huniq) as He;
+    subst b; exact Htm.
+Qed.
+Arguments a_wf_pskl_mid_tm_notin {Ξ x b Θ Δ P}.
+
 (** A flexible variable is not among the (rigid) Δ-variables. *)
 Lemma faf_flex_tvar_notin : forall Δ Θ α,
   flex_above_free Δ Θ ->
@@ -2828,16 +2844,7 @@ Proof.
       by (eapply a_wf_aenv_strip_prefix; eauto).
     apply a_wf_aenv_var_typ_inv in Hxwf.
     destruct Hxwf as [_ [HQwf _]].
-    (* a TERM variable cannot occur in a well-formed SKELETON *)
-    assert (Hxn : x `notin` ftvar_in_pskl P).
-    { intro Hin.
-      pose proof (a_wf_pskl_ftv_binds HwfP Hin) as Ht.
-      assert (Hbx : binds x (abind_var_typ P3)
-                      (Ξ ++ (x ~ abind_var_typ P3) ++ Θ0))
-        by (unfold binds; apply in_or_app; right; left; reflexivity).
-      destruct Ht as [Hb | [Hb | [τ0 Hb]]];
-        pose proof (binds_unique _ _ _ _ _ Hb Hbx Huniq) as He;
-        discriminate He. }
+    pose proof (a_wf_pskl_mid_tm_notin Huniq I HwfP) as Hxn.
     assert (HwfP' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P }}a)
       by (eapply a_wf_pskl_strip_mid; eauto).
     destruct (IHa Hdecl HwfΞΘ HwfP')
@@ -2876,15 +2883,7 @@ Proof.
       by (eapply a_wf_aenv_strip_prefix; eauto).
     apply a_wf_aenv_var_skl_inv in Hxwf.
     destruct Hxwf as [_ [HQwf _]].
-    assert (Hxn : x `notin` ftvar_in_pskl P).
-    { intro Hin.
-      pose proof (a_wf_pskl_ftv_binds HwfP Hin) as Ht.
-      assert (Hbx : binds x (abind_var_skl P3)
-                      (Ξ ++ (x ~ abind_var_skl P3) ++ Θ0))
-        by (unfold binds; apply in_or_app; right; left; reflexivity).
-      destruct Ht as [Hb | [Hb | [τ0 Hb]]];
-        pose proof (binds_unique _ _ _ _ _ Hb Hbx Huniq) as He;
-        discriminate He. }
+    pose proof (a_wf_pskl_mid_tm_notin Huniq I HwfP) as Hxn.
     assert (HwfP' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P }}a)
       by (eapply a_wf_pskl_strip_mid; eauto).
     destruct (IHa Hdecl HwfΞΘ HwfP')
