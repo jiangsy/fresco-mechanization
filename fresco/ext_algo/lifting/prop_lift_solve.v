@@ -370,6 +370,41 @@ Qed.
 (*  variables, which is the documented cliff (§8c.23).                     *)
 (* ===================================================================== *)
 
+(** Restrict old opener pairs before pushing the fresh rigid pair.  This
+    preserves the context agreement and scopes used by both solving lifts;
+    generated blocks remain disjoint from the enlarged relation. *)
+Lemma solve_lift_open_context : forall ρ V Θ Θ2 S (Ξ : aenv) β β2,
+  flex_agree_rel ρ V Θ Θ2 ->
+  V [<=] ftvar_in_aenv Θ -> dom Θ2 [<=] S -> V ∪ cols_r ρ [<=] S ->
+  dom Ξ ∩ cols_l ρ [=] empty ->
+  dom Ξ ∩ ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) [=] empty ->
+  β `notin` ftvar_in_aenv Θ -> β2 `notin` S ->
+  flex_agree_rel ((β, β2) :: restrict_pairs β β2 ρ) V
+    ((β ~ abind_tvar) ++ Θ) ((β2 ~ abind_tvar) ++ Θ2) /\
+  V [<=] ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) /\
+  dom ((β2 ~ abind_tvar) ++ Θ2) [<=] add β2 S /\
+  V ∪ cols_r ((β, β2) :: restrict_pairs β β2 ρ) [<=] add β2 S /\
+  dom Ξ ∩ cols_l ((β, β2) :: restrict_pairs β β2 ρ) [=] empty.
+Proof.
+  intros * Hagr Hscp1 HdΘ Hscp2 Hblk Hgen Hβ Hβ2.
+  pose proof (dom_subset_ftvar_in_aenv Θ) as Hds1.
+  pose proof (cols_l_restrict_pairs β β2 ρ) as Hcl0.
+  pose proof (cols_r_restrict_pairs β β2 ρ) as Hcr0.
+  split.
+  - apply flex_agree_rel_push_look.
+    + eapply flex_agree_rel_weaken;
+        [ exact Hagr | intros a b Hin; eapply restrict_pairs_incl; exact Hin
+        | intros a Ha; exact Ha ].
+    + clear - Hβ Hds1; fsetdec.
+    + clear - Hβ2 HdΘ; fsetdec.
+  - split; [ simpl; clear - Hscp1; fsetdec | ].
+    split; [ simpl; clear - HdΘ; fsetdec | ].
+    split; [ simpl; clear - Hscp2 Hcr0; fsetdec | ].
+    simpl. simpl in Hgen. clear - Hblk Hgen Hcl0; fsetdec.
+Qed.
+
+Arguments solve_lift_open_context {ρ V Θ Θ2 S Ξ β β2} _ _ _ _ _ _ _ _.
+
 Lemma a_solve_eq_rel_e : forall Θ1 P1 Q1 Ξ1 P1',
   {{ Θ1 ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}a ->
   forall S0 Θ2 P2 Q2 ρ V,
@@ -530,34 +565,6 @@ Proof.
     | Hf : β `notin` union _ _ |- _ => rename Hf into Hβ1
     end.
     destruct (atom_fresh S0) as [β2 Hβ2].
-    pose proof (dom_subset_ftvar_in_aenv Θ) as Hds1.
-    (* ⭐ THE RESTRICTION.  [rel_pskl_close_pair] wants [β] off [cols_l ρ];
-       side 2 buys that from the SUPPLY and side 1 has none, so the pairs
-       the close must not see are DELETED.  Legal here because the row has
-       not opened yet: [β] misses both inputs by the rule's own side
-       condition, [β2] misses both by the supply. *)
-    assert (Hcl0 : cols_l (restrict_pairs β β2 ρ) [<=] cols_l ρ)
-      by apply cols_l_restrict_pairs.
-    assert (Hcr0 : cols_r (restrict_pairs β β2 ρ) [<=] cols_r ρ)
-      by apply cols_r_restrict_pairs.
-    (* ⭐ and the push is the WEAK one — [flex_agree_rel_push_look] asks
-       only that the two openers miss the two DOMAINS. *)
-    assert (Hagr' : flex_agree_rel ((β, β2) :: restrict_pairs β β2 ρ) V
-                      ((β ~ abind_tvar) ++ Θ) ((β2 ~ abind_tvar) ++ Θ2)).
-    { apply flex_agree_rel_push_look.
-      - eapply flex_agree_rel_weaken;
-          [ exact Hagr
-          | intros a0 b0 Hin0; eapply restrict_pairs_incl; exact Hin0
-          | fsetdec ].
-      - clear - Hβ1 Hds1. fsetdec.
-      - clear - Hβ2 HdΘ. fsetdec. }
-    assert (Hscp1' : V [<=] ftvar_in_aenv ((β ~ abind_tvar) ++ Θ))
-      by (simpl; clear - Hscp1; fsetdec).
-    assert (HdΘ' : dom ((β2 ~ abind_tvar) ++ Θ2) [<=] add β2 S0)
-      by (simpl; clear - HdΘ; fsetdec).
-    assert (Hscp2' : V ∪ cols_r ((β, β2) :: restrict_pairs β β2 ρ)
-                       [<=] add β2 S0)
-      by (simpl; clear - Hscp2 Hcr0; fsetdec).
     assert (HupP : ftvar_in_pskl (open_pskl_wrt_pskl P2b (pskl_var_f β2))
                    [<=] ftvar_in_pskl (pskl_var_f β2) ∪ ftvar_in_pskl P2b)
       by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
@@ -570,9 +577,10 @@ Proof.
       by (simpl in *; clear - Hcov HupP HupQ; fsetdec).
     assert (Hd1p : dom Ξ ∩ ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) [=] empty)
       by (exact ((proj2 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ HD)).
-    assert (Hblk' : dom Ξ ∩ cols_l ((β, β2) :: restrict_pairs β β2 ρ)
-                      [=] empty)
-      by (simpl; simpl in Hd1p; clear - Hblk Hd1p Hcl0; fsetdec).
+    assert (HβΘ : β `notin` ftvar_in_aenv Θ)
+      by (clear - Hβ1; fsetdec).
+    destruct (solve_lift_open_context Hagr Hscp1 HdΘ Hscp2 Hblk Hd1p HβΘ Hβ2)
+      as (Hagr' & Hscp1' & HdΘ' & Hscp2' & Hblk').
     assert (HrP0r : rel_pskl (restrict_pairs β β2 ρ) V P P2b)
       by (apply rel_pskl_restrict;
           [ exact HrP0 | clear - Hβ1; fsetdec
@@ -631,34 +639,6 @@ Proof.
     | Hf : β `notin` union _ _ |- _ => rename Hf into Hβ1
     end.
     destruct (atom_fresh S0) as [β2 Hβ2].
-    pose proof (dom_subset_ftvar_in_aenv Θ) as Hds1.
-    (* ⭐ THE RESTRICTION.  [rel_pskl_close_pair] wants [β] off [cols_l ρ];
-       side 2 buys that from the SUPPLY and side 1 has none, so the pairs
-       the close must not see are DELETED.  Legal here because the row has
-       not opened yet: [β] misses both inputs by the rule's own side
-       condition, [β2] misses both by the supply. *)
-    assert (Hcl0 : cols_l (restrict_pairs β β2 ρ) [<=] cols_l ρ)
-      by apply cols_l_restrict_pairs.
-    assert (Hcr0 : cols_r (restrict_pairs β β2 ρ) [<=] cols_r ρ)
-      by apply cols_r_restrict_pairs.
-    (* ⭐ and the push is the WEAK one — [flex_agree_rel_push_look] asks
-       only that the two openers miss the two DOMAINS. *)
-    assert (Hagr' : flex_agree_rel ((β, β2) :: restrict_pairs β β2 ρ) V
-                      ((β ~ abind_tvar) ++ Θ) ((β2 ~ abind_tvar) ++ Θ2)).
-    { apply flex_agree_rel_push_look.
-      - eapply flex_agree_rel_weaken;
-          [ exact Hagr
-          | intros a0 b0 Hin0; eapply restrict_pairs_incl; exact Hin0
-          | fsetdec ].
-      - clear - Hβ1 Hds1. fsetdec.
-      - clear - Hβ2 HdΘ. fsetdec. }
-    assert (Hscp1' : V [<=] ftvar_in_aenv ((β ~ abind_tvar) ++ Θ))
-      by (simpl; clear - Hscp1; fsetdec).
-    assert (HdΘ' : dom ((β2 ~ abind_tvar) ++ Θ2) [<=] add β2 S0)
-      by (simpl; clear - HdΘ; fsetdec).
-    assert (Hscp2' : V ∪ cols_r ((β, β2) :: restrict_pairs β β2 ρ)
-                       [<=] add β2 S0)
-      by (simpl; clear - Hscp2 Hcr0; fsetdec).
     assert (HupQ : ftvar_in_pskl (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
                    [<=] ftvar_in_pskl (pskl_var_f β2) ∪ ftvar_in_pskl Q2b)
       by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
@@ -668,9 +648,10 @@ Proof.
       by (simpl in *; clear - Hcov HupQ; fsetdec).
     assert (Hd1p : dom Ξ ∩ ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) [=] empty)
       by (exact ((proj2 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ HD)).
-    assert (Hblk' : dom Ξ ∩ cols_l ((β, β2) :: restrict_pairs β β2 ρ)
-                      [=] empty)
-      by (simpl; simpl in Hd1p; clear - Hblk Hd1p Hcl0; fsetdec).
+    assert (HβΘ : β `notin` ftvar_in_aenv Θ)
+      by (clear - Hβ1; fsetdec).
+    destruct (solve_lift_open_context Hagr Hscp1 HdΘ Hscp2 Hblk Hd1p HβΘ Hβ2)
+      as (Hagr' & Hscp1' & HdΘ' & Hscp2' & Hblk').
     assert (HrP0r : rel_pskl (restrict_pairs β β2 ρ) V P P2b)
       by (apply rel_pskl_restrict;
           [ exact HrP0 | clear - Hβ1; fsetdec
@@ -732,34 +713,6 @@ Proof.
     | Hf : β `notin` union _ _ |- _ => rename Hf into Hβ1
     end.
     destruct (atom_fresh S0) as [β2 Hβ2].
-    pose proof (dom_subset_ftvar_in_aenv Θ) as Hds1.
-    (* ⭐ THE RESTRICTION.  [rel_pskl_close_pair] wants [β] off [cols_l ρ];
-       side 2 buys that from the SUPPLY and side 1 has none, so the pairs
-       the close must not see are DELETED.  Legal here because the row has
-       not opened yet: [β] misses both inputs by the rule's own side
-       condition, [β2] misses both by the supply. *)
-    assert (Hcl0 : cols_l (restrict_pairs β β2 ρ) [<=] cols_l ρ)
-      by apply cols_l_restrict_pairs.
-    assert (Hcr0 : cols_r (restrict_pairs β β2 ρ) [<=] cols_r ρ)
-      by apply cols_r_restrict_pairs.
-    (* ⭐ and the push is the WEAK one — [flex_agree_rel_push_look] asks
-       only that the two openers miss the two DOMAINS. *)
-    assert (Hagr' : flex_agree_rel ((β, β2) :: restrict_pairs β β2 ρ) V
-                      ((β ~ abind_tvar) ++ Θ) ((β2 ~ abind_tvar) ++ Θ2)).
-    { apply flex_agree_rel_push_look.
-      - eapply flex_agree_rel_weaken;
-          [ exact Hagr
-          | intros a0 b0 Hin0; eapply restrict_pairs_incl; exact Hin0
-          | fsetdec ].
-      - clear - Hβ1 Hds1. fsetdec.
-      - clear - Hβ2 HdΘ. fsetdec. }
-    assert (Hscp1' : V [<=] ftvar_in_aenv ((β ~ abind_tvar) ++ Θ))
-      by (simpl; clear - Hscp1; fsetdec).
-    assert (HdΘ' : dom ((β2 ~ abind_tvar) ++ Θ2) [<=] add β2 S0)
-      by (simpl; clear - HdΘ; fsetdec).
-    assert (Hscp2' : V ∪ cols_r ((β, β2) :: restrict_pairs β β2 ρ)
-                       [<=] add β2 S0)
-      by (simpl; clear - Hscp2 Hcr0; fsetdec).
     assert (HupP : ftvar_in_pskl (open_pskl_wrt_pskl P2b (pskl_var_f β2))
                    [<=] ftvar_in_pskl (pskl_var_f β2) ∪ ftvar_in_pskl P2b)
       by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
@@ -768,9 +721,10 @@ Proof.
       by (simpl in *; clear - Hcov HupP; fsetdec).
     assert (Hd1p : dom Ξ ∩ ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) [=] empty)
       by (exact ((proj2 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ HD)).
-    assert (Hblk' : dom Ξ ∩ cols_l ((β, β2) :: restrict_pairs β β2 ρ)
-                      [=] empty)
-      by (simpl; simpl in Hd1p; clear - Hblk Hd1p Hcl0; fsetdec).
+    assert (HβΘ : β `notin` ftvar_in_aenv Θ)
+      by (clear - Hβ1; fsetdec).
+    destruct (solve_lift_open_context Hagr Hscp1 HdΘ Hscp2 Hblk Hd1p HβΘ Hβ2)
+      as (Hagr' & Hscp1' & HdΘ' & Hscp2' & Hblk').
     assert (HrP0r : rel_pskl (restrict_pairs β β2 ρ) V P P2b)
       by (apply rel_pskl_restrict;
           [ exact HrP0 | clear - Hβ1; fsetdec
@@ -946,34 +900,6 @@ Proof.
     | Hf : β `notin` union _ _ |- _ => rename Hf into Hβ1
     end.
     destruct (atom_fresh S0) as [β2 Hβ2].
-    pose proof (dom_subset_ftvar_in_aenv Θ) as Hds1.
-    (* ⭐ THE RESTRICTION.  [rel_pskl_close_pair] wants [β] off [cols_l ρ];
-       side 2 buys that from the SUPPLY and side 1 has none, so the pairs
-       the close must not see are DELETED.  Legal here because the row has
-       not opened yet: [β] misses both inputs by the rule's own side
-       condition, [β2] misses both by the supply. *)
-    assert (Hcl0 : cols_l (restrict_pairs β β2 ρ) [<=] cols_l ρ)
-      by apply cols_l_restrict_pairs.
-    assert (Hcr0 : cols_r (restrict_pairs β β2 ρ) [<=] cols_r ρ)
-      by apply cols_r_restrict_pairs.
-    (* ⭐ and the push is the WEAK one — [flex_agree_rel_push_look] asks
-       only that the two openers miss the two DOMAINS. *)
-    assert (Hagr' : flex_agree_rel ((β, β2) :: restrict_pairs β β2 ρ) V
-                      ((β ~ abind_tvar) ++ Θ) ((β2 ~ abind_tvar) ++ Θ2)).
-    { apply flex_agree_rel_push_look.
-      - eapply flex_agree_rel_weaken;
-          [ exact Hagr
-          | intros a0 b0 Hin0; eapply restrict_pairs_incl; exact Hin0
-          | fsetdec ].
-      - clear - Hβ1 Hds1. fsetdec.
-      - clear - Hβ2 HdΘ. fsetdec. }
-    assert (Hscp1' : V [<=] ftvar_in_aenv ((β ~ abind_tvar) ++ Θ))
-      by (simpl; clear - Hscp1; fsetdec).
-    assert (HdΘ' : dom ((β2 ~ abind_tvar) ++ Θ2) [<=] add β2 S0)
-      by (simpl; clear - HdΘ; fsetdec).
-    assert (Hscp2' : V ∪ cols_r ((β, β2) :: restrict_pairs β β2 ρ)
-                       [<=] add β2 S0)
-      by (simpl; clear - Hscp2 Hcr0; fsetdec).
     assert (HupP : ftvar_in_pskl (open_pskl_wrt_pskl P3b (pskl_var_f β2))
                    [<=] ftvar_in_pskl (pskl_var_f β2) ∪ ftvar_in_pskl P3b)
       by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
@@ -982,9 +908,10 @@ Proof.
       by (simpl in *; clear - Hcov HupP; fsetdec).
     assert (Hd1p : dom Ξ ∩ ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) [=] empty)
       by (exact ((proj1 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ _ HD)).
-    assert (Hblk' : dom Ξ ∩ cols_l ((β, β2) :: restrict_pairs β β2 ρ)
-                      [=] empty)
-      by (simpl; simpl in Hd1p; clear - Hblk Hd1p Hcl0; fsetdec).
+    assert (HβΘ : β `notin` ftvar_in_aenv Θ)
+      by (clear - Hβ1; fsetdec).
+    destruct (solve_lift_open_context Hagr Hscp1 HdΘ Hscp2 Hblk Hd1p HβΘ Hβ2)
+      as (Hagr' & Hscp1' & HdΘ' & Hscp2' & Hblk').
     assert (HrP0r : rel_pskl (restrict_pairs β β2 ρ) V P P3b)
       by (apply rel_pskl_restrict;
           [ exact HrP0 | clear - Hβ1; fsetdec
@@ -1089,34 +1016,6 @@ Proof.
     | Hf : β `notin` union _ _ |- _ => rename Hf into Hβ1
     end.
     destruct (atom_fresh S0) as [β2 Hβ2].
-    pose proof (dom_subset_ftvar_in_aenv Θ) as Hds1.
-    (* ⭐ THE RESTRICTION.  [rel_pskl_close_pair] wants [β] off [cols_l ρ];
-       side 2 buys that from the SUPPLY and side 1 has none, so the pairs
-       the close must not see are DELETED.  Legal here because the row has
-       not opened yet: [β] misses both inputs by the rule's own side
-       condition, [β2] misses both by the supply. *)
-    assert (Hcl0 : cols_l (restrict_pairs β β2 ρ) [<=] cols_l ρ)
-      by apply cols_l_restrict_pairs.
-    assert (Hcr0 : cols_r (restrict_pairs β β2 ρ) [<=] cols_r ρ)
-      by apply cols_r_restrict_pairs.
-    (* ⭐ and the push is the WEAK one — [flex_agree_rel_push_look] asks
-       only that the two openers miss the two DOMAINS. *)
-    assert (Hagr' : flex_agree_rel ((β, β2) :: restrict_pairs β β2 ρ) V
-                      ((β ~ abind_tvar) ++ Θ) ((β2 ~ abind_tvar) ++ Θ2)).
-    { apply flex_agree_rel_push_look.
-      - eapply flex_agree_rel_weaken;
-          [ exact Hagr
-          | intros a0 b0 Hin0; eapply restrict_pairs_incl; exact Hin0
-          | fsetdec ].
-      - clear - Hβ1 Hds1. fsetdec.
-      - clear - Hβ2 HdΘ. fsetdec. }
-    assert (Hscp1' : V [<=] ftvar_in_aenv ((β ~ abind_tvar) ++ Θ))
-      by (simpl; clear - Hscp1; fsetdec).
-    assert (HdΘ' : dom ((β2 ~ abind_tvar) ++ Θ2) [<=] add β2 S0)
-      by (simpl; clear - HdΘ; fsetdec).
-    assert (Hscp2' : V ∪ cols_r ((β, β2) :: restrict_pairs β β2 ρ)
-                       [<=] add β2 S0)
-      by (simpl; clear - Hscp2 Hcr0; fsetdec).
     assert (HupB : ftvar_in_pskl (open_pskl_wrt_pskl B3 (pskl_var_f β2))
                    [<=] ftvar_in_pskl (pskl_var_f β2) ∪ ftvar_in_pskl B3)
       by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
@@ -1126,9 +1025,10 @@ Proof.
       by (simpl in *; clear - Hcov HupB; fsetdec).
     assert (Hd1p : dom Ξ ∩ ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) [=] empty)
       by (exact ((proj1 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ _ HD)).
-    assert (Hblk' : dom Ξ ∩ cols_l ((β, β2) :: restrict_pairs β β2 ρ)
-                      [=] empty)
-      by (simpl; simpl in Hd1p; clear - Hblk Hd1p Hcl0; fsetdec).
+    assert (HβΘ : β `notin` ftvar_in_aenv Θ)
+      by (clear - Hβ1; fsetdec).
+    destruct (solve_lift_open_context Hagr Hscp1 HdΘ Hscp2 Hblk Hd1p HβΘ Hβ2)
+      as (Hagr' & Hscp1' & HdΘ' & Hscp2' & Hblk').
     assert (HrelPr : rel_pskl (restrict_pairs β β2 ρ) V P P3)
       by (apply rel_pskl_restrict;
           [ exact HrelP | clear - Hβ1; fsetdec

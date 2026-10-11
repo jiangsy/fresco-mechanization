@@ -181,6 +181,24 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share binder context preparation in solving lifts
+
+Add `solve_lift_open_context` and use it in five binder cases across
+`a_solve_eq_rel_e` and `a_solve_sub_rel_e`. The lemma restricts the old
+opener pairs, pushes the new rigid pair, and preserves context agreement,
+scope bounds, and generated-block exclusion. Constructor-specific syntax
+opening, recursive calls, and closing or escaping output binders remain
+explicit in each case.
+
+Net reduction: **100 physical Coq lines / 70 nonblank, noncomment lines**.
+All 10 existing theorem statements are unchanged. No inline tactic terms
+added; the repeated explanatory comments now have one shared location.
+
+Validation: focused compilation and final `make coq` passed. All 34
+headline assumption reports are closed under the global context, with no
+axiom reports or errors. Statement comparison and `git diff --check` passed.
+
+
 ## 2026-10-11 — Share term-opener transport in executable typing
 
 Add `e_typing_draw_term`: a typing derivation whose inputs are scoped by
