@@ -687,6 +687,49 @@ Proof.
     clear - Hd HXf; destruct_notin; fsetdec.
 Qed.
 
+(** The ∀ rows' precision conclusion: the body run's precision at the row's
+    own binder [α] closes, through [ad_partial_precise_msubst_fold], into the
+    tagged ∀'s precision under the extended metasubstitution. *)
+Lemma ad_partial_precise_forall_close :
+  forall Θ Θw κ κX Δ Δ' Ψc Ψ ε ψR PaX α,
+  {{ ⊢ Θ }}a ->
+  (forall p, In p κ -> ftvar_in_ptyp (snd p) [<=] dom Θ) ->
+  Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κX ->
+  (forall x b, binds x b Θw -> binds x b Θ) ->
+  msubst_lc (κX ++ κ) ->
+  α `notin` Δ `union` dom Θ `union` dom κX `union` dom κ
+    `union` ftvar_in_uskl ψR ->
+  Ψ [=] add ε Ψc ->
+  {{ ((α ~ abind_tvar) ++ Θ) ⨟ add α (Δ `union` remove α Δ')
+     ⊢ˢ msubst_pskl (κX ++ κ) PaX ⊑ᵖ[ Ψc ]
+       open_uskl_wrt_uskl ψR (uskl_var_f α) }}ad ->
+  {{ Θ ⨟ (Δ `union` Δ') ⊢ˢ
+     pskl_all_syn (msubst_pskl (κX ++ κ) (close_pskl_wrt_pskl α PaX))
+     ⊑ᵖ[ Ψ ] uskl_all_tag ε ψR }}ad.
+Proof.
+  intros Θ Θw κ κX Δ Δ' Ψc Ψ ε ψR PaX α HwfΘ Himav HFX Hmon HlcκX Hα HΨ Hrun.
+  apply ad_ppre__forall with (Ψ0 := Ψc)
+    (L := Δ `union` Δ' `union` dom Θ `union` dom κX `union` dom κ
+       `union` ftvar_in_uskl ψR `union` singleton α
+       `union` ftvar_in_pskl (msubst_pskl (κX ++ κ) PaX)).
+  - intros α' HX'.
+    apply ad_partial_precise_weaken_tvar.
+    rewrite <- msubst_pskl_open_lc.
+    + eapply ad_partial_precise_msubst_fold.
+      * exact HwfΘ.
+      * intros p Hp. apply in_app_or in Hp. destruct Hp as [Hp | Hp].
+        -- pose proof (forall_wf_mono_images_dom HFX p Hp) as Hd.
+           pose proof (aenv_binds_dom_sub _ _ Hmon) as Hdw.
+           clear - Hd Hdw; fsetdec.
+        -- exact (Himav p Hp).
+      * rewrite dom_app. clear - Hα. solve_notin_auto.
+      * rewrite dom_app. clear - HX'. solve_notin_auto.
+      * exact Hrun.
+    + exact HlcκX.
+    + rewrite dom_app. clear - HX'. solve_notin_auto.
+  - exact HΨ.
+Qed.
+
 Theorem a_solve_eq_complete_var_gen :
   forall NM Θ Θ0 Θw Θtv Θr Θ0r κ Δ Δρ Δr Ψρ Ψ' Ψi Ψa Ψsub ψsub ψa Q Pi P0,
   (* the context split, as a BINDS-LEVEL bag (see the block above): the
@@ -1839,22 +1882,6 @@ Proof.
           split; [ exact HFX | ].
           intros Δ' HS1 HS2 HS3.
           simpl.
-          apply ad_ppre__forall with
-            (L := L `union` Lr `union` Lt `union` Lw0 `union` Lq
-               `union` Δ `union` Δρ `union` dom Θ `union` dom Θ0
-               `union` ftvar_in_aenv Θ0
-               `union` dom κ `union` dom κX
-               `union` singleton ε `union` ftvar_in_uskl ψR
-               `union` ftvar_in_pskl P0b
-               `union` Δ' `union` singleton α
-               `union` ftvar_in_pskl (msubst_pskl (κX ++ κ) PaX))
-            (Ψ0 := Ψi' `union` (remove ε Ψa));
-            [ | clear - HΨis Hεa; fsetdec ].
-          intros α' HX'.
-          apply ad_partial_precise_weaken_tvar.
-          rewrite <- msubst_pskl_open_lc;
-            [ | exact HlcκX
-            | rewrite dom_app; clear - HX'; solve_notin ].
           assert (Hrun : {{ ((α ~ abind_tvar) ++ Θ) ⨟
                     (add α (Δ `union` (remove α Δ'))) ⊢ˢ
                     (msubst_pskl (κX ++ κ) PaX)
@@ -1869,15 +1896,9 @@ Proof.
                     as [[_ Hc] | Hbd']; [ discriminate Hc | ];
                   eapply HS3; [ clear - HYd; fsetdec | exact Hbd' ] ]
               | clear; fsetdec ]. }
-          eapply ad_partial_precise_msubst_fold; [ exact HwfΘ | | | | exact Hrun ].
-          { intros p Hp. apply in_app_or in Hp; destruct Hp as [Hp | Hp];
-              [ | exact (Himav p Hp) ].
-            pose proof (forall_wf_mono_images_dom HFX p Hp) as Hd.
-            assert (Hdw : dom Θw [<=] dom Θ)
-              by (apply aenv_binds_dom_sub; exact Hmon).
-            clear - Hd Hdw; fsetdec. }
-          { rewrite dom_app. clear - Fr HαΞ HdκX; destruct_notin; solve_notin_auto. }
-          { rewrite dom_app. clear - HX'; solve_notin_auto. }
+          eapply ad_partial_precise_forall_close with (8 := Hrun); eauto.
+          { clear - Fr HαΞ HdκX; destruct_notin; solve_notin_auto. }
+          { clear - HΨis Hεa; fsetdec. }
         + (* Pi = □ — ROW B: SE-GhostL; ONE fresh-α body-IH run at the row
              top (not per-instance — the giant IH must not be re-elaborated
              under the ∀-fold binder), then fold the renamed body.  The solve is a
@@ -2038,22 +2059,6 @@ Proof.
             split; [ exact HFX | ].
             intros Δ' HS1 HS2 HS3.
             simpl.
-            apply ad_ppre__forall with
-              (L := L `union` Lr `union` Lt `union` Lw0 `union` Lq
-               `union` Δ `union` Δρ `union` dom Θ `union` dom Θ0
-               `union` ftvar_in_aenv Θ0
-               `union` dom κ `union` dom κX
-               `union` singleton ε `union` ftvar_in_uskl ψR
-               `union` ftvar_in_pskl P0b
-                 `union` Lf `union` Δ' `union` singleton α
-                 `union` ftvar_in_pskl (msubst_pskl (κX ++ κ) PaX))
-              (Ψ0 := Ψi `union` (remove ε Ψa));
-              [ | clear - Hεa; fsetdec ].
-            intros α' HX'.
-            apply ad_partial_precise_weaken_tvar.
-            rewrite <- msubst_pskl_open_lc;
-              [ | exact HlcκX
-              | rewrite dom_app; clear - HX'; solve_notin ].
             assert (Hrun : {{ ((α ~ abind_tvar) ++ Θ) ⨟
                       (add α (Δ `union` (remove α Δ'))) ⊢ˢ
                       (msubst_pskl (κX ++ κ) PaX)
@@ -2074,15 +2079,9 @@ Proof.
                     | eapply HS3;
                       [ clear - HYd Hne; fsetdec | exact Hbd' ] ] ]
                 | clear; fsetdec ]. }
-            eapply ad_partial_precise_msubst_fold; [ exact HwfΘ | | | | exact Hrun ].
-            { intros p Hp. apply in_app_or in Hp; destruct Hp as [Hp | Hp];
-                [ | exact (Himav p Hp) ].
-              pose proof (forall_wf_mono_images_dom HFX p Hp) as Hd.
-              assert (Hdw : dom Θw [<=] dom Θ)
-                by (apply aenv_binds_dom_sub; exact Hmon).
-              clear - Hd Hdw; fsetdec. }
-            { rewrite dom_app. clear - Fr HαΞ HdκX; destruct_notin; solve_notin_auto. }
-            { rewrite dom_app. clear - HX'; solve_notin_auto. }
+            eapply ad_partial_precise_forall_close with (8 := Hrun); eauto.
+            { clear - Fr HαΞ HdκX; destruct_notin; solve_notin_auto. }
+            { clear - Hεa; fsetdec. }
       - (* P0 = □: the fill would be an all_inh — not a syn paint *)
         exfalso.
         simpl in Hrefine.
@@ -2467,22 +2466,6 @@ Proof.
           split; [ exact HFX | ].
           intros Δ' HS1 HS2 HS3.
           simpl.
-          apply ad_ppre__forall with (ε := ε)
-            (L := L `union` Lr `union` Lt `union` Lrb
-               `union` Δ `union` Δρ `union` dom Θ `union` dom Θ0 `union` dom Θr
-               `union` ftvar_in_aenv Θ0
-               `union` dom κ `union` dom κX
-               `union` singleton ε `union` ftvar_in_uskl ψR
-               `union` ftvar_in_pskl P0'
-               `union` Δ' `union` singleton α
-               `union` ftvar_in_pskl (msubst_pskl (κX ++ κ) PaX))
-            (Ψ0 := Ψi' `union` Ψa);
-            [ | clear - HΨis; fsetdec ].
-          intros α' HX'.
-          apply ad_partial_precise_weaken_tvar.
-          rewrite <- msubst_pskl_open_lc;
-            [ | exact HlcκX
-            | rewrite dom_app; clear - HX'; solve_notin ].
           assert (Hrun : {{ ((α ~ abind_tvar) ++ Θ) ⨟
                     (add α (Δ `union` (remove α Δ'))) ⊢ˢ
                     (msubst_pskl (κX ++ κ) PaX) ⊑ᵖ[ Ψi' `union` Ψa ]
@@ -2496,15 +2479,9 @@ Proof.
                     as [[_ Hc] | Hbd']; [ discriminate Hc | ];
                   eapply HS3; [ clear - HYd; fsetdec | exact Hbd' ] ]
               | clear; fsetdec ]. }
-          eapply ad_partial_precise_msubst_fold; [ exact HwfΘ | | | | exact Hrun ].
-          { intros p Hp. apply in_app_or in Hp; destruct Hp as [Hp | Hp];
-              [ | exact (Himav p Hp) ].
-            pose proof (forall_wf_mono_images_dom HFX p Hp) as Hd.
-            assert (Hdw : dom Θw [<=] dom Θ)
-              by (apply aenv_binds_dom_sub; exact Hmon).
-            clear - Hd Hdw; fsetdec. }
-          { rewrite dom_app. clear - Fr HαΞ HdκX; destruct_notin; solve_notin_auto. }
-          { rewrite dom_app. clear - HX'; solve_notin_auto. }
+          eapply ad_partial_precise_forall_close with (8 := Hrun); eauto.
+          { clear - Fr HαΞ HdκX; destruct_notin; solve_notin_auto. }
+          { clear - HΨis; fsetdec. }
         + (* Pi = □ — GhostL row.  solve = a_solve_eq__ghost_l (Pa:=∀◇.P0');
              precision = ad_ppre__univ_ghost_fill, family via rename_tvar.
              Pi0:=□ (Hpre0x = ad_ppre__ghost); refinement + closure as ∀◇. *)
