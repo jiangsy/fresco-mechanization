@@ -1339,7 +1339,8 @@ Proof.
             reflexivity
           | ].
         rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ,
-          ! swaps_exp_open_var, ! swaps_pskl_ptyp_to_pskl, Hfixe1, HfixA2 in Db1.
+          ! swaps_exp_open_var, ! swaps_pskl_ptyp_to_pskl, Hfixe1, HfixA2
+          in Db1.
         rewrite ! swaps_aenv_app, ! swaps_atom_app, ! swaps_ptyp_app in Db1.
         rewrite HTc, HfixB1 in Db1.
         (* onto the runner's own draw *)
