@@ -905,10 +905,7 @@ Lemma solve_ext_step : forall Θ0 Θ Pi P0 Pi' P0' L Post Post',
 Proof.
   intros Θ0 Θ Pi P0 Pi' P0' L Post Post' Hstep Hpost
          (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hq).
-  exists Ξ, Pa, κ'.
-  repeat (split; [ solve [ apply Hstep; exact Hs | exact Hfm | exact Hu
-                         | exact Hk | exact Hfr | exact HF ] | ]).
-  apply Hpost; exact Hq.
+  exists Ξ, Pa, κ'. repeat split; auto.
 Qed.
 
 (** The same, with the SOLVE DERIVATION still in hand — several rows read a
@@ -921,10 +918,7 @@ Lemma solve_ext_post_solve : forall Θ0 Θ Pi P0 L Post Post',
 Proof.
   intros Θ0 Θ Pi P0 L Post Post' Hpost
          (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hq).
-  exists Ξ, Pa, κ'.
-  repeat (split; [ solve [ exact Hs | exact Hfm | exact Hu
-                         | exact Hk | exact Hfr | exact HF ] | ]).
-  eapply Hpost; [ exact Hs | exact Hq ].
+  exists Ξ, Pa, κ'. repeat split; eauto.
 Qed.
 
 (* ===================================================================== *)

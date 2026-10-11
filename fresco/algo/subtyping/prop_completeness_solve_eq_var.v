@@ -569,11 +569,10 @@ Proof.
   intros Θ0 Θ Θw Θr κ Δ Ψi Ψa ψa Pi' P0' L
          (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hq).
   exists Ξ, (pskl_univ_ghost Pa), κ'.
-  split; [ apply a_solve_eq__univ_ghost_both; exact Hs | ].
-  repeat (split; [ solve [ exact Hfm | exact Hu | exact Hk | exact Hfr
-                         | exact HF ] | ]).
-  intros Δ' HS1 HS2 HS3. cbn [msubst_pskl].
-  apply ad_ppre__univ_ghost_remove. exact (Hq Δ' HS1 HS2 HS3).
+  repeat split; try assumption.
+  - apply a_solve_eq__univ_ghost_both; exact Hs.
+  - intros Δ' HS1 HS2 HS3. cbn [msubst_pskl].
+    apply ad_ppre__univ_ghost_remove. exact (Hq Δ' HS1 HS2 HS3).
 Qed.
 
 Lemma solve_eq_complete_var_step : forall Θ0 Θ Θw Θr κ Δ Ψi Ψa ψa Pi P0 Pi' P0' L,
@@ -3242,9 +3241,7 @@ Proof.
               Hdelta Hapart Hdfresh Hpre Hsubeq1 Hsubeq2 Hconsis
               Hrefine L HL)
     as (Ξ & Pa & κ' & Hs & Hfm & Hu & Hk & Hfr & HF & Hfam).
-  exists Ξ, Pa, κ'.
-  repeat (split; [ solve [ exact Hs | exact Hfm | exact Hu | exact Hk
-                         | exact Hfr | exact HF ] | ]).
+  exists Ξ, Pa, κ'. repeat split; try assumption.
   eapply ad_partial_precise_delta_cong;
     [ apply (Hfam empty);
       [ clear; fsetdec | clear; fsetdec
