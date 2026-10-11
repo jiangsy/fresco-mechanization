@@ -65,16 +65,11 @@ Proof.
       end.
       unfold solve_eq_spec in Hr.
       destruct (e_solve_eq_rel Heq Hr Hcov1) as (ps & Hav & HS & HX & HY).
-      assert (HΘ : swaps_aenv ps Θ = Θ).
-      { apply swaps_aenv_fresh_id. intros a b Hin.
-        destruct (Hav a b Hin) as [Ha Hb]. split; clear - Ha Hb Hcov; fsetdec. }
-      assert (HCfix : swaps_cstrs ps C = C).
-      { apply swaps_cstrs_fresh_id. intros a b Hin.
-        destruct (Hav a b Hin) as [Ha Hb]. split; clear - Ha Hb Hcov;
-          simpl in *; fsetdec. }
-      destruct (e_solve_cstr_swaps ps Htail
-        (S0' := sv_supply r) ltac:(symmetry; exact HS)) as (Sf & _ & Htail').
-      rewrite swaps_aenv_app_dist, HX, HΘ, HCfix, HY in Htail'.
+      destruct (e_solve_cstr_swaps ps Htail (symmetry HS))
+        as (Sf & _ & Htail').
+      rewrite swaps_aenv_app_dist, HX, HY, (swaps_aenv_fresh_id ps Θ),
+        (swaps_cstrs_fresh_id ps C) in Htail'
+        by (apply (swaps_dodge_sub Hav); clear - Hcov; simpl in *; fsetdec).
       pose proof (e_solve_eq_supply_grows Hr) as Hgr.
       pose proof (e_solve_eq_block_in_supply Hr) as Hdom.
       pose proof (e_solve_eq_block_ftvar Hr) as Hft.
@@ -112,12 +107,10 @@ Proof.
   end.
   unfold looksub_spec in Hr.
   destruct (e_looksub_rel Hlook Hr Hcov) as (ps & Hav & HS & HX & HC).
-  assert (HΘ : swaps_aenv ps Θ0 = Θ0).
-  { apply swaps_aenv_fresh_id. intros a b Hin.
-    destruct (Hav a b Hin) as [Ha Hb]. split; clear - Ha Hb Hcov; fsetdec. }
-  destruct (e_solve_cstr_swaps ps Hfold
-              (S0' := lk_supply r) ltac:(symmetry; exact HS)) as (Sf & _ & Hfold').
-  rewrite swaps_aenv_app_dist, HX, HΘ, HC, swaps_pskl_ghost in Hfold'.
+  destruct (e_solve_cstr_swaps ps Hfold (symmetry HS)) as (Sf & _ & Hfold').
+  rewrite swaps_aenv_app_dist, HX, HC, swaps_pskl_ghost,
+    (swaps_aenv_fresh_id ps Θ0) in Hfold'
+    by (apply (swaps_dodge_sub Hav); clear - Hcov; fsetdec).
   pose proof (e_looksub_supply_grows Hr) as Hgr.
   pose proof (e_looksub_generated_in_supply Hr) as Hdom.
   pose proof (e_looksub_block_ftvar Hr) as Hft.
