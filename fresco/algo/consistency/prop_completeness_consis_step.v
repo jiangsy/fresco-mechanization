@@ -210,6 +210,38 @@ Proof.
   - eexists. reflexivity.
 Qed.
 
+(** The binder rows open a fresh rigid [α] on BOTH contexts: every input
+    invariant transports to the opened problem, at any protected [Δ'] that
+    adds at most [α]. *)
+Lemma consis_complete_open_ctx : forall Δ Δ' α Θ0 κ Θ,
+  Δ' [<=] add α Δ ->
+  {{ ⊢ Θ0 }}a -> α `notin` dom Θ0 ->
+  (forall β, β `in` Δ -> binds β abind_tvar Θ0) ->
+  no_flex_dep Δ Θ0 -> flex_above_free Δ Θ0 ->
+  κ ∷ Θ0 ⊑ Θ -> {{ ⊢ Θ }}a -> α `notin` dom Θ -> no_flex_dep Δ Θ ->
+  {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a /\
+  (forall β, β `in` Δ' -> binds β abind_tvar ((α ~ abind_tvar) ++ Θ0)) /\
+  no_flex_dep Δ' ((α ~ abind_tvar) ++ Θ0) /\
+  flex_above_free Δ' ((α ~ abind_tvar) ++ Θ0) /\
+  κ ∷ ((α ~ abind_tvar) ++ Θ0) ⊑ ((α ~ abind_tvar) ++ Θ) /\
+  {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a /\
+  no_flex_dep Δ' ((α ~ abind_tvar) ++ Θ).
+Proof.
+  intros Δ Δ' α Θ0 κ Θ HΔ' Hwf0 HαΘ0 Hrig Hnfd0 Hfaf Hinc Hwfth HαΘ Hnfdth.
+  destruct (delta_inv_open_tvar Hwf0 HαΘ0 HΔ' Hrig Hnfd0 Hfaf)
+    as (Hrig' & Hnfd0' & Hfaf').
+  split; [ apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf0 ] | ].
+  split; [ exact Hrig' | ]. split; [ exact Hnfd0' | ].
+  split; [ exact Hfaf' | ].
+  split.
+  { apply (a_inc__tvar (Ξ:=nil) α Hinc).
+    apply a_decls_suffix. apply a_decls__nil. }
+  split; [ apply a_wf_aenv__tvar; [ exact HαΘ | exact Hwfth ] | ].
+  intros β τ Hb.
+  pose proof (no_flex_dep_open_tvar Hwfth Hnfdth HαΘ Hb) as Hd.
+  clear - Hd HΔ'. fsetdec.
+Qed.
+
 (** Part 1's MAIN DISPATCH (paper :2582-3167), by induction on the last rule
     of the declarative join derivation, ASSUMING the layer-0 special cases
     (flexible subject / flexible input / P0 = ◇ / P0 = ∀◇ with P guarded)
@@ -701,8 +733,6 @@ Proof.
       pose proof (Vpskl_all_syn_lt Θ κ PPb). lia. }
     destruct (IH _ Hlt) as [HcIH _].
     (* premises of the opened problem *)
-    assert (Hwf0' : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
-      by (apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf0 ]).
     assert (HwfP0α : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
                        (open_pskl_wrt_pskl P0b (pskl_var_f α)) }}a).
     { eapply a_wf_pskl_delta_mono;
@@ -713,34 +743,11 @@ Proof.
     { eapply a_wf_pskl_delta_mono;
         [ apply Hwfb; clear - Fr; solve_notin_auto
         | intros ? ? Hc; exfalso; clear - Hc; fsetdec ]. }
-    assert (Hrig' : forall α2, α2 `in` (add α Δ1 `union` add α Δ2) ->
-              binds α2 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-    { intros α2 Hα2. destruct (α2 == α) as [-> | Hne];
-        [ unfold binds; left; reflexivity
-        | apply binds_cons_3; apply Hrig; clear - Hα2 Hne; fsetdec ]. }
-    assert (Hnfd0' : no_flex_dep (add α Δ1 `union` add α Δ2)
-                       ((α ~ abind_tvar) ++ Θ0)).
-    { eapply no_flex_dep_cong;
-        [ | eapply no_flex_dep_open_tvar;
-            [ exact Hwf0 | exact Hnfd0 | exact HαΘ0 ] ].
-      clear. fsetdec. }
-    assert (Hfaf' : flex_above_free (add α Δ1 `union` add α Δ2)
-                      ((α ~ abind_tvar) ++ Θ0)).
-    { eapply faf_cong;
-        [ | eapply faf_open_tvar; [ exact Hfaf | exact HαΘ0 ] ].
-      clear. fsetdec. }
-    assert (Hinc' : κ ∷ ((α ~ abind_tvar) ++ Θ0) ⊑
-                      ((α ~ abind_tvar) ++ Θ)).
-    { apply (a_inc__tvar (Ξ:=nil) α Hinc).
-      apply a_decls_suffix. apply a_decls__nil. }
-    assert (Hwfth' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ exact HαΘ | exact Hwfth ]).
-    assert (Hnfdth' : no_flex_dep (add α Δ1 `union` add α Δ2)
-                        ((α ~ abind_tvar) ++ Θ)).
-    { eapply no_flex_dep_cong;
-        [ | eapply no_flex_dep_open_tvar;
-            [ exact Hwfth | exact Hnfdth | exact HαΘ ] ].
-      clear. fsetdec. }
+    assert (HΔ' : add α Δ1 `union` add α Δ2 [<=] add α (Δ1 `union` Δ2))
+      by (clear; fsetdec).
+    destruct (consis_complete_open_ctx HΔ' Hwf0 HαΘ0 Hrig Hnfd0 Hfaf Hinc
+                Hwfth HαΘ Hnfdth)
+      as (Hwf0' & Hrig' & Hnfd0' & Hfaf' & Hinc' & Hwfth' & Hnfdth').
     assert (Hjα : {{ Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ˢ
               (pskl_to_uskl (msubst_pskl κ
                  (open_pskl_wrt_pskl PPb (pskl_var_f α))))
@@ -888,8 +895,6 @@ Proof.
       rewrite (Vpskl_open PPb Hwfth Hlcκ Hακ HαΘ).
       pose proof (Vpskl_all_syn_lt Θ κ PPb). lia. }
     destruct (IH _ Hlt) as [HcIH _].
-    assert (Hwf0' : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
-      by (apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf0 ]).
     assert (HwfP0α : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
                        (pskl_univ_ghost Pt0) }}a).
     { eapply a_wf_pskl_weaken; [ | exact HwfP0 ].
@@ -899,34 +904,11 @@ Proof.
     { eapply a_wf_pskl_delta_mono;
         [ apply Hwfb; clear - Fr; solve_notin_auto
         | intros ? ? Hc; exfalso; clear - Hc; fsetdec ]. }
-    assert (Hrig' : forall α2, α2 `in` (Δ1 `union` add α Δ2) ->
-              binds α2 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-    { intros α2 Hα2. destruct (α2 == α) as [-> | Hne];
-        [ unfold binds; left; reflexivity
-        | apply binds_cons_3; apply Hrig; clear - Hα2 Hne; fsetdec ]. }
-    assert (Hnfd0' : no_flex_dep (Δ1 `union` add α Δ2)
-                       ((α ~ abind_tvar) ++ Θ0)).
-    { eapply no_flex_dep_cong;
-        [ | eapply no_flex_dep_open_tvar;
-            [ exact Hwf0 | exact Hnfd0 | exact HαΘ0 ] ].
-      clear. fsetdec. }
-    assert (Hfaf' : flex_above_free (Δ1 `union` add α Δ2)
-                      ((α ~ abind_tvar) ++ Θ0)).
-    { eapply faf_cong;
-        [ | eapply faf_open_tvar; [ exact Hfaf | exact HαΘ0 ] ].
-      clear. fsetdec. }
-    assert (Hinc' : κ ∷ ((α ~ abind_tvar) ++ Θ0) ⊑
-                      ((α ~ abind_tvar) ++ Θ)).
-    { apply (a_inc__tvar (Ξ:=nil) α Hinc).
-      apply a_decls_suffix. apply a_decls__nil. }
-    assert (Hwfth' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ exact HαΘ | exact Hwfth ]).
-    assert (Hnfdth' : no_flex_dep (Δ1 `union` add α Δ2)
-                        ((α ~ abind_tvar) ++ Θ)).
-    { eapply no_flex_dep_cong;
-        [ | eapply no_flex_dep_open_tvar;
-            [ exact Hwfth | exact Hnfdth | exact HαΘ ] ].
-      clear. fsetdec. }
+    assert (HΔ' : Δ1 `union` add α Δ2 [<=] add α (Δ1 `union` Δ2))
+      by (clear; fsetdec).
+    destruct (consis_complete_open_ctx HΔ' Hwf0 HαΘ0 Hrig Hnfd0 Hfaf Hinc
+                Hwfth HαΘ Hnfdth)
+      as (Hwf0' & Hrig' & Hnfd0' & Hfaf' & Hinc' & Hwfth' & Hnfdth').
     assert (Hjα : {{ Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ˢ
               (pskl_to_uskl (msubst_pskl κ
                  (open_pskl_wrt_pskl PPb (pskl_var_f α))))
@@ -1240,8 +1222,6 @@ Proof.
       rewrite (Vpskl_open P0b Hwfth Hlcκ Hακ HαΘ).
       pose proof (Vpskl_all_syn_lt Θ κ P0b). lia. }
     destruct (IH _ Hlt) as [HcIH _].
-    assert (Hwf0' : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
-      by (apply a_wf_aenv__tvar; [ exact HαΘ0 | exact Hwf0 ]).
     assert (HwfP0α : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
                        (open_pskl_wrt_pskl P0b (pskl_var_f α)) }}a).
     { eapply a_wf_pskl_delta_mono;
@@ -1251,34 +1231,11 @@ Proof.
                       (pskl_univ_ghost PPt) }}a).
     { eapply a_wf_pskl_weaken; [ | exact HwfP ].
       intros x b Hb. apply binds_cons_3. exact Hb. }
-    assert (Hrig' : forall α2, α2 `in` (add α Δ1 `union` Δ2) ->
-              binds α2 abind_tvar ((α ~ abind_tvar) ++ Θ0)).
-    { intros α2 Hα2. destruct (α2 == α) as [-> | Hne];
-        [ unfold binds; left; reflexivity
-        | apply binds_cons_3; apply Hrig; clear - Hα2 Hne; fsetdec ]. }
-    assert (Hnfd0' : no_flex_dep (add α Δ1 `union` Δ2)
-                       ((α ~ abind_tvar) ++ Θ0)).
-    { eapply no_flex_dep_cong;
-        [ | eapply no_flex_dep_open_tvar;
-            [ exact Hwf0 | exact Hnfd0 | exact HαΘ0 ] ].
-      clear. fsetdec. }
-    assert (Hfaf' : flex_above_free (add α Δ1 `union` Δ2)
-                      ((α ~ abind_tvar) ++ Θ0)).
-    { eapply faf_cong;
-        [ | eapply faf_open_tvar; [ exact Hfaf | exact HαΘ0 ] ].
-      clear. fsetdec. }
-    assert (Hinc' : κ ∷ ((α ~ abind_tvar) ++ Θ0) ⊑
-                      ((α ~ abind_tvar) ++ Θ)).
-    { apply (a_inc__tvar (Ξ:=nil) α Hinc).
-      apply a_decls_suffix. apply a_decls__nil. }
-    assert (Hwfth' : {{ ⊢ ((α ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ exact HαΘ | exact Hwfth ]).
-    assert (Hnfdth' : no_flex_dep (add α Δ1 `union` Δ2)
-                        ((α ~ abind_tvar) ++ Θ)).
-    { eapply no_flex_dep_cong;
-        [ | eapply no_flex_dep_open_tvar;
-            [ exact Hwfth | exact Hnfdth | exact HαΘ ] ].
-      clear. fsetdec. }
+    assert (HΔ' : add α Δ1 `union` Δ2 [<=] add α (Δ1 `union` Δ2))
+      by (clear; fsetdec).
+    destruct (consis_complete_open_ctx HΔ' Hwf0 HαΘ0 Hrig Hnfd0 Hfaf Hinc
+                Hwfth HαΘ Hnfdth)
+      as (Hwf0' & Hrig' & Hnfd0' & Hfaf' & Hinc' & Hwfth' & Hnfdth').
     assert (Hjα : {{ Ψ ⨟ ((α ~ abind_tvar) ++ Θ) ⊢ˢ
               (pskl_to_uskl (msubst_pskl κ (pskl_univ_ghost PPt)))
               ∼ (open_bskl_wrt_bskl Q (bskl_var_f α)) }}ad).
