@@ -804,9 +804,6 @@ Proof.
     H2 : a_wf_ptyp Θ (btyp_to_ptyp B2) |- _ =>
       rename H1 into HwfB1; rename H2 into HwfB2
   end.
-  assert (HwfP : {{ Θ ⨟ empty ⊢ₚₛ P }}a).
-  { pose proof (ad_pat_target_wf Hd2s HwfΘ) as Hw.
-    rewrite bskl_to_pskl_pskl_to_bskl_syn in Hw. exact Hw. }
   (* ---- 1. the SKELETON stage : THEOREM 3 at (TC, ◇) ---- *)
   destruct (@a_pat_complete e2 mode_tc Θ0 pskl_ghost κ Θ (pskl_to_bskl_syn P)
               Hwf0 HwfΘ (a_wf_pskl__ghost _ _) a_sk_mode_compat__tc Hinc
@@ -1850,8 +1847,6 @@ Proof.
   (* ---- 9. optimality ---- *)
   intros κ1 Hid1 Hinc1.
   (* the body's witness, target-weakened across the suffix, is THE id *)
-  assert (Hlcfin : lc_aenv (Ξ ++ (x ~ abind_var_typ A') ++ Θ2))
-    by (apply a_wf_aenv_lc_aenv; exact HwfOut).
   assert (Hinc1b : κb ∷ ((x ~ abind_var_typ A') ++ Ξg ++ Θ0)
                      ⊑ (Ξ ++ (x ~ abind_var_typ A') ++ Θ2)).
   { apply (@a_inc__var (Ξg ++ Θ0) κb Θ2 Ξ x A' A');
@@ -1908,9 +1903,6 @@ Proof.
   assert (Hwffin : {{ ⊢ (Ξ ++ Θ2) }}a)
     by (exact (@a_wf_aenv_strip_tm_mid Ξ x (abind_var_typ A') Θ2
                  (fun h : abind_is_ty (abind_var_typ A') => h) HwfOut)).
-  assert (HwfA'x : a_wf_ptyp ((x ~ abind_var_typ A') ++ Ξg ++ Θ0) A')
-    by (eapply a_wf_ptyp_weaken;
-        [ intros y c Hc; apply binds_cons_3; exact Hc | exact HwfA' ]).
   assert (Hpush : {{ Θ ⊢ (msubst_ptyp κg A') ≡ᵗ
                     (msubst_ptyp (msubst_compose ζb κb) A') }}a).
   { apply (@a_inc_equiv_msubst_ptyp A' (Ξg ++ Θ0) κg
@@ -2740,7 +2732,6 @@ Proof.
                               `union` dom κ `union` dom Θ
                               `union` ftvar_in_aenv Θ)) as [α1 Hα1].
       assert (Hne : α1 <> β1) by (clear - Hα1; fsetdec).
-      pose proof (dom_subset_ftvar_in_aenv Θ0) as Hds.
       assert (Hfrβ1 : β1 `notin` dom Θ0) by (clear - Hβ1; fsetdec).
       assert (Hfrα1 : α1 `notin` dom Θ0) by (clear - Hα1; fsetdec).
       assert (Hwf0' : {{ ⊢ ((α1 ~ abind_flex_mono)
@@ -3016,9 +3007,6 @@ Proof.
   simpl in Hrig.
   assert (Hlce : forall x, lc_exp (open_exp_wrt_exp e (exp_var_f x)))
     by (intros x; inversion Hlc; auto).
-  assert (Hexp0 : {{ Θ0 ⊢ᵉ (exp_abs e) }}a)
-    by (apply a_wf_exp_of_tvarish;
-        [ exact Hlc | intros α Hα; left; apply Hrig; exact Hα ]).
   (* ---- 1. THE SPLIT (step A) ---- *)
   destruct (@a_split_complete_tc Θ0 Ain κ Θ A B1 Hwf0 HwfΘ HwfP0 Hinc Href)
     as [Ad [Bc [Θ1 [κs [ζ [Hsplit [Hwf1 [HwfAd [HwfBc

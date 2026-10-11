@@ -1779,10 +1779,7 @@ Lemma a_typing_scope : forall M Θ0 P0 e A' Θ1,
   typing_scope_concl M Θ0 P0 e A' Θ1.
 Proof.
   intros M Θ0 P0 e A' Θ1 H; unfold typing_scope_concl in *;
-    induction H; intros Hwf HwfP0 Hmod Hexp C Hcore;
-    pose proof (fun y Ps Hb =>
-                  @prop_inc_strengthen.a_wf_aenv_binds_var_skl_wf
-                    _ y Ps Hwf Hb) as Hskl.
+    induction H; intros Hwf HwfP0 Hmod Hexp C Hcore.
   - (* AT-Unit *)
     destruct (proj1 a_sub_sub_flex_scope _ _ _ _ _ _ _ H eq_refl Hwf HwfP0
                 ltac:(apply a_wf_pskl__unit) C Hcore)

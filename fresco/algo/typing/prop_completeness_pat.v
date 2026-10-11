@@ -2034,9 +2034,6 @@ Proof.
   assert (Hlc2 : lc_exp e2) by (inversion Hlc; assumption).
   assert (Hlc1 : lc_exp e1) by (inversion Hlc; assumption).
   (* the run targets are wf (K1) *)
-  assert (HwfPn : {{ Θ ⨟ empty ⊢ₚₛ Pn }}a)
-    by (pose proof (ad_pat_target_wf Hd2 HwfΘ) as Hw;
-        rewrite bskl_to_pskl_pskl_to_bskl_syn in Hw; exact Hw).
   assert (Hwfarr : {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl (bskl_arrow Qdom Q)) }}a)
     by (exact (ad_pat_target_wf Hd1 HwfΘ)).
   cbn [bskl_to_pskl] in Hwfarr.
