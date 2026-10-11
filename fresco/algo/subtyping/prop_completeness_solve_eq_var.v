@@ -1748,15 +1748,20 @@ Proof.
                   ⊑ᵖ[ Ψi0 `union` (remove ε Ψa) ]
                   (open_uskl_wrt_uskl ψR (uskl_var_f α)) }}ad).
         { intros α Pi0 Ψi0 Δx HXf HΔρx HΔxs HwfPi0 Hapart0 Hpre0x HΨi0s.
+          assert (HαΘ : α `notin` dom Θ) by (clear - HXf; solve_notin).
+          (* the scope pack moves under the binder; in particular the κ-image
+             bound is INVARIANT, since the row adds only a rigid *)
+          destruct (solve_scope_open_tvar (conj Hmon (conj Hnr Hκw)) HαΘ)
+            as (_ & Hmonα & Hnrα & Hκwα).
           apply (H0 α ltac:(clear - HXf; solve_notin)
                    NM ((α ~ abind_tvar) ++ Θ0)
                    ((α ~ abind_tvar) ++ Θtv) Θr Θ0r κ
                    Δx Δρ (add α Δr) Ψρ Ψ0' Ψi0 (remove ε Ψa)
                    (open_uskl_wrt_uskl ψR (uskl_var_f α))
-                   Pi0 (open_pskl_wrt_pskl P0b (pskl_var_f α))).
+                   Pi0 (open_pskl_wrt_pskl P0b (pskl_var_f α)));
+            try assumption.
           - apply aenv_split_cons_tv; [ exact HspΘ | clear - HXf; solve_notin ].
           - apply aenv_split_cons_tv; [ exact HspΘ0 | clear - HXf; solve_notin ].
-          - exact HwfΘr.
           - intros x b Hb.
             destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
               [ exact Heqb | exact (Htvs _ _ Hb') ].
@@ -1764,32 +1769,19 @@ Proof.
           - simpl. clear - HΔρtv HXf; destruct_notin; fsetdec.
           - apply a_wf_aenv__tvar; [ clear - HXf; solve_notin | exact HwfΘ ].
           - apply a_wf_aenv__tvar; [ clear - HXf; solve_notin | exact HwfΘ0 ].
-          - intros x b Hb. apply binds_cons_3. apply Hmon; exact Hb.
-          - intros x b Hb.
-            destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
-              [ right; exact Heqb | exact (Hnr _ _ Hb') ].
-          - exact HwfPi0.
           - apply HwfP0f. clear - HXf; solve_notin.
           - apply a_inc__tvar with (Ξ := (@nil (atom * abind)));
               [ exact Hκ | apply a_suffix__nil ].
-          - (* the κ-image bound is INVARIANT: the row adds only a rigid *)
-            intros α0 Hf. apply Hκw. eapply a_flex_tvar_strip_tvar; exact Hf.
           - eapply uskl_rsubst_weaken;
               [ apply Hrhof; clear - HXf; solve_notin
               | intros x b Hb; apply binds_cons_3; exact Hb ].
           - apply Htagsf. clear - HXf; solve_notin.
           - clear - HΨi0s Hsub HΨ'eq; fsetdec.
-          - exact Hintb.
           - apply rsubst_fresh_weaken_tvar; exact Hfresh.
-          - exact HΔρx.
-          - exact Hapart0.
           - intros Yd αd τ HYd Hbd.
             eapply (@delta_def_fresh_open_tvar Δ Θ α);
               [ exact HwfΘ | clear - HXf; solve_notin | exact Hdfresh
               | apply HΔxs; exact HYd | exact Hbd ].
-          - exact Hpre0x.
-          - exact Hsubeq1b.
-          - exact Hsubeq2b.
           - apply Hreff. clear - HXf; solve_notin.
           - rewrite ftvar_in_aenv_cons_tvar. clear - HLav; fsetdec. }
         (* ---- the Pi grid ---- *)
@@ -2316,13 +2308,16 @@ Proof.
                   (open_uskl_wrt_uskl ψR (uskl_var_f α0)) }}ad).
         { intros α0 Pi0 Ψi0 P0i Δx HXf HΔρx HΔxs HwfPi0 HwfP0i Hapart0
                  Hpre0x HΨi0s Hrefi.
+          assert (Hα0Θ : α0 `notin` dom Θ) by (clear - HXf; solve_notin).
+          destruct (solve_scope_open_tvar (conj Hmon (conj Hnr Hκw)) Hα0Θ)
+            as (_ & Hmonα & Hnrα & Hκwα).
           apply (H0 α0 ltac:(clear - HXf; solve_notin)
                    NM ((α0 ~ abind_tvar) ++ Θ0)
                    Θtv ((α0 ~ abind_tvar) ++ Θr)
                    ((α0 ~ abind_tvar) ++ Θ0r) κ
                    Δx Δρ Δr Ψρ Ψ0' Ψi0 Ψa
                    (open_uskl_wrt_uskl ψR (uskl_var_f α0))
-                   Pi0 P0i).
+                   Pi0 P0i); try assumption.
           - apply aenv_split_cons_r;
               [ exact HspΘ | clear - HXf; solve_notin ].
           - apply aenv_split_cons_r;
@@ -2330,37 +2325,20 @@ Proof.
           - apply a_wf_aenv__tvar;
               [ clear - HXf Hdomsub; destruct_notin; fsetdec
               | exact HwfΘr ].
-          - exact Htvs.
-          - exact HΔrd.
-          - exact HΔρtv.
           - apply a_wf_aenv__tvar; [ clear - HXf; solve_notin | exact HwfΘ ].
           - apply a_wf_aenv__tvar; [ clear - HXf; solve_notin | exact HwfΘ0 ].
-          - intros x b Hb. apply binds_cons_3. apply Hmon; exact Hb.
-          - intros x b Hb.
-            destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
-              [ right; exact Heqb | exact (Hnr _ _ Hb') ].
-          - exact HwfPi0.
-          - exact HwfP0i.
           - apply a_inc__tvar with (Ξ := (@nil (atom * abind)));
               [ exact Hκ | apply a_suffix__nil ].
-          - intros α00 Hf. apply Hκw. eapply a_flex_tvar_strip_tvar; exact Hf.
           - eapply uskl_rsubst_weaken;
               [ apply Hrhof; clear - HXf; solve_notin
               | intros x b Hb; apply binds_cons_3; exact Hb ].
           - apply Htagsf. clear - HXf; solve_notin.
           - clear - HΨi0s HΨaΨ0'; fsetdec.
-          - exact Hintb.
           - apply rsubst_fresh_weaken_tvar; exact Hfresh.
-          - exact HΔρx.
-          - exact Hapart0.
           - intros Yd αd τ HYd Hbd.
             eapply (@delta_def_fresh_open_tvar Δ Θ α0);
               [ exact HwfΘ | clear - HXf; solve_notin | exact Hdfresh
               | apply HΔxs; exact HYd | exact Hbd ].
-          - exact Hpre0x.
-          - exact Hsubeq1.
-          - exact Hsubeq2.
-          - exact Hrefi.
           - rewrite ftvar_in_aenv_cons_tvar. clear - HLav; fsetdec. }
         (* the Pi grid *)
         destruct Pi as [ | nb | β | Pi1 Pi2 | Pib | | Pi' ].
