@@ -291,6 +291,43 @@ Proof.
       | rewrite ftvar_ptyp_to_uskl_syn; exact Hβ2τ | exact Hdefs ].
 Qed.
 
+(** [ad_partial_precise_rename_tvar] at the head of the context: a body
+    opened at a rigid [α] that the subject avoids re-opens at [α']. *)
+Lemma ad_partial_precise_rename_head : forall Θ Δ Ψ P ψR α α',
+  {{ ⊢ Θ }}a ->
+  α `notin` dom Θ `union` ftvar_in_pskl P `union` ftvar_in_uskl ψR ->
+  α' `notin` add α (dom Θ `union` Δ `union` ftvar_in_pskl P
+                     `union` ftvar_in_uskl ψR) ->
+  {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ]
+       (open_uskl_wrt_uskl ψR (uskl_var_f α)) }}ad ->
+  {{ ((α' ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ]
+       (open_uskl_wrt_uskl ψR (uskl_var_f α')) }}ad.
+Proof.
+  intros Θ Δ Ψ P ψR α α' Hwf Hα Hα' H.
+  pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψR (uskl_var_f α)) as Hup.
+  simpl in Hup.
+  pose proof (@ad_partial_precise_rename_tvar _ _ _ _ _ H α α' nil Θ) as Hren.
+  simpl in Hren.
+  rewrite (subst_pskl_in_pskl_fresh_eq _ (pskl_var_f α') α) in Hren
+    by solve_notin_auto.
+  rewrite <- (subst_uskl_in_uskl_intro α ψR (uskl_var_f α')) in Hren
+    by solve_notin_auto.
+  apply Hren.
+  - apply a_wf_aenv_uniq. apply a_wf_aenv__tvar.
+    + solve_notin_auto.
+    + exact Hwf.
+  - reflexivity.
+  - solve_notin_auto.
+  - solve_notin_auto.
+  - solve_notin_auto.
+  - clear - Hup Hα'. fsetdec.
+  - intros αd τ Hb.
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'].
+    + discriminate Hc.
+    + pose proof (a_wf_aenv_def_ftv_dom _ _ Hwf Hb') as Hd.
+      split; solve_notin_auto.
+Qed.
+
 (* ===================================================================== *)
 (*  The BAG split  [aenv_split Θf Θtv Θr]  (no-ghost-removal rework).      *)
 (*  The old split was the LIST equation Θ = Θtv ++ Θr, which cannot put   *)
@@ -2534,37 +2571,10 @@ Proof.
           pose proof (HqX Δ' HS1
                         ltac:(simpl; clear - HS2 Fr; destruct_notin; solve_notin_auto)
                         HS3') as Hq1.
-          pose proof (@ad_partial_precise_rename_tvar
-                        _ _ _ _ _ Hq1 α α' (@nil (atom * abind)) Θ
-                        ltac:(apply a_wf_aenv_uniq; apply a_wf_aenv__tvar;
-                              [ clear - Fr; solve_notin | exact HwfΘ ])
-                        eq_refl
-                        ltac:(simpl; clear - Fr HX'; solve_notin)
-                        ltac:(clear - HX'; solve_notin)
-                        ltac:(simpl; clear - HX' HXPaX; simpl in HXPaX;
-                              solve_notin)
-                        ltac:(pose proof
-                                (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψR
-                                   (uskl_var_f α)) as Hup;
-                              simpl in Hup; clear - HX' Hup;
-                              destruct_notin; fsetdec)
-                        ltac:(intros αd τ Hb;
-                              destruct (binds_cons_1 _ _ _ _ _ _ Hb)
-                                as [[_ Hc] | Hb'];
-                                [ discriminate Hc | ];
-                              assert (Hd : ftvar_in_ptyp τ [<=] dom Θ)
-                                by (eapply a_wf_aenv_def_ftv_dom;
-                                    [ exact HwfΘ | exact Hb' ]);
-                              split; [ clear - Hd Fr | clear - Hd HX' ];
-                              destruct_notin; solve_notin_auto))
-            as Hren.
-          simpl in Hren.
-          rewrite (subst_pskl_in_pskl_fresh_eq _ (pskl_var_f α') α)
-            in Hren;
-            [ | simpl in HXPaX; exact HXPaX ].
-          rewrite <- (subst_uskl_in_uskl_intro α ψR (uskl_var_f α')
-                        ltac:(clear - Fr; solve_notin)) in Hren.
-          exact Hren.
+          apply ad_partial_precise_rename_head with (α := α) (4 := Hq1).
+          * exact HwfΘ.
+          * simpl in HXPaX. clear - Fr HXPaX. solve_notin_auto.
+          * simpl in HXPaX |- *. clear - HX' HXPaX. solve_notin_auto.
         + (* Pi = ∀◇.Pi' — UnivGhost row.  WRAPPED IHX (Pi0:=∀◇.Pi',
              P0i:=∀◇.P0'); refinement = Hrefb verbatim; solve = IHX output
              (univ_ghost_both, strengthen_tvar); precision =
@@ -2698,58 +2708,27 @@ Proof.
                                 eapply HS3';
                                   [ clear - HYd; solve_notin_auto | exact Hbd ]))
               as Hq1.
-            pose proof (@ad_partial_precise_rename_tvar
-                          _ _ _ _ _ Hq1 α α' (@nil (atom * abind)) Θ
-                          ltac:(apply a_wf_aenv_uniq; apply a_wf_aenv__tvar;
-                                [ clear - Fr; solve_notin | exact HwfΘ ])
-                          eq_refl
-                          ltac:(simpl; clear - Fr HX'; solve_notin)
-                          ltac:(clear - HX'; solve_notin)
-                          ltac:(simpl; clear - HX' HXPaX; simpl in HXPaX;
-                                solve_notin)
-                          ltac:(pose proof
-                                  (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψR
-                                     (uskl_var_f α)) as Hup;
-                                simpl in Hup; clear - HX' Hup;
-                                destruct_notin; fsetdec)
-                          ltac:(intros αd τ Hb;
-                                destruct (binds_cons_1 _ _ _ _ _ _ Hb)
-                                  as [[_ Hc] | Hb'];
-                                  [ discriminate Hc | ];
-                                assert (Hd : ftvar_in_ptyp τ [<=] dom Θ)
-                                  by (eapply a_wf_aenv_def_ftv_dom;
-                                      [ exact HwfΘ | exact Hb' ]);
-                                split; [ clear - Hd Fr | clear - Hd HX' ];
-                                destruct_notin; solve_notin_auto))
-              as Hren.
-            simpl in Hren.
-            rewrite (subst_pskl_in_pskl_fresh_eq _ (pskl_var_f α') α)
-              in Hren;
-              [ | simpl in HXPaX; exact HXPaX ].
-            rewrite <- (subst_uskl_in_uskl_intro α ψR (uskl_var_f α')
-                          ltac:(clear - Fr; solve_notin)) in Hren.
-            eapply ad_partial_precise_delta_cong;
-              [ eapply ad_partial_precise_delta_weaken_fresh
-                  with (Δ' := Δ' ∩ singleton α);
-                  [ exact Hren
-                  | pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψR
-                                  (uskl_var_f α')) as Hup;
-                    simpl in Hup;
-                    apply inter_empty_pointwise;
-                    intros y Hy;
-                    assert (Heqy : y = α) by (clear - Hy; fsetdec);
-                    subst y;
-                    clear - Fr HX' Hup; destruct_notin; fsetdec
-                  | intros Yd αd τ HYd Hbd;
-                    assert (Heqy : Yd = α) by (clear - HYd; fsetdec);
-                    subst Yd;
-                    destruct (binds_cons_1 _ _ _ _ _ _ Hbd)
-                      as [[_ Hc] | Hbd']; [ discriminate Hc | ];
-                    assert (Hd : ftvar_in_ptyp τ [<=] dom Θ)
-                      by (eapply a_wf_aenv_def_ftv_dom;
-                          [ exact HwfΘ | exact Hbd' ]);
-                    clear - Hd Fr; destruct_notin; fsetdec ]
-              | clear; fsetdec ].
+            eapply ad_partial_precise_delta_cong.
+            -- eapply ad_partial_precise_delta_weaken_fresh
+                with (Δ' := Δ' ∩ singleton α).
+              ++ apply ad_partial_precise_rename_head with (α := α) (4 := Hq1).
+                ** exact HwfΘ.
+                ** simpl in HXPaX. clear - Fr HXPaX. solve_notin_auto.
+                ** simpl in HXPaX |- *. clear - HX' HXPaX. solve_notin_auto.
+              ++ pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper ψR
+                              (uskl_var_f α')) as Hup.
+                simpl in Hup.
+                apply inter_empty_pointwise. intros y Hy.
+                assert (Heqy : y = α) by (clear - Hy; fsetdec).
+                subst y. clear - Fr HX' Hup; destruct_notin; fsetdec.
+              ++ intros Yd αd τ HYd Hbd.
+                assert (Heqy : Yd = α) by (clear - HYd; fsetdec).
+                subst Yd.
+                destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hc] | Hbd'].
+                ** discriminate Hc.
+                ** pose proof (a_wf_aenv_def_ftv_dom _ _ HwfΘ Hbd') as Hd.
+                  clear - Hd Fr; destruct_notin; fsetdec.
+            -- clear; fsetdec.
     (* the univ_ghost_fill family leaves the rule's ε-witness unconstrained
        (any ε inhabits the same family); discharge it with the case's ε. *)
     Unshelve. all: match goal with |- εvar => exact ε | |- _ => idtac end.
