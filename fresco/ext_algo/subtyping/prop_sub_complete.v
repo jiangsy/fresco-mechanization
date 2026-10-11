@@ -131,6 +131,33 @@ Proof.
     rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
 Qed.
 
+(** A one-pair chain dodges whatever both of its names avoid. *)
+Lemma swaps_dodge_one {x y} {T : atoms} :
+  x `notin` T -> y `notin` T ->
+  forall a b, In (a, b) ((x, y) :: nil) -> a `notin` T /\ b `notin` T.
+Proof.
+  intros Hx Hy a b [Heq | []]. inversion Heq; subst. split; assumption.
+Qed.
+
+(** The ONE-PAIR chain that moves a binder the derivation drew fresh for
+    [S] onto the runner's own draw [supply_fresh S]: it dodges [S], it sends
+    the binder to the draw, and it carries the derivation's extended supply
+    onto the runner's.  Every binder row of this level and the next two
+    opens with it. *)
+Lemma swaps_onto_fresh : forall x (S : atoms),
+  x `notin` S ->
+  (forall a b, In (a, b) ((x, supply_fresh S) :: nil) ->
+     a `notin` S /\ b `notin` S) /\
+  swaps_atom ((x, supply_fresh S) :: nil) x = supply_fresh S /\
+  add (supply_fresh S) S [=] swaps_atoms ((x, supply_fresh S) :: nil) (add x S).
+Proof.
+  intros x S Hx. pose proof (supply_fresh_notin S) as Hf.
+  repeat apply conj.
+  - apply swaps_dodge_one; assumption.
+  - apply swap_atom_l.
+  - apply swap_atoms_fresh_add; assumption.
+Qed.
+
 (** ⚙ [a_suffix] survives a chain, which is what [SI-ForallR]'s
     [split_at_tvar] step below needs of the transported junk block. *)
 Lemma a_suffix_swaps : forall ps (Ξ : aenv),
@@ -394,6 +421,49 @@ Lemma e_sub_flex_inv_var_skl : forall S0 NM M P0 Θ0 Ξ α x Qp Q S1 Θ1,
     e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1'.
 Proof. intros * Hd. inversion Hd; subst. eauto. Qed.
 
+(** The TWO-pair chain that moves two names a row invents — [ad] fresh for
+    [S0], then [bd] fresh for [add ad S0] — onto the runner's two draws.
+    ⚠️ It is not the naive [(ad,a1)::(bd,b1)]: the first transposition may
+    already have moved [bd] (namely when [bd = a1]), so the second pair's
+    LEFT column is the moved name [swap_atom ad a1 bd]. *)
+Lemma swaps_two_onto_fresh : forall (S0 : atoms) ad bd,
+  ad `notin` S0 -> bd `notin` add ad S0 ->
+  exists ps,
+    (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0) /\
+    swaps_atom ps ad = supply_fresh S0 /\
+    swaps_atom ps bd = supply_fresh (add (supply_fresh S0) S0) /\
+    add (supply_fresh (add (supply_fresh S0) S0)) (add (supply_fresh S0) S0)
+      [=] swaps_atoms ps (add bd (add ad S0)).
+Proof.
+  intros S0 ad bd Had Hbd.
+  remember (supply_fresh S0) as a1 eqn:Ea1.
+  remember (supply_fresh (add a1 S0)) as b1 eqn:Eb1.
+  assert (Ha1 : a1 `notin` S0) by (subst a1; apply supply_fresh_notin).
+  assert (Hb1 : b1 `notin` add a1 S0) by (subst b1; apply supply_fresh_notin).
+  clear Ea1 Eb1.
+  remember (swap_atom ad a1 bd) as c eqn:Ec.
+  assert (Hc : c `notin` add a1 S0).
+  { subst c. unfold swap_atom.
+    destruct (bd == ad) as [Hc1 | Hne1].
+    { exfalso. clear - Hbd Hc1. fsetdec. }
+    destruct (bd == a1) as [Hc2 | Hne2].
+    - assert (Hada1 : ad <> a1) by congruence. clear - Had Hada1. fsetdec.
+    - clear - Hbd Hne2. fsetdec. }
+  assert (Hav : forall a b, In (a, b) ((ad, a1) :: (c, b1) :: nil) ->
+                a `notin` S0 /\ b `notin` S0)
+    by (intros a b [Heq | [Heq | []]]; inversion Heq; subst;
+        split; clear - Had Ha1 Hc Hb1; fsetdec).
+  assert (Hsad : swaps_atom ((ad, a1) :: (c, b1) :: nil) ad = a1)
+    by (cbn [swaps_atom]; rewrite swap_atom_l;
+        apply swap_atom_other; clear - Hc Hb1; fsetdec).
+  assert (Hsbd : swaps_atom ((ad, a1) :: (c, b1) :: nil) bd = b1)
+    by (cbn [swaps_atom]; rewrite <- Ec; apply swap_atom_l).
+  exists ((ad, a1) :: (c, b1) :: nil).
+  refine (conj Hav (conj Hsad (conj Hsbd _))).
+  rewrite swaps_atoms_add, swaps_atoms_add, Hsad, Hsbd.
+  rewrite (swaps_atoms_notin _ _ Hav). reflexivity.
+Qed.
+
 (* ===================================================================== *)
 (*  §5  THE [SI-Flex-Solve] REALIGNMENT                                   *)
 (*                                                                        *)
@@ -432,63 +502,18 @@ Lemma e_sub_flex_solve_realign : forall S0 NM M P0 Θ0' Ξ α Qd Sd Θd ad bd,
        ⩽ (swaps_pskl ps0 Qd) ⊣ (swaps_aenv ps0 Θd) }}e.
 Proof.
   intros * Had Hbd Hcov Ds.
-  assert (Hswl : forall x y, swap_atom x y x = y).
-  { intros x y. unfold swap_atom.
-    destruct (x == x) as [_ | Hc]; [ reflexivity | contradiction ]. }
-  remember (supply_fresh S0) as a1 eqn:Ea1.
-  remember (supply_fresh (add a1 S0)) as b1 eqn:Eb1.
-  assert (Ha1 : a1 `notin` S0) by (subst a1; apply supply_fresh_notin).
-  assert (Hb1 : b1 `notin` add a1 S0) by (subst b1; apply supply_fresh_notin).
-  clear Ea1 Eb1.
-  remember (swap_atom ad a1 bd) as c eqn:Ec.
-  assert (Hbdad : bd <> ad) by (clear - Hbd; fsetdec).
-  assert (Hc : c `notin` add a1 S0).
-  { subst c. unfold swap_atom.
-    destruct (bd == ad) as [Hc1 | Hne1]; [ contradiction | ].
-    destruct (bd == a1) as [Hc2 | Hne2].
-    - assert (Hada1 : ad <> a1) by congruence. clear - Had Hada1. fsetdec.
-    - clear - Hbd Hne2. fsetdec. }
-  assert (Hav : forall a b, In (a, b) ((ad, a1) :: (c, b1) :: nil) ->
-                a `notin` S0 /\ b `notin` S0).
-  { intros a b [Heq | [Heq | []]]; inversion Heq; subst;
-      solve [ split; assumption
-            | split; [ clear - Hc; fsetdec | clear - Hb1; fsetdec ] ]. }
-  (* the chain's action on the two names the row invents *)
-  assert (Hsad : swaps_atom ((ad, a1) :: (c, b1) :: nil) ad = a1).
-  { simpl. rewrite Hswl.
-    apply swap_atom_other; [ clear - Hc | clear - Hb1 ]; fsetdec. }
-  assert (Hsbd : swaps_atom ((ad, a1) :: (c, b1) :: nil) bd = b1).
-  { simpl. rewrite <- Ec. rewrite Hswl. reflexivity. }
-  (* everything the ROW does not invent is fixed by the chain *)
-  assert (Hfixa : forall (x : atom), x `in` S0 ->
-            swaps_atom ((ad, a1) :: (c, b1) :: nil) x = x).
-  { intros x Hx. apply swaps_atom_notin. intros a b Hin.
-    destruct (Hav a b Hin) as [Ha Hb]. split; intros ->; contradiction. }
-  assert (HfixΘ : forall (Θ : aenv), ftvar_in_aenv Θ [<=] S0 ->
-            swaps_aenv ((ad, a1) :: (c, b1) :: nil) Θ = Θ).
-  { intros Θ HΘ. apply swaps_aenv_fresh_id. intros a b Hin.
-    destruct (Hav a b Hin) as [Ha Hb]. split; fsetdec. }
-  assert (HfixP : forall P, ftvar_in_pskl P [<=] S0 ->
-            swaps_pskl ((ad, a1) :: (c, b1) :: nil) P = P).
-  { intros P HP. apply swaps_pskl_fresh_id. intros a b Hin.
-    destruct (Hav a b Hin) as [Ha Hb]. split; fsetdec. }
-  rewrite ftvar_in_aenv_app in Hcov.
-  destruct (e_sub_swaps ((ad, a1) :: (c, b1) :: nil) Ds
-              (S0' := add b1 (add a1 S0))) as [Sd' [HSd' Ds']].
-  { rewrite swaps_atoms_add, swaps_atoms_add, Hsad, Hsbd.
-    rewrite (swaps_atoms_notin _ _ Hav). reflexivity. }
-  exists ((ad, a1) :: (c, b1) :: nil), Sd'.
-  split; [ exact Hav | ]. split; [ exact HSd' | ].
+  destruct (swaps_two_onto_fresh Had Hbd) as (ps & Hav & Hsad & Hsbd & HSadd).
+  destruct (e_sub_swaps ps Ds HSadd) as [Sd' [HSd' Ds']].
+  exists ps, Sd'. refine (conj Hav (conj HSd' _)).
   (* rewrite the transported context and subject onto the runner's rails *)
-  repeat rewrite swaps_aenv_app_dist in Ds'.
-  rewrite swaps_aenv_one_def, swaps_aenv_one_flex, swaps_aenv_one_flex in Ds'.
-  rewrite swaps_ptyp_arrow, swaps_ptyp_var_f, swaps_ptyp_var_f in Ds'.
-  rewrite swaps_pskl_arrow, swaps_pskl_var_f, swaps_pskl_var_f in Ds'.
-  rewrite Hsad, Hsbd in Ds'.
-  rewrite (Hfixa α) in Ds' by (clear - Hcov; fsetdec).
-  rewrite (HfixΘ Ξ) in Ds' by (clear - Hcov; fsetdec).
-  rewrite (HfixΘ Θ0') in Ds' by (clear - Hcov; fsetdec).
-  rewrite (HfixP P0) in Ds' by (clear - Hcov; fsetdec).
+  rewrite ftvar_in_aenv_app in Hcov.
+  rewrite !swaps_aenv_app_dist, swaps_aenv_one_def, !swaps_aenv_one_flex,
+    swaps_ptyp_arrow, !swaps_ptyp_var_f, swaps_pskl_arrow, !swaps_pskl_var_f,
+    Hsad, Hsbd in Ds'.
+  rewrite (swaps_atom_dodge_in Hav (α := α)) in Ds' by (clear - Hcov; fsetdec).
+  rewrite (swaps_aenv_fresh_id ps Ξ), (swaps_aenv_fresh_id ps Θ0'),
+    (swaps_pskl_fresh_id ps P0) in Ds'
+    by (apply (swaps_dodge_sub Hav); clear - Hcov; fsetdec).
   exact Ds'.
 Qed.
 
@@ -998,28 +1023,17 @@ Proof.
           pose proof (supply_fresh_notin S0) as Ha1.
           pose proof (dom_subset_ftvar_in_aenv Θ0) as Hd0.
           (* PRE-SWAP the derivation's opener onto [supply_fresh S0] *)
-          assert (Hav0 : forall a b, In (a, b) ((ad, supply_fresh S0) :: nil) ->
-                         a `notin` S0 /\ b `notin` S0)
-            by (intros a b [Heq | []]; inversion Heq; subst;
-                split; assumption).
-          assert (Hsad : swaps_atom ((ad, supply_fresh S0) :: nil) ad
-                         = supply_fresh S0)
-            by (simpl; unfold swap_atom;
-                destruct (ad == ad); [ reflexivity | congruence ]).
+          destruct (swaps_onto_fresh Had) as (Hav0 & Hsad & HSadd).
           assert (HfixΘ : forall (X : aenv), ftvar_in_aenv X [<=] S0 ->
                     swaps_aenv ((ad, supply_fresh S0) :: nil) X = X)
-            by (intros X HX; apply swaps_aenv_fresh_id; intros a b Hin;
-                destruct (Hav0 a b Hin) as [Hxa Hxb]; split; fsetdec).
+            by (intros X HX; apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav0);
+                exact HX).
           assert (HfixP : forall X, ftvar_in_pskl X [<=] S0 ->
                     swaps_pskl ((ad, supply_fresh S0) :: nil) X = X)
-            by (intros X HX; apply swaps_pskl_fresh_id; intros a b Hin;
-                destruct (Hav0 a b Hin) as [Hxa Hxb]; split; fsetdec).
-          destruct (e_sub_swaps ((ad, supply_fresh S0) :: nil) Dr
-                      (S0' := add (supply_fresh S0) S0)) as [Sd1 [HSd1 Dr1]].
-          { simpl. rewrite swap_atoms_add.
-            rewrite (swap_atoms_notin ad (supply_fresh S0) S0)
-              by (clear - Had Ha1; fsetdec).
-            unfold swap_atom. destruct (ad == ad); [ reflexivity | congruence ]. }
+            by (intros X HX; apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav0);
+                exact HX).
+          destruct (e_sub_swaps ((ad, supply_fresh S0) :: nil) Dr HSadd)
+            as [Sd1 [HSd1 Dr1]].
           rewrite swaps_aenv_cons_tvar, Hsad in Dr1.
           rewrite (HfixΘ Θ0) in Dr1
             by (clear - Hcov; simpl in *; fsetdec).
@@ -1047,11 +1061,10 @@ Proof.
           (* the counterpart the runner tests for *)
           assert (Hout : sb_out r = open_pskl_wrt_pskl B
                            (pskl_var_f (supply_fresh S0))).
-          { rewrite <- HQ. apply swaps_pskl_fresh_id.
-            intros a0 b0 Hin. destruct (Hav a0 b0 Hin) as [Hya Hyb].
+          { rewrite <- HQ. apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav).
             pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B
                           (pskl_var_f (supply_fresh S0))) as Hop.
-            simpl in Hop. split; clear - Hya Hyb Hop Hcov; simpl in *; fsetdec. }
+            clear - Hop Hcov; simpl in *; fsetdec. }
           bool_true.
           (* the output context, decomposed at the runner's own marker *)
           assert (Hctx : sb_ctx r
@@ -1059,19 +1072,15 @@ Proof.
                       ++ (supply_fresh S0 ~ abind_tvar)
                       ++ swaps_aenv ps (swaps_aenv ((ad, supply_fresh S0) :: nil) Θd)).
           { rewrite <- HT. rewrite swaps_aenv_app_dist, swaps_aenv_cons_tvar.
-            repeat f_equal.
-            apply swaps_atom_notin. intros a0 b0 Hin.
-            destruct (Hav a0 b0 Hin) as [Hya Hyb].
-            split; intro Heq0; subst; clear - Hya Hyb; fsetdec. }
+            repeat f_equal. apply (swaps_atom_dodge_in Hav). fsetdec. }
           assert (Hsufr : a_suffix
                     (swaps_aenv ps (swaps_aenv ((ad, supply_fresh S0) :: nil) Xd)))
             by (apply a_suffix_swaps; apply a_suffix_swaps; exact Hsuf).
           assert (HΘfix : swaps_aenv ps
                     (swaps_aenv ((ad, supply_fresh S0) :: nil) Θ0) = Θ0).
           { rewrite (HfixΘ Θ0) by (clear - Hcov; simpl in *; fsetdec).
-            apply swaps_aenv_fresh_id. intros a0 b0 Hin.
-            destruct (Hav a0 b0 Hin) as [Hya Hyb].
-            split; clear - Hya Hyb Hcov; simpl in *; fsetdec. }
+            apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav).
+            clear - Hcov; simpl in *; fsetdec. }
           assert (HuXr : uniq
                     (swaps_aenv ps (swaps_aenv ((ad, supply_fresh S0) :: nil) Xd)
                      ++ Θ0)).
@@ -1087,18 +1096,13 @@ Proof.
                     (pskl_all_syn B)), (((ad, supply_fresh S0) :: nil) ++ ps).
           split; [ reflexivity | ].
           repeat apply conj.
-          ++ intros a0 b0 Hin. apply in_app_or in Hin.
-             destruct Hin as [Hin | Hin]; [ exact (Hav0 a0 b0 Hin) | ].
-             destruct (Hav a0 b0 Hin) as [Hya Hyb].
-             split; clear - Hya Hyb; fsetdec.
-          ++ cbn [sb_supply]. rewrite swaps_atoms_app. rewrite <- HS.
-             apply swaps_atoms_cong. symmetry. exact HSd1.
+          ++ apply (swaps_dodge_app Hav0 Hav); fsetdec.
+          ++ exact (swaps_atoms_app_transport HSd1 HS).
           ++ cbn [sb_ctx]. rewrite swaps_aenv_app. reflexivity.
           ++ cbn [sb_out]. rewrite swaps_pskl_app, ! swaps_pskl_all_syn.
              rewrite (HfixP B) by (clear - Hcov; simpl in *; fsetdec).
-             f_equal. apply swaps_pskl_fresh_id. intros a0 b0 Hin.
-             destruct (Hav a0 b0 Hin) as [Hya Hyb].
-             split; clear - Hya Hyb Hcov; simpl in *; fsetdec.
+             f_equal. apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav).
+             clear - Hcov; simpl in *; fsetdec.
         -- do_ty_tc_p Hd Hu Hcov Hfl P.
         -- do_ty_tc_p Hd Hu Hcov Hfl P.
       * (* --- NM = sk : the runner keys on the SUBJECT --- *)
@@ -1125,8 +1129,7 @@ Proof.
         assert (Hu0 : uniq (nil ++ Θ0)) by (clear - Hu; simpl; assumption).
         kill_scall (Hfm γ M' eq_refl eq_refl) Hu0 Hcov0 Df
           r Hr ps Hav HS HT HQ.
-        exists r, ps. split; [ reflexivity | ].
-        repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
+        exists r, ps. exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
       -- (* SI-Arrow, at an arrow pattern; every other pattern rejects *)
         destruct P0 as [ | n0 | γ0 | P0a P0b | B | | P0b ]; cbv beta iota;
           [ | | | | | | ];
@@ -1170,14 +1173,12 @@ Proof.
            destruct Hin as [Hin | Hin]; [ exact (Hav1 a0 b0 Hin) | ].
            destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
            split; clear - Ha0 Hb0 Hgr1; fsetdec.
-        ++ cbn [sb_supply]. rewrite swaps_atoms_app. rewrite <- HS2.
-           apply swaps_atoms_cong. symmetry. exact HS2t.
+        ++ exact (swaps_atoms_app_transport HS2t HS2).
         ++ cbn [sb_ctx]. rewrite swaps_aenv_app. exact HT2.
         ++ cbn [sb_out]. rewrite swaps_pskl_app, ! swaps_pskl_arrow.
            rewrite HQ1 in *. f_equal; [ | exact HQ2 ].
-           apply swaps_pskl_fresh_id. intros a0 b0 Hin.
-           destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
-           split; clear - Ha0 Hb0 Hout1; fsetdec.
+           apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav2).
+           clear - Hout1; fsetdec.
 
       -- (* SI-ForallL *)
         do_forall_l Hd Hu Hcov
@@ -1315,9 +1316,7 @@ Proof.
         exists r, (ps0 ++ ps).
         split; [ reflexivity | ].
         repeat apply conj.
-        -- intros a0 b0 Hin. apply in_app_or in Hin.
-          destruct Hin as [Hin | Hin]; [ exact (Hav0 _ _ Hin) | ].
-          destruct (Hav _ _ Hin) as [Ha0 Hb0]. split; fsetdec.
+        -- apply (swaps_dodge_app Hav0 Hav); fsetdec.
         -- rewrite swaps_atoms_app. rewrite <- HS.
           apply swaps_atoms_cong. symmetry. exact HS0.
         -- rewrite swaps_aenv_app. exact HT.
@@ -1337,8 +1336,7 @@ Proof.
                 simpl in *; fsetdec).
           kill_scall (Hdep γ Θ0' eq_refl) Hu0 Hcov0 Dd
             r Hr ps Hav HS HT HQ.
-          exists r, ps. split; [ reflexivity | ].
-          repeat apply conj; [ exact Hav | exact HS | exact HT | exact HQ ].
+          exists r, ps. exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
         -- (* SI-Flex-Skip — the head is re-wrapped *)
           destruct (sumbool_of_bool (mem γ (ftvar_in_pskl P0))) as [Hm | Hm];
             [ exfalso; apply mem_true_in in Hm; contradiction | ].
@@ -1411,7 +1409,5 @@ Proof.
     try rewrite Hcl in Heq; cbn [sub_call_answer proj1_sig] in Heq;
     [ inversion Heq; subst | discriminate ].
   eexists; exists ps.
-  split; [ reflexivity | ].
-  split; [ exact Hav | ]. split; [ exact HS | ].
-  split; [ exact HT | exact HQ ].
+  exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
 Qed.

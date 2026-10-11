@@ -489,32 +489,19 @@ Lemma e_typing_draw_term : forall S m Θ P e A x Sd Ξ Θd B,
            ++ swaps_aenv ((x, supply_fresh S) :: nil) Θd) }}e.
 Proof.
   intros * Hx Hscope Hd.
-  pose proof (supply_fresh_notin S) as Hfresh.
-  assert (Hpair : forall a b, In (a, b) ((x, supply_fresh S) :: nil) ->
-    a `notin` S /\ b `notin` S).
-  { intros a b [Heq | []]. inversion Heq; subst; auto. }
-  assert (Hatom : swaps_atom ((x, supply_fresh S) :: nil) x = supply_fresh S)
-    by (cbn [swaps_atom]; apply swap_atom_l).
-  assert (HΘ : swaps_aenv ((x, supply_fresh S) :: nil) Θ = Θ).
-  { apply swaps_aenv_fresh_id. intros a b Hin.
-    destruct (Hpair _ _ Hin) as [Ha Hb]. split; clear - Ha Hb Hscope; fsetdec. }
-  assert (HA : swaps_ptyp ((x, supply_fresh S) :: nil) A = A).
-  { apply swaps_ptyp_fresh_id. intros a b Hin.
-    destruct (Hpair _ _ Hin) as [Ha Hb]. split; clear - Ha Hb Hscope; fsetdec. }
-  assert (HP : swaps_pskl ((x, supply_fresh S) :: nil) P = P).
-  { apply swaps_pskl_fresh_id. intros a b Hin.
-    destruct (Hpair _ _ Hin) as [Ha Hb]. split; clear - Ha Hb Hscope; fsetdec. }
-  assert (He : swaps_exp ((x, supply_fresh S) :: nil) e = e).
-  { apply swaps_exp_fresh_id. intros a b Hin.
-    destruct (Hpair _ _ Hin) as [Ha Hb]. split; clear - Ha Hb Hscope; fsetdec. }
-  destruct (e_typing_swaps ((x, supply_fresh S) :: nil) Hd
-    (S0' := add (supply_fresh S) S)) as (Sd' & HS & Hd').
-  { cbn [swaps_atoms]. rewrite swap_atoms_add, swap_atom_l.
-    rewrite swap_atoms_notin by (clear - Hx Hfresh; fsetdec). reflexivity. }
-  rewrite !swaps_aenv_app_dist, !swaps_aenv_one_var_typ,
-    swaps_exp_open_var, Hatom, HΘ, HA, HP, He in Hd'.
-  exists Sd'. split; [ exact HS | ].
-  split; [ exact HΘ | ]. split; [ exact HA | exact Hd' ].
+  destruct (swaps_onto_fresh Hx) as (Hav & Hatom & HSadd).
+  assert (HΘ : swaps_aenv ((x, supply_fresh S) :: nil) Θ = Θ)
+    by (apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav);
+        clear - Hscope; fsetdec).
+  assert (HA : swaps_ptyp ((x, supply_fresh S) :: nil) A = A)
+    by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav);
+        clear - Hscope; fsetdec).
+  destruct (e_typing_swaps ((x, supply_fresh S) :: nil) Hd HSadd)
+    as (Sd' & HS & Hd').
+  rewrite !swaps_aenv_app_dist, !swaps_aenv_one_var_typ, swaps_exp_open_var,
+    Hatom, HΘ, HA, (swaps_pskl_fresh_id _ P), (swaps_exp_fresh_id _ e) in Hd'
+    by (apply (swaps_dodge_sub Hav); clear - Hscope; fsetdec).
+  exists Sd'. exact (conj HS (conj HΘ (conj HA Hd'))).
 Qed.
 
 Arguments e_typing_draw_term {S m Θ P} e {A x Sd Ξ Θd B} _ _ _.
@@ -551,39 +538,22 @@ Lemma typing_complete_forall_step : forall S0 Θ0 A0 e Sd Θd A Ξ αd,
 Proof.
   intros S0 Θ0 A0 e Sd Θd A Ξ αd Hstep HP0 He HΘ HD Hu Hcov
     Hsuf HuΞ Hfil HαA Hαd Db h.
-  pose proof (supply_fresh_notin S0) as Hsf.
-  pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdom0.
-  assert (Hav0 : forall a b, In (a, b) ((αd, supply_fresh S0) :: nil) ->
-                 a `notin` S0 /\ b `notin` S0)
-    by (intros a0 b0 [Heq0 | []]; inversion Heq0; subst;
-        split; assumption).
-  assert (Hsαd : swaps_atom ((αd, supply_fresh S0) :: nil) αd
-                 = supply_fresh S0)
-    by (cbn [swaps_atom]; unfold swap_atom;
-        destruct (αd == αd); [ reflexivity | congruence ]).
+  destruct (swaps_onto_fresh Hαd) as (Hav0 & Hsαd & HSadd).
   assert (HfixΘ : swaps_aenv ((αd, supply_fresh S0) :: nil) Θ0 = Θ0)
-    by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-        destruct (Hav0 a0 b0 Hin) as [Hka Hkb];
-        split; clear - Hka Hkb Hcov; simpl in *; fsetdec).
+    by (apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav0);
+        clear - Hcov; simpl in *; fsetdec).
   assert (HcA0 : ftvar_in_ptyp A0 [<=] S0).
   { pose proof (ftvar_ptyp_to_pskl (ptyp_all A0)) as Hpa.
     simpl in Hpa. clear - Hcov Hpa. simpl in *. fsetdec. }
   assert (HfixA0 : swaps_ptyp ((αd, supply_fresh S0) :: nil) A0 = A0)
-    by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-        destruct (Hav0 a0 b0 Hin) as [Hka Hkb];
-        split; clear - Hka Hkb HcA0; fsetdec).
+    by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav0);
+        clear - HcA0; fsetdec).
   assert (Hfixe : swaps_exp ((αd, supply_fresh S0) :: nil)
                     e = e)
-    by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-        destruct (Hav0 a0 b0 Hin) as [Hka Hkb];
-        split; clear - Hka Hkb Hcov; simpl in *; fsetdec).
-  destruct (e_typing_swaps ((αd, supply_fresh S0) :: nil) Db
-              (S0' := add (supply_fresh S0) S0)) as [Sd1 [HSd1 Db1]].
-  { cbn [swaps_atoms]. rewrite swap_atoms_add.
-    rewrite (swap_atoms_notin αd (supply_fresh S0) S0)
-      by (clear - Hαd Hsf; fsetdec).
-    unfold swap_atom.
-    destruct (αd == αd); [ reflexivity | congruence ]. }
+    by (apply swaps_exp_fresh_id, (swaps_dodge_sub Hav0);
+        clear - Hcov; simpl in *; fsetdec).
+  destruct (e_typing_swaps ((αd, supply_fresh S0) :: nil) Db HSadd)
+    as [Sd1 [HSd1 Db1]].
   rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_tvar in Db1.
   rewrite ! swaps_pskl_ptyp_to_pskl, ! swaps_ptyp_open,
     ! swaps_ptyp_var_f in Db1.
@@ -594,32 +564,10 @@ Proof.
   assert (Hlcop : lc_pskl (ptyp_to_pskl
             (open_ptyp_wrt_ptyp A0 (ptyp_var_f (supply_fresh S0)))))
     by (apply ptyp_to_pskl_lc; inversion HA0lc; subst; auto).
-  assert (Hsfd : supply_fresh S0 `notin` dom Θ0)
-    by (clear - Hsf Hdom0 Hcov; simpl in *; fsetdec).
-  assert (Hu1 : uniq ((supply_fresh S0 ~ abind_tvar) ++ Θ0))
-    by (clear - Hu Hsfd; solve_uniq).
-  assert (HΘ1 : lc_aenv ((supply_fresh S0 ~ abind_tvar) ++ Θ0))
-    by (apply lc_aenv_app_intro;
-        [ constructor; [ exact I | apply lc_aenv_nil ] | exact HΘ ]).
-  assert (HD1 : aenv_defs_mono ((supply_fresh S0 ~ abind_tvar) ++ Θ0))
-    by (simpl; constructor; [ apply entry_def_mono_tvar | exact HD ]).
-  assert (Hcov1 : ftvar_in_aenv ((supply_fresh S0 ~ abind_tvar) ++ Θ0)
-                  ∪ ftvar_in_pskl (ptyp_to_pskl
-                       (open_ptyp_wrt_ptyp A0
-                          (ptyp_var_f (supply_fresh S0))))
-                  ∪ fvar_in_exp e
-                  ∪ ftvar_in_exp e
-                  [<=] add (supply_fresh S0) S0).
-  { pose proof (ftvar_ptyp_to_pskl (open_ptyp_wrt_ptyp A0
-                  (ptyp_var_f (supply_fresh S0)))) as Hpa.
-    pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0
-                  (ptyp_var_f (supply_fresh S0))) as Hup.
-    simpl in Hup.
-    assert (Hcpat : ftvar_in_pskl (ptyp_to_pskl
-              (open_ptyp_wrt_ptyp A0 (ptyp_var_f (supply_fresh S0))))
-            [<=] add (supply_fresh S0) S0)
-      by (clear - Hpa Hup HcA0; fsetdec).
-    clear - Hcov Hcpat. simpl in *. fsetdec. }
+  assert (HcΘ : ftvar_in_aenv Θ0 [<=] S0) by (clear - Hcov; fsetdec).
+  destruct (push_fresh_invariants Hu HΘ HD HcΘ lc_abind_tvar
+              (entry_def_mono_tvar _)) as (Hu1 & HΘ1 & HD1).
+  pose proof (cover_open_tvar (supply_fresh S0) Hcov) as Hcov1.
   destruct (Hstep h Hlcop He HΘ1 HD1 Hu1 Hcov1 _ _ _ Db1)
     as (r0 & ps2 & Hrun & Hav2 & HS2 & HT2 & HQ2).
   destruct (e_typing_impl _ _ _ _ _ h) as [[r Hr] | ] eqn:Hcall;
@@ -628,10 +576,7 @@ Proof.
   unfold typing_spec in Hr.
   destruct (e_typing_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]].
   assert (Hfix2a : swaps_atom ps2 (supply_fresh S0) = supply_fresh S0)
-    by (apply swaps_atom_notin; intros a0 b0 Hin;
-        destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-        split; intro Heq0; [ apply Hka | apply Hkb ];
-        rewrite <- Heq0; clear; fsetdec).
+    by (apply (swaps_atom_dodge_in Hav2); clear; fsetdec).
   (* the answer's context, split at the runner's own marker *)
   assert (Hctx : ty_ctx r
             = swaps_aenv ps2 (swaps_aenv ((αd, supply_fresh S0) :: nil)
@@ -670,9 +615,8 @@ Proof.
             (swaps_aenv ((αd, supply_fresh S0) :: nil) Ξ) ++ Θ0)).
   { assert (HfixΘ2 : swaps_aenv ps2 (swaps_aenv
               ((αd, supply_fresh S0) :: nil) Θ0) = Θ0).
-    { rewrite HfixΘ. apply swaps_aenv_fresh_id. intros a0 b0 Hin.
-      destruct (Hav2 a0 b0 Hin) as [Hka Hkb].
-      split; clear - Hka Hkb Hcov; simpl in *; fsetdec. }
+    { rewrite HfixΘ. apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav2).
+      clear - Hcov; simpl in *; fsetdec. }
     rewrite <- HfixΘ2. rewrite <- ! swaps_aenv_app_dist.
     apply swaps_aenv_uniq. apply swaps_aenv_uniq. exact HuΞ. }
   assert (Hfilr : (dom (swaps_aenv ps2 (swaps_aenv
@@ -691,12 +635,9 @@ Proof.
   split; [ exact HuΞr | ].
   split; [ exact Hfilr | ].
   split.
-  - intros a b Hin. apply in_app_or in Hin.
-    destruct Hin as [Hin | Hin]; [ exact (Hav0 _ _ Hin) | ].
-    destruct (Hav2 _ _ Hin) as [Ha Hb]. split; fsetdec.
+  - apply (swaps_dodge_app Hav0 Hav2); fsetdec.
   - split.
-    + rewrite swaps_atoms_app, <- HS2.
-      apply swaps_atoms_cong. symmetry. exact HSd1.
+    + exact (swaps_atoms_app_transport HSd1 HS2).
     + split; [ rewrite swaps_aenv_app; reflexivity | ].
       rewrite swaps_ptyp_app. exact Hclose.
 Qed.
@@ -725,9 +666,7 @@ Proof.
       by (rewrite <- HQ; apply swaps_pskl_ptyp_to_pskl).
     kill_dec (pskl_readback_complete_eq Hout) A0 HA0.
     eexists; exists ps.
-    split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
-    repeat apply conj; [ exact Hav | cbn [ty_supply]; exact HS
-            | cbn [ty_ctx]; exact HT | cbn [ty_out]; reflexivity ].
+    exact (conj eq_refl (conj Hav (conj HS (conj HT eq_refl)))).
 
   - (* ============ a bound index is unreachable ============ *)
     exfalso. exact (e_typing_inv_var_b Hd).
@@ -753,9 +692,7 @@ Proof.
       by (rewrite <- HQ; apply swaps_pskl_ptyp_to_pskl).
     kill_dec (pskl_readback_complete_eq Hout) B0 HB0.
     eexists; exists ps.
-    split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
-    repeat apply conj; [ exact Hav | cbn [ty_supply]; exact HS
-            | cbn [ty_ctx]; exact HT | cbn [ty_out]; reflexivity ].
+    exact (conj eq_refl (conj Hav (conj HS (conj HT eq_refl)))).
 
   - (* ============ AT-Abs, and the two check-mode abs rows ============ *)
     assert (Hbody : forall y, lc_exp (open_exp_wrt_exp e1 (exp_var_f y)))
@@ -765,8 +702,6 @@ Proof.
 
     2: { (* -------- the CHECK-mode abs rows: STEP, then BASE -------- *)
       rewrite e_typing_impl_equation_5.
-      pose proof (supply_fresh_notin S0) as Hsf.
-      pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdom0.
       destruct (pskl_readback_all P0) as [ [A0 HA0] | ] eqn:Hrba;
         cbv beta iota.
 
@@ -831,23 +766,13 @@ Proof.
         assert (Hcovsp : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 [<=] S0)
           by (clear - Hcov; simpl in *; fsetdec).
         rewrite <- HP0eq in Dsp.
-        destruct (e_split_impl_complete Dsp HD Hu Hcovsp)
-          as [rs0 [ps1 [Hxs [Hav1 [HS1 [HT1 [HP1 HQ1]]]]]]].
-        destruct (e_split_impl S0 Θ0 P0) as [ [rs Hrs] | ] eqn:Hcls;
-          try rewrite Hcls in Hxs; [ | discriminate ].
-        assert (Heqrs : rs0 = exist (split_spec S0 Θ0 P0) rs Hrs)
-          by congruence.
-        subst rs0. cbn [proj1_sig] in HS1, HT1, HP1, HQ1.
-        clear Hxs Hcls. cbv beta iota.
-        unfold split_spec in Hrs.
+        kill_split Dsp HD Hu Hcovsp rs Hrs ps1 Hav1 HS1 HT1 HP1 HQ1.
         destruct (e_split_sound Hrs Hu Hcovsp) as [Hsa [Hus [Hcvs Hpqs]]].
         pose proof (e_split_defs_mono Hrs HD) as HDs.
         pose proof (e_split_env_lc Hrs HΘ) as HΘs.
         destruct (e_split_lc Hrs HP0) as [Hlcd Hlcc].
         pose proof (e_split_supply_grows Hrs) as Hgrs.
         pose proof (e_split_supply_grows Dsp) as Hgrd.
-        pose proof (supply_fresh_notin (sp_supply rs)) as Hsfs.
-        pose proof (dom_subset_ftvar_in_aenv (sp_ctx rs)) as Hdoms.
         (* the two readbacks the runner performs *)
         assert (HdomR : sp_dom rs = ptyp_to_pskl (swaps_ptyp ps1 A))
           by (rewrite <- HP1; apply swaps_pskl_ptyp_to_pskl).
@@ -862,9 +787,8 @@ Proof.
           by (apply swaps_atom_dodge with (S := S0);
               [ exact Hav1 | clear - Hxd Hgrd; fsetdec ]).
         assert (Hfixe1 : swaps_exp ps1 e1 = e1)
-          by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-              destruct (Hav1 a0 b0 Hin) as [Hka Hkb];
-              split; clear - Hka Hkb Hcov; simpl in *; fsetdec).
+          by (apply swaps_exp_fresh_id, (swaps_dodge_sub Hav1);
+              clear - Hcov; simpl in *; fsetdec).
         destruct (e_typing_swaps ps1 Db
                     (S0' := add (swaps_atom ps1 xd) (sp_supply rs)))
           as [Sd1 [HSd1 Db1]];
@@ -885,56 +809,13 @@ Proof.
         destruct (e_typing_draw_term e1 Hx1S HdrawScope Db1)
           as (Sd2 & HSd2 & HfixCtx & HfixAd & Db2).
         (* the recursive call's own side conditions *)
-        assert (Hsfd : supply_fresh (sp_supply rs) `notin` dom (sp_ctx rs))
-          by (clear - Hsfs Hdoms Hcvs; fsetdec).
-        assert (Hu1 : uniq ((supply_fresh (sp_supply rs)
-                               ~ abind_var_typ (swaps_ptyp ps1 A))
-                            ++ sp_ctx rs))
-          by (clear - Hus Hsfd; solve_uniq).
         assert (HlcAd : lc_ptyp (swaps_ptyp ps1 A))
           by (rewrite HdomR in Hlcd; eapply ptyp_to_pskl_lc_inv; exact Hlcd).
-        assert (HΘ1 : lc_aenv ((supply_fresh (sp_supply rs)
-                                  ~ abind_var_typ (swaps_ptyp ps1 A))
-                               ++ sp_ctx rs))
-          by (apply lc_aenv_app_intro;
-              [ constructor; [ apply lc_abind_var_typ; exact HlcAd
-                             | apply lc_aenv_nil ]
-              | exact HΘs ]).
-        assert (HD1 : aenv_defs_mono ((supply_fresh (sp_supply rs)
-                         ~ abind_var_typ (swaps_ptyp ps1 A)) ++ sp_ctx rs))
-          by (simpl; constructor;
-              [ apply entry_def_mono_var_typ | exact HDs ]).
-        assert (Hcov1 : ftvar_in_aenv ((supply_fresh (sp_supply rs)
-                            ~ abind_var_typ (swaps_ptyp ps1 A))
-                         ++ sp_ctx rs)
-                        ∪ ftvar_in_pskl (ptyp_to_pskl (swaps_ptyp ps1 B))
-                        ∪ fvar_in_exp (open_exp_wrt_exp e1
-                             (exp_var_f (supply_fresh (sp_supply rs))))
-                        ∪ ftvar_in_exp (open_exp_wrt_exp e1
-                             (exp_var_f (supply_fresh (sp_supply rs))))
-                        [<=] add (supply_fresh (sp_supply rs))
-                               (sp_supply rs)).
-        { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e1
-                        (exp_var_f (supply_fresh (sp_supply rs)))) as Hfo.
-          pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e1
-                        (exp_var_f (supply_fresh (sp_supply rs)))) as Hto.
-          pose proof (ftvar_ptyp_to_pskl (swaps_ptyp ps1 B)) as Hpb.
-          simpl in Hfo, Hto.
-          assert (Hcove : fvar_in_exp e1 ∪ ftvar_in_exp e1
-                          [<=] sp_supply rs)
-            by (clear - Hcov Hgrs; simpl in *; fsetdec).
-          assert (Hcf : fvar_in_exp (open_exp_wrt_exp e1
-                          (exp_var_f (supply_fresh (sp_supply rs))))
-                        [<=] add (supply_fresh (sp_supply rs))
-                               (sp_supply rs))
-            by (clear - Hfo Hcove; fsetdec).
-          assert (Hct : ftvar_in_exp (open_exp_wrt_exp e1
-                          (exp_var_f (supply_fresh (sp_supply rs))))
-                        [<=] add (supply_fresh (sp_supply rs))
-                               (sp_supply rs))
-            by (clear - Hto Hcove; fsetdec).
-          rewrite ftvar_in_aenv_app. simpl.
-          clear - Hcvs HcAd HcBd Hpb Hcf Hct. fsetdec. }
+        destruct (push_fresh_invariants Hus HΘs HDs Hcvs
+                    (lc_abind_var_typ HlcAd) (entry_def_mono_var_typ _ _))
+          as (Hu1 & HΘ1 & HD1).
+        pose proof (cover_open_body_typ (supply_fresh (sp_supply rs))
+                      HdrawScope) as Hcov1.
         assert (Hlccod : lc_pskl (ptyp_to_pskl (swaps_ptyp ps1 B)))
           by (rewrite <- HcodR; exact Hlcc).
         kill_typing (Hbase e1 eq_refl _ _ _ _ Hrs _ _ HdomR HcodR)
@@ -944,19 +825,14 @@ Proof.
         destruct (e_typing_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]].
         assert (Hfix2a : swaps_atom ps2 (supply_fresh (sp_supply rs))
                          = supply_fresh (sp_supply rs))
-          by (apply swaps_atom_notin; intros a0 b0 Hin;
-              destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-              split; intro Heq0; [ apply Hka | apply Hkb ];
-              rewrite <- Heq0; clear; fsetdec).
+          by (apply (swaps_atom_dodge_in Hav2); clear; fsetdec).
         assert (Hfix2A : swaps_ptyp ps2 (swaps_ptyp ps1 A)
                          = swaps_ptyp ps1 A)
-          by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-              destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-              split; clear - Hka Hkb HcAd; fsetdec).
+          by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2);
+              clear - HcAd; fsetdec).
         assert (Hfix2C : swaps_aenv ps2 (sp_ctx rs) = sp_ctx rs)
-          by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-              destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-              split; clear - Hka Hkb Hcvs; fsetdec).
+          by (apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav2);
+              clear - Hcvs; fsetdec).
         assert (Hctx : ty_ctx r
                   = swaps_aenv ps2 (swaps_aenv ((swaps_atom ps1 xd,
                         supply_fresh (sp_supply rs)) :: nil)
@@ -998,16 +874,9 @@ Proof.
                   supply_fresh (sp_supply rs)) :: nil)) ++ ps2).
         split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
         repeat apply conj.
-        + intros a0 b0 Hin. repeat (apply in_app_or in Hin;
-            destruct Hin as [Hin | Hin]).
-          * exact (Hav1 _ _ Hin).
-          * destruct Hin as [Heq0 | []]; inversion Heq0; subst.
-            split; [ exact Hx10 | clear - Hsfs Hgrs; fsetdec ].
-          * destruct (Hav2 _ _ Hin) as [Hka Hkb]. split;
-              clear - Hka Hkb Hgrs; fsetdec.
-        + cbn [ty_supply]. rewrite ! swaps_atoms_app. rewrite <- HS2.
-          apply swaps_atoms_cong. rewrite HSd2.
-          apply swaps_atoms_cong. symmetry. exact HSd1.
+        + exact (swaps_dodge_draw Hav1 Hx10 Hgrs Hav2).
+        + exact (swaps_atoms_app_transport
+            (swaps_atoms_app_compose HSd2 HSd1) HS2).
         + cbn [ty_ctx]. rewrite ! swaps_aenv_app. reflexivity.
         + cbn [ty_out]. rewrite swaps_ptyp_arrow. f_equal.
           * rewrite ! swaps_ptyp_app, HfixAd. exact Hfix2A.
@@ -1023,16 +892,7 @@ Proof.
       (* the SPLIT, at the runner's own call *)
       assert (Hcovsp : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 [<=] S0)
         by (clear - Hcov; simpl in *; fsetdec);
-      destruct (e_split_impl_complete Dsp HD Hu Hcovsp)
-        as [rs0 [ps1 [Hxs [Hav1 [HS1 [HT1 [HP1 HQ1]]]]]]];
-      destruct (e_split_impl S0 Θ0 P0) as [ [rs Hrs] | ] eqn:Hcls;
-      try rewrite Hcls in Hxs;
-      [ | discriminate ];
-      assert (Heqrs : rs0 = exist (split_spec S0 Θ0 P0) rs Hrs)
-        by congruence;
-      subst rs0; cbn [proj1_sig] in HS1, HT1, HP1, HQ1;
-      clear Hxs Hcls; cbv beta iota;
-      unfold split_spec in Hrs;
+      kill_split Dsp HD Hu Hcovsp rs Hrs ps1 Hav1 HS1 HT1 HP1 HQ1;
       destruct (e_split_sound Hrs Hu Hcovsp) as [Hsa [Hus [Hcvs Hpqs]]];
       pose proof (e_split_defs_mono Hrs HD) as HDs;
       pose proof (e_split_env_lc Hrs HΘ) as HΘs;
@@ -1059,8 +919,6 @@ Proof.
       pose proof (e_guess_mono_generated_in_supply Hrg) as HdomG;
       pose proof (e_guess_mono_generated_ftvar Hrg) as HftG;
       pose proof (e_guess_mono_ftv_supply Hrg HcovD) as HftyG;
-      pose proof (supply_fresh_notin (gr_supply rg)) as Hsf;
-      pose proof (dom_subset_ftvar_in_aenv (sp_ctx rs)) as Hdoms;
       (* the binder, along BOTH chains and then onto the runner's draw *)
       assert (Hx1S : swaps_atom psg (swaps_atom ps1 xd)
                      `notin` gr_supply rg)
@@ -1069,49 +927,33 @@ Proof.
               symmetry; exact HSg1
             | eapply swaps_notin_eq; [ reflexivity | exact Hxd ] ]);
       assert (Hx10 : swaps_atom psg (swaps_atom ps1 xd) `notin` S0)
-        by (apply swaps_atom_dodge with (S := S0);
-            [ intros a0 b0 Hin; destruct (Havg a0 b0 Hin) as [Hka Hkb];
-              split; clear - Hka Hkb Hgrs; fsetdec
-            | apply swaps_atom_dodge with (S := S0);
-              [ exact Hav1
-              | pose proof (e_guess_mono_supply_grows Hg) as Hgg;
-                clear - Hxd Hgrd Hgg; fsetdec ] ]);
+        by (rewrite <- swaps_atom_app;
+            apply (@swaps_atom_dodge _ _ _
+                     (swaps_dodge_app_l Hav1 Havg Hgrs));
+            pose proof (e_guess_mono_supply_grows Hg) as Hgg;
+            clear - Hxd Hgrd Hgg; fsetdec);
       assert (HfixCtx1 : swaps_aenv psg (sp_ctx rs) = sp_ctx rs)
-        by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-            destruct (Havg a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb Hcvs; fsetdec);
+        by (apply swaps_aenv_fresh_id, (swaps_dodge_sub Havg);
+            clear - Hcvs; fsetdec);
       assert (HfixCod1 : swaps_pskl psg (sp_cod rs) = sp_cod rs)
-        by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-            destruct (Havg a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb Hpqs; fsetdec);
+        by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Havg);
+            clear - Hpqs; fsetdec);
       assert (Hfixe1 : swaps_exp (ps1 ++ psg) e1 = e1)
-        by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-            apply in_app_or in Hin; destruct Hin as [Hin | Hin];
-            [ destruct (Hav1 a0 b0 Hin) as [Hka Hkb]
-            | destruct (Havg a0 b0 Hin) as [Hka Hkb] ];
-            split; clear - Hka Hkb Hcov Hgrs; simpl in *; fsetdec);
+        by (apply swaps_exp_fresh_id, (swaps_dodge_app Hav1 Havg);
+            clear - Hcov Hgrs; simpl in *; fsetdec);
       destruct (e_typing_swaps (ps1 ++ psg) Db
                   (S0' := add (swaps_atom psg (swaps_atom ps1 xd))
                             (gr_supply rg))) as [Sd1 [HSd1 Db1]];
-      [ rewrite swaps_atoms_app;
-        assert (Heq2 : swaps_atoms psg (swaps_atoms ps1 (add xd S2))
-                       [=] swaps_atoms psg
-                             (add (swaps_atom ps1 xd) (swaps_atoms ps1 S2)))
-          by (apply swaps_atoms_cong; apply swaps_atoms_add);
-        rewrite Heq2, swaps_atoms_add;
-        assert (Heq3 : swaps_atoms psg (swaps_atoms ps1 S2)
-                       [=] gr_supply rg)
+      [ assert (Heq3 : swaps_atoms psg (swaps_atoms ps1 S2) [=] gr_supply rg)
           by (rewrite <- HSg; apply swaps_atoms_cong; symmetry; exact HSg1);
-        rewrite Heq3; reflexivity
+        rewrite swaps_atoms_add, swaps_atom_app, swaps_atoms_app, Heq3;
+        reflexivity
       | ];
-      rewrite ! swaps_aenv_app_dist in Db1;
-      rewrite ! swaps_aenv_one_var_typ in Db1;
-      rewrite ! swaps_exp_open_var in Db1;
+      rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ,
+        ! swaps_exp_open_var, Hfixe1 in Db1;
       rewrite ! swaps_aenv_app, ! swaps_pskl_app, ! swaps_atom_app,
-        ! swaps_ptyp_app, ! swaps_exp_app in Db1;
+        ! swaps_ptyp_app in Db1;
       rewrite HT1, HQ1, HTg, HAg, HfixCtx1, HfixCod1 in Db1;
-      rewrite swaps_exp_app in Hfixe1;
-      rewrite Hfixe1 in Db1;
       (* onto the runner's own draw *)
       assert (HdrawScope : ftvar_in_aenv (gr_block rg ++ sp_ctx rs) ∪ ftvar_in_pskl (sp_cod rs)
         ∪ ftvar_in_ptyp (gr_type rg) ∪ fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] gr_supply rg)
@@ -1122,76 +964,16 @@ Proof.
       assert (Hublk : uniq (gr_block rg ++ sp_ctx rs))
         by (eapply e_guess_mono_uniq_app;
             [ exact Hrg | exact Hcvs | exact Hus ]);
-      assert (Hsfblk : supply_fresh (gr_supply rg) `notin` dom (gr_block rg))
-        by (clear - Hsf HdomG; fsetdec);
-      assert (Hsfctx : supply_fresh (gr_supply rg) `notin` dom (sp_ctx rs))
-        by (clear - Hsf Hdoms Hcvs Hgrg; fsetdec);
-      assert (Hsfd : supply_fresh (gr_supply rg)
-                     `notin` dom (gr_block rg ++ sp_ctx rs))
-        by (rewrite dom_app; clear - Hsfblk Hsfctx; fsetdec);
-      assert (Hu1 : uniq ((supply_fresh (gr_supply rg)
-                             ~ abind_var_typ (gr_type rg))
-                          ++ gr_block rg ++ sp_ctx rs))
-        by (clear - Hublk Hsfd; solve_uniq);
-      assert (HΘ1 : lc_aenv ((supply_fresh (gr_supply rg)
-                                ~ abind_var_typ (gr_type rg))
-                             ++ gr_block rg ++ sp_ctx rs))
-        by (apply lc_aenv_app_intro;
-            [ constructor;
-              [ apply lc_abind_var_typ;
-                eapply e_guess_mono_lc_type; [ exact Hrg | exact Hlcd ]
-              | apply lc_aenv_nil ]
-            | apply lc_aenv_app_intro;
-              [ eapply e_guess_mono_block_lc; exact Hrg | exact HΘs ] ]);
-      assert (HD1 : aenv_defs_mono ((supply_fresh (gr_supply rg)
-                       ~ abind_var_typ (gr_type rg))
-                    ++ gr_block rg ++ sp_ctx rs))
-        by (simpl; constructor;
-            [ apply entry_def_mono_var_typ
-            | apply Forall_app_intro;
-              [ eapply e_guess_mono_block_defs_mono; exact Hrg | exact HDs ] ]);
-      (* ⚠️⚠️ the coverage side condition is assembled SUMMAND BY SUMMAND:
-         one [fsetdec] over the seven set variables at once does not
-         return.  Each step below stays at four or five. *)
-      assert (HS0g : S0 [<=] gr_supply rg) by (clear - Hgrs Hgrg; fsetdec);
-      assert (Hcove : fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] gr_supply rg)
-        by (clear - Hcov HS0g; simpl in *; fsetdec);
-      assert (Hblk1 : ftvar_in_aenv (gr_block rg) [<=] gr_supply rg)
-        by (clear - HftG HdomG; fsetdec);
-      assert (Hctx1 : ftvar_in_aenv (sp_ctx rs) [<=] gr_supply rg)
-        by (clear - Hcvs Hgrg; fsetdec);
-      assert (HcQ : ftvar_in_pskl (sp_cod rs) [<=] gr_supply rg)
-        by (clear - Hpqs Hgrg; fsetdec);
-      assert (HcA : ftvar_in_aenv ((supply_fresh (gr_supply rg)
-                        ~ abind_var_typ (gr_type rg))
-                     ++ gr_block rg ++ sp_ctx rs)
-                    [<=] add (supply_fresh (gr_supply rg)) (gr_supply rg))
-        by (rewrite ! ftvar_in_aenv_app; simpl;
-            clear - HftyG Hblk1 Hctx1; fsetdec);
-      assert (Hcov1 : ftvar_in_aenv ((supply_fresh (gr_supply rg)
-                          ~ abind_var_typ (gr_type rg))
-                       ++ gr_block rg ++ sp_ctx rs)
-                      ∪ ftvar_in_pskl (sp_cod rs)
-                      ∪ fvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh (gr_supply rg))))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh (gr_supply rg))))
-                      [<=] add (supply_fresh (gr_supply rg)) (gr_supply rg));
-      [ pose proof (fvar_in_exp_open_exp_wrt_exp_upper e1
-                      (exp_var_f (supply_fresh (gr_supply rg)))) as Hfo;
-        pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e1
-                      (exp_var_f (supply_fresh (gr_supply rg)))) as Hto;
-        simpl in Hfo, Hto;
-        assert (Hcf : fvar_in_exp (open_exp_wrt_exp e1
-                        (exp_var_f (supply_fresh (gr_supply rg))))
-                      [<=] add (supply_fresh (gr_supply rg)) (gr_supply rg))
-          by (clear - Hfo Hcove; fsetdec);
-        assert (Hct : ftvar_in_exp (open_exp_wrt_exp e1
-                        (exp_var_f (supply_fresh (gr_supply rg))))
-                      [<=] add (supply_fresh (gr_supply rg)) (gr_supply rg))
-          by (clear - Hto Hcove; fsetdec);
-        clear - HcA HcQ Hcf Hct; fsetdec
-      | ];
+      assert (HcB : ftvar_in_aenv (gr_block rg ++ sp_ctx rs) [<=] gr_supply rg)
+        by (rewrite ftvar_in_aenv_app; clear - HftG HdomG Hcvs Hgrg; fsetdec);
+      destruct (push_fresh_invariants Hublk
+                  (lc_aenv_app_intro (e_guess_mono_block_lc Hrg) HΘs)
+                  (Forall_app_intro (e_guess_mono_block_defs_mono Hrg) HDs) HcB
+                  (lc_abind_var_typ (e_guess_mono_lc_type Hrg Hlcd))
+                  (entry_def_mono_var_typ _ _))
+        as (Hu1 & HΘ1 & HD1);
+      pose proof (cover_open_body_typ (supply_fresh (gr_supply rg))
+                    HdrawScope) as Hcov1;
       kill_typing (Habs e1 eq_refl _ _ _ _ Hrs _ _ _ Hrg) Hlcc
         (Hbody (supply_fresh (gr_supply rg))) HΘ1 HD1 Hu1 Hcov1 Db2
         r Hr ps2 Hav2 HS2 HT2 HQ2;
@@ -1199,14 +981,10 @@ Proof.
       destruct (e_typing_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]];
       assert (Hfix2a : swaps_atom ps2 (supply_fresh (gr_supply rg))
                        = supply_fresh (gr_supply rg))
-        by (apply swaps_atom_notin; intros a0 b0 Hin;
-            destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-            split; intro Heq0; [ apply Hka | apply Hkb ];
-            rewrite <- Heq0; clear; fsetdec);
+        by (apply (swaps_atom_dodge_in Hav2); clear; fsetdec);
       assert (Hfix2T : swaps_ptyp ps2 (gr_type rg) = gr_type rg)
-        by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-            destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb HftyG; fsetdec);
+        by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2);
+            clear - HftyG; fsetdec);
       (* the answer's context, split at the runner's own marker *)
       assert (Hctx : ty_ctx r
                 = swaps_aenv ps2 (swaps_aenv
@@ -1230,24 +1008,17 @@ Proof.
                 (swaps_aenv psg (swaps_aenv ps1 Ξ)))))
         by (repeat apply a_suffix_swaps; exact Hsuf);
       bool_true_ty;
+      assert (HS0g : S0 [<=] gr_supply rg) by (clear - Hgrs Hgrg; fsetdec);
       eexists;
       exists (((ps1 ++ psg) ++ ((swaps_atom psg (swaps_atom ps1 xd),
                 supply_fresh (gr_supply rg)) :: nil)) ++ ps2);
       split; [ cbn [typing_answer proj1_sig]; reflexivity | ];
       repeat apply conj;
-      [ intros a0 b0 Hin; repeat (apply in_app_or in Hin;
-          destruct Hin as [Hin | Hin]);
-        [ exact (Hav1 _ _ Hin)
-        | destruct (Havg _ _ Hin) as [Hka Hkb]; split;
-          clear - Hka Hkb Hgrs; fsetdec
-        | destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-          split; [ exact Hx10 | clear - Hsf Hgrs Hgrg; fsetdec ]
-        | destruct (Hav2 _ _ Hin) as [Hka Hkb]; split;
-          clear - Hka Hkb Hgrs Hgrg; fsetdec ]
-      | cbn [ty_supply]; rewrite ! swaps_atoms_app; rewrite <- HS2;
-        apply swaps_atoms_cong; rewrite HSd2;
-        apply swaps_atoms_cong; symmetry;
-        rewrite <- swaps_atoms_app; exact HSd1
+      [ exact (swaps_dodge_draw
+          (swaps_dodge_app_l Hav1 Havg Hgrs)
+          Hx10 HS0g Hav2)
+      | exact (swaps_atoms_app_transport
+          (swaps_atoms_app_compose HSd2 HSd1) HS2)
       | cbn [ty_ctx]; rewrite swaps_aenv_app_dist, ! swaps_aenv_app;
         reflexivity
       | cbn [ty_out]; rewrite swaps_ptyp_arrow; f_equal;
@@ -1265,8 +1036,6 @@ Proof.
 
     2: { (* ---- the CHECK-mode abs_anno rows: STEP, then BASE ---- *)
       rewrite e_typing_impl_equation_8.
-      pose proof (supply_fresh_notin S0) as Hsf.
-      pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdom0.
       destruct (pskl_readback_all P0) as [ [A0 HA0] | ] eqn:Hrba;
         cbv beta iota.
 
@@ -1326,15 +1095,7 @@ Proof.
         assert (Hcovsp : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 [<=] S0)
           by (clear - Hcov; simpl in *; fsetdec).
         rewrite <- HP0eq in Dsp.
-        destruct (e_split_impl_complete Dsp HD Hu Hcovsp)
-          as [rs0 [ps1 [Hxs [Hav1 [HS1 [HT1 [HP1 HQ1]]]]]]].
-        destruct (e_split_impl S0 Θ0 P0) as [ [rs Hrs] | ] eqn:Hcls;
-          try rewrite Hcls in Hxs; [ | discriminate ].
-        assert (Heqrs : rs0 = exist (split_spec S0 Θ0 P0) rs Hrs)
-          by congruence.
-        subst rs0. cbn [proj1_sig] in HS1, HT1, HP1, HQ1.
-        clear Hxs Hcls. cbv beta iota.
-        unfold split_spec in Hrs.
+        kill_split Dsp HD Hu Hcovsp rs Hrs ps1 Hav1 HS1 HT1 HP1 HQ1.
         destruct (e_split_sound Hrs Hu Hcovsp) as [Hsa [Hus [Hcvs Hpqs]]].
         pose proof (e_split_defs_mono Hrs HD) as HDs.
         pose proof (e_split_env_lc Hrs HΘ) as HΘs.
@@ -1356,35 +1117,20 @@ Proof.
         bool_true_ty.
         (* the ANNOTATION's consistency run *)
         assert (HfixA1 : swaps_pskl ps1 (ptyp_to_pskl A) = ptyp_to_pskl A)
-          by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-              destruct (Hav1 a0 b0 Hin) as [Hka Hkb];
-              split; clear - Hka Hkb Hcov HAe; simpl in *; fsetdec).
-        destruct (e_consis_swaps ps1 Dc (Δ1' := empty) (Δ2' := empty)
-                    (S0' := sp_supply rs)) as [Sc1 [HSc1 Dc1]];
-          [ symmetry; apply swaps_atoms_empty
-          | symmetry; apply swaps_atoms_empty
-          | symmetry; exact HS1 | ].
+          by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
+              clear - Hcov HAe; simpl in *; fsetdec).
+        pose proof (swaps_atoms_empty ps1) as Hemp; symmetry in Hemp;
+        pose proof HS1 as HS1r; symmetry in HS1r;
+        destruct (e_consis_swaps ps1 Dc Hemp
+                    Hemp HS1r)
+          as [Sc1 [HSc1 Dc1]];
         rewrite HT1, HfixA1, HP1 in Dc1.
         assert (Hcovc : ftvar_in_aenv (sp_ctx rs)
                         ∪ ftvar_in_pskl (ptyp_to_pskl A)
                         ∪ ftvar_in_pskl (sp_dom rs)
                         ∪ empty ∪ empty [<=] sp_supply rs)
           by (clear - Hcvs Hpqs Hcov HAe Hgrs; simpl in *; fsetdec).
-        match goal with
-        | |- context [ e_consis_impl ?d1 ?d2 ?S ?T ?p0 ?p ?h0 ?h1 ?hd ?h ] =>
-            let Hx := fresh "Hx" in let Hcl := fresh "Hcl" in
-            let rc0 := fresh "rc0" in let Heqr := fresh "Heqr" in
-            destruct (e_consis_impl_complete h0 h1 hd h Dc1 Hus Hcovc)
-              as [rc0 [psc [Hx [Havc [HSc [HTc HQc]]]]]];
-            destruct (e_consis_impl d1 d2 S T p0 p h0 h1 hd h)
-              as [ [rc Hrc] | ] eqn:Hcl;
-            try rewrite Hcl in Hx;
-            [ assert (Heqr : rc0 = exist (consis_spec d1 d2 S T p0 p) rc Hrc)
-                by congruence;
-              subst rc0; cbn [proj1_sig] in HSc, HTc, HQc;
-              clear Hx Hcl; cbv beta iota
-            | discriminate ]
-        end.
+        kill_consis_call Dc1 Hus Hcovc rc Hrc psc Havc HSc HTc HQc.
         unfold consis_spec in Hrc.
         destruct ((proj2 (proj2 e_assign_unify_consis_sound))
                     _ _ _ _ _ _ _ _ _ Hrc Hus Hcovc) as [Hca [Huc Hcvc]].
@@ -1392,7 +1138,6 @@ Proof.
         pose proof (e_consis_env_lc Hrc HΘs) as HΘc.
         pose proof (e_consis_supply_grows Hrc) as Hgrc.
         pose proof (supply_fresh_notin (cs_supply rc)) as Hsfc.
-        pose proof (dom_subset_ftvar_in_aenv (cs_ctx rc)) as Hdoms.
         (* the binder, along both chains and onto the runner's draw *)
         assert (HScc : swaps_atoms psc (swaps_atoms ps1 S2) [=] cs_supply rc)
           by (rewrite <- HSc; apply swaps_atoms_cong; symmetry; exact HSc1).
@@ -1402,53 +1147,36 @@ Proof.
               [ symmetry; exact HScc
               | eapply swaps_notin_eq; [ reflexivity | exact Hxd ] ]).
         assert (Hx10 : swaps_atom psc (swaps_atom ps1 xd) `notin` S0)
-          by (apply swaps_atom_dodge with (S := S0);
-              [ intros a0 b0 Hin; destruct (Havc a0 b0 Hin) as [Hka Hkb];
-                split; clear - Hka Hkb Hgrs; fsetdec
-              | apply swaps_atom_dodge with (S := S0);
-                [ exact Hav1
-                | pose proof (e_consis_supply_grows Dc) as Hgc0;
-                  clear - Hxd Hgrd Hgc0; fsetdec ] ]).
+          by (rewrite <- swaps_atom_app;
+              apply (@swaps_atom_dodge _ _ _
+                       (swaps_dodge_app_l Hav1 Havc Hgrs));
+              pose proof (e_consis_supply_grows Dc) as Hgc0;
+              clear - Hxd Hgrd Hgc0; fsetdec).
         assert (Hfixe1 : swaps_exp (ps1 ++ psc) e1 = e1)
-          by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-              apply in_app_or in Hin; destruct Hin as [Hin | Hin];
-              [ destruct (Hav1 a0 b0 Hin) as [Hka Hkb]
-              | destruct (Havc a0 b0 Hin) as [Hka Hkb] ];
-              split; clear - Hka Hkb Hcov Hgrs; simpl in *; fsetdec).
+          by (apply swaps_exp_fresh_id, (swaps_dodge_app Hav1 Havc);
+              clear - Hcov Hgrs; simpl in *; fsetdec).
         assert (HfixA2 : swaps_ptyp (ps1 ++ psc) A = A)
-          by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-              apply in_app_or in Hin; destruct Hin as [Hin | Hin];
-              [ destruct (Hav1 a0 b0 Hin) as [Hka Hkb]
-              | destruct (Havc a0 b0 Hin) as [Hka Hkb] ];
-              split; clear - Hka Hkb Hcov Hgrs; simpl in *; fsetdec).
+          by (apply swaps_ptyp_fresh_id, (swaps_dodge_app Hav1 Havc);
+              clear - Hcov Hgrs; simpl in *; fsetdec).
         assert (HfixB1 : swaps_ptyp psc (swaps_ptyp ps1 B)
                          = swaps_ptyp ps1 B)
-          by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-              destruct (Havc a0 b0 Hin) as [Hka Hkb];
-              split; clear - Hka Hkb HcBd; fsetdec).
+          by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Havc);
+              clear - HcBd; fsetdec).
         assert (HfixA1c : swaps_ptyp psc (swaps_ptyp ps1 A')
                           = swaps_ptyp ps1 A')
-          by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-              destruct (Havc a0 b0 Hin) as [Hka Hkb];
-              split; clear - Hka Hkb HcAd; fsetdec).
+          by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Havc);
+              clear - HcAd; fsetdec).
         destruct (e_typing_swaps (ps1 ++ psc) Db
                     (S0' := add (swaps_atom psc (swaps_atom ps1 xd))
                               (cs_supply rc))) as [Sd1 [HSd1 Db1]];
-          [ rewrite swaps_atoms_app;
-            assert (Heq2 : swaps_atoms psc (swaps_atoms ps1 (add xd S2))
-                           [=] swaps_atoms psc
-                                 (add (swaps_atom ps1 xd)
-                                    (swaps_atoms ps1 S2)))
-              by (apply swaps_atoms_cong; apply swaps_atoms_add);
-            rewrite Heq2, swaps_atoms_add, HScc; reflexivity
+          [ rewrite swaps_atoms_add, swaps_atom_app, swaps_atoms_app, HScc;
+            reflexivity
           | ].
-        rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ in Db1.
-        rewrite ! swaps_exp_open_var, ! swaps_pskl_ptyp_to_pskl in Db1.
-        rewrite ! swaps_aenv_app, ! swaps_atom_app, ! swaps_ptyp_app,
-          ! swaps_exp_app in Db1.
+        rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ,
+          ! swaps_exp_open_var, ! swaps_pskl_ptyp_to_pskl, Hfixe1, HfixA2
+          in Db1.
+        rewrite ! swaps_aenv_app, ! swaps_atom_app, ! swaps_ptyp_app in Db1.
         rewrite HTc, HfixB1 in Db1.
-        rewrite swaps_exp_app in Hfixe1. rewrite Hfixe1 in Db1.
-        rewrite ! swaps_ptyp_app in HfixA2. rewrite HfixA2 in Db1.
         (* onto the runner's own draw *)
         assert (HdrawScope : ftvar_in_aenv (cs_ctx rc) ∪ ftvar_in_pskl (ptyp_to_pskl (swaps_ptyp ps1 B))
           ∪ ftvar_in_ptyp (A) ∪ fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] cs_supply rc)
@@ -1456,60 +1184,13 @@ Proof.
         destruct (e_typing_draw_term e1 Hx1S HdrawScope Db1)
           as (Sd2 & HSd2 & HfixCtx & HfixAnn & Db2).
         (* the recursive call's own side conditions *)
-        assert (Hsfd : supply_fresh (cs_supply rc) `notin` dom (cs_ctx rc))
-          by (clear - Hsfc Hdoms Hcvc; fsetdec).
-        assert (Hu1 : uniq ((supply_fresh (cs_supply rc)
-                               ~ abind_var_typ A) ++ cs_ctx rc))
-          by (clear - Huc Hsfd; solve_uniq).
-        assert (HΘ1 : lc_aenv ((supply_fresh (cs_supply rc)
-                                  ~ abind_var_typ A) ++ cs_ctx rc))
-          by (apply lc_aenv_app_intro;
-              [ constructor; [ apply lc_abind_var_typ; exact HAan
-                             | apply lc_aenv_nil ]
-              | exact HΘc ]).
-        assert (HD1 : aenv_defs_mono ((supply_fresh (cs_supply rc)
-                         ~ abind_var_typ A) ++ cs_ctx rc))
-          by (simpl; constructor;
-              [ apply entry_def_mono_var_typ | exact HDc ]).
+        destruct (push_fresh_invariants Huc HΘc HDc Hcvc
+                    (lc_abind_var_typ HAan) (entry_def_mono_var_typ _ _))
+          as (Hu1 & HΘ1 & HD1).
         assert (Hlccod : lc_pskl (ptyp_to_pskl (swaps_ptyp ps1 B)))
           by (rewrite <- HcodR; exact Hlcc).
-        assert (Hcov1 : ftvar_in_aenv ((supply_fresh (cs_supply rc)
-                            ~ abind_var_typ A) ++ cs_ctx rc)
-                        ∪ ftvar_in_pskl (ptyp_to_pskl (swaps_ptyp ps1 B))
-                        ∪ fvar_in_exp (open_exp_wrt_exp e1
-                             (exp_var_f (supply_fresh (cs_supply rc))))
-                        ∪ ftvar_in_exp (open_exp_wrt_exp e1
-                             (exp_var_f (supply_fresh (cs_supply rc))))
-                        [<=] add (supply_fresh (cs_supply rc))
-                               (cs_supply rc)).
-        { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e1
-                        (exp_var_f (supply_fresh (cs_supply rc)))) as Hfo.
-          pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e1
-                        (exp_var_f (supply_fresh (cs_supply rc)))) as Hto.
-          pose proof (ftvar_ptyp_to_pskl (swaps_ptyp ps1 B)) as Hpb.
-          simpl in Hfo, Hto.
-          assert (HS0c : S0 [<=] cs_supply rc)
-            by (clear - Hgrs Hgrc; fsetdec).
-          assert (Hcove : fvar_in_exp e1 ∪ ftvar_in_exp e1
-                          [<=] cs_supply rc)
-            by (clear - Hcov HS0c; simpl in *; fsetdec).
-          assert (HcAnn : ftvar_in_ptyp A [<=] cs_supply rc)
-            by (clear - Hcov HS0c; simpl in *; fsetdec).
-          assert (HcB1 : ftvar_in_ptyp (swaps_ptyp ps1 B)
-                         [<=] cs_supply rc)
-            by (clear - HcBd Hgrc; fsetdec).
-          assert (Hcf : fvar_in_exp (open_exp_wrt_exp e1
-                          (exp_var_f (supply_fresh (cs_supply rc))))
-                        [<=] add (supply_fresh (cs_supply rc))
-                               (cs_supply rc))
-            by (clear - Hfo Hcove; fsetdec).
-          assert (Hct : ftvar_in_exp (open_exp_wrt_exp e1
-                          (exp_var_f (supply_fresh (cs_supply rc))))
-                        [<=] add (supply_fresh (cs_supply rc))
-                               (cs_supply rc))
-            by (clear - Hto Hcove; fsetdec).
-          rewrite ftvar_in_aenv_app. simpl.
-          clear - Hcvc HcAnn HcB1 Hpb Hcf Hct. fsetdec. }
+        pose proof (cover_open_body_typ (supply_fresh (cs_supply rc))
+                      HdrawScope) as Hcov1.
         kill_typing (Hbasea A e1 eq_refl _ _ _ _ Hrs _ _ _ Hrc _ HcodR)
           Hlccod (Hbody (supply_fresh (cs_supply rc)))
           HΘ1 HD1 Hu1 Hcov1 Db2 r Hr ps2 Hav2 HS2 HT2 HQ2.
@@ -1517,18 +1198,13 @@ Proof.
         destruct (e_typing_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]].
         assert (Hfix2a : swaps_atom ps2 (supply_fresh (cs_supply rc))
                          = supply_fresh (cs_supply rc))
-          by (apply swaps_atom_notin; intros a0 b0 Hin;
-              destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-              split; intro Heqi; [ apply Hka | apply Hkb ];
-              rewrite <- Heqi; clear; fsetdec).
+          by (apply (swaps_atom_dodge_in Hav2); clear; fsetdec).
         assert (Hfix2A : swaps_ptyp ps2 A = A)
-          by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-              destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-              split; clear - Hka Hkb Hcov Hgrs Hgrc; simpl in *; fsetdec).
+          by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2);
+              clear - Hcov Hgrs Hgrc; simpl in *; fsetdec).
         assert (Hfix2C : swaps_aenv ps2 (cs_ctx rc) = cs_ctx rc)
-          by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-              destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-              split; clear - Hka Hkb Hcvc; fsetdec).
+          by (apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav2);
+              clear - Hcvc; fsetdec).
         assert (Hctx : ty_ctx r
                   = swaps_aenv ps2 (swaps_aenv
                       ((swaps_atom psc (swaps_atom ps1 xd),
@@ -1568,37 +1244,28 @@ Proof.
         { rewrite <- HQ2. apply inter_empty_pointwise.
           repeat apply swaps_block_ftv_filter. exact Hfil. }
         bool_true_ty.
+        assert (HS0c : S0 [<=] cs_supply rc) by (clear - Hgrs Hgrc; fsetdec).
         eexists;
         exists (((ps1 ++ psc) ++ ((swaps_atom psc (swaps_atom ps1 xd),
                   supply_fresh (cs_supply rc)) :: nil)) ++ ps2).
         split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
         repeat apply conj.
-        + intros a0 b0 Hin. repeat (apply in_app_or in Hin;
-            destruct Hin as [Hin | Hin]).
-          * exact (Hav1 _ _ Hin).
-          * destruct (Havc _ _ Hin) as [Hka Hkb]. split;
-              clear - Hka Hkb Hgrs; fsetdec.
-          * destruct Hin as [Heqi | []]; inversion Heqi; subst.
-            split; [ exact Hx10 | clear - Hsfc Hgrs Hgrc; fsetdec ].
-          * destruct (Hav2 _ _ Hin) as [Hka Hkb]. split;
-              clear - Hka Hkb Hgrs Hgrc; fsetdec.
-        + cbn [ty_supply]. rewrite ! swaps_atoms_app. rewrite <- HS2.
-          apply swaps_atoms_cong. rewrite HSd2.
-          apply swaps_atoms_cong. symmetry.
-          rewrite <- swaps_atoms_app. exact HSd1.
+        + exact (swaps_dodge_draw
+            (swaps_dodge_app_l Hav1 Havc Hgrs)
+            Hx10 HS0c Hav2).
+        + exact (swaps_atoms_app_transport
+            (swaps_atoms_app_compose HSd2 HSd1) HS2).
         + cbn [ty_ctx]. rewrite ! swaps_aenv_app. reflexivity.
         + cbn [ty_out]. rewrite swaps_ptyp_arrow. f_equal.
           * rewrite ! swaps_ptyp_app, HfixA1c.
             assert (Hfx : swaps_ptyp ((swaps_atom psc (swaps_atom ps1 xd),
                             supply_fresh (cs_supply rc)) :: nil)
                             (swaps_ptyp ps1 A') = swaps_ptyp ps1 A')
-              by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-                  destruct Hin as [Heqi | []]; inversion Heqi; subst;
-                  split; clear - Hx1S Hsfc HcAd Hgrc; fsetdec).
+              by (apply swaps_ptyp_fresh_id, swaps_dodge_one;
+                  clear - Hx1S Hsfc HcAd Hgrc; fsetdec).
             rewrite Hfx.
-            apply swaps_ptyp_fresh_id. intros a0 b0 Hin.
-            destruct (Hav2 a0 b0 Hin) as [Hka Hkb].
-            split; clear - Hka Hkb HcAd Hgrc; fsetdec.
+            apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2).
+            clear - HcAd Hgrc; fsetdec.
           * rewrite ! swaps_ptyp_app. exact HQ2. }
 
     all: (
@@ -1612,16 +1279,7 @@ Proof.
       destruct Dch as [Qc Dc];
       assert (Hcovsp : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 [<=] S0)
         by (clear - Hcov; simpl in *; fsetdec);
-      destruct (e_split_impl_complete Dsp HD Hu Hcovsp)
-        as [rs0 [ps1 [Hxs [Hav1 [HS1 [HT1 [HP1 HQ1]]]]]]];
-      destruct (e_split_impl S0 Θ0 P0) as [ [rs Hrs] | ] eqn:Hcls;
-      try rewrite Hcls in Hxs;
-      [ | discriminate ];
-      assert (Heqrs : rs0 = exist (split_spec S0 Θ0 P0) rs Hrs)
-        by congruence;
-      subst rs0; cbn [proj1_sig] in HS1, HT1, HP1, HQ1;
-      clear Hxs Hcls; cbv beta iota;
-      unfold split_spec in Hrs;
+      kill_split Dsp HD Hu Hcovsp rs Hrs ps1 Hav1 HS1 HT1 HP1 HQ1;
       destruct (e_split_sound Hrs Hu Hcovsp) as [Hsa [Hus [Hcvs Hpqs]]];
       pose proof (e_split_defs_mono Hrs HD) as HDs;
       pose proof (e_split_env_lc Hrs HΘ) as HΘs;
@@ -1630,41 +1288,25 @@ Proof.
       pose proof (e_split_supply_grows Dsp) as Hgrd;
       bool_true_ty;
       assert (HfixA1 : swaps_pskl ps1 (ptyp_to_pskl A) = ptyp_to_pskl A)
-        by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-            destruct (Hav1 a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb Hcov HAe; simpl in *; fsetdec);
-      destruct (e_consis_swaps ps1 Dc (Δ1' := empty) (Δ2' := empty)
-                  (S0' := sp_supply rs)) as [Sc1 [HSc1 Dc1]];
-      [ symmetry; apply swaps_atoms_empty
-      | symmetry; apply swaps_atoms_empty
-      | symmetry; exact HS1
-      | ];
+        by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
+            clear - Hcov HAe; simpl in *; fsetdec);
+      pose proof (swaps_atoms_empty ps1) as Hemp; symmetry in Hemp;
+      pose proof HS1 as HS1r; symmetry in HS1r;
+      destruct (e_consis_swaps ps1 Dc Hemp
+                  Hemp HS1r)
+        as [Sc1 [HSc1 Dc1]];
       rewrite HT1, HP1, HfixA1 in Dc1;
       assert (Hcovc : ftvar_in_aenv (sp_ctx rs) ∪ ftvar_in_pskl (sp_dom rs)
                       ∪ ftvar_in_pskl (ptyp_to_pskl A) ∪ empty ∪ empty
                       [<=] sp_supply rs)
         by (clear - Hcvs Hpqs Hcov HAe Hgrs; simpl in *; fsetdec);
-      match goal with
-      | |- context [ e_consis_impl ?d1 ?d2 ?S ?T ?p0 ?p ?h0 ?h1 ?hd ?h ] =>
-          destruct (e_consis_impl_complete h0 h1 hd h Dc1 Hus Hcovc)
-            as [rc0 [psc [Hxc [Havc [HSc [HTc HQc]]]]]];
-          destruct (e_consis_impl d1 d2 S T p0 p h0 h1 hd h)
-            as [ [rc Hrc] | ] eqn:Hclc;
-          try rewrite Hclc in Hxc;
-          [ | discriminate ];
-          assert (Heqrc : rc0 = exist (consis_spec d1 d2 S T p0 p) rc Hrc)
-            by congruence;
-          subst rc0; cbn [proj1_sig] in HSc, HTc, HQc;
-          clear Hxc Hclc; cbv beta iota
-      end;
+      kill_consis_call Dc1 Hus Hcovc rc Hrc psc Havc HSc HTc HQc;
       unfold consis_spec in Hrc;
       destruct ((proj2 (proj2 e_assign_unify_consis_sound))
                   _ _ _ _ _ _ _ _ _ Hrc Hus Hcovc) as [Hca [Huc Hcvc]];
       pose proof (e_consis_defs_mono Hrc HDs) as HDc;
       pose proof (e_consis_env_lc Hrc HΘs) as HΘc;
       pose proof (e_consis_supply_grows Hrc) as Hgrc;
-      pose proof (supply_fresh_notin (cs_supply rc)) as Hsfc;
-      pose proof (dom_subset_ftvar_in_aenv (cs_ctx rc)) as Hdoms;
       assert (HScc : swaps_atoms psc (swaps_atoms ps1 S2) [=] cs_supply rc)
         by (rewrite <- HSc; apply swaps_atoms_cong; symmetry; exact HSc1);
       assert (Hx1S : swaps_atom psc (swaps_atom ps1 xd)
@@ -1673,98 +1315,41 @@ Proof.
             [ symmetry; exact HScc
             | eapply swaps_notin_eq; [ reflexivity | exact Hxd ] ]);
       assert (Hx10 : swaps_atom psc (swaps_atom ps1 xd) `notin` S0)
-        by (apply swaps_atom_dodge with (S := S0);
-            [ intros a0 b0 Hin; destruct (Havc a0 b0 Hin) as [Hka Hkb];
-              split; clear - Hka Hkb Hgrs; fsetdec
-            | apply swaps_atom_dodge with (S := S0);
-              [ exact Hav1
-              | pose proof (e_consis_supply_grows Dc) as Hgc0;
-                clear - Hxd Hgrd Hgc0; fsetdec ] ]);
+        by (rewrite <- swaps_atom_app;
+            apply (@swaps_atom_dodge _ _ _
+                     (swaps_dodge_app_l Hav1 Havc Hgrs));
+            pose proof (e_consis_supply_grows Dc) as Hgc0;
+            clear - Hxd Hgrd Hgc0; fsetdec);
       assert (Hfixe1 : swaps_exp (ps1 ++ psc) e1 = e1)
-        by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-            apply in_app_or in Hin; destruct Hin as [Hin | Hin];
-            [ destruct (Hav1 a0 b0 Hin) as [Hka Hkb]
-            | destruct (Havc a0 b0 Hin) as [Hka Hkb] ];
-            split; clear - Hka Hkb Hcov Hgrs; simpl in *; fsetdec);
+        by (apply swaps_exp_fresh_id, (swaps_dodge_app Hav1 Havc);
+            clear - Hcov Hgrs; simpl in *; fsetdec);
       assert (HfixA2 : swaps_ptyp (ps1 ++ psc) A = A)
-        by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-            apply in_app_or in Hin; destruct Hin as [Hin | Hin];
-            [ destruct (Hav1 a0 b0 Hin) as [Hka Hkb]
-            | destruct (Havc a0 b0 Hin) as [Hka Hkb] ];
-            split; clear - Hka Hkb Hcov Hgrs; simpl in *; fsetdec);
+        by (apply swaps_ptyp_fresh_id, (swaps_dodge_app Hav1 Havc);
+            clear - Hcov Hgrs; simpl in *; fsetdec);
       assert (HfixQ0 : swaps_pskl psc (sp_cod rs) = sp_cod rs)
-        by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-            destruct (Havc a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb Hpqs; fsetdec);
+        by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Havc);
+            clear - Hpqs; fsetdec);
       destruct (e_typing_swaps (ps1 ++ psc) Db
                   (S0' := add (swaps_atom psc (swaps_atom ps1 xd))
                             (cs_supply rc))) as [Sd1 [HSd1 Db1]];
-      [ rewrite swaps_atoms_app;
-        assert (Heq2 : swaps_atoms psc (swaps_atoms ps1 (add xd S2))
-                       [=] swaps_atoms psc
-                             (add (swaps_atom ps1 xd) (swaps_atoms ps1 S2)))
-          by (apply swaps_atoms_cong; apply swaps_atoms_add);
-        rewrite Heq2, swaps_atoms_add, HScc; reflexivity
+      [ rewrite swaps_atoms_add, swaps_atom_app, swaps_atoms_app, HScc;
+        reflexivity
       | ];
-      rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ in Db1;
-      rewrite ! swaps_exp_open_var in Db1;
+      rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ,
+        ! swaps_exp_open_var, Hfixe1, HfixA2 in Db1;
       rewrite ! swaps_aenv_app, ! swaps_pskl_app, ! swaps_atom_app,
-        ! swaps_ptyp_app, ! swaps_exp_app in Db1;
-      rewrite swaps_exp_app in Hfixe1;
-      rewrite ! swaps_ptyp_app in HfixA2;
-      rewrite HQ1, HTc, HfixQ0, Hfixe1, HfixA2 in Db1;
+        ! swaps_ptyp_app in Db1;
+      rewrite HQ1, HTc, HfixQ0 in Db1;
       assert (HdrawScope : ftvar_in_aenv (cs_ctx rc) ∪ ftvar_in_pskl (sp_cod rs)
         ∪ ftvar_in_ptyp (A) ∪ fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] cs_supply rc)
         by ( clear - Hcvc Hpqs Hcov Hgrs Hgrc; simpl in *; fsetdec);
       destruct (e_typing_draw_term e1 Hx1S HdrawScope Db1)
         as (Sd2 & HSd2 & HfixCtx & HfixAnn & Db2);
-      assert (Hsfd : supply_fresh (cs_supply rc) `notin` dom (cs_ctx rc))
-        by (clear - Hsfc Hdoms Hcvc; fsetdec);
-      assert (Hu1 : uniq ((supply_fresh (cs_supply rc)
-                             ~ abind_var_typ A) ++ cs_ctx rc))
-        by (clear - Huc Hsfd; solve_uniq);
-      assert (HΘ1 : lc_aenv ((supply_fresh (cs_supply rc)
-                                ~ abind_var_typ A) ++ cs_ctx rc))
-        by (apply lc_aenv_app_intro;
-            [ constructor; [ apply lc_abind_var_typ; exact HAan
-                           | apply lc_aenv_nil ]
-            | exact HΘc ]);
-      assert (HD1 : aenv_defs_mono ((supply_fresh (cs_supply rc)
-                       ~ abind_var_typ A) ++ cs_ctx rc))
-        by (simpl; constructor;
-            [ apply entry_def_mono_var_typ | exact HDc ]);
-      assert (Hcov1 : ftvar_in_aenv ((supply_fresh (cs_supply rc)
-                          ~ abind_var_typ A) ++ cs_ctx rc)
-                      ∪ ftvar_in_pskl (sp_cod rs)
-                      ∪ fvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh (cs_supply rc))))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh (cs_supply rc))))
-                      [<=] add (supply_fresh (cs_supply rc)) (cs_supply rc));
-      [ pose proof (fvar_in_exp_open_exp_wrt_exp_upper e1
-                      (exp_var_f (supply_fresh (cs_supply rc)))) as Hfo;
-        pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e1
-                      (exp_var_f (supply_fresh (cs_supply rc)))) as Hto;
-        simpl in Hfo, Hto;
-        assert (HS0c : S0 [<=] cs_supply rc)
-          by (clear - Hgrs Hgrc; fsetdec);
-        assert (Hcove : fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] cs_supply rc)
-          by (clear - Hcov HS0c; simpl in *; fsetdec);
-        assert (HcAnn : ftvar_in_ptyp A [<=] cs_supply rc)
-          by (clear - Hcov HS0c; simpl in *; fsetdec);
-        assert (HcQ : ftvar_in_pskl (sp_cod rs) [<=] cs_supply rc)
-          by (clear - Hpqs Hgrc; fsetdec);
-        assert (Hcf : fvar_in_exp (open_exp_wrt_exp e1
-                        (exp_var_f (supply_fresh (cs_supply rc))))
-                      [<=] add (supply_fresh (cs_supply rc)) (cs_supply rc))
-          by (clear - Hfo Hcove; fsetdec);
-        assert (Hct : ftvar_in_exp (open_exp_wrt_exp e1
-                        (exp_var_f (supply_fresh (cs_supply rc))))
-                      [<=] add (supply_fresh (cs_supply rc)) (cs_supply rc))
-          by (clear - Hto Hcove; fsetdec);
-        rewrite ftvar_in_aenv_app; simpl;
-        clear - Hcvc HcAnn HcQ Hcf Hct; fsetdec
-      | ];
+      destruct (push_fresh_invariants Huc HΘc HDc Hcvc
+                  (lc_abind_var_typ HAan) (entry_def_mono_var_typ _ _))
+        as (Hu1 & HΘ1 & HD1);
+      pose proof (cover_open_body_typ (supply_fresh (cs_supply rc))
+                    HdrawScope) as Hcov1;
       kill_typing (Habsa A e1 eq_refl _ _ _ _ Hrs _ _ _ Hrc) Hlcc
         (Hbody (supply_fresh (cs_supply rc))) HΘ1 HD1 Hu1 Hcov1 Db2
         r Hr ps2 Hav2 HS2 HT2 HQ2;
@@ -1772,14 +1357,10 @@ Proof.
       destruct (e_typing_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]];
       assert (Hfix2a : swaps_atom ps2 (supply_fresh (cs_supply rc))
                        = supply_fresh (cs_supply rc))
-        by (apply swaps_atom_notin; intros a0 b0 Hin;
-            destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-            split; intro Heqi; [ apply Hka | apply Hkb ];
-            rewrite <- Heqi; clear; fsetdec);
+        by (apply (swaps_atom_dodge_in Hav2); clear; fsetdec);
       assert (Hfix2A : swaps_ptyp ps2 A = A)
-        by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-            destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb Hcov Hgrs Hgrc; simpl in *; fsetdec);
+        by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2);
+            clear - Hcov Hgrs Hgrc; simpl in *; fsetdec);
       assert (Hctx : ty_ctx r
                 = swaps_aenv ps2 (swaps_aenv
                     ((swaps_atom psc (swaps_atom ps1 xd),
@@ -1801,28 +1382,21 @@ Proof.
                 (swaps_aenv psc (swaps_aenv ps1 Ξ)))))
         by (repeat apply a_suffix_swaps; exact Hsuf);
       bool_true_ty;
+      assert (HS0c : S0 [<=] cs_supply rc) by (clear - Hgrs Hgrc; fsetdec);
       eexists;
       exists (((ps1 ++ psc) ++ ((swaps_atom psc (swaps_atom ps1 xd),
                 supply_fresh (cs_supply rc)) :: nil)) ++ ps2);
       split; [ cbn [typing_answer proj1_sig]; reflexivity | ];
       repeat apply conj;
-      [ intros a0 b0 Hin; repeat (apply in_app_or in Hin;
-          destruct Hin as [Hin | Hin]);
-        [ exact (Hav1 _ _ Hin)
-        | destruct (Havc _ _ Hin) as [Hka Hkb]; split;
-          clear - Hka Hkb Hgrs; fsetdec
-        | destruct Hin as [Heqi | []]; inversion Heqi; subst;
-          split; [ exact Hx10 | clear - Hsfc Hgrs Hgrc; fsetdec ]
-        | destruct (Hav2 _ _ Hin) as [Hka Hkb]; split;
-          clear - Hka Hkb Hgrs Hgrc; fsetdec ]
-      | cbn [ty_supply]; rewrite ! swaps_atoms_app; rewrite <- HS2;
-        apply swaps_atoms_cong; rewrite HSd2;
-        apply swaps_atoms_cong; symmetry;
-        rewrite <- swaps_atoms_app; exact HSd1
+      [ exact (swaps_dodge_draw
+          (swaps_dodge_app_l Hav1 Havc Hgrs)
+          Hx10 HS0c Hav2)
+      | exact (swaps_atoms_app_transport
+          (swaps_atoms_app_compose HSd2 HSd1) HS2)
       | cbn [ty_ctx]; rewrite swaps_aenv_app_dist, ! swaps_aenv_app;
         reflexivity
       | cbn [ty_out]; rewrite swaps_ptyp_arrow; f_equal;
-        [ rewrite ! swaps_ptyp_app, HfixA2, HfixAnn; exact Hfix2A
+        [ rewrite swaps_ptyp_app, swaps_ptyp_app, HfixA2, HfixAnn; exact Hfix2A
         | rewrite ! swaps_ptyp_app; exact HQ2 ] ]
     ).
 
@@ -1845,12 +1419,12 @@ Proof.
     pose proof (e_pat_supply_grows Hr2) as Hgr2.
     (* the FUNCTION, at the argument's answer *)
     assert (HfixP : forall X, ftvar_in_pskl X [<=] S0 -> swaps_pskl ps1 X = X)
-      by (intros X HX; apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-          destruct (Hav1 a0 b0 Hin) as [Hka Hkb]; split; fsetdec).
+      by (intros X HX; apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
+          exact HX).
     assert (Hfixe : forall E, fvar_in_exp E ∪ ftvar_in_exp E [<=] S0 ->
               swaps_exp ps1 E = E)
-      by (intros E HE; apply swaps_exp_fresh_id; intros a0 b0 Hin;
-          destruct (Hav1 a0 b0 Hin) as [Hka Hkb]; split; fsetdec).
+      by (intros E HE; apply swaps_exp_fresh_id, (swaps_dodge_sub Hav1);
+          exact HE).
     destruct (e_typing_swaps ps1 D2 (S0' := pt_supply r2))
       as [Sd2 [HSd2 D2t]]; [ symmetry; exact HS1 | ].
     rewrite HT1 in D2t.
@@ -1881,9 +1455,8 @@ Proof.
     (* the ARGUMENT again, at the function's domain *)
     assert (Hfixe2 : swaps_exp ps2 (swaps_exp ps1 e2) = e2).
     { rewrite (Hfixe e2) by (clear - Hcov; simpl in *; fsetdec).
-      apply swaps_exp_fresh_id. intros a0 b0 Hin.
-      destruct (Hav2 a0 b0 Hin) as [Hka Hkb].
-      split; clear - Hka Hkb Hcov Hgr2; simpl in *; fsetdec. }
+      apply swaps_exp_fresh_id, (swaps_dodge_sub Hav2).
+      clear - Hcov Hgr2; simpl in *; fsetdec. }
     destruct (e_typing_swaps (ps1 ++ ps2) D3 (S0' := ty_supply r1))
       as [Sd3 [HSd3 D3t]];
       [ rewrite swaps_atoms_app; rewrite <- HS2;
@@ -1918,8 +1491,7 @@ Proof.
           clear - Hka Hkb Hgr2; fsetdec.
       * destruct (Hav3 _ _ Hin) as [Hka Hkb]. split;
           clear - Hka Hkb Hgr1 Hgr2; fsetdec.
-    + cbn [ty_supply]. rewrite swaps_atoms_app. rewrite <- HS3.
-      apply swaps_atoms_cong. symmetry. exact HSd3.
+    + exact (swaps_atoms_app_transport HSd3 HS3).
     + cbn [ty_ctx]. rewrite ! swaps_aenv_app. exact HT3.
     + cbn [ty_out].
       assert (Hfix3 : swaps_ptyp ps3 (swaps_ptyp ps2 (swaps_ptyp ps1 Bd))
@@ -1949,9 +1521,8 @@ Proof.
     pose proof (e_typing_supply_grows Hr1) as Hgr1.
     (* the annotation is an INPUT, so the chain fixes it *)
     assert (HfixA : swaps_ptyp ps1 A = A)
-      by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-          destruct (Hav1 a0 b0 Hin) as [Hka Hkb];
-          split; clear - Hka Hkb Hcov; simpl in *; fsetdec).
+      by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav1);
+          clear - Hcov; simpl in *; fsetdec).
     rewrite HfixA in HQ1.
     bool_true_ty.
     bool_true_ty.
@@ -1959,9 +1530,8 @@ Proof.
       as [Sd2 [HSd2 D2t]]; [ symmetry; exact HS1 | ].
     rewrite HT1, ! swaps_pskl_ptyp_to_pskl, HfixA in D2t.
     assert (HfixP0 : swaps_pskl ps1 P0 = P0)
-      by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-          destruct (Hav1 a0 b0 Hin) as [Hka Hkb];
-          split; clear - Hka Hkb Hcov; simpl in *; fsetdec).
+      by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
+          clear - Hcov; simpl in *; fsetdec).
     rewrite HfixP0 in D2t.
     assert (Hcovs : ftvar_in_aenv (ty_ctx r1) ∪ ftvar_in_pskl P0
                     ∪ ftvar_in_pskl (ptyp_to_pskl A) [<=] ty_supply r1)
@@ -1974,12 +1544,8 @@ Proof.
     eexists; exists (ps1 ++ ps2).
     split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
     repeat apply conj.
-    + intros a0 b0 Hin. apply in_app_or in Hin.
-      destruct Hin as [Hin | Hin]; [ exact (Hav1 _ _ Hin) | ].
-      destruct (Hav2 _ _ Hin) as [Hka Hkb]. split;
-        clear - Hka Hkb Hgr1; fsetdec.
-    + cbn [ty_supply]. rewrite swaps_atoms_app. rewrite <- HS2.
-      apply swaps_atoms_cong. symmetry. exact HSd2.
+    + apply (swaps_dodge_app Hav1 Hav2); clear - Hgr1; fsetdec.
+    + exact (swaps_atoms_app_transport HSd2 HS2).
     + cbn [ty_ctx]. rewrite swaps_aenv_app. exact HT2.
     + cbn [ty_out]. rewrite swaps_ptyp_app. reflexivity.
 
@@ -2006,16 +1572,15 @@ Proof.
     pose proof (e_typing_supply_grows Hr1) as Hgr1.
     bool_true_ty.
     destruct Dc as [Qc Dc].
-    destruct (e_consis_swaps ps1 Dc (Δ1' := empty) (Δ2' := empty)
-                (S0' := ty_supply r1)) as [Sc1 [HSc1 Dc1]];
-      [ symmetry; apply swaps_atoms_empty
-      | symmetry; apply swaps_atoms_empty
-      | symmetry; exact HS1 | ].
+    pose proof (swaps_atoms_empty ps1) as Hemp; symmetry in Hemp;
+    pose proof HS1 as HS1r; symmetry in HS1r;
+    destruct (e_consis_swaps ps1 Dc Hemp
+                Hemp HS1r)
+      as [Sc1 [HSc1 Dc1]];
     rewrite HT1, ! swaps_pskl_ptyp_to_pskl, HQ1 in Dc1.
     assert (HfixBd : swaps_ptyp ps1 Bd = Bd)
-      by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-          destruct (Hav1 a0 b0 Hin) as [Hka Hkb];
-          split; clear - Hka Hkb Hcov HBe; simpl in *; fsetdec).
+      by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav1);
+          clear - Hcov HBe; simpl in *; fsetdec).
     rewrite HfixBd in Dc1.
     assert (Hcovc : ftvar_in_aenv (ty_ctx r1)
                     ∪ ftvar_in_pskl (ptyp_to_pskl Bd)
@@ -2023,35 +1588,16 @@ Proof.
                     ∪ empty ∪ empty [<=] ty_supply r1).
     { pose proof (ftvar_ptyp_to_pskl (ty_out r1)) as Ho1.
       clear - Hcov Hcv1 Hq1 HBe Ho1 Hgr1; simpl in *; fsetdec. }
-    match goal with
-    | |- context [ e_consis_impl ?d1 ?d2 ?S ?T ?p0 ?p ?h0 ?h1 ?hd ?h ] =>
-        let Hx := fresh "Hx" in let Hcl := fresh "Hcl" in
-        let rc0 := fresh "rc0" in let Heqr := fresh "Heqr" in
-        destruct (e_consis_impl_complete h0 h1 hd h Dc1 Hu1 Hcovc)
-          as [rc0 [ps2 [Hx [Hav2 [HS2 [HT2 HQ2]]]]]];
-        destruct (e_consis_impl d1 d2 S T p0 p h0 h1 hd h)
-          as [ [rc Hrc] | ] eqn:Hcl;
-        try rewrite Hcl in Hx;
-        [ assert (Heqr : rc0 = exist (consis_spec d1 d2 S T p0 p) rc Hrc)
-            by congruence;
-          subst rc0; cbn [proj1_sig] in HS2, HT2, HQ2;
-          clear Hx Hcl; cbv beta iota
-        | discriminate ]
-    end.
+    kill_consis_call Dc1 Hu1 Hcovc rc Hrc ps2 Hav2 HS2 HT2 HQ2.
     eexists; exists (ps1 ++ ps2).
     split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
     repeat apply conj.
-    + intros a0 b0 Hin. apply in_app_or in Hin.
-      destruct Hin as [Hin | Hin]; [ exact (Hav1 _ _ Hin) | ].
-      destruct (Hav2 _ _ Hin) as [Hka Hkb]. split;
-        clear - Hka Hkb Hgr1; fsetdec.
-    + cbn [ty_supply]. rewrite swaps_atoms_app. rewrite <- HS2.
-      apply swaps_atoms_cong. symmetry. exact HSc1.
+    + apply (swaps_dodge_app Hav1 Hav2); clear - Hgr1; fsetdec.
+    + exact (swaps_atoms_app_transport HSc1 HS2).
     + cbn [ty_ctx]. rewrite swaps_aenv_app. exact HT2.
     + cbn [ty_out]. rewrite swaps_ptyp_app, HfixBd.
-      apply swaps_ptyp_fresh_id. intros a0 b0 Hin.
-      destruct (Hav2 a0 b0 Hin) as [Hka Hkb].
-      split; clear - Hka Hkb Hcov HBe Hgr1; simpl in *; fsetdec.
+      apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2).
+      clear - Hcov HBe Hgr1; simpl in *; fsetdec.
 Qed.
 
 (* ===================================================================== *)
@@ -2082,9 +1628,7 @@ Proof.
     try rewrite Hcl in Hx; cbn [typing_answer proj1_sig] in Hx;
     [ inversion Hx; subst r0 | discriminate ].
   eexists; exists ps.
-  split; [ reflexivity | ].
-  split; [ exact Hav | ]. split; [ exact HS | ].
-  split; [ exact HT | exact HQ ].
+  exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
 Qed.
 
 (** ⭐⭐ The type-inference headline, over the argument-free runner of
@@ -2108,7 +1652,5 @@ Proof.
     as [r [ps [Heq [Hav [HS [HT HQ]]]]]].
   rewrite Heq.
   exists (proj1_sig r), ps.
-  split; [ reflexivity | ].
-  split; [ exact Hav | ]. split; [ exact HS | ].
-  split; [ exact HT | exact HQ ].
+  exact (conj eq_refl (conj Hav (conj HS (conj HT HQ)))).
 Qed.

@@ -298,19 +298,18 @@ Proof.
       | intros a b Hin; inversion Hin ].
 Qed.
 
-Corollary e_typing_run_complete_decl_infer : forall e (B : btyp),
-  {{ nil ⊢ᵉ e }}d ->
-  {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
-  exists r,
-    e_typing_run (entry_supply pskl_ghost e)
-      mode_ti nil pskl_ghost e = Some r.
+(** The two corollaries' common tail: a CLOSED algorithmic derivation —
+    empty context, closed pattern — lifts onto the runner's entry supply
+    (prop_lift_typing.v's [a_typing_rel_e] at the empty relation), so the
+    runner answers. *)
+Lemma e_typing_run_complete_closed {m P e B Θ1} :
+  {{ nil ⊢ᵉ e }}a ->
+  {{ (@nil (atom * abind)%type) ⨟ empty ⊢ₚₛ P }}a -> lc_pskl P ->
+  ftvar_in_pskl P [<=] empty -> a_ty_mode_compat m P ->
+  {{ nil ⊢[ m ; P ] e ⦂ B ⊣ Θ1 }}a ->
+  exists r, e_typing_run (entry_supply P e) m nil P e = Some r.
 Proof.
-  intros e B Hwfd Hd.
-  (* the subject's algorithmic wf and local closure are DERIVED, not
-     hypotheses: the nil bridge, then [a_wf_exp_lc] *)
-  pose proof (d_wf_exp_to_a _ _ Hwfd) as Hwfe. simpl in Hwfe.
-  pose proof (a_wf_exp_lc Hwfe) as Hlc.
-  destruct (a_typing_complete_decl_infer Hwfe Hd) as (A1 & Θ1 & Ha & _).
+  intros Hwfe HwfP HlcP HftP Hmod Ha.
   destruct lift_typing_nil_instance as (Hinj & Hfun & Hagr).
   assert (Hfv : fvar_in_exp e [<=] empty).
   { intros z Hz. destruct (a_typing_fvar_binds Ha Hz) as (bd & Hb & _).
@@ -323,16 +322,14 @@ Proof.
   assert (H1 : rel_aenv (@nil (atom * atom)%type) empty
                  (@nil (atom * abind)%type) (@nil (atom * abind)%type))
     by apply rel_aenv__nil.
-  assert (H2 : rel_pskl (@nil (atom * atom)%type) empty
-                 pskl_ghost pskl_ghost)
-    by apply rel_pskl__ghost.
+  assert (H2 : rel_pskl (@nil (atom * atom)%type) empty P P)
+    by (apply rel_pskl_refl; clear - HftP; fsetdec).
   assert (H3 : rel_exp (@nil (atom * atom)%type) empty e e)
     by (apply rel_exp_refl; clear - Hfv Hftv; fsetdec).
   assert (H7 : {{ ⊢ (@nil (atom * abind)%type) }}a) by apply a_wf_aenv__nil.
   assert (H8 : uniq (@nil (atom * abind)%type)) by apply uniq_nil.
   assert (H9 : ftvar_in_aenv (@nil (atom * abind)%type)
-               [<=] ftvar_in_pskl pskl_ghost ∪ fvar_in_exp e
-                    ∪ ftvar_in_exp e)
+               [<=] ftvar_in_pskl P ∪ fvar_in_exp e ∪ ftvar_in_exp e)
     by (simpl; clear; fsetdec).
   assert (H10 : empty [<=] ftvar_in_aenv (@nil (atom * abind)%type))
     by (clear; fsetdec).
@@ -341,24 +338,35 @@ Proof.
                 a `notin` cols_l (@nil (atom * atom)%type))
     by (intros a Hx Hy Hc; simpl in Hc; clear - Hc; fsetdec).
   assert (H12 : dom (@nil (atom * abind)%type)
-                [<=] ftvar_in_pskl pskl_ghost ∪ fvar_in_exp e
-                     ∪ ftvar_in_exp e)
+                [<=] ftvar_in_pskl P ∪ fvar_in_exp e ∪ ftvar_in_exp e)
     by (simpl; clear; fsetdec).
   assert (H13 : empty ∪ cols_r (@nil (atom * atom)%type)
-                [<=] ftvar_in_pskl pskl_ghost ∪ fvar_in_exp e
-                     ∪ ftvar_in_exp e)
+                [<=] ftvar_in_pskl P ∪ fvar_in_exp e ∪ ftvar_in_exp e)
     by (simpl; clear; fsetdec).
-  assert (H14 : ftvar_in_pskl pskl_ghost ∪ ftvar_in_exp e ∪ fvar_in_exp e
-                [<=] ftvar_in_pskl pskl_ghost ∪ fvar_in_exp e
-                     ∪ ftvar_in_exp e)
+  assert (H14 : ftvar_in_pskl P ∪ ftvar_in_exp e ∪ fvar_in_exp e
+                [<=] ftvar_in_pskl P ∪ fvar_in_exp e ∪ ftvar_in_exp e)
     by (clear; fsetdec).
-  assert (H15 : {{ (@nil (atom * abind)%type) ⨟ empty ⊢ₚₛ pskl_ghost }}a)
-    by apply a_wf_pskl__ghost.
   destruct (a_typing_rel_e Ha H1 H2 H3 Hagr Hinj Hfun H7 H8 H9 H10 H11
-              H12 H13 H14 H15 Hwfe a_ty_mode_compat__ti)
+              H12 H13 H14 HwfP Hwfe Hmod)
     as (S1 & ρe & Θ1e & Be & De & _).
-  eapply e_typing_run_complete_init;
-    [ exact De | exact lc_pskl_ghost | exact Hlc ].
+  exact (e_typing_run_complete_init _ _ _ _ _ _ De HlcP (a_wf_exp_lc Hwfe)).
+Qed.
+
+Corollary e_typing_run_complete_decl_infer : forall e (B : btyp),
+  {{ nil ⊢ᵉ e }}d ->
+  {{ nil ⊢[ mode_ti ] e ⦂ B }}d ->
+  exists r,
+    e_typing_run (entry_supply pskl_ghost e)
+      mode_ti nil pskl_ghost e = Some r.
+Proof.
+  intros e B Hwfd Hd.
+  (* the subject's algorithmic wf and local closure are DERIVED, not
+     hypotheses: the nil bridge, then [a_wf_exp_lc] *)
+  pose proof (d_wf_exp_to_a _ _ Hwfd) as Hwfe. simpl in Hwfe.
+  destruct (a_typing_complete_decl_infer Hwfe Hd) as (A1 & Θ1 & Ha & _).
+  assert (Hft : ftvar_in_pskl pskl_ghost [<=] empty) by (simpl; fsetdec).
+  exact (e_typing_run_complete_closed Hwfe (a_wf_pskl__ghost _ _)
+           lc_pskl_ghost Hft a_ty_mode_compat__ti Ha).
 Qed.
 
 (** The CHECK twin, against a closed well-formed [B]. *)
@@ -372,64 +380,15 @@ Corollary e_typing_run_complete_decl_check : forall e (B : btyp),
 Proof.
   intros e B Hwfd HwfBd Hd.
   pose proof (d_wf_exp_to_a _ _ Hwfd) as Hwfe. simpl in Hwfe.
-  pose proof (a_wf_exp_lc Hwfe) as Hlc.
   pose proof (d_wf_ptyp_to_a _ _ HwfBd) as HwfB. simpl in HwfB.
   destruct (a_typing_complete_decl_check Hwfe Hd) as (A1 & Θ1 & Ha & _).
-  destruct lift_typing_nil_instance as (Hinj & Hfun & Hagr).
-  assert (Hfv : fvar_in_exp e [<=] empty).
-  { intros z Hz. destruct (a_typing_fvar_binds Ha Hz) as (bd & Hb & _).
-    inversion Hb. }
-  assert (Hftv : ftvar_in_exp e [<=] empty).
-  { pose proof (a_wf_exp_ftv_dom Hwfe) as Hb. simpl in Hb. exact Hb. }
   assert (HftB : ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B)) [<=] empty).
   { pose proof (ftvar_ptyp_to_pskl (btyp_to_ptyp B)) as He.
     pose proof (a_wf_ptyp_ftv_dom HwfB) as Hb. simpl in Hb.
     clear - He Hb. fsetdec. }
-  assert (H1 : rel_aenv (@nil (atom * atom)%type) empty
-                 (@nil (atom * abind)%type) (@nil (atom * abind)%type))
-    by apply rel_aenv__nil.
-  assert (H2 : rel_pskl (@nil (atom * atom)%type) empty
-                 (ptyp_to_pskl (btyp_to_ptyp B))
-                 (ptyp_to_pskl (btyp_to_ptyp B)))
-    by (apply rel_pskl_refl; clear - HftB; fsetdec).
-  assert (H3 : rel_exp (@nil (atom * atom)%type) empty e e)
-    by (apply rel_exp_refl; clear - Hfv Hftv; fsetdec).
-  assert (H7 : {{ ⊢ (@nil (atom * abind)%type) }}a) by apply a_wf_aenv__nil.
-  assert (H8 : uniq (@nil (atom * abind)%type)) by apply uniq_nil.
-  assert (H9 : ftvar_in_aenv (@nil (atom * abind)%type)
-               [<=] ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B))
-                    ∪ fvar_in_exp e ∪ ftvar_in_exp e)
-    by (simpl; clear; fsetdec).
-  assert (H10 : empty [<=] ftvar_in_aenv (@nil (atom * abind)%type))
-    by (clear; fsetdec).
-  assert (H11 : forall a, a `in` dom Θ1 ->
-                a `notin` dom (@nil (atom * abind)%type) ->
-                a `notin` cols_l (@nil (atom * atom)%type))
-    by (intros a Hx Hy Hc; simpl in Hc; clear - Hc; fsetdec).
-  assert (H12 : dom (@nil (atom * abind)%type)
-                [<=] ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B))
-                     ∪ fvar_in_exp e ∪ ftvar_in_exp e)
-    by (simpl; clear; fsetdec).
-  assert (H13 : empty ∪ cols_r (@nil (atom * atom)%type)
-                [<=] ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B))
-                     ∪ fvar_in_exp e ∪ ftvar_in_exp e)
-    by (simpl; clear; fsetdec).
-  assert (H14 : ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B))
-                ∪ ftvar_in_exp e ∪ fvar_in_exp e
-                [<=] ftvar_in_pskl (ptyp_to_pskl (btyp_to_ptyp B))
-                     ∪ fvar_in_exp e ∪ ftvar_in_exp e)
-    by (clear; fsetdec).
-  assert (H15 : {{ (@nil (atom * abind)%type) ⨟ empty ⊢ₚₛ
-                  (ptyp_to_pskl (btyp_to_ptyp B)) }}a)
-    by (apply a_wf_ptyp_to_wf_pskl; exact HwfB).
-  destruct (a_typing_rel_e Ha H1 H2 H3 Hagr Hinj Hfun H7 H8 H9 H10 H11
-              H12 H13 H14 H15 Hwfe
-              (a_ty_mode_compat__tc (btyp_to_ptyp B)))
-    as (S1 & ρe & Θ1e & Be & De & _).
-  eapply e_typing_run_complete_init;
-    [ exact De
-    | apply ptyp_to_pskl_lc; eapply a_wf_ptyp_lc; exact HwfB
-    | exact Hlc ].
+  exact (e_typing_run_complete_closed Hwfe (a_wf_ptyp_to_wf_pskl empty HwfB)
+           (ptyp_to_pskl_lc (a_wf_ptyp_lc HwfB)) HftB
+           (a_ty_mode_compat__tc _) Ha).
 Qed.
 
 (* ===================================================================== *)

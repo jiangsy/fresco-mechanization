@@ -181,26 +181,18 @@ Proof.
       by (clear - Huαs Hxd; simpl_env in *; solve_uniq).
     assert (HAcov : ftvar_in_ptyp A [<=] S2)
       by (clear - Hgftv Hbin Hqs Hgg; fsetdec).
-    assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_typ A) ++ αs ++ Θ1)
-                      ∪ ftvar_in_pskl Q
-                      ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      [<=] add x S2).
-    { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hv.
-      pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Ht.
-      simpl in Hv, Ht.
-      clear - Hv Ht Hcov Hcv1 Hqs Hgs Hgg Hbin Hbftv HAcov. env_simp. fsetdec. }
-    destruct (IHe_typing Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ2 : x `notin` dom Θ2)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    assert (Hsc : ftvar_in_aenv (αs ++ Θ1) ∪ ftvar_in_pskl Q
+              ∪ ftvar_in_ptyp A ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S2)
+      by (clear - Hcov Hcv1 Hqs Hgs Hgg Hbin Hbftv HAcov; env_simp; fsetdec).
+    destruct (IHe_typing Hu' (cover_open_body_typ x Hsc))
+      as [Ha [Hub [Hcvb Hqb]]].
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ2 & Hub' & Hcvb').
     repeat split.
     + apply a_typing__abs with (x := x) (Θ1 := Θ1) (P := P) (Q := Q) (αs := αs);
         try assumption.
       clear - Hxd HxΞ HxΘ2 Hcov H3 Hgs Hgg. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + exact Hub'.
+    + exact Hcvb'.
     + pose proof (e_typing_supply_grows H4) as Hgb.
       simpl. clear - HAcov Hqb Hgb. fsetdec.
 
@@ -220,53 +212,31 @@ Proof.
     assert (Hxd : x `notin` dom Θ2) by (clear - Hd2 Hcv2 H3; fsetdec).
     assert (Hu' : uniq ((x ~ abind_var_typ A) ++ Θ2))
       by (clear - Hu2 Hxd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_typ A) ++ Θ2)
-                      ∪ ftvar_in_pskl Q
-                      ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      [<=] add x S2).
-    { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hv.
-      pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Ht.
-      simpl in Hv, Ht.
-      clear - Hv Ht Hcov Hcv2 Hqs Hgs Hgc HAe. env_simp. fsetdec. }
-    destruct (IHe_typing Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ3 : x `notin` dom Θ3)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    assert (Hsc : ftvar_in_aenv Θ2 ∪ ftvar_in_pskl Q
+              ∪ ftvar_in_ptyp A ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S2)
+      by (clear - Hcov Hcv2 Hqs Hgs Hgc HAe; env_simp; fsetdec).
+    destruct (IHe_typing Hu' (cover_open_body_typ x Hsc))
+      as [Ha [Hub [Hcvb Hqb]]].
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ3 & Hub' & Hcvb').
     repeat split.
     + apply a_typing__abs_anno with (x := x) (Θ1 := Θ1) (Θ2 := Θ2)
                                     (P := P) (Q := Q);
         try assumption; [ exists Qc; exact Hca | ].
       clear - Hxd HxΞ HxΘ3 Hcov H3 Hgs Hgc. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + exact Hub'.
+    + exact Hcvb'.
     + pose proof (e_typing_supply_grows H4) as Hgb.
       simpl. clear - Hqb Hcov Hgs Hgc Hgb HAe. fsetdec.
 
   - (* AT-AbsCheck (step) *)
+    pose proof (cover_open_tvar α Hcov) as Hcov'.
     simpl in Hcov.
     pose proof (dom_subset_ftvar_in_aenv Θ0) as Hd0.
     assert (Hαd : α `notin` dom Θ0) by (clear - Hd0 Hcov H3; fsetdec).
     assert (Hu' : uniq ((α ~ abind_tvar) ++ Θ0))
       by (clear - Hu Hαd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0)
-                      ∪ ftvar_in_pskl
-                          (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
-                      ∪ fvar_in_exp (exp_abs e) ∪ ftvar_in_exp (exp_abs e)
-                      [<=] add α S0).
-    { pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0 (ptyp_var_f α))
-        as Hup.
-      pose proof (ftvar_ptyp_to_pskl
-                    (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) as He1.
-      pose proof (ftvar_ptyp_to_pskl (ptyp_all A0)) as He2.
-      simpl in Hup, He2, Hcov |- *.
-      clear - Hup He1 He2 Hcov. env_simp. fsetdec. }
     destruct (IHe_typing Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
-    assert (HαΞ : α `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HαΘ1 : α `notin` dom Θ1)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    destruct (drop_binder_facts Hub Hcvb) as (HαΞ & HαΘ1 & Hub' & Hcvb').
     pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A (ptyp_var_f α)) as Hlo.
     repeat split.
     + apply a_typing__abs_check_step with (α := α) (Ξ := Ξ);
@@ -275,8 +245,8 @@ Proof.
       simpl in He2, Hcov.
       clear - Hαd HαΞ HαΘ1 H2 H3 Hcov He2.
       simpl ftvar_in_exp. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + clear - Hub'; solve_uniq.
+    + clear - Hcvb'. env_simp. fsetdec.
     + simpl. clear - Hqb Hlo. fsetdec.
 
   - (* AT-AbsCheck (base) *)
@@ -291,54 +261,31 @@ Proof.
     assert (Hxd : x `notin` dom Θ1) by (clear - Hd1 Hcv1 H3; fsetdec).
     assert (Hu' : uniq ((x ~ abind_var_typ A) ++ Θ1))
       by (clear - Hu1 Hxd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_typ A) ++ Θ1)
-                      ∪ ftvar_in_pskl (ptyp_to_pskl B)
-                      ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      [<=] add x S1).
-    { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hv.
-      pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Ht.
-      simpl in Hv, Ht.
-      clear - Hv Ht Hcov Hcv1 Hqs Hgs HeA HeB. env_simp. fsetdec. }
-    destruct (IHe_typing Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ2 : x `notin` dom Θ2)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    assert (Hsc : ftvar_in_aenv Θ1 ∪ ftvar_in_pskl (ptyp_to_pskl B)
+              ∪ ftvar_in_ptyp A ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S1)
+      by (clear - Hcov Hcv1 Hqs Hgs HeA HeB; env_simp; fsetdec).
+    destruct (IHe_typing Hu' (cover_open_body_typ x Hsc))
+      as [Ha [Hub [Hcvb Hqb]]].
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ2 & Hub' & Hcvb').
     repeat split.
     + apply a_typing__abs_check_base with (x := x) (Θ1 := Θ1) (B := B)
                                           (Ξ := Ξ);
         try assumption.
       clear - Hxd HxΞ HxΘ2 Hcov H3 Hgs. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + clear - Hub'; solve_uniq.
+    + clear - Hcvb'. env_simp. fsetdec.
     + pose proof (e_typing_supply_grows H4) as Hgb.
       simpl. clear - Hqs Hqb Hgb HeA. fsetdec.
 
   - (* AT-AbsAnnoCheck (step) *)
+    pose proof (cover_open_tvar α Hcov) as Hcov'.
     simpl in Hcov.
     pose proof (dom_subset_ftvar_in_aenv Θ0) as Hd0.
     assert (Hαd : α `notin` dom Θ0) by (clear - Hd0 Hcov H3; fsetdec).
     assert (Hu' : uniq ((α ~ abind_tvar) ++ Θ0))
       by (clear - Hu Hαd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0)
-                      ∪ ftvar_in_pskl
-                          (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
-                      ∪ fvar_in_exp (exp_abs_anno Aan e)
-                      ∪ ftvar_in_exp (exp_abs_anno Aan e)
-                      [<=] add α S0).
-    { pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0 (ptyp_var_f α))
-        as Hup.
-      pose proof (ftvar_ptyp_to_pskl
-                    (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) as He1.
-      pose proof (ftvar_ptyp_to_pskl (ptyp_all A0)) as He2.
-      simpl in Hup, He2, Hcov |- *.
-      clear - Hup He1 He2 Hcov. env_simp. fsetdec. }
     destruct (IHe_typing Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
-    assert (HαΞ : α `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HαΘ1 : α `notin` dom Θ1)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    destruct (drop_binder_facts Hub Hcvb) as (HαΞ & HαΘ1 & Hub' & Hcvb').
     pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A (ptyp_var_f α)) as Hlo.
     repeat split.
     + apply a_typing__abs_anno_check_step with (α := α) (Ξ := Ξ);
@@ -347,8 +294,8 @@ Proof.
       simpl in He2, Hcov.
       clear - Hαd HαΞ HαΘ1 H2 H3 Hcov He2.
       simpl ftvar_in_exp. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + clear - Hub'; solve_uniq.
+    + clear - Hcvb'. env_simp. fsetdec.
     + simpl. clear - Hqb Hlo. fsetdec.
 
   - (* AT-AbsAnnoCheck (base) *)
@@ -370,27 +317,19 @@ Proof.
     assert (Hxd : x `notin` dom Θ2) by (clear - Hd2 Hcv2 H4; fsetdec).
     assert (Hu' : uniq ((x ~ abind_var_typ A) ++ Θ2))
       by (clear - Hu2 Hxd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_typ A) ++ Θ2)
-                      ∪ ftvar_in_pskl (ptyp_to_pskl B)
-                      ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      [<=] add x S2).
-    { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hv.
-      pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Ht.
-      simpl in Hv, Ht.
-      clear - Hv Ht Hcov Hcv2 Hqs Hgs Hgc HeA HeB. env_simp. fsetdec. }
-    destruct (IHe_typing Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ3 : x `notin` dom Θ3)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    assert (Hsc : ftvar_in_aenv Θ2 ∪ ftvar_in_pskl (ptyp_to_pskl B)
+              ∪ ftvar_in_ptyp A ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S2)
+      by (clear - Hcov Hcv2 Hqs Hgs Hgc HeA HeB; env_simp; fsetdec).
+    destruct (IHe_typing Hu' (cover_open_body_typ x Hsc))
+      as [Ha [Hub [Hcvb Hqb]]].
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ3 & Hub' & Hcvb').
     repeat split.
     + apply a_typing__abs_anno_check_base with (x := x) (Θ1 := Θ1) (Θ2 := Θ2)
                                                (B := B) (Ξ := Ξ);
         try assumption; [ exists Qc; exact Hca | ].
       clear - Hxd HxΞ HxΘ3 Hcov H4 Hgs Hgc. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + clear - Hub'; solve_uniq.
+    + clear - Hcvb'. env_simp. fsetdec.
     + pose proof (e_typing_supply_grows H5) as Hgb.
       simpl. clear - Hqs Hqb Hgb Hgc HeA'. fsetdec.
 

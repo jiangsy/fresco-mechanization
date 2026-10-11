@@ -440,6 +440,16 @@ Proof. intros; assumption. Qed.
 Lemma lc_abind_var_skl : forall P, lc_pskl P -> lc_abind (abind_var_skl P).
 Proof. intros; assumption. Qed.
 
+(** Pushing a locally closed binding keeps the context locally closed. *)
+Lemma lc_aenv_cons {x b} {Θ : aenv} :
+  lc_abind b -> lc_aenv Θ -> lc_aenv ((x ~ b) ++ Θ).
+Proof. intros. constructor; assumption. Qed.
+
+(** The same for the def discipline. *)
+Lemma aenv_defs_mono_cons {x b} {Θ : aenv} :
+  entry_def_mono (x, b) -> aenv_defs_mono Θ -> aenv_defs_mono ((x ~ b) ++ Θ).
+Proof. intros. constructor; assumption. Qed.
+
 (** ⭐ Every block the algorithm generates is flexible-only, so it satisfies
     the discipline outright — this is the whole reason the invariant is
     cheap. *)
@@ -669,10 +679,10 @@ Proof.
     destruct (e_split_lc H0 HP0) as [HPlc HQ0lc].
     pose proof (e_split_env_lc H0 HΘ) as HΘ1.
     pose proof (e_split_defs_mono H0 Hdm) as Hdm1.
-    destruct (IHe_pat HQ0lc ltac:(open_exp_lc x) ltac:(unfold lc_aenv in *; simpl;
-                constructor; [ simpl; exact HPlc | exact HΘ1 ])
-                ltac:(simpl; constructor;
-                      [ exact I | exact Hdm1 ])) as [HQlc HΘout].
+    destruct (IHe_pat HQ0lc ltac:(open_exp_lc x)
+                (lc_aenv_cons (lc_abind_var_skl HPlc) HΘ1)
+                (aenv_defs_mono_cons (entry_def_mono_var_skl _ _) Hdm1))
+      as [HQlc HΘout].
     split; [ apply lc_pskl_arrow; assumption | ].
     drop_binder HΘout.
   - (* AP-AbsAnno *)
@@ -685,17 +695,16 @@ Proof.
     pose proof (e_consis_defs_mono Hc Hdm1) as Hdm2.
     destruct (IHe_pat HQ0lc ltac:(open_exp_lc x) ltac:(unfold lc_aenv in *; simpl;
                 constructor; [ simpl; assumption | exact HΘ2 ])
-                ltac:(simpl; constructor;
-                      [ exact I | exact Hdm2 ])) as [HQlc HΘout].
+                (aenv_defs_mono_cons (entry_def_mono_var_typ _ _) Hdm2))
+      as [HQlc HΘout].
     split; [ apply lc_pskl_arrow;
              [ apply ptyp_to_pskl_lc; assumption | assumption ] | ].
     drop_binder HΘout.
   - (* AP-AbsCheck *)
     inversion He; subst.
     destruct (IHe_pat (lc_pskl_ghost) ltac:(open_exp_lc x)
-                ltac:(unfold lc_aenv in *; simpl;
-                      constructor; [ simpl; exact lc_pskl_ghost | exact HΘ ])
-                ltac:(simpl; constructor; [ exact I | exact Hdm ]))
+                (lc_aenv_cons (lc_abind_var_skl lc_pskl_ghost) HΘ)
+                (aenv_defs_mono_cons (entry_def_mono_var_skl _ _) Hdm))
       as [HQlc HΘout].
     split; [ apply lc_pskl_univ_ghost; apply lc_pskl_arrow;
              [ exact lc_pskl_ghost | exact HQlc ] | ].
@@ -705,7 +714,7 @@ Proof.
     destruct (IHe_pat (lc_pskl_ghost) ltac:(open_exp_lc x)
                 ltac:(unfold lc_aenv in *; simpl;
                       constructor; [ simpl; assumption | exact HΘ ])
-                ltac:(simpl; constructor; [ exact I | exact Hdm ]))
+                (aenv_defs_mono_cons (entry_def_mono_var_typ _ _) Hdm))
       as [HQlc HΘout].
     split; [ apply lc_pskl_univ_ghost; apply lc_pskl_arrow;
              [ apply ptyp_to_pskl_lc; assumption | exact HQlc ] | ].
@@ -805,7 +814,7 @@ Proof.
     destruct (IHe_typing HQlc ltac:(open_exp_lc x)
                 ltac:(unfold lc_aenv in *; simpl; constructor;
                       [ simpl; assumption | exact HΘ2 ])
-                ltac:(simpl; constructor; [ exact I | exact Hdm2 ]))
+                (aenv_defs_mono_cons (entry_def_mono_var_typ _ _) Hdm2))
       as [HBlc HΘout].
     split; [ apply lc_ptyp_arrow; assumption | drop_binder HΘout ].
   - (* AT-AbsCheck, the ∀-peeling step *)
@@ -813,9 +822,8 @@ Proof.
     destruct (IHe_typing
                 ltac:(open_all_lc)
                 ltac:(assumption)
-                ltac:(unfold lc_aenv in *; simpl; constructor;
-                      [ exact I | exact HΘ ])
-                ltac:(simpl; constructor; [ exact I | exact Hdm ]))
+                (lc_aenv_cons lc_abind_tvar HΘ)
+                (aenv_defs_mono_cons (entry_def_mono_tvar _) Hdm))
       as [HAlc HΘout].
     split; [ apply (lc_ptyp_all_exists α); exact HAlc | drop_binder HΘout ].
   - (* AT-AbsCheck, the base *)
@@ -827,7 +835,7 @@ Proof.
                 ltac:(open_exp_lc x)
                 ltac:(unfold lc_aenv in *; simpl; constructor;
                       [ simpl; assumption | exact HΘ1 ])
-                ltac:(simpl; constructor; [ exact I | exact Hdm1 ]))
+                (aenv_defs_mono_cons (entry_def_mono_var_typ _ _) Hdm1))
       as [HB1lc HΘout].
     split; [ apply lc_ptyp_arrow; assumption | drop_binder HΘout ].
   - (* AT-AbsAnnoCheck, the ∀-peeling step *)
@@ -835,9 +843,8 @@ Proof.
     destruct (IHe_typing
                 ltac:(open_all_lc)
                 ltac:(assumption)
-                ltac:(unfold lc_aenv in *; simpl; constructor;
-                      [ exact I | exact HΘ ])
-                ltac:(simpl; constructor; [ exact I | exact Hdm ]))
+                (lc_aenv_cons lc_abind_tvar HΘ)
+                (aenv_defs_mono_cons (entry_def_mono_tvar _) Hdm))
       as [HAlc HΘout].
     split; [ apply (lc_ptyp_all_exists α); exact HAlc | drop_binder HΘout ].
   - (* AT-AbsAnnoCheck, the base *)
@@ -852,7 +859,7 @@ Proof.
                 ltac:(open_exp_lc x)
                 ltac:(unfold lc_aenv in *; simpl; constructor;
                       [ simpl; assumption | exact HΘ2 ])
-                ltac:(simpl; constructor; [ exact I | exact Hdm2 ]))
+                (aenv_defs_mono_cons (entry_def_mono_var_typ _ _) Hdm2))
       as [HB1lc HΘout].
     split; [ apply lc_ptyp_arrow; assumption | drop_binder HΘout ].
   - (* AT-App *)

@@ -152,6 +152,72 @@ Proof.
       clear - Hgrow. simpl. fsetdec.
 Qed.
 
+(** The coverage an abs row's recursive call owes — the body opened at the
+    binder, under the binding the row pushes — read off the row's own
+    coverage.  Once per payload sort.  Used here and by the completeness
+    levels (prop_pat_complete.v, prop_typing_complete.v). *)
+Lemma cover_open_body_skl : forall (S : atoms) (Θ : aenv) P0 P e x,
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P
+    ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S ->
+  ftvar_in_aenv ((x ~ abind_var_skl P) ++ Θ) ∪ ftvar_in_pskl P0
+    ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
+    ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) [<=] add x S.
+Proof.
+  intros * H.
+  pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hfo.
+  pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hto.
+  simpl in *. fsetdec.
+Qed.
+
+Lemma cover_open_body_typ : forall (S : atoms) (Θ : aenv) P0 A e x,
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_ptyp A
+    ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S ->
+  ftvar_in_aenv ((x ~ abind_var_typ A) ++ Θ) ∪ ftvar_in_pskl P0
+    ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
+    ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) [<=] add x S.
+Proof.
+  intros * H.
+  pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hfo.
+  pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hto.
+  simpl in *. fsetdec.
+Qed.
+
+(** The same at a ∀-peeling CHECK row, which pushes a TYPE variable and
+    opens the pattern rather than the body. *)
+Lemma cover_open_tvar : forall (S : atoms) (Θ : aenv) A0 e α,
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl (ptyp_to_pskl (ptyp_all A0))
+    ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S ->
+  ftvar_in_aenv ((α ~ abind_tvar) ++ Θ)
+    ∪ ftvar_in_pskl (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
+    ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] add α S.
+Proof.
+  intros * H.
+  pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0 (ptyp_var_f α)) as Hup.
+  pose proof (ftvar_ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
+    as He1.
+  pose proof (ftvar_ptyp_to_pskl (ptyp_all A0)) as He2.
+  simpl in *. fsetdec.
+Qed.
+
+(** What an abs row reads off its premise's output [Ξ ++ (x ~ b) ++ Θ]
+    once it drops the binder: [x] is in neither half, and what is left is
+    still unique and still covered. *)
+Lemma drop_binder_facts {Ξ Θ : aenv} {x b} {S : atoms} :
+  uniq (Ξ ++ (x ~ b) ++ Θ) -> ftvar_in_aenv (Ξ ++ (x ~ b) ++ Θ) [<=] S ->
+  x `notin` dom Ξ /\ x `notin` dom Θ /\ uniq (Ξ ++ Θ)
+  /\ ftvar_in_aenv (Ξ ++ Θ) [<=] S.
+Proof.
+  intros Hu Hcv. repeat split.
+  - clear - Hu; simpl_env in *; solve_uniq.
+  - clear - Hu; simpl_env in *; solve_uniq.
+  - clear - Hu; simpl_env in *; solve_uniq.
+  - clear - Hcv; env_simp; fsetdec.
+Qed.
+
+Arguments cover_open_body_skl {S Θ P0 P e} x _.
+Arguments cover_open_body_typ {S Θ P0 A e} x _.
+Arguments cover_open_tvar {S Θ A0 e} α _.
+
 (* ===================================================================== *)
 (*  §3  ⭐ THE [e_pat] BRIDGE                                              *)
 (*                                                                        *)
@@ -226,27 +292,19 @@ Proof.
     assert (Hxd : x `notin` dom Θ1) by (clear - Hd1 Hcv1 H2; fsetdec).
     assert (Hu' : uniq ((x ~ abind_var_skl P) ++ Θ1))
       by (clear - Hu1 Hxd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_skl P) ++ Θ1)
-                      ∪ ftvar_in_pskl Q0
-                      ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      [<=] add x S1).
-    { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hv.
-      pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Ht.
-      simpl in Hv, Ht.
-      clear - Hv Ht Hcov Hcv1 Hqs Hgs. env_simp. fsetdec. }
-    destruct (IHe_pat Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
+    assert (Hsc : ftvar_in_aenv Θ1 ∪ ftvar_in_pskl Q0
+              ∪ ftvar_in_pskl P ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S1)
+      by (clear - Hcov Hcv1 Hqs Hgs; env_simp; fsetdec).
+    destruct (IHe_pat Hu' (cover_open_body_skl x Hsc))
+      as [Ha [Hub [Hcvb Hqb]]].
     (* the two OUTPUT halves of the side condition come from uniqueness *)
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ2 : x `notin` dom Θ2)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ2 & Hub' & Hcvb').
     repeat split.
     + apply a_pat__abs with (x := x) (Θ1 := Θ1) (Q0 := Q0);
         try assumption.
       clear - Hxd HxΞ HxΘ2 Hcov H2 Hgs. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + exact Hub'.
+    + exact Hcvb'.
     + pose proof (e_pat_supply_grows H3) as Hgb.
       simpl. clear - Hqs Hqb Hgb. fsetdec.
 
@@ -266,28 +324,20 @@ Proof.
     assert (Hxd : x `notin` dom Θ2) by (clear - Hd2 Hcv2 H3; fsetdec).
     assert (Hu' : uniq ((x ~ abind_var_typ A) ++ Θ2))
       by (clear - Hu2 Hxd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_typ A) ++ Θ2)
-                      ∪ ftvar_in_pskl Q0
-                      ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      [<=] add x S2).
-    { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hv.
-      pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Ht.
-      pose proof (ftvar_ptyp_to_pskl A) as HAe.
-      simpl in Hv, Ht.
-      clear - Hv Ht HAe Hcov Hcv2 Hqs Hgs Hgc. env_simp. fsetdec. }
-    destruct (IHe_pat Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ3 : x `notin` dom Θ3)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    pose proof (ftvar_ptyp_to_pskl A) as HAe.
+    assert (Hsc : ftvar_in_aenv Θ2 ∪ ftvar_in_pskl Q0
+              ∪ ftvar_in_ptyp A ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S2)
+      by (clear - HAe Hcov Hcv2 Hqs Hgs Hgc; env_simp; fsetdec).
+    destruct (IHe_pat Hu' (cover_open_body_typ x Hsc))
+      as [Ha [Hub [Hcvb Hqb]]].
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ3 & Hub' & Hcvb').
     repeat split.
     + apply a_pat__abs_anno with (x := x) (Θ1 := Θ1) (Θ2 := Θ2)
                                  (P := P) (Q0 := Q0);
         try assumption; [ exists Qc; exact Hca | ].
       clear - Hxd HxΞ HxΘ3 Hcov H3 Hgs Hgc. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + exact Hub'.
+    + exact Hcvb'.
     + pose proof (e_pat_supply_grows H4) as Hgb.
       simpl. rewrite ftvar_ptyp_to_pskl.
       clear - Hqb Hcov Hgs Hgc Hgb. fsetdec.
@@ -298,24 +348,18 @@ Proof.
     assert (Hxd : x `notin` dom Θ0) by (clear - Hd0 Hcov H0; fsetdec).
     assert (Hu' : uniq ((x ~ abind_var_skl pskl_ghost) ++ Θ0))
       by (clear - Hu Hxd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_skl pskl_ghost) ++ Θ0)
-                      ∪ ftvar_in_pskl pskl_ghost
-                      ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      [<=] add x S0).
-    { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hv.
-      pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Ht.
-      simpl in Hv, Ht. clear - Hv Ht Hcov. env_simp. fsetdec. }
-    destruct (IHe_pat Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ1 : x `notin` dom Θ1)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    assert (Hsc : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl pskl_ghost
+              ∪ ftvar_in_pskl pskl_ghost ∪ fvar_in_exp e ∪ ftvar_in_exp e
+              [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    destruct (IHe_pat Hu' (cover_open_body_skl x Hsc))
+      as [Ha [Hub [Hcvb Hqb]]].
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ1 & Hub' & Hcvb').
     repeat split.
     + apply a_pat__abs_check with (x := x); try assumption.
       clear - Hxd HxΞ HxΘ1 Hcov H0. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + exact Hub'.
+    + exact Hcvb'.
     + simpl. clear - Hqb. fsetdec.
 
   - (* AP-AbsAnnoCheck *)
@@ -324,24 +368,17 @@ Proof.
     assert (Hxd : x `notin` dom Θ0) by (clear - Hd0 Hcov H0; fsetdec).
     assert (Hu' : uniq ((x ~ abind_var_typ A) ++ Θ0))
       by (clear - Hu Hxd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_typ A) ++ Θ0)
-                      ∪ ftvar_in_pskl pskl_ghost
-                      ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      [<=] add x S0).
-    { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hv.
-      pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Ht.
-      simpl in Hv, Ht. clear - Hv Ht Hcov. env_simp. fsetdec. }
-    destruct (IHe_pat Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ1 : x `notin` dom Θ1)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    assert (Hsc : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl pskl_ghost
+              ∪ ftvar_in_ptyp A ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    destruct (IHe_pat Hu' (cover_open_body_typ x Hsc))
+      as [Ha [Hub [Hcvb Hqb]]].
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ1 & Hub' & Hcvb').
     repeat split.
     + apply a_pat__abs_anno_check with (x := x); try assumption.
       clear - Hxd HxΞ HxΘ1 Hcov H0. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + exact Hub'.
+    + exact Hcvb'.
     + pose proof (e_pat_supply_grows H1) as Hgb.
       pose proof (ftvar_ptyp_to_pskl A) as HAe.
       simpl. clear - Hqb Hcov Hgb HAe. fsetdec.

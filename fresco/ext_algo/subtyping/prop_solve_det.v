@@ -690,12 +690,78 @@ Proof.
   - destruct (Hav _ _ Hin) as [Ha Hb]. split; clear - Ha Hb; fsetdec.
 Qed.
 
+(** A chain that dodges [S] dodges every subset of [S].  With the
+    [swaps_*_fresh_id] family this fixes any object whose free names [S]
+    covers: [apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav)] leaves only
+    the coverage [ftvar_in_pskl P [<=] S]. *)
+Lemma swaps_dodge_sub {ps} {S T : atoms} :
+  (forall a b, In (a, b) ps -> a `notin` S /\ b `notin` S) ->
+  T [<=] S ->
+  forall a b, In (a, b) ps -> a `notin` T /\ b `notin` T.
+Proof.
+  intros Hav HT a b Hin. destruct (Hav _ _ Hin) as [Ha Hb].
+  split; clear - Ha Hb HT; fsetdec.
+Qed.
+
+(** Two chains run one after the other dodge whatever both of them dodge. *)
+Lemma swaps_dodge_app {ps1 ps2} {S1 S2 T : atoms} :
+  (forall a b, In (a, b) ps1 -> a `notin` S1 /\ b `notin` S1) ->
+  (forall a b, In (a, b) ps2 -> a `notin` S2 /\ b `notin` S2) ->
+  T [<=] S1 -> T [<=] S2 ->
+  forall a b, In (a, b) (ps1 ++ ps2) -> a `notin` T /\ b `notin` T.
+Proof.
+  intros Hav1 Hav2 H1 H2 a b Hin. apply in_app_or in Hin.
+  destruct Hin as [Hin | Hin].
+  - exact (swaps_dodge_sub Hav1 H1 a b Hin).
+  - exact (swaps_dodge_sub Hav2 H2 a b Hin).
+Qed.
+
+(** The common case: the first chain dodges exactly the set at hand. *)
+Lemma swaps_dodge_app_l {ps1 ps2} {S2 T : atoms} :
+  (forall a b, In (a, b) ps1 -> a `notin` T /\ b `notin` T) ->
+  (forall a b, In (a, b) ps2 -> a `notin` S2 /\ b `notin` S2) ->
+  T [<=] S2 ->
+  forall a b, In (a, b) (ps1 ++ ps2) -> a `notin` T /\ b `notin` T.
+Proof.
+  intros Hav1 Hav2 H2. apply (swaps_dodge_app Hav1 Hav2).
+  - reflexivity.
+  - exact H2.
+Qed.
+
+(** A chain dodging [S] fixes every name inside [S]. *)
+Lemma swaps_atom_dodge_in {ps} {S : atoms} {α} :
+  (forall a b, In (a, b) ps -> a `notin` S /\ b `notin` S) ->
+  α `in` S -> swaps_atom ps α = α.
+Proof.
+  intros Hav Hα. apply swaps_atom_notin. intros a b Hin.
+  destruct (Hav _ _ Hin) as [Ha Hb]. split; intros ->; contradiction.
+Qed.
+
 Lemma swaps_atoms_cons_transport : forall α β ps S St S',
   St [=] swap_atoms α β S -> swaps_atoms ps St [=] S' ->
   swaps_atoms ((α, β) :: ps) S [=] S'.
 Proof.
   intros * HSt HS. cbn [swaps_atoms]. rewrite <- HS.
   apply swaps_atoms_cong. symmetry; exact HSt.
+Qed.
+
+(** The same transport along a chain that runs [ps1] and then [ps2]: the
+    shape of every threading row's supply obligation. *)
+Lemma swaps_atoms_app_transport {ps1 ps2} {S St S' : atoms} :
+  St [=] swaps_atoms ps1 S -> swaps_atoms ps2 St [=] S' ->
+  swaps_atoms (ps1 ++ ps2) S [=] S'.
+Proof.
+  intros HSt HS. rewrite swaps_atoms_app, <- HS.
+  apply swaps_atoms_cong. symmetry; exact HSt.
+Qed.
+
+(** Two transport steps compose into one along the concatenated chain. *)
+Lemma swaps_atoms_app_compose {ps1 ps2} {S S1 S2 : atoms} :
+  S2 [=] swaps_atoms ps2 S1 -> S1 [=] swaps_atoms ps1 S ->
+  S2 [=] swaps_atoms (ps1 ++ ps2) S.
+Proof.
+  intros H2 H1. rewrite swaps_atoms_app, H2.
+  apply swaps_atoms_cong. exact H1.
 Qed.
 
 (** The recursive chain fixes the new opener, so closing commutes with
@@ -707,10 +773,8 @@ Lemma swaps_pskl_close_binder : forall α β ps S P Q,
     pskl_all_syn (close_pskl_wrt_pskl β Q).
 Proof.
   intros * Hav HQ.
-  assert (Hfix : swaps_atom ps β = β).
-  { apply swaps_atom_notin. intros a b Hin.
-    destruct (Hav _ _ Hin) as [Ha Hb]. split; intro Heq; subst;
-      clear - Ha Hb; fsetdec. }
+  assert (Hfix : swaps_atom ps β = β)
+    by (apply (swaps_atom_dodge_in Hav); fsetdec).
   cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close, swap_atom_l.
   rewrite swaps_pskl_all_syn, swaps_pskl_close, Hfix, HQ. reflexivity.
 Qed.
