@@ -1782,36 +1782,12 @@ Proof.
     | Hs : a_split _ (pskl_arrow _ _) _ _ _ |- _ => inversion Hs; subst
     end.
     cbn [decr_mode] in *.
-    assert (Hdecls : a_decls αs) by (eapply a_guess_mono_decls; eassumption).
-    assert (Hwfαs : {{ ⊢ (αs ++ Θ0) }}a)
-      by (apply a_wf_aenv_decls_app; assumption).
-    assert (HΞtv : forall α1, binds α1 abind_flex_mono αs ->
-                     a_binds_tvar α1 (αs ++ Θ0)).
-    { intros α1 Hb. unfold a_binds_tvar. right; left.
-      unfold binds; apply in_or_app; left; exact Hb. }
-    assert (HPtv : forall α1, α1 `in` ftvar_in_pskl P ->
-                     a_binds_tvar α1 (αs ++ Θ0)).
-    { intros α1 Hα1.
-      pose proof (a_wf_pskl_ftv_binds HwfPP Hα1) as Ht;
-        apply a_binds_tvar_weaken_cons; exact Ht. }
-    assert (HwfAg : a_wf_ptyp (αs ++ Θ0) A)
-      by (eapply a_guess_mono_wf; [ exact H1 | exact HPtv | exact HΞtv ]).
+    destruct (a_typing_abs_body_input Hwf HwfPP HwfQ Hexp H1 H2 H4)
+      as [_ [_ [Hwfx [HwfQx Hexpx]]]].
     assert (Hx : x `notin` dom Θ0 `union` dom αs `union` dom Ξ
                    `union` dom Θ2 `union` fvar_in_exp e)
       by (clear - H4; rewrite !dom_app in H4; fsetdec).
-    assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ αs ++ Θ0) }}a).
-    { apply a_wf_aenv__var_typ;
-        [ rewrite dom_app; clear - Hx; fsetdec | exact HwfAg | exact Hwfαs ]. }
-    destruct (IHa_typing Hwfx
-                ltac:(eapply a_wf_pskl_weaken;
-                      [ intros z c Hbz; apply binds_app_3; apply binds_app_3;
-                        exact Hbz
-                      | exact HwfQ ])
-                Hmod'
-                ltac:(eapply a_wf_exp_mono;
-                      [ exact (a_wf_exp_abs_pick x Hexp)
-                      | intros z c Hty Hbz; apply binds_app_3;
-                        apply binds_app_3; exact Hbz ])
+    destruct (IHa_typing Hwfx HwfQx Hmod' Hexpx
                 C ltac:(assumption))
       as [C' [Hcore' Hsc']].
     exists C'. split; [ apply ptyp_ty_core__fn; exact Hcore' | ].

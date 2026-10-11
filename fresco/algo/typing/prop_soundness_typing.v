@@ -1375,6 +1375,43 @@ Proof.
   exact Hr.
 Qed.
 
+(** AT-Abs's body input, at the rule's own [x]: the [guess^TY] block [αs]
+    is flexible-only, so the guessed domain, the extended context, the
+    codomain skeleton and the opened body are all well-formed there. *)
+Lemma a_typing_abs_body_input : forall {x Θ0 P Q αs A} {Ξ Θ2 : aenv} {e},
+  {{ ⊢ Θ0 }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ Q }}a ->
+  {{ Θ0 ⊢ᵉ (exp_abs e) }}a ->
+  a_guess_mono Θ0 P αs A ->
+  uniq (αs ++ Θ0) ->
+  x `notin` dom (Ξ ++ αs ++ Θ0) `union` dom Θ2 `union` fvar_in_exp e ->
+  a_decls αs /\ a_wf_ptyp (αs ++ Θ0) A /\
+  ({{ ⊢ ((x ~ abind_var_typ A) ++ αs ++ Θ0) }}a) /\
+  ({{ ((x ~ abind_var_typ A) ++ αs ++ Θ0) ⨟ empty ⊢ₚₛ Q }}a) /\
+  ({{ ((x ~ abind_var_typ A) ++ αs ++ Θ0)
+        ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
+Proof.
+  intros x Θ0 P Q αs A Ξ Θ2 e Hwf HwfPP HwfQ Hexp Hg Huq Hfr.
+  assert (Hdecls : a_decls αs) by (eapply a_guess_mono_decls; eassumption).
+  assert (HwfAg : a_wf_ptyp (αs ++ Θ0) A).
+  { eapply a_guess_mono_wf; [ exact Hg | | ].
+    - intros α1 Hα1. apply a_binds_tvar_weaken_cons.
+      exact (a_wf_pskl_ftv_binds HwfPP Hα1).
+    - intros α1 Hb. unfold a_binds_tvar. right; left.
+      unfold binds; apply in_or_app; left; exact Hb. }
+  split; [ exact Hdecls | ]. split; [ exact HwfAg | ].
+  split.
+  { apply a_wf_aenv__var_typ; [ | exact HwfAg | ].
+    - rewrite !dom_app in *. clear - Hfr. fsetdec.
+    - apply a_wf_aenv_decls_app; assumption. }
+  split.
+  - eapply a_wf_pskl_weaken; [ | exact HwfQ ].
+    intros z c Hbz. apply binds_app_3. apply binds_app_3. exact Hbz.
+  - eapply a_wf_exp_mono; [ exact (a_wf_exp_abs_pick x Hexp) | ].
+    intros z c Hty Hbz. apply binds_app_3. apply binds_app_3. exact Hbz.
+Qed.
+
 (** The AbsCheck and AbsAnnoCheck ∀ rows of [a_typing_sound] are the same
     proof up to the subject: both algorithmic rules and both declarative
     ones have the same premises.  So the row is stated once over an
@@ -1723,36 +1760,12 @@ Proof.
        flexible-only, and [a_isub_strengthen_decls_src] is that crossing. *)
     destruct (a_split_ty_shape H0 Hmod H) as [HeqΘ Hshape]; subst Θ1.
     destruct (a_split_ty_pieces H0 Hmod H HwfP0) as [HwfPP [HwfQ Hmod']].
-    assert (Hdecls : a_decls αs) by (eapply a_guess_mono_decls; eassumption).
-    assert (Hwfαs : {{ ⊢ (αs ++ Θ0) }}a)
-      by (apply a_wf_aenv_decls_app; assumption).
-    assert (HΞtv : forall α1, binds α1 abind_flex_mono αs ->
-                     a_binds_tvar α1 (αs ++ Θ0)).
-    { intros α1 Hb. unfold a_binds_tvar. right; left.
-      unfold binds; apply in_or_app; left; exact Hb. }
-    assert (HPtv : forall α1, α1 `in` ftvar_in_pskl P ->
-                     a_binds_tvar α1 (αs ++ Θ0)).
-    { intros α1 Hα1.
-      pose proof (a_wf_pskl_ftv_binds HwfPP Hα1) as Ht;
-        apply a_binds_tvar_weaken_cons; exact Ht. }
-    assert (HwfAg : a_wf_ptyp (αs ++ Θ0) A)
-      by (eapply a_guess_mono_wf; [ exact H1 | exact HPtv | exact HΞtv ]).
+    destruct (a_typing_abs_body_input Hwf HwfPP HwfQ Hexp H1 H2 H4)
+      as [Hdecls [HwfAg [Hwfx [HwfQx Hexpx]]]].
     assert (Hx : x `notin` dom Θ0 `union` dom αs `union` dom Ξ
                    `union` dom Θ2 `union` fvar_in_exp e)
       by (clear - H4; rewrite !dom_app in H4; fsetdec).
-    assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ αs ++ Θ0) }}a).
-    { apply a_wf_aenv__var_typ;
-        [ rewrite dom_app; clear - Hx; fsetdec | exact HwfAg | exact Hwfαs ]. }
-    destruct (IHa_typing Hwfx
-                ltac:(eapply a_wf_pskl_weaken;
-                      [ intros z c Hbz; apply binds_app_3; apply binds_app_3;
-                        exact Hbz
-                      | exact HwfQ ])
-                Hmod'
-                ltac:(eapply a_wf_exp_mono;
-                      [ exact (a_wf_exp_abs_pick x Hexp)
-                      | intros z c Hty Hbz; apply binds_app_3;
-                        apply binds_app_3; exact Hbz ]))
+    destruct (IHa_typing Hwfx HwfQx Hmod' Hexpx)
       as [Hle [Hwfout [HwfBout [Bt [HeBt [Hdb Hrefb]]]]]].
     assert (Huniq2 : uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θ2))
       by (apply a_wf_aenv_uniq; exact Hwfout).
