@@ -410,6 +410,55 @@ Lemma uskl_ghost_free_all_syn_inv : forall R,
     uskl_ghost_free (open_uskl_wrt_uskl R (uskl_var_f α)).
 Proof. intros R Hg. inversion Hg; subst. eauto. Qed.
 
+(** A sorted tag instantiation is locally closed. *)
+Lemma a_tags_sort_lc : forall NM Ψ ψ,
+  a_tags_sort NM Ψ ψ -> lc_uskl ψ.
+Proof. intros NM Ψ ψ H. apply is_dskl_lc. inversion H; assumption. Qed.
+
+(** Instantiating a ghost-free ∀-body with a TY-sorted instantiation keeps
+    it ghost-free (the ForallL rows' [ψ], read at the TY sort only). *)
+Lemma uskl_ghost_free_open_body : forall NM Ψ ψ R Rh,
+  (Rh = uskl_all_syn R \/ exists ε, Rh = uskl_all_tag ε R) ->
+  a_tags_sort NM Ψ ψ ->
+  (NM = a_sub_mode_ty -> uskl_ghost_free Rh) ->
+  NM = a_sub_mode_ty ->
+  uskl_ghost_free (open_uskl_wrt_uskl R ψ).
+Proof.
+  intros NM Ψ ψ R Rh Hhead Htags Hgf He. subst NM.
+  specialize (Hgf eq_refl).
+  assert (Hb : exists L, forall α, α `notin` L ->
+            uskl_ghost_free (open_uskl_wrt_uskl R (uskl_var_f α)))
+    by (destruct Hhead as [-> | [ε ->]]; inversion Hgf; eauto).
+  destruct Hb as [L Hgb].
+  pick fresh β for (L `union` ftvar_in_uskl R).
+  rewrite (subst_uskl_in_uskl_intro β R ψ) by solve_notin_auto.
+  inversion Htags; subst.
+  apply uskl_ghost_free_subst.
+  - apply Hgb. solve_notin_auto.
+  - assumption.
+  - apply is_dskl_lc. assumption.
+Qed.
+
+(** Instantiating both sides of a ∀-body precision family. *)
+Lemma uskl_precise_open_inst : forall L Θ Ψ R' R ψ,
+  (forall α, α `notin` L ->
+     uskl_precise Θ Ψ (open_uskl_wrt_uskl R' (uskl_var_f α))
+                      (open_uskl_wrt_uskl R (uskl_var_f α))) ->
+  lc_uskl ψ ->
+  {{ ⊢ Θ }}a ->
+  uskl_precise Θ Ψ (open_uskl_wrt_uskl R' ψ) (open_uskl_wrt_uskl R ψ).
+Proof.
+  intros L Θ Ψ R' R ψ H Hlc Hwf.
+  pick fresh α for (L `union` dom Θ `union` ftvar_in_uskl R' `union` ftvar_in_uskl R).
+  rewrite (subst_uskl_in_uskl_intro α R' ψ) by solve_notin_auto.
+  rewrite (subst_uskl_in_uskl_intro α R ψ) by solve_notin_auto.
+  apply uskl_precise_subst.
+  - apply H. solve_notin_auto.
+  - exact Hlc.
+  - exact Hwf.
+  - solve_notin_auto.
+Qed.
+
 (* ===================================================================== *)
 (*  P5b-ii step (3) — PRECISION-SUBSTITUTION, ⊑ᵤ-form.                     *)
 (*  [lemma:precision-substitution] (subtyping-proofs.tex:1664), stated     *)
@@ -726,10 +775,7 @@ Proof.
     pose proof (ad_consis_join_consis Hj) as Hc3;
     pose proof (ad_consis_join_refine Hj) as Hlf.
   - (* refl *)
-    apply ad_pat_sub_fuel__univ_ghost_r;
-      [ exact HΨe | exact Hgd | exact HgQ | exact HsQ | split;
-          [ exact Hc3
-          | exact Hlf ]].
+    apply ad_pat_sub_fuel__univ_ghost_r; assumption.
   - (* arrow cong *)
     pose proof (upre__arrow Hup1 Hup2 H) as Hup'.
     apply ad_pat_sub_fuel__univ_ghost_r;
@@ -756,10 +802,7 @@ Proof.
   - (* ghost: replace by □ via Ghost against the ∀◇-target *)
     assert (Hnode : ad_pat_sub_fuel n a_sub_mode_sk mode_tc Ψn Θ' R
                       (bskl_univ_ghost Q0))
-      by (apply ad_pat_sub_fuel__univ_ghost_r;
-          [ exact HΨe | exact Hgd | exact HgQ | exact HsQ | split;
-          [ exact Hc3
-          | exact Hlf ]]).
+      by (apply ad_pat_sub_fuel__univ_ghost_r; assumption).
     eapply ad_pat_sub_fuel_ghost_intro with (Ψfull := Ψn);
       [ exact Hnode | reflexivity | exact Hwf | exact H0
       | simpl; apply a_wf_pskl__univ_ghost;
@@ -767,18 +810,12 @@ Proof.
       | clear; fsetdec ].
   - (* univ_ghost_remove: peel via UnivGhostL (same fuel) *)
     apply ad_pat_sub_fuel_wrap_univ_ghost.
-    eapply IHHup with (Ψsup := Ψsup);
-      [ exact Hwfb | exact HΨsup | clear - Hftag; simpl in Hftag; fsetdec
-      | exact Hmon | exact Hwf | exact Hgd | exact Hj
-      | exact HgQ | exact HsQ | exact Hwfq | exact HΨe ].
+    eapply IHHup with (Ψsup := Ψsup); eauto.
   - (* flex_l: peel via FlexMono-fold *)
     eapply ad_pat_sub_fuel_fold_flex with (τ := τ);
       [ | reflexivity | apply Hmon; exact H | exact Hwf ].
-    eapply IHHup with (Ψsup := Ψsup);
-      [ exact Hwfb | exact HΨsup
-      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
-      | exact Hmon | exact Hwf | exact Hgd | exact Hj
-      | exact HgQ | exact HsQ | exact Hwfq | exact HΨe ].
+    eapply IHHup with (Ψsup := Ψsup); eauto.
+    pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec.
   - (* flex_r: the subject is a defined flexible variable — unfold it *)
     assert (Hb' : binds α (abind_flex_mono_def τ) Θ')
       by (apply Hmon; exact H).
@@ -822,20 +859,16 @@ Proof.
     try discriminate HeqR.
   - (* refl: R' = □ *)
     subst R.
-    apply ad_pat_sub_fuel__ghost; [ exact HΨe | exact Hmc ].
+    apply ad_pat_sub_fuel__ghost; assumption.
   - (* ghost: R' = □ as well *)
-    apply ad_pat_sub_fuel__ghost; [ exact HΨe | exact Hmc ].
+    apply ad_pat_sub_fuel__ghost; assumption.
   - (* univ_ghost_remove *)
     apply ad_pat_sub_fuel_wrap_univ_ghost.
-    eapply IHHup;
-      [ exact HeqR | exact Hwfb | exact Hmon | exact Hwf
-      | exact Hmc | exact HΨe ].
+    eapply IHHup; eauto.
   - (* flex_l *)
     eapply ad_pat_sub_fuel_fold_flex with (τ := τ);
       [ | reflexivity | apply Hmon; exact H | exact Hwf ].
-    eapply IHHup;
-      [ exact HeqR | exact Hwfb | exact Hmon | exact Hwf
-      | exact Hmc | exact HΨe ].
+    eapply IHHup; eauto.
 Qed.
 
 (** [GhostG], leaf-valid (no leaf on the rule). *)
@@ -855,22 +888,18 @@ Proof.
     try discriminate HeqR.
   - (* refl: R' = ⫯ *)
     subst R.
-    apply ad_pat_sub_fuel__ghostg; [ exact HΨe | exact Hmc ].
+    apply ad_pat_sub_fuel__ghostg; assumption.
   - (* ghost: R' = □ against the ⫯-target *)
     change bskl_ghost with (pskl_to_bskl_inh pskl_ghost).
     apply ad_pat_sub_fuel__ghost;
       [ exact HΨe | simpl; exact Hmc ].
   - (* univ_ghost_remove *)
     apply ad_pat_sub_fuel_wrap_univ_ghost.
-    eapply IHHup;
-      [ exact HeqR | exact Hwfb | exact Hmon | exact Hwf
-      | exact Hmc | exact HΨe ].
+    eapply IHHup; eauto.
   - (* flex_l *)
     eapply ad_pat_sub_fuel_fold_flex with (τ := τ);
       [ | reflexivity | apply Hmon; exact H | exact Hwf ].
-    eapply IHHup;
-      [ exact HeqR | exact Hwfb | exact Hmon | exact Hwf
-      | exact Hmc | exact HΨe ].
+    eapply IHHup; eauto.
 Qed.
 
 (** [Arrow], leaf-valid: the domain's consistency leaf carries the
@@ -918,10 +947,7 @@ Proof.
     subst R.
     eapply ad_pat_sub_fuel_refl_transport with
       (Ψsup := Ψsup) (Ψna := Ψna);
-      [ eapply ad_pat_sub_fuel__arrow;
-          [ split;
-          [ exact Hcl
-          | exact Hlf1 ]| exact HDr | exact HΨsplit ]
+      [ eapply ad_pat_sub_fuel__arrow; eassumption
       | exact HΨf | exact HΨa | exact Hftag ].
   - (* arrow congruence *)
     inversion HeqR; subst.
@@ -961,34 +987,92 @@ Proof.
     + subst R.
       eapply ad_pat_sub_fuel_ghost_intro with
         (n := S n) (Ψfull := Ψfull) (R := uskl_arrow Rg1 Rg2);
-        [ eapply ad_pat_sub_fuel__arrow;
-            [ split;
-          [ exact Hcl
-          | exact Hlf1 ]| exact HDr | exact HΨsplit ]
+        [ eapply ad_pat_sub_fuel__arrow; eassumption
         | reflexivity | exact Hwf | exact H0 | exact Hwfq
         | clear - HΨf; fsetdec ].
   - (* univ_ghost_remove *)
     destruct NM.
     + exfalso. specialize (Hgf eq_refl). inversion Hgf.
     + apply ad_pat_sub_fuel_wrap_univ_ghost.
-      eapply IHHup with (Ψna := Ψna);
-        [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-        | exact Hj1 | exact HDr | exact HΨsplit | exact Hrec
-        | exact HΨf | exact HΨa | exact Hdisj
-        | clear - Hftag; simpl in Hftag; fsetdec | exact Hwfq
-        | intro He; discriminate He ].
+      eapply IHHup with (Ψfull := Ψfull) (Ψna := Ψna); eauto.
+      intro He; discriminate He.
   - (* flex_l *)
     eapply ad_pat_sub_fuel_fold_flex with (τ := τ);
       [ | reflexivity | apply Hmon; exact H | exact Hwf ].
-    eapply IHHup with (Ψna := Ψna);
-      [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-      | exact Hj1 | exact HDr | exact HΨsplit | exact Hrec
-      | exact HΨf | exact HΨa | exact Hdisj
-      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
-      | exact Hwfq
-      | intro He;
-        apply mono_ptyp_to_uskl_syn_ghost_free;
-        eapply a_wf_aenv_binds_def_mono; [ exact Hwf | apply Hmon; exact H ] ].
+    eapply IHHup with (Ψfull := Ψfull) (Ψna := Ψna); eauto.
+    + pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec.
+    + intro He. apply mono_ptyp_to_uskl_syn_ghost_free.
+      eapply a_wf_aenv_binds_def_mono; eauto.
+Qed.
+
+(** The ∀-congruence step shared by the two [ForallL] transports: the
+    subject [Rh'] is a ∀ (either head) whose body family is ⊑ᵤ the rule's
+    [Rg0]; rebuild [ForallL] at [Rh'] with the rule's own [ψg]. *)
+Lemma ad_pat_sub_fuel_forall_l_cong :
+  forall L Θb Ψ0 R' Rh' Rg0 n NM Mg Θ' Ψfull Ψi' ψg Qg Ψsup Ψn Ψna,
+  (Rh' = uskl_all_syn R' \/ exists ε, Rh' = uskl_all_tag ε R') ->
+  (forall α, α `notin` L ->
+     uskl_precise Θb Ψ0 (open_uskl_wrt_uskl R' (uskl_var_f α))
+                        (open_uskl_wrt_uskl Rg0 (uskl_var_f α))) ->
+  {{ ⊢ Θb }}a ->
+  Ψ0 [<=] Ψsup ->
+  (forall x b, binds x b Θb -> binds x b Θ') ->
+  {{ ⊢ Θ' }}a ->
+  Mg <> mode_ti ->
+  Ψi' ∩ Ψfull [=] empty ->
+  Ψi' ∩ ftag_in_uskl Rh' [=] empty ->
+  Ψi' ∩ ftag_in_uskl Rg0 [=] empty ->
+  a_tags_sort NM Ψi' ψg ->
+  {{ Θ' ⨟ empty ⊢ₚₛ ⌊ ψg ⌋ˢ }}a ->
+  (forall Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0,
+     uskl_precise Θb0 Ψr0 Rg'' (open_uskl_wrt_uskl Rg0 ψg) ->
+     {{ ⊢ Θb0 }}a ->
+     Ψr0 [<=] Ψsup0 ->
+     (forall x b, binds x b Θb0 -> binds x b Θ') ->
+     {{ ⊢ Θ' }}a ->
+     (Ψfull `union` Ψi') [=] Ψn0 `union` Ψna0 ->
+     Ψna0 [<=] Ψsup0 ->
+     Ψsup0 ∩ Ψn0 [=] empty ->
+     Ψsup0 ∩ ftag_in_uskl Rg'' [=] empty ->
+     {{ Θ' ⨟ empty ⊢ₚₛ (bskl_to_pskl Qg) }}a ->
+     (NM = a_sub_mode_ty -> uskl_ghost_free Rg'') ->
+     ad_pat_sub_fuel n NM Mg Ψn0 Θ' Rg'' Qg) ->
+  Ψfull [=] Ψn `union` Ψna ->
+  Ψna [<=] Ψsup ->
+  Ψsup ∩ Ψn [=] empty ->
+  Ψsup ∩ ftag_in_uskl Rh' [=] empty ->
+  {{ Θ' ⨟ empty ⊢ₚₛ (bskl_to_pskl Qg) }}a ->
+  (NM = a_sub_mode_ty -> uskl_ghost_free Rh') ->
+  ad_pat_sub_fuel (S n) NM Mg Ψn Θ' Rh' Qg.
+Proof.
+  intros L Θb Ψ0 R' Rh' Rg0 n NM Mg Θ' Ψfull Ψi' ψg Qg Ψsup Ψn Ψna
+    Hhead H Hwfb HΨ0 Hmon Hwf HMti Hictx Hih Hib Htags Hwfψ Hrec
+    HΨf HΨa Hdisj Hftag Hwfq Hgf.
+  pose proof (uskl_precise_ftag_rep (upre__all_syn _ _ H)) as Hfrb.
+  pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Htgψ.
+  pose proof (ftag_in_uskl_open_upper R' ψg) as Hou.
+  assert (HR' : ftag_in_uskl R' [<=] ftag_in_uskl Rh')
+    by (destruct Hhead as [-> | [ε ->]]; simpl; fsetdec).
+  simpl in Hfrb.
+  assert (Hbody : ad_pat_sub_fuel n NM Mg (Ψn `union` Ψi') Θ'
+                    (open_uskl_wrt_uskl R' ψg) Qg).
+  { eapply Hrec with (Ψr0 := Ψ0) (Ψsup0 := Ψsup ∖ Ψi') (Ψna0 := Ψna).
+    - exact (uskl_precise_open_inst _ _ H (a_tags_sort_lc Htags) Hwfb).
+    - exact Hwfb.
+    - clear - HΨ0 Hfrb Hib; fsetdec.
+    - exact Hmon.
+    - exact Hwf.
+    - clear - HΨf; fsetdec.
+    - clear - HΨa HΨf Hictx; fsetdec.
+    - clear - Hdisj; fsetdec.
+    - clear - Hou Hftag Htgψ HR'; fsetdec.
+    - exact Hwfq.
+    - exact (uskl_ghost_free_open_body Hhead Htags Hgf). }
+  destruct Hhead as [-> | [ε ->]].
+  - apply ad_pat_sub_fuel__forall_l_untagged with (Ψ' := Ψi') (ψ := ψg); auto.
+    clear - Hictx HΨf; fsetdec.
+  - apply ad_pat_sub_fuel__forall_l_tagged with (Ψ' := Ψi') (ψ := ψg); auto.
+    clear - Hictx HΨf; fsetdec.
 Qed.
 
 (** [ForallL] (tagged), leaf-valid — the crux machinery is unchanged
@@ -1043,129 +1127,37 @@ Proof.
         | exact Hwfψ | exact HDp ]
       | exact HΨf | exact HΨa | exact Hftag ].
   - (* all_tag congruence: rebuild ForallL-tagged with ψg *)
-    inversion HeqR; subst.
-    assert (Hlcψ : lc_uskl ψg)
-      by (apply is_dskl_lc; inversion Htags; subst; assumption).
-    pick fresh α for (L `union` dom Θb
-        `union` ftvar_in_uskl R' `union` ftvar_in_uskl Rg0).
-    pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
-    assert (Hsub : uskl_precise Θb Ψrep
-        (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_uskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
-      rewrite (subst_uskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
-      apply uskl_precise_subst;
-        [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
-    pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
-    pose proof (uskl_precise_ftag_rep Hbody) as Hfrb.
-    pose proof (ftag_in_uskl_open_var R' α) as Hov1.
-    pose proof (ftag_in_uskl_open_var Rg0 α) as Hov2.
-    pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Htgψ.
-    assert (Hgfψ : NM = a_sub_mode_ty -> uskl_ghost_free ψg)
-      by (intro He; inversion Htags; subst;
-          [ congruence | assumption ]).
-    assert (Hgfo : NM = a_sub_mode_ty ->
-                   uskl_ghost_free (open_uskl_wrt_uskl R' ψg)).
-    { intro He.
-      destruct (uskl_ghost_free_all_tag_inv (Hgf He)) as [Lg Hgb].
-      pick fresh β for (Lg `union` ftvar_in_uskl R').
-      rewrite (subst_uskl_in_uskl_intro β R' ψg
-                 ltac:(clear - Fr0; solve_notin_auto)).
-      apply uskl_ghost_free_subst;
-        [ apply Hgb; clear - Fr0; fsetdec
-        | apply Hgfψ; exact He
-        | exact Hlcψ ]. }
-    eapply ad_pat_sub_fuel__forall_l_tagged with (Ψ' := Ψi') (ψ := ψg).
-    + exact HMti.
-    + clear - Hictx HΨf; fsetdec.
-    + simpl. simpl in Hihyg. clear - Hihyg Hfsb Hov1 Hov2; fsetdec.
-    + exact Htags.
-    + exact Hwfψ.
-    + eapply Hrec with (Ψr0 := Ψrep)
-        (Ψsup0 := Ψsup ∖ Ψi') (Ψna0 := Ψna);
-        [ exact Hsub | exact Hwfb
-        | simpl in Hihyg; clear - HΨsup Hfrb Hov2 Hihyg; fsetdec
-        | exact Hmon | exact Hwf
-        | clear - HΨf; fsetdec
-        | clear - HΨa HΨf Hictx; fsetdec
-        | clear - Hdisj; fsetdec
-        | pose proof (ftag_in_uskl_open_upper R' ψg) as Hou;
-          simpl in Hftag; clear - Hou Hftag Htgψ; fsetdec
-        | exact Hwfq
-        | exact Hgfo ].
+    inversion HeqR; subst. simpl in Hihyg.
+    pose proof (uskl_precise_ftag_sub (upre__all_syn _ _ H)) as Hfsb.
+    eapply ad_pat_sub_fuel_forall_l_cong
+      with (Ψ0 := Ψrep) (Rg0 := Rg0) (Ψfull := Ψfull) (Ψi' := Ψi') (Ψna := Ψna);
+      eauto.
+    + simpl. clear - Hihyg Hfsb; fsetdec.
+    + clear - Hihyg; fsetdec.
   - (* all_inst: rebuild ForallL-UNTAGGED with ψg *)
-    inversion HeqR; subst.
-    assert (Hlcψ : lc_uskl ψg)
-      by (apply is_dskl_lc; inversion Htags; subst; assumption).
-    pick fresh α for (L `union` dom Θb
-        `union` ftvar_in_uskl R' `union` ftvar_in_uskl Rg0).
-    pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
-    assert (Hsub : uskl_precise Θb Ψ0
-        (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_uskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
-      rewrite (subst_uskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
-      apply uskl_precise_subst;
-        [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
-    pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
-    pose proof (uskl_precise_ftag_rep Hbody) as Hfrb.
-    pose proof (ftag_in_uskl_open_var R' α) as Hov1.
-    pose proof (ftag_in_uskl_open_var Rg0 α) as Hov2.
-    pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Htgψ.
-    assert (Hgfψ : NM = a_sub_mode_ty -> uskl_ghost_free ψg)
-      by (intro He; inversion Htags; subst;
-          [ congruence | assumption ]).
-    assert (Hgfo : NM = a_sub_mode_ty ->
-                   uskl_ghost_free (open_uskl_wrt_uskl R' ψg)).
-    { intro He.
-      destruct (uskl_ghost_free_all_syn_inv (Hgf He)) as [Lg Hgb].
-      pick fresh β for (Lg `union` ftvar_in_uskl R').
-      rewrite (subst_uskl_in_uskl_intro β R' ψg
-                 ltac:(clear - Fr0; solve_notin_auto)).
-      apply uskl_ghost_free_subst;
-        [ apply Hgb; clear - Fr0; fsetdec
-        | apply Hgfψ; exact He
-        | exact Hlcψ ]. }
-    eapply ad_pat_sub_fuel__forall_l_untagged with (Ψ' := Ψi') (ψ := ψg).
-    + exact HMti.
-    + clear - Hictx HΨf; fsetdec.
-    + simpl. simpl in Hihyg. clear - Hihyg Hfsb Hov1 Hov2; fsetdec.
-    + exact Htags.
-    + exact Hwfψ.
-    + eapply Hrec with (Ψr0 := Ψ0)
-        (Ψsup0 := Ψsup ∖ Ψi') (Ψna0 := Ψna);
-        [ exact Hsub | exact Hwfb
-        | simpl in Hihyg; clear - HΨsup H1 Hfrb Hov2 Hihyg; fsetdec
-        | exact Hmon | exact Hwf
-        | clear - HΨf; fsetdec
-        | clear - HΨa HΨf Hictx; fsetdec
-        | clear - Hdisj; fsetdec
-        | pose proof (ftag_in_uskl_open_upper R' ψg) as Hou;
-          simpl in Hftag; clear - Hou Hftag Htgψ; fsetdec
-        | exact Hwfq
-        | exact Hgfo ].
+    inversion HeqR; subst. simpl in Hihyg.
+    pose proof (uskl_precise_ftag_sub (upre__all_syn _ _ H)) as Hfsb.
+    eapply ad_pat_sub_fuel_forall_l_cong
+      with (Ψ0 := Ψ0) (Rg0 := Rg0) (Ψfull := Ψfull) (Ψi' := Ψi') (Ψna := Ψna);
+      eauto.
+    + clear - HΨsup H1; fsetdec.
+    + simpl. clear - Hihyg Hfsb; fsetdec.
+    + clear - Hihyg; fsetdec.
   - (* ghost: no_forall of an all_tag erasure is absurd *)
     subst R. simpl in H0. contradiction.
   - (* univ_ghost_remove *)
     destruct NM.
     + exfalso. specialize (Hgf eq_refl). inversion Hgf.
     + apply ad_pat_sub_fuel_wrap_univ_ghost.
-      eapply IHHup with (Ψna := Ψna);
-        [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-        | exact HMti | exact Hictx | exact Hihyg | exact Htags | exact Hwfψ
-        | exact HDp | exact Hrec | exact HΨf | exact HΨa | exact Hdisj
-        | clear - Hftag; simpl in Hftag; fsetdec | exact Hwfq
-        | intro He; discriminate He ].
+      eapply IHHup with (Ψfull := Ψfull) (Ψi' := Ψi') (Ψna := Ψna); eauto.
+      intro He; discriminate He.
   - (* flex_l *)
     eapply ad_pat_sub_fuel_fold_flex with (τ := τ);
       [ | reflexivity | apply Hmon; exact H | exact Hwf ].
-    eapply IHHup with (Ψna := Ψna);
-      [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-      | exact HMti | exact Hictx | exact Hihyg | exact Htags | exact Hwfψ
-      | exact HDp | exact Hrec | exact HΨf | exact HΨa | exact Hdisj
-      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
-      | exact Hwfq
-      | intro He;
-        apply mono_ptyp_to_uskl_syn_ghost_free;
-        eapply a_wf_aenv_binds_def_mono; [ exact Hwf | apply Hmon; exact H ] ].
+    eapply IHHup with (Ψfull := Ψfull) (Ψi' := Ψi') (Ψna := Ψna); eauto.
+    + pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec.
+    + intro He. apply mono_ptyp_to_uskl_syn_ghost_free.
+      eapply a_wf_aenv_binds_def_mono; eauto.
 Qed.
 
 (** [ForallL] (untagged), leaf-valid. *)
@@ -1218,55 +1210,12 @@ Proof.
         | exact Hwfψ | exact HDp ]
       | exact HΨf | exact HΨa | exact Hftag ].
   - (* all_syn congruence *)
-    inversion HeqR; subst.
-    assert (Hlcψ : lc_uskl ψg)
-      by (apply is_dskl_lc; inversion Htags; subst; assumption).
-    pick fresh α for (L `union` dom Θb
-        `union` ftvar_in_uskl R' `union` ftvar_in_uskl Rg0).
-    pose proof (H α ltac:(clear - Fr; solve_notin_auto)) as Hbody.
-    assert (Hsub : uskl_precise Θb Ψrep
-        (open_uskl_wrt_uskl R' ψg) (open_uskl_wrt_uskl Rg0 ψg)).
-    { rewrite (subst_uskl_in_uskl_intro α R' ψg ltac:(clear - Fr; solve_notin_auto)).
-      rewrite (subst_uskl_in_uskl_intro α Rg0 ψg ltac:(clear - Fr; solve_notin_auto)).
-      apply uskl_precise_subst;
-        [ exact Hbody | exact Hlcψ | exact Hwfb | clear - Fr; fsetdec ]. }
-    pose proof (uskl_precise_ftag_sub Hbody) as Hfsb.
-    pose proof (uskl_precise_ftag_rep Hbody) as Hfrb.
-    pose proof (ftag_in_uskl_open_var R' α) as Hov1.
-    pose proof (ftag_in_uskl_open_var Rg0 α) as Hov2.
-    pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Htgψ.
-    assert (Hgfψ : NM = a_sub_mode_ty -> uskl_ghost_free ψg)
-      by (intro He; inversion Htags; subst;
-          [ congruence | assumption ]).
-    assert (Hgfo : NM = a_sub_mode_ty ->
-                   uskl_ghost_free (open_uskl_wrt_uskl R' ψg)).
-    { intro He.
-      destruct (uskl_ghost_free_all_syn_inv (Hgf He)) as [Lg Hgb].
-      pick fresh β for (Lg `union` ftvar_in_uskl R').
-      rewrite (subst_uskl_in_uskl_intro β R' ψg
-                 ltac:(clear - Fr0; solve_notin_auto)).
-      apply uskl_ghost_free_subst;
-        [ apply Hgb; clear - Fr0; fsetdec
-        | apply Hgfψ; exact He
-        | exact Hlcψ ]. }
-    eapply ad_pat_sub_fuel__forall_l_untagged with (Ψ' := Ψi') (ψ := ψg).
-    + exact HMti.
-    + clear - Hictx HΨf; fsetdec.
-    + simpl. simpl in Hihyg. clear - Hihyg Hfsb Hov1 Hov2; fsetdec.
-    + exact Htags.
-    + exact Hwfψ.
-    + eapply Hrec with (Ψr0 := Ψrep)
-        (Ψsup0 := Ψsup ∖ Ψi') (Ψna0 := Ψna);
-        [ exact Hsub | exact Hwfb
-        | simpl in Hihyg; clear - HΨsup Hfrb Hov2 Hihyg; fsetdec
-        | exact Hmon | exact Hwf
-        | clear - HΨf; fsetdec
-        | clear - HΨa HΨf Hictx; fsetdec
-        | clear - Hdisj; fsetdec
-        | pose proof (ftag_in_uskl_open_upper R' ψg) as Hou;
-          simpl in Hftag; clear - Hou Hftag Htgψ; fsetdec
-        | exact Hwfq
-        | exact Hgfo ].
+    inversion HeqR; subst. simpl in Hihyg.
+    pose proof (uskl_precise_ftag_sub (upre__all_syn _ _ H)) as Hfsb.
+    eapply ad_pat_sub_fuel_forall_l_cong
+      with (Ψ0 := Ψrep) (Rg0 := Rg0) (Ψfull := Ψfull) (Ψi' := Ψi') (Ψna := Ψna);
+      eauto.
+    simpl. clear - Hihyg Hfsb; fsetdec.
   - (* ghost: no_forall of an all_syn erasure is absurd *)
     subst R. simpl in H0. contradiction.
   - (* univ_ghost_remove *)
