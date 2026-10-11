@@ -185,41 +185,19 @@ Proof.
     assert (HrΘ1 : rel_aenv ρ1 V
               ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θa)
               ((a2 ~ abind_flex_mono) ++ (b2 ~ abind_flex_mono) ++ Θ0')).
-    { apply rel_aenv__cons;
-        [ apply rel_atom__pair; subst ρ1; left; reflexivity
-        | constructor | ].
-      apply rel_aenv__cons;
-        [ apply rel_atom__pair; subst ρ1; right; left; reflexivity
-        | constructor | ].
-      eapply rel_aenv_mono;
-        [ exact HrΘ | exact Hρ1incl | intros x Hx; exact Hx ]. }
+    { subst ρ1.
+      apply (rel_aenv_app (Θ1a := flex_pairs_l ((α1, a2) :: (β, b2) :: nil))
+                          (Θ2a := flex_pairs_r ((α1, a2) :: (β, b2) :: nil))).
+      - apply (rel_aenv_flex_pairs ((α1, a2) :: (β, b2) :: nil)).
+      - eapply rel_aenv_mono; [ exact HrΘ | | intros x Hx; exact Hx ].
+        intros a b Hin. right; right; exact Hin. }
     assert (Hagr1 : flex_agree_rel ρ1 V
               ((α1 ~ abind_flex_mono) ++ (β ~ abind_flex_mono) ++ Θa)
               ((a2 ~ abind_flex_mono) ++ (b2 ~ abind_flex_mono) ++ Θ0')).
-    { split.
-      - intros x HxV.
-        assert (Hxα1 : x <> α1) by (intros ->; contradiction).
-        assert (Hxβ : x <> β) by (intros ->; contradiction).
-        assert (Hxa2 : x <> a2) by (intros ->; contradiction).
-        assert (Hxb2 : x <> b2) by (intros ->; contradiction).
-        rewrite ! a_flex_tvar_cons_other by assumption.
-        exact (proj1 Hagr x HxV).
-      - intros x0 y0 Hin. subst ρ1.
-        destruct Hin as [E1 | [E2 | Hin]].
-        + injection E1 as -> ->. split; intros _; left; unfold binds;
-            simpl; left; reflexivity.
-        + injection E2 as -> ->. split; intros _; left; unfold binds;
-            simpl; right; left; reflexivity.
-        + assert (Hxα1 : x0 <> α1)
-            by (intros ->; apply Hα1cl; eapply cols_l_in; exact Hin).
-          assert (Hxβ : x0 <> β)
-            by (intros ->; apply Hβcl; eapply cols_l_in; exact Hin).
-          assert (Hya2 : y0 <> a2)
-            by (intros ->; apply Ha2cr; eapply cols_r_in; exact Hin).
-          assert (Hyb2 : y0 <> b2)
-            by (intros ->; apply Hb2cr; eapply cols_r_in; exact Hin).
-          rewrite ! a_flex_tvar_cons_other by assumption.
-          exact (proj2 Hagr x0 y0 Hin). }
+    { subst ρ1. apply (flex_agree_rel_push_pairs ((α1, a2) :: (β, b2) :: nil)).
+      - exact Hagr.
+      - simpl. clear - Hα1V HβV Hα1cl Hβcl. fsetdec.
+      - simpl. clear - Ha2V Hb2V Ha2cr Hb2cr. fsetdec. }
     assert (Hinj1 : rel_inj ρ1 V).
     { subst ρ1. apply rel_inj_push;
         [ apply rel_inj_push; [ exact Hinj | exact Hb2V | exact Hb2cr ]
