@@ -181,6 +181,48 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-12 — Tree-wide proof shortening; swap replaces the consistency rename
+
+A pass over the algorithmic, decorated, typing and `ext_algo` proof files
+that looked for repeated arguments, detours and needless intermediate
+layers. Repeated case bodies became named semantic lemmas called from
+plain bullets: tagged/untagged and syn/inh mirror rows, the shared binder
+rows of the lifting proofs, and the P6 ForallL step. Unused asserts were
+removed, and existing tree lemmas replaced hand re-derivations. 185
+lemmas were added.
+
+Readability was a hard constraint. No inline `ltac:(…)` arguments,
+goal-selector chains or `try solve` combinators were added, and nested
+`conj` proof terms over lemma applications were converted back to `split`
+steps. Across the touched files, bracketed dispatch lists and `ltac:`
+terms both decreased.
+
+`a_assign_unify_consis_rename_tvar`, a 442-line substitution-shaped
+rename, is replaced by the swap kit. The missing fact, that the binder
+cannot leak into the output tail, is now the lemma
+`a_assign_unify_consis_no_leak`. `a_consis_move_binder` moves a ∀-row
+premise to any fresh name via `a_assign_unify_consis_swap`. The look
+renames `a_looksub_rename_tvar` / `a_lookeq_rename_tvar` were already
+swap corollaries and are removed. `a_looksub_lookeq_rename_var_size`
+stays because it renames the looked-up variable in the subject only, and
+that variable may also occur in the context and target. 22 declarations
+with no remaining users were deleted along with it, mostly the `rn_set`
+family and the rename-only helpers in `prop_consis_rename.v`.
+
+Net reduction: **5,606 physical Coq lines / 5,998 nonblank, noncomment
+lines** across 47 files (118,090 → 112,092 code lines). Every other
+existing statement is unchanged. The largest savings are
+`prop_lift_typing.v` (−898), `prop_consis_rename.v` (−513),
+`prop_lift_sub.v` (−496), `ext_algo/typing/prop_typing_complete.v`
+(−455) and `prop_completeness_looksub_solve.v` (−431). No file compiles
+measurably slower. `prop_soundness_consis.v` went from 47 s to 35 s and
+the two P6 files dropped by a third.
+
+Validation: `make coq` passed with all 34 headline assumption reports
+closed under the global context, no axioms and no errors. Statement
+comparison passed.
+
+
 ## 2026-10-11 — Replace long selector chains with readable cases
 
 Apply the user's clarified proof-style preference across the development:
