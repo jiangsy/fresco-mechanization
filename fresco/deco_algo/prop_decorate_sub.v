@@ -2296,14 +2296,9 @@ Proof.
     destruct (β == b) as [-> | Hβb].
     + (* already at the requested opener *)
       exists C0. split; [ exact Hp | exact Hst ].
-    + assert (HbΞ : b `notin` ftvar_in_aenv Ξ0)
-        by (eapply a_looksub_binder_not_generated; exact Hp).
-      exists (subst_cstrs β b C0).
+    + exists (subst_cstrs β b C0).
       split; [ | apply a_solvetag_subst_cstrs; exact Hst ].
-      pose proof (a_looksub_rename_tvar Hp Hbα Hβα ltac:(look_fresh)) as Hr.
-      rewrite rename_aenv_cons_tvar_eq in Hr.
-      rewrite (@rename_aenv_fresh_eq Θ β b) in Hr by exact HbΘ.
-      rewrite (@rename_aenv_fresh_eq Ξ0 β b) in Hr by exact HbΞ.
+      pose proof (a_looksub_move_binder Hp Hbα HbΘ Hβα Hβb ltac:(look_fresh)) as Hr.
       rewrite (subst_pskl_in_pskl_fresh_eq A) in Hr by exact HbA.
       rewrite <- (subst_pskl_in_pskl_intro b B0 (pskl_var_f β)) in Hr
         by exact HbB.
@@ -2539,6 +2534,29 @@ Qed.
     decoration layer above is untouched.  The price is that every row now
     goes through the induction — the rows that used to hand back the
     ORIGINAL subtree verbatim would hand back its ORIGINAL block. *)
+(** A name fresh for both the substituend and the body is fresh for the
+    substitution. *)
+Lemma notin_ftvar_subst_pskl : forall {δ P0} β {Q},
+  δ `notin` ftvar_in_pskl P0 -> δ `notin` ftvar_in_pskl Q ->
+  δ `notin` ftvar_in_pskl (subst_pskl_in_pskl P0 β Q).
+Proof.
+  intros * HP0 HQ.
+  pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q P0 β) as Hup.
+  clear - Hup HP0 HQ; fsetdec.
+Qed.
+
+(** The avoid-set bound of a run over MOVED constraints [subst_cstrs δ b 𝒞]
+    is a bound over [𝒞] itself once the new binder [δ] avoids [L]. *)
+Lemma a_cstrs_inter_subst_bound : forall {𝒞' L δ b 𝒞 P0},
+  ftvar_in_a_cstrs 𝒞' ∩ L [<=] ftvar_in_a_cstrs (subst_cstrs δ b 𝒞) ∪ ftvar_in_pskl P0 ->
+  δ `notin` L ->
+  ftvar_in_a_cstrs 𝒞' ∩ L [<=] ftvar_in_a_cstrs 𝒞 ∪ ftvar_in_pskl P0.
+Proof.
+  intros * Hfv HδL.
+  pose proof (ftvar_in_a_cstrs_subst_upper δ b 𝒞) as Hupc.
+  clear - Hfv Hupc HδL. fsetdec.
+Qed.
+
 Lemma a_looksub_lookeq_subst_gen_size : forall n,
   (forall Θ α m P P' Ξ 𝒞,
      2 * (size_pskl P + size_pskl P') + 1 <= n ->
@@ -2639,8 +2657,6 @@ Proof.
       assert (HbΘ : b `notin` ftvar_in_aenv Θ) by (clear - Hfr0; fsetdec).
       assert (HbA : b `notin` ftvar_in_pskl A) by (clear - Hfr0; fsetdec).
       assert (HbB : b `notin` ftvar_in_pskl B) by (clear - Hfr0; fsetdec).
-      assert (HbΞ : b `notin` ftvar_in_aenv Ξ0)
-        by (eapply a_looksub_binder_not_generated; exact Hp).
       clear Hfr0.
       pick fresh δ for
         (add α (add β (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl A
@@ -2657,10 +2673,7 @@ Proof.
       assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; solve_notin_auto).
       assert (HδC : δ `notin` ftvar_in_a_cstrs C0) by (clear - Fr; solve_notin_auto).
       clear Fr.
-      pose proof (a_looksub_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
-      rewrite rename_aenv_cons_tvar_eq in H1.
-      rewrite (@rename_aenv_fresh_eq Θ δ b) in H1 by exact HbΘ.
-      rewrite (@rename_aenv_fresh_eq Ξ0 δ b) in H1 by exact HbΞ.
+      pose proof (a_looksub_move_binder Hp Hbα HbΘ Hδα Hδb ltac:(look_fresh)) as H1.
       rewrite (subst_pskl_in_pskl_fresh_eq A) in H1 by exact HbA.
       rewrite <- (subst_pskl_in_pskl_intro b B (pskl_var_f δ)) in H1
         by exact HbB.
@@ -2672,14 +2685,9 @@ Proof.
         by (rewrite size_pskl_open_pskl_wrt_pskl_var; lia).
       destruct (IHs _ _ _ _ _ _ _ Hsz1 H1 β P0 ψa Ψa L Hβα HαP0 HlcP0 Hst1)
         as (Ξ' & C' & Hlk' & Hst' & Hdm' & Hfv').
-      assert (Hfv2' : ftvar_in_a_cstrs C' ∩ L
-                      [<=] ftvar_in_a_cstrs C0 ∪ ftvar_in_pskl P0).
-      { pose proof (ftvar_in_a_cstrs_subst_upper δ b C0) as Hupc.
-        clear - Hfv' Hupc HδL. fsetdec. }
+      pose proof (a_cstrs_inter_subst_bound Hfv' HδL) as Hfv2'.
       exists Ξ', C'. split; [ | subst_gen_ih ].
-      assert (Hδsub : δ `notin` ftvar_in_pskl (subst_pskl_in_pskl P0 β A)).
-      { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper A P0 β) as Hup.
-        clear - Hup HδP0 HδA; fsetdec. }
+      pose proof (notin_ftvar_subst_pskl β HδP0 HδA) as Hδsub.
       cbn [subst_pskl_in_pskl].
       apply a_looksub__forall_r with (β := δ);
         [ exact Hgf0 | clear - Hδα HδΘ Hδsub HδB; solve_notin
@@ -2711,8 +2719,6 @@ Proof.
       assert (HbΘ : b `notin` ftvar_in_aenv Θ) by (clear - Hfr0; fsetdec).
       assert (HbQ : b `notin` ftvar_in_pskl Q) by (clear - Hfr0; fsetdec).
       assert (HbQ' : b `notin` ftvar_in_pskl Q') by (clear - Hfr0; fsetdec).
-      assert (HbΞ : b `notin` ftvar_in_aenv Ξ0)
-        by (eapply a_looksub_binder_not_generated; exact Hp).
       clear Hfr0.
       (* Even when the substituted variable IS this rule's binder (a vacuous
          substitution), re-pick: the conclusion promises a block fresh for [L]. *)
@@ -2731,10 +2737,7 @@ Proof.
       assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; solve_notin_auto).
       assert (HδC : δ `notin` ftvar_in_a_cstrs C0) by (clear - Fr; solve_notin_auto).
       clear Fr.
-      pose proof (a_looksub_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
-      rewrite rename_aenv_cons_tvar_eq in H1.
-      rewrite (@rename_aenv_fresh_eq Θ δ b) in H1 by exact HbΘ.
-      rewrite (@rename_aenv_fresh_eq Ξ0 δ b) in H1 by exact HbΞ.
+      pose proof (a_looksub_move_binder Hp Hbα HbΘ Hδα Hδb ltac:(look_fresh)) as H1.
       rewrite (subst_pskl_in_pskl_fresh_eq Q') in H1 by exact HbQ'.
       rewrite <- (subst_pskl_in_pskl_intro b Q (pskl_var_f δ)) in H1
         by exact HbQ.
@@ -2745,16 +2748,11 @@ Proof.
         by (rewrite size_pskl_open_pskl_wrt_pskl_var; lia).
       destruct (IHs _ _ _ _ _ _ _ Hsz1 H1 β P0 ψa Ψa L Hβα HαP0 HlcP0 Hst1)
         as (Ξ' & C' & Hlk' & Hst' & Hdm' & Hfv').
-      assert (Hfv2' : ftvar_in_a_cstrs C' ∩ L
-                      [<=] ftvar_in_a_cstrs C0 ∪ ftvar_in_pskl P0).
-      { pose proof (ftvar_in_a_cstrs_subst_upper δ b C0) as Hupc.
-        clear - Hfv' Hupc HδL. fsetdec. }
+      pose proof (a_cstrs_inter_subst_bound Hfv' HδL) as Hfv2'.
       rewrite <- (subst_pskl_in_pskl_open_pskl_wrt_pskl_var Q P0 β)
         in Hlk' by (solve [ congruence | exact HlcP0 ]).
       exists Ξ', C'. split; [ | subst_gen_ih ].
-      assert (Hδsub : δ `notin` ftvar_in_pskl (subst_pskl_in_pskl P0 β Q)).
-      { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q P0 β) as Hup.
-        clear - Hup HδP0 HδQ; fsetdec. }
+      pose proof (notin_ftvar_subst_pskl β HδP0 HδQ) as Hδsub.
       cbn [subst_pskl_in_pskl].
       apply a_looksub__forall_l with (β := δ);
         [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin
@@ -2859,8 +2857,6 @@ Proof.
       assert (HbΘ : b `notin` ftvar_in_aenv Θ) by (clear - Hfr0; fsetdec).
       assert (HbQ : b `notin` ftvar_in_pskl Q) by (clear - Hfr0; fsetdec).
       assert (HbQ' : b `notin` ftvar_in_pskl Q') by (clear - Hfr0; fsetdec).
-      assert (HbΞ : b `notin` ftvar_in_aenv Ξ0)
-        by (eapply a_lookeq_binder_not_generated; exact Hp).
       clear Hfr0.
       (* Even when the substituted variable IS this rule's binder (a vacuous
          substitution), re-pick: the conclusion promises a block fresh for [L]. *)
@@ -2879,10 +2875,7 @@ Proof.
       assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; solve_notin_auto).
       assert (HδC : δ `notin` ftvar_in_a_cstrs C0) by (clear - Fr; solve_notin_auto).
       clear Fr.
-      pose proof (a_lookeq_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
-      rewrite rename_aenv_cons_tvar_eq in H1.
-      rewrite (@rename_aenv_fresh_eq Θ δ b) in H1 by exact HbΘ.
-      rewrite (@rename_aenv_fresh_eq Ξ0 δ b) in H1 by exact HbΞ.
+      pose proof (a_lookeq_move_binder Hp Hbα HbΘ Hδα Hδb ltac:(look_fresh)) as H1.
       rewrite <- (subst_pskl_in_pskl_intro b Q (pskl_var_f δ)) in H1
         by exact HbQ.
       rewrite <- (subst_pskl_in_pskl_intro b Q' (pskl_var_f δ)) in H1
@@ -2894,16 +2887,11 @@ Proof.
         by (rewrite ! size_pskl_open_pskl_wrt_pskl_var; lia).
       destruct (IHe _ _ _ _ _ _ Hsz1 H1 β P0 ψa Ψa L Hβα HαP0 HlcP0 Hst1)
         as (Ξ' & C' & Hlk' & Hst' & Hdm' & Hfv').
-      assert (Hfv2' : ftvar_in_a_cstrs C' ∩ L
-                      [<=] ftvar_in_a_cstrs C0 ∪ ftvar_in_pskl P0).
-      { pose proof (ftvar_in_a_cstrs_subst_upper δ b C0) as Hupc.
-        clear - Hfv' Hupc HδL. fsetdec. }
+      pose proof (a_cstrs_inter_subst_bound Hfv' HδL) as Hfv2'.
       rewrite <- (subst_pskl_in_pskl_open_pskl_wrt_pskl_var Q P0 β)
         in Hlk' by (solve [ congruence | exact HlcP0 ]).
       exists Ξ', C'. split; [ | subst_gen_ih ].
-      assert (Hδsub : δ `notin` ftvar_in_pskl (subst_pskl_in_pskl P0 β Q)).
-      { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q P0 β) as Hup.
-        clear - Hup HδP0 HδQ; fsetdec. }
+      pose proof (notin_ftvar_subst_pskl β HδP0 HδQ) as Hδsub.
       cbn [subst_pskl_in_pskl].
       apply a_lookeq__forall_inh with (β := δ);
         [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin
@@ -2916,8 +2904,6 @@ Proof.
       assert (HbΘ : b `notin` ftvar_in_aenv Θ) by (clear - Hfr0; fsetdec).
       assert (HbQ : b `notin` ftvar_in_pskl Q) by (clear - Hfr0; fsetdec).
       assert (HbQ' : b `notin` ftvar_in_pskl Q') by (clear - Hfr0; fsetdec).
-      assert (HbΞ : b `notin` ftvar_in_aenv Ξ0)
-        by (eapply a_lookeq_binder_not_generated; exact Hp).
       clear Hfr0.
       (* Even when the substituted variable IS this rule's binder (a vacuous
          substitution), re-pick: the conclusion promises a block fresh for [L]. *)
@@ -2936,10 +2922,7 @@ Proof.
       assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; solve_notin_auto).
       assert (HδC : δ `notin` ftvar_in_a_cstrs C0) by (clear - Fr; solve_notin_auto).
       clear Fr.
-      pose proof (a_lookeq_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
-      rewrite rename_aenv_cons_tvar_eq in H1.
-      rewrite (@rename_aenv_fresh_eq Θ δ b) in H1 by exact HbΘ.
-      rewrite (@rename_aenv_fresh_eq Ξ0 δ b) in H1 by exact HbΞ.
+      pose proof (a_lookeq_move_binder Hp Hbα HbΘ Hδα Hδb ltac:(look_fresh)) as H1.
       rewrite (subst_pskl_in_pskl_fresh_eq (pskl_univ_ghost Q')) in H1
         by (cbn; exact HbQ').
       rewrite <- (subst_pskl_in_pskl_intro b Q (pskl_var_f δ)) in H1
@@ -2951,16 +2934,11 @@ Proof.
         by (rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia).
       destruct (IHe _ _ _ _ _ _ Hsz1 H1 β P0 ψa Ψa L Hβα HαP0 HlcP0 Hst1)
         as (Ξ' & C' & Hlk' & Hst' & Hdm' & Hfv').
-      assert (Hfv2' : ftvar_in_a_cstrs C' ∩ L
-                      [<=] ftvar_in_a_cstrs C0 ∪ ftvar_in_pskl P0).
-      { pose proof (ftvar_in_a_cstrs_subst_upper δ b C0) as Hupc.
-        clear - Hfv' Hupc HδL. fsetdec. }
+      pose proof (a_cstrs_inter_subst_bound Hfv' HδL) as Hfv2'.
       rewrite <- (subst_pskl_in_pskl_open_pskl_wrt_pskl_var Q P0 β)
         in Hlk' by (solve [ congruence | exact HlcP0 ]).
       exists Ξ', C'. split; [ | subst_gen_ih ].
-      assert (Hδsub : δ `notin` ftvar_in_pskl (subst_pskl_in_pskl P0 β Q)).
-      { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q P0 β) as Hup.
-        clear - Hup HδP0 HδQ; fsetdec. }
+      pose proof (notin_ftvar_subst_pskl β HδP0 HδQ) as Hδsub.
       cbn [subst_pskl_in_pskl] in Hlk' |- *.
       apply a_lookeq__forall_syn with (β := δ);
         [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin
@@ -2979,8 +2957,6 @@ Proof.
       assert (HbΘ : b `notin` ftvar_in_aenv Θ) by (clear - Hfr0; fsetdec).
       assert (HbQ : b `notin` ftvar_in_pskl Q) by (clear - Hfr0; fsetdec).
       assert (HbQ' : b `notin` ftvar_in_pskl Q') by (clear - Hfr0; fsetdec).
-      assert (HbΞ : b `notin` ftvar_in_aenv Ξ0)
-        by (eapply a_lookeq_binder_not_generated; exact Hp).
       clear Hfr0.
       pick fresh δ for
         (add α (add β (add b (ftvar_in_aenv Θ `union` ftvar_in_pskl Q
@@ -2997,10 +2973,7 @@ Proof.
       assert (HδΞ : δ `notin` dom Ξ0) by (clear - Fr; solve_notin_auto).
       assert (HδC : δ `notin` ftvar_in_a_cstrs C0) by (clear - Fr; solve_notin_auto).
       clear Fr.
-      pose proof (a_lookeq_rename_tvar Hp Hbα Hδα ltac:(look_fresh)) as H1.
-      rewrite rename_aenv_cons_tvar_eq in H1.
-      rewrite (@rename_aenv_fresh_eq Θ δ b) in H1 by exact HbΘ.
-      rewrite (@rename_aenv_fresh_eq Ξ0 δ b) in H1 by exact HbΞ.
+      pose proof (a_lookeq_move_binder Hp Hbα HbΘ Hδα Hδb ltac:(look_fresh)) as H1.
       rewrite (subst_pskl_in_pskl_fresh_eq (pskl_univ_ghost Q)) in H1
         by (cbn; exact HbQ).
       rewrite <- (subst_pskl_in_pskl_intro b Q' (pskl_var_f δ)) in H1
@@ -3012,14 +2985,9 @@ Proof.
         by (rewrite size_pskl_open_pskl_wrt_pskl_var; cbn; lia).
       destruct (IHe _ _ _ _ _ _ Hsz1 H1 β P0 ψa Ψa L Hβα HαP0 HlcP0 Hst1)
         as (Ξ' & C' & Hlk' & Hst' & Hdm' & Hfv').
-      assert (Hfv2' : ftvar_in_a_cstrs C' ∩ L
-                      [<=] ftvar_in_a_cstrs C0 ∪ ftvar_in_pskl P0).
-      { pose proof (ftvar_in_a_cstrs_subst_upper δ b C0) as Hupc.
-        clear - Hfv' Hupc HδL. fsetdec. }
+      pose proof (a_cstrs_inter_subst_bound Hfv' HδL) as Hfv2'.
       exists Ξ', C'. split; [ | subst_gen_ih ].
-      assert (Hδsub : δ `notin` ftvar_in_pskl (subst_pskl_in_pskl P0 β Q)).
-      { pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper Q P0 β) as Hup.
-        clear - Hup HδP0 HδQ; fsetdec. }
+      pose proof (notin_ftvar_subst_pskl β HδP0 HδQ) as Hδsub.
       cbn [subst_pskl_in_pskl] in Hlk' |- *.
       apply a_lookeq__univ_ghost1 with (β := δ);
         [ clear - Hδα HδΘ Hδsub HδQ'; solve_notin
