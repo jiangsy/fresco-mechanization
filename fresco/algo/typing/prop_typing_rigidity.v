@@ -207,6 +207,38 @@ Lemma a_rigid_only_notin_prefix : forall (Ξ Θ : aenv) γ,
   γ `notin` dom Ξ.
 Proof. intros Ξ Θ γ Hu Hd. solve_uniq. Qed.
 
+(** A rigid variable at the head of a context that does not bind it again. *)
+Lemma a_rigid_only_head_tvar : forall Θ γ,
+  γ `notin` dom Θ -> a_rigid_only ((γ ~ abind_tvar) ++ Θ) γ.
+Proof.
+  intros Θ γ Hd.
+  split; [ unfold binds; simpl; auto | ].
+  split;
+    [ intros Hc | intros τ Hc ];
+    destruct (binds_cons_1 _ _ _ _ _ _ Hc) as [[_ Heq] | Hc'];
+    try discriminate;
+    apply binds_In in Hc'; clear - Hd Hc'; fsetdec.
+Qed.
+
+(** A run under a fresh rigid [α] head transports rigidity of the outer
+    context's atoms. *)
+Lemma a_rigid_only_under_fresh_tvar : forall Θ0 Θ1 α γ,
+  (forall γ, a_rigid_only ((α ~ abind_tvar) ++ Θ0) γ ->
+             a_rigid_only ((α ~ abind_tvar) ++ Θ1) γ) ->
+  a_rigid_only Θ0 γ ->
+  α `notin` ftvar_in_aenv Θ0 ->
+  a_rigid_only Θ1 γ.
+Proof.
+  intros Θ0 Θ1 α γ IH H Hfr.
+  assert (Hγα : α <> γ).
+  { pose proof (a_rigid_only_in_dom H) as Hd.
+    pose proof (dom_subset_ftvar_in_aenv Θ0) as Hsub.
+    intros ->. clear - Hfr Hd Hsub. fsetdec. }
+  eapply a_rigid_only_strip_head_other; [ exact Hγα | ].
+  apply IH.
+  apply a_rigid_only_cons_nonsuffix; [ intros Hs; inversion Hs | exact H ].
+Qed.
+
 (* ===================================================================== *)
 (*  Preservation, judgement by judgement                                  *)
 (* ===================================================================== *)
@@ -262,12 +294,7 @@ Proof.
     destruct (γ == β) as [-> | Hne].
     + (* the walked rigid IS γ: it is re-attached, and the run below it
          deposits only fresh names (β ∉ dom Θ1, the rule's Barendregt) *)
-      split; [ apply binds_app_2; unfold binds; simpl; auto | ].
-      split;
-        [ intros Hc | intros τ Hc ];
-        destruct (binds_cons_1 _ _ _ _ _ _ Hc) as [[_ Heq] | Hc'];
-        try discriminate;
-        apply binds_In in Hc'; clear - Hβd Hc'; fsetdec.
+      apply a_rigid_only_head_tvar. clear - Hβd. fsetdec.
     + apply a_rigid_only_cons_other; [ intros ->; apply Hne; reflexivity | ].
       apply IH.
       eapply a_rigid_only_strip_mid_other; [ | exact H ]; intros ->; apply Hne; reflexivity.
@@ -318,12 +345,7 @@ Proof.
     destruct (γ == c) as [-> | Hne].
     + destruct Hb as [-> | [[A ->] | [Q ->]]].
       * (* the walked entry is the rigid γ itself *)
-        split; [ apply binds_app_2; unfold binds; simpl; auto | ].
-        split;
-          [ intros Hc | intros τ Hc ];
-          destruct (binds_cons_1 _ _ _ _ _ _ Hc) as [[_ Heq] | Hc'];
-          try discriminate;
-          apply binds_In in Hc'; clear - Hcd Hc'; fsetdec.
+        apply a_rigid_only_head_tvar. clear - Hcd. fsetdec.
       * apply a_rigid_only_cons_nonsuffix; [ intros Hs; inversion Hs | ].
         apply IH.
         eapply a_rigid_only_strip_head_nonrigid; [ | exact H ]; discriminate.
@@ -339,32 +361,14 @@ Proof.
   - (* C-Arrow *) intros * Hc1 IH1 Hc2 IH2 γ H. apply IH2, IH1, H.
   - (* C-ForallInh *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hc IH γ H.
-    assert (Hγα : α <> γ).
-    { pose proof (a_rigid_only_in_dom H) as Hd.
-      pose proof (dom_subset_ftvar_in_aenv Θ0) as Hsub.
-      intros ->. clear - Hfr Hd Hsub. fsetdec. }
-    eapply a_rigid_only_strip_head_other; [ exact Hγα | ].
-    apply IH.
-    apply a_rigid_only_cons_nonsuffix; [ intros Hs; inversion Hs | exact H ].
+    apply (a_rigid_only_under_fresh_tvar IH H). clear - Hfr. fsetdec.
   - (* C-ForallSyn *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hc IH γ H.
-    assert (Hγα : α <> γ).
-    { pose proof (a_rigid_only_in_dom H) as Hd.
-      pose proof (dom_subset_ftvar_in_aenv Θ0) as Hsub.
-      intros ->. clear - Hfr Hd Hsub. fsetdec. }
-    eapply a_rigid_only_strip_head_other; [ exact Hγα | ].
-    apply IH.
-    apply a_rigid_only_cons_nonsuffix; [ intros Hs; inversion Hs | exact H ].
+    apply (a_rigid_only_under_fresh_tvar IH H). clear - Hfr. fsetdec.
   - (* C-UnivGhost *) intros * Hc IH γ H. apply IH, H.
   - (* C-UnivGhost1 *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr Hc IH γ H.
-    assert (Hγα : α <> γ).
-    { pose proof (a_rigid_only_in_dom H) as Hd.
-      pose proof (dom_subset_ftvar_in_aenv Θ0) as Hsub.
-      intros ->. clear - Hfr Hd Hsub. fsetdec. }
-    eapply a_rigid_only_strip_head_other; [ exact Hγα | ].
-    apply IH.
-    apply a_rigid_only_cons_nonsuffix; [ intros Hs; inversion Hs | exact H ].
+    apply (a_rigid_only_under_fresh_tvar IH H). clear - Hfr. fsetdec.
   - (* C-UnivGhost2 *) intros * Hg Hnf Hc IH γ H. apply IH, H.
   - (* C-Flex *) intros Δ1 Δ2 Θ0 Θ1 α β Hu IH γ H. exact (IH γ H).
   - (* C-FlexL *) intros Δ1 Δ2 Θ0 Θ1 α P0 Hnf Hnhole Ha IH γ H. exact (IH γ H).
@@ -898,12 +902,7 @@ Proof.
       as Hup.
     simpl in Hup.
     destruct (β' == α) as [-> | Hne].
-    - split; [ unfold binds; simpl; auto | ].
-      split;
-        [ intros Hcb | intros τ Hcb ];
-        destruct (binds_cons_1 _ _ _ _ _ _ Hcb) as [[_ Heqb] | Hcb'];
-        try discriminate;
-        apply binds_In in Hcb'; clear - Hα Hcb'; fsetdec.
+    - apply a_rigid_only_head_tvar. clear - Hα. fsetdec.
     - apply a_rigid_only_cons_nonsuffix; [ intros Hb; inversion Hb | ].
       apply Hr. simpl. clear - Hβ' Hup Hne. fsetdec. }
   inversion Hc; subst.
