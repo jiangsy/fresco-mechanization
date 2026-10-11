@@ -781,41 +781,25 @@ Proof.
     assert (HαfΘ1 : α `notin` ftvar_in_aenv Θ1).
     { assert (Hd : α `notin` dom Θ1) by (clear - Hfr; fsetdec).
       clear - Hd Hftv1. fsetdec. }
-    assert (Hα2fΘ1 : α2 `notin` ftvar_in_aenv Θ1').
-    { intros Hin. destruct (rel_aenv_ftv_corr_r HrΘ1' Hin) as (a & Ha & Hat).
-      assert (Ea : a = α).
-      { apply (Hinjout a α α2 Hat). apply rel_atom__pair.
-        apply in_or_app; right; left; reflexivity. }
-      subst a. exact (HαfΘ1 Ha). }
     assert (Hincl : forall a b0,
-              In (a, b0) (restrict_pairs α α2
-                            (restrict_l (dom Ξ)
-                               (ρe ++ (α, α2) :: restrict_pairs α α2 ρ0))) ->
+              In (a, b0) (restrict_l (dom Ξ)
+                            (ρe ++ restrict_pairs α α2 ρ0)) ->
               In (a, b0) (ρeo ++ ρ)).
     { intros a b0 Hin.
-      assert (Hane : a <> α).
-      { intros ->.
-        apply (@restrict_pairs_notin_l α α2
-                 (restrict_l (dom Ξ)
-                    (ρe ++ (α, α2) :: restrict_pairs α α2 ρ0))).
-        eapply cols_l_in; exact Hin. }
-      apply restrict_pairs_incl in Hin.
       assert (HaΞ : a `notin` dom Ξ).
-      { intros Ha.
-        apply (restrict_l_notin
-                 (ρe ++ (α, α2) :: restrict_pairs α α2 ρ0) Ha).
+      { intros Ha. apply (restrict_l_notin
+                           (ρe ++ restrict_pairs α α2 ρ0) Ha).
         eapply cols_l_in; exact Hin. }
-      apply restrict_l_incl in Hin.
-      apply in_app_or in Hin. destruct Hin as [Hin | [Ehd | Hin]].
-      - apply in_or_app; left. subst ρeo. apply restrict_l_in; assumption.
-      - exfalso. injection Ehd as E1 E2x. apply Hane. symmetry. exact E1.
-      - apply in_or_app; right. apply Hρ0incl.
-        eapply restrict_pairs_incl; exact Hin. }
+      apply restrict_l_incl in Hin. apply in_app_or in Hin.
+      apply in_or_app. destruct Hin as [Hin | Hin].
+      - left. subst ρeo. apply restrict_l_in; assumption.
+      - right. apply Hρ0incl. eapply restrict_pairs_incl; exact Hin. }
     assert (HrΘfin : rel_aenv (ρeo ++ ρ) V Θ1 Θ1').
-    { eapply rel_aenv_mono;
-        [ exact (rel_aenv_restrict
-                   (rel_aenv_restrict_l HrΘ1' HΞf1) HαfΘ1 Hα2fΘ1)
-        | exact Hincl | intros x Hx; exact Hx ]. }
+    { eapply rel_aenv_mono.
+      - eapply rel_aenv_restrict_l; [ | exact HΞf1 ].
+        eapply rel_aenv_drop_mid; [exact HrΘ1' | exact HαfΘ1].
+      - exact Hincl.
+      - intros z Hz; exact Hz. }
     split; [ exact HrΘfin | ].
     assert (Hextfin : rel_ext ρeo (ftvar_in_aenv Θ0) S0).
     { destruct Hext as [Hxfr [Hri Hlf]]. unfold rel_ext.

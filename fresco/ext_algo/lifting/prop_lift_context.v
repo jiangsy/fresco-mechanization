@@ -1552,6 +1552,45 @@ Proof.
   - apply IHrel_aenv. clear - Hd. fsetdec.
 Qed.
 
+(** An unused source atom can be removed from the pair list, regardless
+    of whether the corresponding target atom occurs elsewhere. *)
+Lemma restrict_l_drop_mid_incl : forall ρa ρb x y a b,
+  In (a, b) (restrict_l {{x}} (ρa ++ (x, y) :: ρb)) ->
+  In (a, b) (ρa ++ ρb).
+Proof.
+  intros ρa ρb x y a b Hin.
+  assert (Hne : a <> x).
+  { intros ->. apply (@restrict_l_notin {{x}} (ρa ++ (x, y) :: ρb) x).
+    - clear; fsetdec.
+    - eapply cols_l_in; exact Hin. }
+  apply restrict_l_incl in Hin. apply in_app_or in Hin.
+  destruct Hin as [Hin | [Heq | Hin]];
+    [apply in_or_app; left; exact Hin | inversion Heq; subst; contradiction
+    |apply in_or_app; right; exact Hin].
+Qed.
+
+Lemma rel_pskl_drop_mid : forall ρa ρb V x y P Q,
+  rel_pskl (ρa ++ (x, y) :: ρb) V P Q ->
+  x `notin` ftvar_in_pskl P -> rel_pskl (ρa ++ ρb) V P Q.
+Proof.
+  intros * Hr Hfresh. eapply rel_pskl_mono.
+  - eapply rel_pskl_restrict_l with (D := {{x}});
+      [exact Hr | clear - Hfresh; fsetdec].
+  - intros a b Hin. eapply restrict_l_drop_mid_incl; exact Hin.
+  - intros a Ha; exact Ha.
+Qed.
+
+Lemma rel_aenv_drop_mid : forall ρa ρb V x y Θ Θ',
+  rel_aenv (ρa ++ (x, y) :: ρb) V Θ Θ' ->
+  x `notin` ftvar_in_aenv Θ -> rel_aenv (ρa ++ ρb) V Θ Θ'.
+Proof.
+  intros * Hr Hfresh. eapply rel_aenv_mono.
+  - eapply rel_aenv_restrict_l with (D := {{x}});
+      [exact Hr | clear - Hfresh; fsetdec].
+  - intros a b Hin. eapply restrict_l_drop_mid_incl; exact Hin.
+  - intros a Ha; exact Ha.
+Qed.
+
 (* ===================================================================== *)
 (*  §13c  ⭐ THE a_sub RUNG'S REL CURRENCY (2026-08-20 / 2026-08-21)       *)
 (* ===================================================================== *)

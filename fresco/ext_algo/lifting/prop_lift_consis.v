@@ -257,28 +257,13 @@ Proof.
     - exfalso. exact (HαV HinV). }
   (* ---- peel the opener off BOTH contexts ---- *)
   inversion HrΘout as [ | a0 b0 bd1 bd2 Θa Θb Hat0 Hbd0 HrΘtail Ea Eb ]; subst.
-  assert (Hα2fΘ1 : α2 `notin` ftvar_in_aenv Θ1').
-  { intros Hin. destruct (rel_aenv_ftv_corr_r HrΘtail Hin) as (a & Ha & Hat).
-  assert (Ea2 : a = α).
-    { apply (Hinjout a α α2 Hat). apply rel_atom__pair.
-      apply in_or_app; right; left; reflexivity. }
-    subst a. exact (HαfΘ1 Ha). }
-  (* ---- the CONTEXT relation, back at the caller's pair list ---- *)
   assert (HrΘfin : rel_aenv (ρe ++ ρ) V Θ1 Θ1').
-  { eapply rel_aenv_mono;
-      [ exact (rel_aenv_restrict HrΘtail HαfΘ1 Hα2fΘ1)
-      | | intros x Hx; exact Hx ].
-  intros a b Hin.
-  assert (Hnl : a <> α).
-    { intros ->.
-      apply (@restrict_pairs_notin_l α α2
-               (ρe ++ (α, α2) :: restrict_pairs α α2 ρ)).
-      eapply cols_l_in; exact Hin. }
-    apply restrict_pairs_incl in Hin.
-    apply in_app_or in Hin. destruct Hin as [Hin | [Ehd | Hin]].
-    - apply in_or_app; left; exact Hin.
-    - exfalso. injection Ehd as E1 E2. apply Hnl. symmetry. exact E1.
-    - apply in_or_app; right. eapply restrict_pairs_incl; exact Hin. }
+  { eapply rel_aenv_mono.
+    - eapply rel_aenv_drop_mid; [exact HrΘtail | exact HαfΘ1].
+    - intros a b Hin. apply in_app_or in Hin. apply in_or_app.
+      destruct Hin as [Hin | Hin];
+        [left; exact Hin | right; eapply restrict_pairs_incl; exact Hin].
+    - intros x Hx; exact Hx. }
   (* ---- and the FLEX AGREEMENT, which is where the owed fact is spent ---- *)
   assert (Hagrpeel : flex_agree_rel (ρe ++ (α, α2) :: restrict_pairs α α2 ρ)
                        V Θ1 Θ1').

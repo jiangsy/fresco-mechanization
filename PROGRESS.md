@@ -182,6 +182,30 @@ them (PAPER-GAPS has the details):
 # Part 2: Progress log (most recent first)
 
 
+## 2026-10-11 — Drop unused binder pairs directly in lifting
+
+Add `rel_pskl_drop_mid` and `rel_aenv_drop_mid` in
+`ext_algo/lifting/prop_lift_context.v`. Removing a pair requires only that
+its source atom is absent from the related object. Both follow from the
+existing source-only restriction lemmas and a shared list-inclusion fact.
+
+Use them in the shared consistency binder closer, the subtyping and typing
+check-binder cases, and both abstraction cores. Delete the detours through
+injectivity, target freshness, two-sided restriction, and rejection of the
+removed pair. Remove the resulting unused injectivity/uniqueness assertions.
+The abstraction cores also use `a_wf_pskl_tm_entry_fresh` instead of repeating
+its binding-uniqueness argument.
+
+Net reduction: **92 physical lines**, including **94 nonblank, noncomment
+Coq lines**, relative to `ed5af63`. Every existing theorem statement is
+unchanged; no inline tactic terms were introduced.
+
+Validation: the targeted lifting rebuild and `make coq` passed. All 34
+headline assumption reports are closed under the global context, with no
+axiom reports or errors. `git diff --check` passes.
+
+
+
 ## 2026-10-11 — Share the unification skip argument
 
 The rigid, type-term, and skeleton-term skip cases now use the local
