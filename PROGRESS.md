@@ -182,6 +182,29 @@ them (PAPER-GAPS has the details):
 # Part 2: Progress log (most recent first)
 
 
+## 2026-10-11 — Share Flex-Assign well-formed substitution
+
+Add `a_wf_pskl_subst_mid_def`, deriving the payload's monotype,
+well-formedness and freshness from the original context before applying the
+general context-substitution theorem. The result needs only the well-formed
+context and input skeleton.
+
+Use it for ten substitutions across output well-formedness, decorated
+subtyping soundness and its bridge, typing scope, and subtyping completeness.
+Remove the callers' repeated payload-painting proofs and the freshness
+assertions used only by those substitutions. Keep definition facts needed by
+the remaining output and equivalence arguments.
+
+Net reduction: **62 physical Coq lines / 70 nonblank, noncomment lines**.
+All 290 existing theorem statements across the six edited Coq files are
+unchanged; inline tactic terms remain at 359, with none added.
+
+Validation: the shared lemma compiled, then `make coq` passed with all 34
+headline assumption reports closed under the global context, no axioms and
+no errors. Statement comparison and `git diff --check` passed.
+
+
+
 ## 2026-10-11 — Share the Flex-Solve context construction
 
 Add `a_flex_arrow_context`: replacing a flexible declaration with an arrow

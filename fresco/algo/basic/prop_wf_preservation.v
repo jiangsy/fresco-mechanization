@@ -712,33 +712,15 @@ Proof.
     assert (Hwfcons : {{ ⊢ ((β ~ abind_flex_mono_def τ) ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_prefix; eauto).
     inversion Hwfcons as [ | | βz τz Θz HβΘ0 Hwfτ Hm Hwf0 | | | ]; subst.
-    assert (HβΞΘ0 : β `notin` dom (Ξ ++ Θ0)).
-    { pose proof (a_wf_aenv_uniq Hwf) as Huq.
-      clear - Huq. simpl_env in Huq. destruct_uniq.
-      unfold disjoint in *. simpl_env in *. fsetdec. }
     assert (HwfΞΘ0 : {{ ⊢ (Ξ ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (Hwfpaint : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ ptyp_to_pskl τ }}a).
-    { apply a_wf_pskl_of_ptyp_vis;
-        [ apply mono_ptyp_lc; exact Hm | ].
-      intros α1 Hα1.
-      pose proof (a_wf_ptyp_ftv_tvarish Hwfτ Hα1) as Ht.
-      destruct Ht as [Hb | [Hb | [τ1 Hb]]];
-        [ left | right; left | right; right; exists τ1 ];
-        unfold binds in *; apply in_or_app; auto. }
+
     assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ
               subst_pskl_in_pskl (ptyp_to_pskl τ) β P0 }}a).
-    { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
-        [ exact HwfP0 | reflexivity | exact HβΞΘ0 | clear; fsetdec
-        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint
-        | clear; fsetdec ]. }
+    { eapply a_wf_pskl_subst_mid_def; [ exact Hwf | exact HwfP0 ]. }
     assert (Hwfvarsub : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ
               subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α) }}a).
-    { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
-        [ apply a_wf_pskl__var; exact Hαb
-        | reflexivity | exact HβΞΘ0 | clear; fsetdec
-        | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hwfpaint
-        | clear; fsetdec ]. }
+    { eapply a_wf_pskl_subst_mid_def; [ exact Hwf | apply a_wf_pskl__var; exact Hαb ]. }
     destruct (IH HwfΞΘ0 HwfP0' Hwfvarsub) as [Hle [Hwf1 HwfQ]].
     assert (Hle0 : Θ0 ⊴ Θ1)
       by (eapply a_isub_strengthen_decls_src; eauto).

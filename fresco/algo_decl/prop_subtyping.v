@@ -144,6 +144,30 @@ Proof.
         assert (α `in` Δ ∩ ftvar_in_pskl Q0) by fsetdec. fsetdec.
 Qed.
 
+(** Consume a well-formed monotype definition and substitute its payload. *)
+Lemma a_wf_pskl_subst_mid_def : forall Ξ Θ β τ P,
+  {{ ⊢ (Ξ ++ (β ~ abind_flex_mono_def τ) ++ Θ) }}a ->
+  {{ (Ξ ++ (β ~ abind_flex_mono_def τ) ++ Θ) ⨟ empty ⊢ₚₛ P }}a ->
+  {{ (Ξ ++ Θ) ⨟ empty ⊢ₚₛ subst_pskl_in_pskl (ptyp_to_pskl τ) β P }}a.
+Proof.
+  intros Ξ Θ β τ P Hwf HwfP.
+  assert (Htail : {{ ⊢ ((β ~ abind_flex_mono_def τ) ++ Θ) }}a)
+    by (eapply a_wf_aenv_strip_prefix; exact Hwf).
+  inversion Htail as [ | | βz τz Θz Hβ Hwfτ Hm HwfΘ | | | ]; subst.
+  assert (Hfresh : β `notin` dom (Ξ ++ Θ)).
+  { pose proof (a_wf_aenv_uniq Hwf) as Huq.
+    clear - Huq. simpl_env in Huq. destruct_uniq.
+    unfold disjoint in *. simpl_env in *. fsetdec. }
+  assert (Hpaint : {{ (Ξ ++ Θ) ⨟ empty ⊢ₚₛ ptyp_to_pskl τ }}a).
+  { apply a_wf_ptyp_to_wf_pskl. eapply a_wf_ptyp_weaken;
+      [ intros x bd Hb; apply binds_app_3; exact Hb | exact Hwfτ ]. }
+  eapply a_wf_pskl_subst_ctx;
+    [ exact HwfP | reflexivity | exact Hfresh | clear; fsetdec
+    | apply mono_ptyp_to_pskl_guarded; exact Hm | exact Hpaint
+    | clear; fsetdec ].
+Qed.
+
+
 (** ⭐ A PAINTING invents no ε tag — [ptyp] has no tag slot at all.  ⚙ One
     fact, one name, one file: the tree carried it TWICE, as
     [ftag_in_uskl_ptyp_syn] (algo/consistency/prop_consis_precise.v) and

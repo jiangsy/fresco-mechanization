@@ -3037,31 +3037,16 @@ Proof.
   assert (Heqβ' : {{ Θ ⊢ τβ ≡ᵗ (msubst_ptyp (κ1 ++ κ2) τ) }}a)
     by (rewrite Hτ12; exact Heqβ).
   (* ---- 2. the substituted problem, and its side conditions ---- *)
-  assert (Hwfpaint : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ ptyp_to_pskl τ }}a).
-  { apply a_wf_pskl_of_ptyp_vis;
-      [ apply mono_ptyp_lc; exact Hmτ | ].
-    intros γ Hγ.
-    assert (HγΘ0 : a_binds_tvar γ Θ0)
-      by (eapply a_wf_ptyp_ftv_tvarish; [ exact HwfτΘ0 | exact Hγ ]).
-    destruct HγΘ0 as [Hb | [Hb | [τ1 Hb]]];
-      [ left | right; left | right; right; exists τ1 ];
-      unfold binds in *; apply in_or_app; right; exact Hb. }
+
   assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ
             subst_pskl_in_pskl (ptyp_to_pskl τ) β P0 }}a).
-  { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
-      [ exact HwfP0 | reflexivity | exact HβΞΘ0 | clear; fsetdec
-      | apply mono_ptyp_to_pskl_guarded; exact Hmτ | exact Hwfpaint
-      | clear; fsetdec ]. }
+  { eapply a_wf_pskl_subst_mid_def; [ exact Hwf | exact HwfP0 ]. }
   assert (Hαb : a_binds_tvar α (Ξ ++ (β ~ abind_flex_mono_def τ) ++ Θ0))
     by (destruct (a_flex_tvar_weaken_app Ξ Hfα) as [h | [τ0 h]];
         [ right; left; exact h | right; right; exists τ0; exact h ]).
   assert (HwfS : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ
             subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α) }}a).
-  { eapply a_wf_pskl_subst_ctx with (b := abind_flex_mono_def τ);
-      [ apply a_wf_pskl__var; exact Hαb
-      | reflexivity | exact HβΞΘ0 | clear; fsetdec
-      | apply mono_ptyp_to_pskl_guarded; exact Hmτ | exact Hwfpaint
-      | clear; fsetdec ]. }
+  { eapply a_wf_pskl_subst_mid_def; [ exact Hwf | apply a_wf_pskl__var; exact Hαb ]. }
   (* ---- 3. the IH's ≡ᵘ slack and fill ---- *)
   assert (Hincβ : ((β, τβ) :: (κ1 ++ κ2))
                     ∷ ((β ~ abind_flex_mono_def τ) ++ (Ξ ++ Θ0)) ⊑ Θ)
