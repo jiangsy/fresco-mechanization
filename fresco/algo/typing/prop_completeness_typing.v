@@ -1655,6 +1655,40 @@ Proof.
     repeat split; try apply a_split__arrow; try assumption.
 Qed.
 
+(** ⭐ A body run under ONE TERM BINDER, read through its own soundness —
+    [a_pat_run_under_tm_binder]'s typing twin: the binder comes back VERBATIM
+    with a flexible-only suffix [Ξ] above it, the result type is scoped in
+    the output, and the binder's name avoids both sides.  Every binder row
+    of the completeness proof reads its body run this way. *)
+Lemma a_typing_run_under_tm_binder : forall {x A Θ0 M P0 e B Θ1},
+  {{ ((x ~ abind_var_typ A) ++ Θ0) ⊢[ M ; P0 ] e ⦂ B ⊣ Θ1 }}a ->
+  {{ ⊢ ((x ~ abind_var_typ A) ++ Θ0) }}a ->
+  {{ ((x ~ abind_var_typ A) ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a ->
+  a_ty_mode_compat M P0 ->
+  {{ ((x ~ abind_var_typ A) ++ Θ0) ⊢ᵉ e }}a ->
+  exists κb (Ξ Θ2 : aenv),
+    Θ1 = Ξ ++ (x ~ abind_var_typ A) ++ Θ2 /\
+    is_id_msubst κb /\ (κb ∷ Θ0 ⊑ Θ2) /\ a_suffix Ξ /\
+    ({{ ⊢ (Ξ ++ (x ~ abind_var_typ A) ++ Θ2) }}a) /\
+    a_wf_ptyp (Ξ ++ (x ~ abind_var_typ A) ++ Θ2) B /\
+    x `notin` (dom Ξ `union` ftvar_in_aenv Ξ) /\
+    x `notin` (dom Θ2 `union` ftvar_in_aenv Θ2).
+Proof.
+  intros x A Θ0 M P0 e B Θ1 Hrun Hwf0x HwfP0 Hmod Hexp.
+  destruct (a_typing_sound Hrun Hwf0x HwfP0 Hmod Hexp) as [Hle [Hwf1 [HwfB _]]].
+  destruct Hle as [[κb [Hid Hinc]] _].
+  destruct (a_inc_var_inv Hinc) as [Ξ [A' [Θ2 [-> [_ [Hsuf Hinc']]]]]].
+  assert (Heq : abind_var_typ A = abind_var_typ A').
+  { eapply binds_mid_eq; [ | apply a_wf_aenv_uniq; exact Hwf1 ].
+    eapply a_typing_tm_le; [ exact Hrun | exact I | unfold binds; simpl; auto ]. }
+  inversion Heq; subst A'.
+  exists κb, Ξ, Θ2.
+  refine (conj eq_refl (conj Hid (conj Hinc' (conj Hsuf
+            (conj Hwf1 (conj HwfB (conj _ _))))))).
+  - eapply a_wf_aenv_notin_ftv_tm_prefix; [ exact Hsuf | exact Hwf1 | exact I ].
+  - eapply a_wf_aenv_notin_ftv_tm_below. exact Hwf1.
+Qed.
+
 (* ===================================================================== *)
 (*  The Abs row — the split is the IDENTITY (the input is ◇ or the        *)
 (*  arrow), guess^TY's block is CHOSEN with an avoid set                  *)
@@ -1794,38 +1828,8 @@ Proof.
   assert (Hexpx : {{ ((x ~ abind_var_typ A') ++ Ξg ++ Θ0) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
   { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
-  destruct (a_typing_sound HrunB Hwf0x HwfQx HmodQ Hexpx)
-    as [HleB [HwfOut [HwfB'out _]]].
-  destruct HleB as [[κb [Hidb Hincb]] _].
-  destruct (a_inc_var_inv Hincb) as [Ξ [A'' [Θ2 [-> [_ [Hsuf Hincb']]]]]].
-  assert (HuOut : uniq (Ξ ++ (x ~ abind_var_typ A'') ++ Θ2))
-    by (apply a_wf_aenv_uniq; exact HwfOut).
-  assert (Hbx1 : binds x (abind_var_typ A')
-                   (Ξ ++ (x ~ abind_var_typ A'') ++ Θ2))
-    by (eapply a_typing_tm_le;
-        [ exact HrunB | exact I | unfold binds; simpl; auto ]).
-  assert (HA'' : abind_var_typ A' = abind_var_typ A'')
-    by (eapply binds_mid_eq; [ exact Hbx1 | exact HuOut ]).
-  inversion HA''; subst A''.
-  (* ---- 7. the freshness pack ---- *)
-  assert (HxΞ : x `notin` (dom Ξ `union` ftvar_in_aenv Ξ))
-    by (eapply a_wf_aenv_notin_ftv_tm_prefix;
-        [ exact Hsuf | exact HwfOut | exact I ]).
-  assert (HxΘ2 : x `notin` (dom Θ2 `union` ftvar_in_aenv Θ2))
-    by (eapply a_wf_aenv_notin_ftv_tm_below; exact HwfOut).
-  assert (HxB' : x `notin` ftvar_in_ptyp B').
-  { intros Hc.
-    pose proof (a_wf_ptyp_ftv_tvarish HwfB'out Hc) as Ht.
-    destruct Ht as [Hr | [Hm | [τ Hdf]]].
-    - pose proof (binds_mid_eq _ _ _ _ _ _ Hr HuOut) as Hcc.
-      discriminate Hcc.
-    - pose proof (binds_mid_eq _ _ _ _ _ _ Hm HuOut) as Hcc.
-      discriminate Hcc.
-    - pose proof (binds_mid_eq _ _ _ _ _ _ Hdf HuOut) as Hcc.
-      discriminate Hcc. }
-  (* the declarations block mentions only its own names *)
-  assert (HftvΞg : ftvar_in_aenv Ξg [<=] dom Ξg)
-    by (clear - Hdecls; induction Hdecls; simpl; fsetdec).
+  destruct (a_typing_run_under_tm_binder HrunB Hwf0x HwfQx HmodQ Hexpx)
+    as [κb [Ξ [Θ2 [-> [Hidb [Hincb' [Hsuf [HwfOut [_ [HxΞ HxΘ2]]]]]]]]]].
   (* ---- 8. the run ---- *)
   exists (ptyp_arrow A' B'), (Ξ ++ Θ2).
   split.
@@ -2094,35 +2098,8 @@ Proof.
     by (eapply a_wf_pskl_mono;
         [ exact HwfQmid
         | intros α c _ Hc; apply binds_cons_3; exact Hc ]).
-  destruct (a_typing_sound HrunB Hwf0x HwfQx HmodQ Hexpx)
-    as [HleB [HwfOut [HwfB'out _]]].
-  destruct HleB as [[κb [Hidb Hincb]] _].
-  destruct (a_inc_var_inv Hincb) as [Ξ [A'' [Θ3 [-> [_ [Hsuf Hincb']]]]]].
-  assert (HuOut : uniq (Ξ ++ (x ~ abind_var_typ A'') ++ Θ3))
-    by (apply a_wf_aenv_uniq; exact HwfOut).
-  assert (Hbx1 : binds x (abind_var_typ A)
-                   (Ξ ++ (x ~ abind_var_typ A'') ++ Θ3))
-    by (eapply a_typing_tm_le;
-        [ exact HrunB | exact I | unfold binds; simpl; auto ]).
-  assert (HA'' : abind_var_typ A = abind_var_typ A'')
-    by (eapply binds_mid_eq; [ exact Hbx1 | exact HuOut ]).
-  inversion HA''; subst A''.
-  (* ---- 6. the freshness pack ---- *)
-  assert (HxΞ : x `notin` (dom Ξ `union` ftvar_in_aenv Ξ))
-    by (eapply a_wf_aenv_notin_ftv_tm_prefix;
-        [ exact Hsuf | exact HwfOut | exact I ]).
-  assert (HxΘ3 : x `notin` (dom Θ3 `union` ftvar_in_aenv Θ3))
-    by (eapply a_wf_aenv_notin_ftv_tm_below; exact HwfOut).
-  assert (HxB' : x `notin` ftvar_in_ptyp B').
-  { intros Hc.
-    pose proof (a_wf_ptyp_ftv_tvarish HwfB'out Hc) as Ht.
-    destruct Ht as [Hr | [Hm | [τ Hdf]]].
-    - pose proof (binds_mid_eq _ _ _ _ _ _ Hr HuOut) as Hcc.
-      discriminate Hcc.
-    - pose proof (binds_mid_eq _ _ _ _ _ _ Hm HuOut) as Hcc.
-      discriminate Hcc.
-    - pose proof (binds_mid_eq _ _ _ _ _ _ Hdf HuOut) as Hcc.
-      discriminate Hcc. }
+  destruct (a_typing_run_under_tm_binder HrunB Hwf0x HwfQx HmodQ Hexpx)
+    as [κb [Ξ [Θ3 [-> [Hidb [Hincb' [Hsuf [HwfOut [_ [HxΞ HxΘ3]]]]]]]]]].
   (* ---- 7. the run ---- *)
   exists (ptyp_arrow A B'), (Ξ ++ Θ3).
   split.
@@ -3092,31 +3069,17 @@ Proof.
   assert (Hexpx : {{ ((x ~ abind_var_typ Ad) ++ Θ1) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
   { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
-  destruct (a_typing_sound HrunB Hwf0x HwfBcx
+  destruct (a_typing_run_under_tm_binder HrunB Hwf0x HwfBcx
               (a_ty_mode_compat__tc _) Hexpx)
-    as [HleB [HwfOut [HwfB1out _]]].
-  destruct HleB as [[κb [Hidb Hincb]] _].
-  destruct (a_inc_var_inv Hincb) as [Ξ [Ad' [Θ2 [-> [_ [Hsuf Hincb']]]]]].
-  assert (HuOut : uniq (Ξ ++ (x ~ abind_var_typ Ad') ++ Θ2))
+    as [κb [Ξ [Θ2 [-> [Hidb [Hincb' [Hsuf [HwfOut [_ [HxΞ HxΘ2]]]]]]]]]].
+  assert (HuOut : uniq (Ξ ++ (x ~ abind_var_typ Ad) ++ Θ2))
     by (apply a_wf_aenv_uniq; exact HwfOut).
-  assert (Hbx1 : binds x (abind_var_typ Ad)
-                   (Ξ ++ (x ~ abind_var_typ Ad') ++ Θ2))
-    by (eapply a_typing_tm_le;
-        [ exact HrunB | exact I | unfold binds; simpl; auto ]).
-  assert (HAd' : abind_var_typ Ad = abind_var_typ Ad')
-    by (eapply binds_mid_eq; [ exact Hbx1 | exact HuOut ]).
-  inversion HAd'; subst Ad'.
   (* the §6.3#2 scoping invariant, at the TERM marker *)
   pose proof (@a_typing_scope_tm_nil x Ad Θ1 Bc
                 (open_exp_wrt_exp e (exp_var_f x)) B1' Ξ Θ2
                 HrunB Hwf0x HwfBcx Hexpx HwfOut Hsuf) as Hscope.
   (* ---- 5. the freshness / disjointness pack ---- *)
   assert (HuΞ : uniq Ξ) by (clear - HuOut; solve_uniq).
-  assert (HxΞ : x `notin` (dom Ξ `union` ftvar_in_aenv Ξ))
-    by (eapply a_wf_aenv_notin_ftv_tm_prefix;
-        [ exact Hsuf | exact HwfOut | exact I ]).
-  assert (HxΘ2 : x `notin` (dom Θ2 `union` ftvar_in_aenv Θ2))
-    by (eapply a_wf_aenv_notin_ftv_tm_below; exact HwfOut).
   assert (HΞΘ2 : forall γ, γ `in` dom Ξ -> γ `notin` dom Θ2)
     by (clear - HuOut; intros γ Hγ; destruct_uniq;
         unfold disjoint in *; simpl_env in *; fsetdec).
@@ -3367,30 +3330,16 @@ Proof.
   assert (Hexpx : {{ ((x ~ abind_var_typ Aan) ++ Θ2) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
   { apply a_wf_exp_of_tvarish; [ exact (Hlce x) | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
-  destruct (a_typing_sound HrunB Hwf0x HwfBcx
+  destruct (a_typing_run_under_tm_binder HrunB Hwf0x HwfBcx
               (a_ty_mode_compat__tc _) Hexpx)
-    as [HleB [HwfOut [HwfB1out _]]].
-  destruct HleB as [[κb [Hidb Hincb]] _].
-  destruct (a_inc_var_inv Hincb) as [Ξ [Aan' [Θ3 [-> [_ [Hsuf Hincb']]]]]].
-  assert (HuOut : uniq (Ξ ++ (x ~ abind_var_typ Aan') ++ Θ3))
+    as [κb [Ξ [Θ3 [-> [Hidb [Hincb' [Hsuf [HwfOut [_ [HxΞ HxΘ3]]]]]]]]]].
+  assert (HuOut : uniq (Ξ ++ (x ~ abind_var_typ Aan) ++ Θ3))
     by (apply a_wf_aenv_uniq; exact HwfOut).
-  assert (Hbx1 : binds x (abind_var_typ Aan)
-                   (Ξ ++ (x ~ abind_var_typ Aan') ++ Θ3))
-    by (eapply a_typing_tm_le;
-        [ exact HrunB | exact I | unfold binds; simpl; auto ]).
-  assert (HAan' : abind_var_typ Aan = abind_var_typ Aan')
-    by (eapply binds_mid_eq; [ exact Hbx1 | exact HuOut ]).
-  inversion HAan'; subst Aan'.
   pose proof (@a_typing_scope_tm_nil x Aan Θ2 Bc
                 (open_exp_wrt_exp e (exp_var_f x)) B1' Ξ Θ3
                 HrunB Hwf0x HwfBcx Hexpx HwfOut Hsuf) as Hscope.
   (* ---- 6. the freshness / disjointness pack ---- *)
   assert (HuΞ : uniq Ξ) by (clear - HuOut; solve_uniq).
-  assert (HxΞ : x `notin` (dom Ξ `union` ftvar_in_aenv Ξ))
-    by (eapply a_wf_aenv_notin_ftv_tm_prefix;
-        [ exact Hsuf | exact HwfOut | exact I ]).
-  assert (HxΘ3 : x `notin` (dom Θ3 `union` ftvar_in_aenv Θ3))
-    by (eapply a_wf_aenv_notin_ftv_tm_below; exact HwfOut).
   assert (HΞΘ3 : forall γ, γ `in` dom Ξ -> γ `notin` dom Θ3)
     by (clear - HuOut; intros γ Hγ; destruct_uniq;
         unfold disjoint in *; simpl_env in *; fsetdec).
