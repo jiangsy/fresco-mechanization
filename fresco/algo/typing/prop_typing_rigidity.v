@@ -503,14 +503,14 @@ Lemma a_rigid_only_under_tm_binder : forall {Ξ x b Θ0 Θ1 γ},
   (forall γ, a_rigid_only ((x ~ b) ++ Θ0) γ ->
              a_rigid_only (Ξ ++ (x ~ b) ++ Θ1) γ) ->
   a_rigid_only Θ0 γ ->
-  (exists A, b = abind_var_typ A) \/ (exists P, b = abind_var_skl P) ->
+  abind_is_tm b ->
   a_rigid_only (Ξ ++ Θ1) γ.
 Proof.
-  intros Ξ x b Θ0 Θ1 γ IH Hr Hb.
+  intros Ξ x b Θ0 Θ1 γ IH Hr Htm.
   apply a_rigid_only_strip_mid_nonrigid with (c := x) (b := b).
-  - destruct Hb as [[A ->] | [P ->]]; discriminate.
+  - intros ->. exact Htm.
   - apply IH. apply a_rigid_only_cons_nonsuffix; [ | exact Hr ].
-    destruct Hb as [[A ->] | [P ->]]; intros Hs; inversion Hs.
+    intros Hs. destruct Hs; exact Htm.
 Qed.
 
 Lemma a_pat_rigid_only : forall m Θ0 P0 e Q Θ1,
@@ -526,17 +526,17 @@ Proof.
   (* ⚙ EXISTS-FRESH (2026-08-13): the IH is already at the row's own binder. *)
   - (* abs *)
     apply (a_rigid_only_under_tm_binder IHa_pat (a_split_rigid_only H0 Hr)).
-    eauto.
+    exact I.
   - (* abs_anno *)
     assert (Hr1 : a_rigid_only Θ1 γ)
       by (eapply a_split_rigid_only; [ eassumption | exact Hr ]).
     destruct H1 as [Qc Hc].
     apply (a_rigid_only_under_tm_binder IHa_pat (a_consis_rigid_only Hc Hr1)).
-    eauto.
+    exact I.
   - (* abs_check *)
-    apply (a_rigid_only_under_tm_binder IHa_pat Hr). eauto.
+    apply (a_rigid_only_under_tm_binder IHa_pat Hr). exact I.
   - (* abs_anno_check *)
-    apply (a_rigid_only_under_tm_binder IHa_pat Hr). eauto.
+    apply (a_rigid_only_under_tm_binder IHa_pat Hr). exact I.
   - (* app *) apply IHa_pat2, IHa_pat1, Hr.
 Qed.
 
@@ -566,7 +566,7 @@ Proof.
       by (eapply a_split_rigid_only; [ eassumption | exact Hr ]).
     destruct H1 as [Qc Hc].
     apply (a_rigid_only_under_tm_binder IHa_typing (a_consis_rigid_only Hc Hr1)).
-    eauto.
+    exact I.
   - (* abs_check_step — the rule's own α: γ ∈ dom Θ0 keeps them apart *)
     apply (a_rigid_only_under_fresh_tvar_suffix IHa_typing Hr H).
     rewrite dom_app in H2. clear - H2. fsetdec.
@@ -574,7 +574,7 @@ Proof.
     assert (Hr1 : a_rigid_only Θ1 γ)
       by (eapply a_split_rigid_only; [ eassumption | exact Hr ]).
     eapply a_rigid_only_strip_suffix; [ eassumption | ].
-    apply (a_rigid_only_under_tm_binder IHa_typing Hr1). eauto.
+    apply (a_rigid_only_under_tm_binder IHa_typing Hr1). exact I.
   - (* abs_anno_check_step *)
     apply (a_rigid_only_under_fresh_tvar_suffix IHa_typing Hr H).
     rewrite dom_app in H2. clear - H2. fsetdec.
@@ -584,7 +584,7 @@ Proof.
     destruct H0 as [Qc Hc].
     eapply a_rigid_only_strip_suffix; [ eassumption | ].
     apply (a_rigid_only_under_tm_binder IHa_typing (a_consis_rigid_only Hc Hr1)).
-    eauto.
+    exact I.
   - (* app *)
     apply IHa_typing2, IHa_typing1.
     eapply a_pat_rigid_only; [ eassumption | exact Hr ].
