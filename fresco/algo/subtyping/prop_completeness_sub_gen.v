@@ -903,6 +903,36 @@ Proof.
     try (apply ad_pat_consis__ghostg; reflexivity).                 (* __ghostg *)
 Qed.
 
+(** The motive's ≡ᵘ slack, erased: a join leaf stated at the derivation's
+    subject [R'] moves to the κ-image of the algorithm's input [P = ⌊R⌋ˢ] —
+    its consistency (tags stripped) and its refinement alike. *)
+Lemma tyequiv_slack_consis : forall Θ R' κ R P Ψ Q,
+  {{ ⊢ Θ }}a ->
+  {{ Θ ⊢ R' ≡ᵘ (msubst_uskl_syn κ R) }}a ->
+  ⌊ R ⌋ˢ = P ->
+  {{ Ψ ⨟ Θ ⊢ˢ R' ∼ Q }}ad ->
+  {{ empty ⨟ Θ ⊢ˢ (pskl_to_uskl (msubst_pskl κ P)) ∼ Q }}ad.
+Proof.
+  intros Θ R' κ R P Ψ Q Hwf Hrel HeqP Hc.
+  pose proof (a_uskl_tyequiv_erase Hrel) as He.
+  rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in He.
+  apply (proj1 (skl_tyequiv_consis_transport He Hwf (fun x b Hb => Hb))).
+  exact (ad_pat_consis_strip_tags Hc).
+Qed.
+
+Lemma tyequiv_slack_refine : forall Θ R' κ R P Pt,
+  {{ ⊢ Θ }}a ->
+  {{ Θ ⊢ R' ≡ᵘ (msubst_uskl_syn κ R) }}a ->
+  ⌊ R ⌋ˢ = P ->
+  {{ Θ ⨟ empty ⊢ᵣₚ ⌊ R' ⌋ˢ ⊳ Pt }}ad ->
+  {{ Θ ⨟ empty ⊢ᵣₚ (msubst_pskl κ P) ⊳ Pt }}ad.
+Proof.
+  intros Θ R' κ R P Pt Hwf Hrel HeqP Hr.
+  pose proof (a_uskl_tyequiv_erase Hrel) as He.
+  rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in He.
+  exact (proj1 (skl_tyequiv_refine_pskl_transport He Hwf (fun x b Hb => Hb)) _ _ Hr).
+Qed.
+
 (* --------------------------------------------------------------------- *)
 (*  Sub-Infer                                                             *)
 (* --------------------------------------------------------------------- *)
@@ -913,14 +943,9 @@ Proof.
   intros n NM Θ0 P0 P R R' Ψ Θ κ Q.
   unfold sub_complete_concl.
   intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
-  (* the ≡ᵘ slack, erased at the algorithm's input *)
-  pose proof (a_uskl_tyequiv_erase Hrel) as Herase.
-  rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Herase.
   (* 0. the leaf refinement — carried by the join's TI leaf, moved to κP *)
-  pose proof (ad_pat_sub_fuel_ti_refine Hsub) as Hrp0.
-  destruct (skl_tyequiv_refine_pskl_transport Herase Hwfth
-              (fun x b Hb => Hb)) as [Hrpt _].
-  pose proof (Hrpt _ _ Hrp0) as Hrp1.
+  pose proof (tyequiv_slack_refine _ _ Hwfth Hrel HeqP (ad_pat_sub_fuel_ti_refine Hsub))
+    as Hrp1.
   (* 1. [skmod] pins [P0 = □] — both mode-compatibility relations do *)
   assert (HP0 : P0 = pskl_ghost).
   { destruct NM;
@@ -937,11 +962,8 @@ Proof.
   rewrite msubst_bskl_pskl_to_bskl_syn, bskl_to_pskl_pskl_to_bskl_syn.
   change ({{ Θ ⨟ empty ⊢ₚᵣ (msubst_pskl κ P) ⊑ (bskl_to_pskl Q) }}ad).
   (* the DECORATED premise undecorates, then the slack moves it to κP *)
-  pose proof (ad_pat_consis_strip_tags
-                (ad_pat_sub_fuel_ti_consis Hsub)) as Hc0.
-  destruct (skl_tyequiv_consis_transport Herase Hwfth
-              (fun x b Hb => Hb)) as [Hct _].
-  pose proof (Hct _ _ Hc0) as Hc.
+  pose proof (tyequiv_slack_consis _ _ Hwfth Hrel HeqP (ad_pat_sub_fuel_ti_consis Hsub))
+    as Hc.
   exact (a_sub_complete_ghost_p0_precision Hwf0 Hwfth HwfP Hinc Hc Hrs Hrp1 HwfQ).
 Qed.
 
@@ -1031,9 +1053,6 @@ Proof.
   destruct Hj as [Hrow Hrfn].
   unfold sub_complete_concl.
   intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
-  (* the ≡ᵘ slack, erased at the algorithm's input *)
-  pose proof (a_uskl_tyequiv_erase Hrel) as Herase.
-  rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Herase.
   (* 1. [skmod[SK]] pins [P0 = □] *)
   assert (HP0 : P0 = pskl_ghost)
     by (pose proof (HmodSK eq_refl) as Hm; inversion Hm; reflexivity).
@@ -1050,18 +1069,10 @@ Proof.
   split; [ exact Hout | split; [ exact Hfact | ] ].
   (* 3. the precision at the STRIPPED counterpart, via the shared core;
         the slack moves both leaf facts from [R'] to [κP] *)
-  assert (Hc : {{ empty ⨟ Θ ⊢ˢ (pskl_to_uskl (msubst_pskl κ P)) ∼ Q }}ad).
-  { pose proof (ad_pat_consis_strip_tags Hrow) as H0.
-    destruct (skl_tyequiv_consis_transport Herase Hwfth
-                (fun x b Hb => Hb)) as [Hct _].
-    exact (Hct _ _ H0). }
+  pose proof (tyequiv_slack_consis _ _ Hwfth Hrel HeqP Hrow) as Hc.
   assert (Hrs' : {{ Θ ⨟ empty ⊢ᵣ bskl_ghost ⊳ Q }}ad)
     by (apply ad_refine_syn_ghost_univ_ghost_inv; exact Hrs).
-  assert (Hrp : {{ Θ ⨟ empty ⊢ᵣₚ (msubst_pskl κ P) ⊳ (bskl_to_pskl Q) }}ad).
-  { pose proof Hrfn as H0.
-    destruct (skl_tyequiv_refine_pskl_transport Herase Hwfth
-                (fun x b Hb => Hb)) as [Hrpt _].
-    exact (Hrpt _ _ H0). }
+  pose proof (tyequiv_slack_refine _ _ Hwfth Hrel HeqP Hrfn) as Hrp.
   assert (HwfQ' : {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a).
   { cbn in HwfQ. inversion HwfQ; subst.
     rewrite aenv_minus_empty in *. assumption. }
@@ -1119,16 +1130,10 @@ Proof.
   pose proof (ad_consis_join_inh_refine _ Hj) as Hrfn.
   unfold sub_complete_concl.
   intros Hwf0 Hwfth HwfP0 HwfP HmodSK HmodTY HeqP Hinc Hrel Hsub Hrs HwfQ Hgf.
-  (* the ≡ᵘ slack, erased at the algorithm's input *)
-  pose proof (a_uskl_tyequiv_erase Hrel) as Herase.
-  rewrite uskl_to_pskl_msubst_uskl_syn, HeqP in Herase.
   (* the leaf refinement, in the shape thm:complete-consistency takes *)
   assert (Hrp : {{ Θ ⨟ empty ⊢ᵣₚ (msubst_pskl κ P) ⊳ (bskl_to_pskl (pskl_to_bskl_inh B)) }}ad).
   { rewrite bskl_to_pskl_pskl_to_bskl_inh.
-    pose proof Hrfn as H0.
-    destruct (skl_tyequiv_refine_pskl_transport Herase Hwfth
-                (fun x b Hb => Hb)) as [Hrpt _].
-    exact (Hrpt _ _ H0). }
+    exact (tyequiv_slack_refine _ _ Hwfth Hrel HeqP Hrfn). }
   (* the algorithm's input skeleton is guarded *)
   assert (HgP : guarded_pskl P).
   { rewrite <- HeqP. eapply guarded_uskl_msubst_erase;
@@ -1146,12 +1151,7 @@ Proof.
     apply uskl_ghost_free_to_pskl.
     eapply a_uskl_tyequiv_ghost_free; [ exact Hrel | exact (Hgf eq_refl) ]. }
   (* the DECORATED premise undecorates, then the slack moves it to κP *)
-  assert (Hc : {{ empty ⨟ Θ ⊢ˢ (pskl_to_uskl (msubst_pskl κ P))
-                            ∼ (pskl_to_bskl_inh B) }}ad).
-  { pose proof (ad_pat_consis_strip_tags Hrow) as H0.
-    destruct (skl_tyequiv_consis_transport Herase Hwfth
-                (fun x b Hb => Hb)) as [Hct _].
-    exact (Hct _ _ H0). }
+  pose proof (tyequiv_slack_consis _ _ Hwfth Hrel HeqP Hrow) as Hc.
   destruct (a_consis_complete Hwf0 HwfP0 HwfP Hinc Hwfth Hc Hrs Hrp HwfQ)
     as [P1 [Θ1 [Hrun Hopt]]].
   destruct (a_consis_sound_aux Hrun Hwf0 HwfP0 HwfP
@@ -1281,18 +1281,8 @@ Proof.
       rename Ha into Hrs1; rename Hb into Hrs2
   end.
   (* ---- DOMAIN: thm:complete-consistency at (Θ0; P0a; ⌊Ra⌋) ---- *)
-  pose proof (a_uskl_tyequiv_erase Hrel1) as Herase1.
-  rewrite uskl_to_pskl_msubst_uskl_syn in Herase1.
-  assert (Hc1 : {{ empty ⨟ Θ ⊢ˢ (pskl_to_uskl (msubst_pskl κ ⌊ Ra ⌋ˢ)) ∼ Q1 }}ad).
-  { pose proof (ad_pat_consis_strip_tags Hj1) as H0.
-    destruct (skl_tyequiv_consis_transport Herase1 Hwfth
-                (fun x b Hb => Hb)) as [Hct _].
-    exact (Hct _ _ H0). }
-  assert (Hrp1 : {{ Θ ⨟ empty ⊢ᵣₚ (msubst_pskl κ ⌊ Ra ⌋ˢ) ⊳ (bskl_to_pskl Q1) }}ad).
-  { pose proof Hrfn1 as H0.
-    destruct (skl_tyequiv_refine_pskl_transport Herase1 Hwfth
-                (fun x b Hb => Hb)) as [Hrpt _].
-    exact (Hrpt _ _ H0). }
+  pose proof (tyequiv_slack_consis _ _ Hwfth Hrel1 eq_refl Hj1) as Hc1.
+  pose proof (tyequiv_slack_refine _ _ Hwfth Hrel1 eq_refl Hrfn1) as Hrp1.
   destruct (a_consis_complete Hwf0 HwfP0a HwfPa Hinc Hwfth Hc1
               Hrs1 Hrp1 ltac:(simpl in HwfQ; inversion HwfQ; assumption))
     as [Q1' [Θ1 [Hrun1 Hopt1]]].
