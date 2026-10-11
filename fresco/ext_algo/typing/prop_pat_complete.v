@@ -635,17 +635,15 @@ Proof.
     destruct (e_split_inv_arrow Hd) as [-> [-> [-> ->]]].
     rewrite e_split_impl_equation_4.
     eexists; exists (@nil (atom * atom)).
-    split; [ reflexivity | ].
-    repeat apply conj; [ intros ? ? [] | reflexivity | reflexivity
-            | reflexivity | reflexivity ].
+    exact (conj eq_refl (conj (swaps_dodge_nil _)
+      (conj (reflexivity _) (conj eq_refl (conj eq_refl eq_refl))))).
   - exfalso. exact (e_split_inv_all_syn Hd).
   - (* the HOLE row *)
     destruct (e_split_inv_ghost Hd) as [-> [-> [-> ->]]].
     rewrite e_split_impl_equation_6.
     eexists; exists (@nil (atom * atom)).
-    split; [ reflexivity | ].
-    repeat apply conj; [ intros ? ? [] | reflexivity | reflexivity
-            | reflexivity | reflexivity ].
+    exact (conj eq_refl (conj (swaps_dodge_nil _)
+      (conj (reflexivity _) (conj eq_refl (conj eq_refl eq_refl))))).
   - exfalso. exact (e_split_inv_univ_ghost Hd).
 Qed.
 

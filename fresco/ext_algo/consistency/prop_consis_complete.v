@@ -153,6 +153,12 @@ Qed.
 (*  input supply.                                                         *)
 (* ===================================================================== *)
 
+(** The empty chain dodges every supply — the chain a row answers with
+    when it invents nothing. *)
+Lemma swaps_dodge_nil : forall (S : atoms) a b,
+  In (a, b) (@nil (atom * atom)) -> a `notin` S /\ b `notin` S.
+Proof. intros S a b []. Qed.
+
 (** ⚙ The Δ-slots are taken as [=]-VARIANTS, exactly as [e_consis_swap]
     takes them and for the same reason: a caller that has to hold the
     chain's action on a Δ fixed ([U-Arrow], where every pair dodges the
@@ -1166,10 +1172,8 @@ Proof.
            cbv beta iota.
            exists (mk_consis_result S1 ((α ~ abind_flex_mono) ++ Θ0)
                      pskl_unit), (@nil (atom * atom)).
-           split; [ reflexivity | ].
-           repeat apply conj; [ intros ? ? [] | cbn [cs_supply proj1_sig]; reflexivity
-                   | cbn [cs_ctx proj1_sig]; reflexivity
-                   | exact I ].
+           exact (conj eq_refl (conj (swaps_dodge_nil _)
+             (conj (reflexivity _) (conj eq_refl I)))).
         -- (* Assign-SolveM, at every leaf of the runner's Ξ × P dispatch *)
            subst Θd.
            destruct Ξ as [ | e Ξ' ];
@@ -1313,9 +1317,8 @@ Proof.
               [ exact Hfb | exact Hfβ ] ].
         cbv beta iota.
         eexists; exists (@nil (atom * atom)).
-        split; [ reflexivity | ].
-        repeat apply conj; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
-                | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity | exact I ].
+        exact (conj eq_refl (conj (swaps_dodge_nil _)
+          (conj (reflexivity _) (conj eq_refl I)))).
       * cbv beta iota. split_eqdec Heq3 Hne3.
         -- (* the head IS β — Flex-Flex-R *)
            subst. cbv beta iota.
@@ -1325,9 +1328,8 @@ Proof.
                  [ exact Hfb | exact Hfα ] ].
            cbv beta iota.
            eexists; exists (@nil (atom * atom)).
-           split; [ reflexivity | ].
-           repeat apply conj; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
-                   | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity | exact I ].
+           exact (conj eq_refl (conj (swaps_dodge_nil _)
+             (conj (reflexivity _) (conj eq_refl I)))).
         -- (* Flex-Flex-Skip *)
            cbv beta iota.
            destruct (e_unify_inv_flex_skip Hne Hne2 Hne3 Hd)
@@ -1387,10 +1389,8 @@ Proof.
       * (* 1 ∼ 1 — U-Unit *)
         destruct (e_consis_inv_unit Hd) as [-> [-> ->]].
         exists (mk_consis_result S1 Θ' pskl_unit), (@nil (atom * atom)).
-        split; [ reflexivity | ].
-        repeat apply conj; [ intros ? ? [] | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
-                | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity
-                | cbn [swaps_pskl cs_out proj1_sig]; reflexivity ].
+        exact (conj eq_refl (conj (swaps_dodge_nil _)
+          (conj (reflexivity _) (conj eq_refl eq_refl)))).
       * (* a dangling index is no subject *) inversion Hlc1.
       * (* 1 ∼ α̂ — U-FlexL *)
         destruct (e_consis_inv_flex_l Hd ltac:(intros; discriminate)
@@ -1442,20 +1442,14 @@ Proof.
                      | [ [Hnf [-> Da]] | [Hnf [-> Da]] ] ] ].
               ** exists (mk_consis_result S1 Θ' (pskl_var_f α0)),
                         (@nil (atom * atom)).
-                 split; [ reflexivity | ].
-                 repeat apply conj; [ intros ? ? []
-                         | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
-                         | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity
-                         | cbn [swaps_pskl cs_out proj1_sig]; reflexivity ].
+                 exact (conj eq_refl (conj (swaps_dodge_nil _)
+                   (conj (reflexivity _) (conj eq_refl eq_refl)))).
               ** (* U-Flex at α̂ ≈ᵘ α̂ moves nothing (§5) *)
                  destruct (e_unify_refl Du HD) as [-> ->].
                  exists (mk_consis_result S1 Θ' (pskl_var_f α0)),
                         (@nil (atom * atom)).
-                 split; [ reflexivity | ].
-                 repeat apply conj; [ intros ? ? []
-                         | cbn [swaps_atoms cs_supply proj1_sig]; reflexivity
-                         | cbn [swaps_aenv cs_ctx proj1_sig]; reflexivity
-                         | cbn [swaps_pskl cs_out proj1_sig]; reflexivity ].
+                 exact (conj eq_refl (conj (swaps_dodge_nil _)
+                   (conj (reflexivity _) (conj eq_refl eq_refl)))).
               ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
                  apply a_flex_var_iff_tvar. eapply e_assign_target_flex;
                    eassumption.
@@ -1737,9 +1731,7 @@ Proof.
                   (swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd))
                   (pskl_all_syn (close_pskl_wrt_pskl (supply_fresh S1) (cs_out r)))),
                ((α, supply_fresh S1) :: ps).
-        split; [ reflexivity | ].
-        repeat apply conj;
-          [ exact HavAll | exact HSAll | reflexivity | exact HQAll ].
+        exact (conj eq_refl (conj HavAll (conj HSAll (conj eq_refl HQAll)))).
       * (* ⭐ ∀ ∼ ◇ — U-Ghost is the only rule at a ◇ subject *)
         destruct (e_consis_inv_ghost_subject Hd
                     ltac:(intros ? Habs; discriminate Habs))
@@ -1787,9 +1779,7 @@ Proof.
                   (swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd))
                   (pskl_all_syn (close_pskl_wrt_pskl (supply_fresh S1) (cs_out r)))),
                ((α, supply_fresh S1) :: ps).
-        split; [ reflexivity | ].
-        repeat apply conj;
-          [ exact HavAll | exact HSAll | reflexivity | exact HQAll ].
+        exact (conj eq_refl (conj HavAll (conj HSAll (conj eq_refl HQAll)))).
     + (* ⭐ ================= pattern [◇] =================
          FORMERLY OUT OF THE FRAGMENT.  [U-GhostR] is the only rule: it
          coincides with [U-Ghost] at [(◇,◇)] (same triple), and [U-FlexL]
@@ -1893,9 +1883,7 @@ Proof.
                   (swaps_aenv ps (swap_aenv α (supply_fresh S1) Θd))
                   (pskl_all_syn (close_pskl_wrt_pskl (supply_fresh S1) (cs_out r)))),
                ((α, supply_fresh S1) :: ps).
-        split; [ reflexivity | ].
-        repeat apply conj;
-          [ exact HavAll | exact HSAll | reflexivity | exact HQAll ].
+        exact (conj eq_refl (conj HavAll (conj HSAll (conj eq_refl HQAll)))).
       * (* ⭐ ⫯P0 ∼ ◇ — U-Ghost is the only rule at a ◇ subject *)
         destruct (e_consis_inv_ghost_subject Hd
                     ltac:(intros ? Habs; discriminate Habs))
