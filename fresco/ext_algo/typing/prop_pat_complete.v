@@ -1221,8 +1221,7 @@ Proof.
             | eapply swaps_notin_eq; [ reflexivity | exact Hxd ] ]);
       assert (Hx10 : swaps_atom psc (swaps_atom ps1 xd) `notin` S0)
         by (apply swaps_atom_dodge with (S := S0);
-            [ intros a0 b0 Hin; destruct (Havc a0 b0 Hin) as [Hka Hkb];
-              split; clear - Hka Hkb Hgrs; fsetdec
+            [ apply (swaps_dodge_sub Havc); clear - Hgrs; fsetdec
             | apply swaps_atom_dodge with (S := S0);
               [ exact Hav1
               | pose proof (e_consis_supply_grows Dc) as Hgc0;
@@ -1359,12 +1358,12 @@ Proof.
     (* transport the FUNCTION's derivation onto the first answer's rails *)
     assert (HfixP : forall X, ftvar_in_pskl X [<=] S0 ->
               swaps_pskl ps1 X = X)
-      by (intros X HX; apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-          destruct (Hav1 a0 b0 Hin) as [Hka Hkb]; split; fsetdec).
+      by (intros X HX; apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
+          exact HX).
     assert (Hfixe : forall E, fvar_in_exp E ∪ ftvar_in_exp E [<=] S0 ->
               swaps_exp ps1 E = E)
-      by (intros E HE; apply swaps_exp_fresh_id; intros a0 b0 Hin;
-          destruct (Hav1 a0 b0 Hin) as [Hka Hkb]; split; fsetdec).
+      by (intros E HE; apply swaps_exp_fresh_id, (swaps_dodge_sub Hav1);
+          exact HE).
     destruct (e_pat_swaps ps1 D2 (S0' := pt_supply r2))
       as [Sd2 [HSd2 D2t]]; [ symmetry; exact HS1 | ].
     rewrite HT1 in D2t.

@@ -1177,9 +1177,8 @@ Proof.
         ++ cbn [sb_ctx]. rewrite swaps_aenv_app. exact HT2.
         ++ cbn [sb_out]. rewrite swaps_pskl_app, ! swaps_pskl_arrow.
            rewrite HQ1 in *. f_equal; [ | exact HQ2 ].
-           apply swaps_pskl_fresh_id. intros a0 b0 Hin.
-           destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
-           split; clear - Ha0 Hb0 Hout1; fsetdec.
+           apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav2).
+           clear - Hout1; fsetdec.
 
       -- (* SI-ForallL *)
         do_forall_l Hd Hu Hcov

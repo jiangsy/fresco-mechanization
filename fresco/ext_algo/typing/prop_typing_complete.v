@@ -488,32 +488,19 @@ Lemma e_typing_draw_term : forall S m Θ P e A x Sd Ξ Θd B,
            ++ swaps_aenv ((x, supply_fresh S) :: nil) Θd) }}e.
 Proof.
   intros * Hx Hscope Hd.
-  pose proof (supply_fresh_notin S) as Hfresh.
-  assert (Hpair : forall a b, In (a, b) ((x, supply_fresh S) :: nil) ->
-    a `notin` S /\ b `notin` S).
-  { intros a b [Heq | []]. inversion Heq; subst; auto. }
-  assert (Hatom : swaps_atom ((x, supply_fresh S) :: nil) x = supply_fresh S)
-    by (cbn [swaps_atom]; apply swap_atom_l).
-  assert (HΘ : swaps_aenv ((x, supply_fresh S) :: nil) Θ = Θ).
-  { apply swaps_aenv_fresh_id. intros a b Hin.
-    destruct (Hpair _ _ Hin) as [Ha Hb]. split; clear - Ha Hb Hscope; fsetdec. }
-  assert (HA : swaps_ptyp ((x, supply_fresh S) :: nil) A = A).
-  { apply swaps_ptyp_fresh_id. intros a b Hin.
-    destruct (Hpair _ _ Hin) as [Ha Hb]. split; clear - Ha Hb Hscope; fsetdec. }
-  assert (HP : swaps_pskl ((x, supply_fresh S) :: nil) P = P).
-  { apply swaps_pskl_fresh_id. intros a b Hin.
-    destruct (Hpair _ _ Hin) as [Ha Hb]. split; clear - Ha Hb Hscope; fsetdec. }
-  assert (He : swaps_exp ((x, supply_fresh S) :: nil) e = e).
-  { apply swaps_exp_fresh_id. intros a b Hin.
-    destruct (Hpair _ _ Hin) as [Ha Hb]. split; clear - Ha Hb Hscope; fsetdec. }
-  destruct (e_typing_swaps ((x, supply_fresh S) :: nil) Hd
-    (S0' := add (supply_fresh S) S)) as (Sd' & HS & Hd').
-  { cbn [swaps_atoms]. rewrite swap_atoms_add, swap_atom_l.
-    rewrite swap_atoms_notin by (clear - Hx Hfresh; fsetdec). reflexivity. }
-  rewrite !swaps_aenv_app_dist, !swaps_aenv_one_var_typ,
-    swaps_exp_open_var, Hatom, HΘ, HA, HP, He in Hd'.
-  exists Sd'. split; [ exact HS | ].
-  split; [ exact HΘ | ]. split; [ exact HA | exact Hd' ].
+  destruct (swaps_onto_fresh Hx) as (Hav & Hatom & HSadd).
+  assert (HΘ : swaps_aenv ((x, supply_fresh S) :: nil) Θ = Θ)
+    by (apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav);
+        clear - Hscope; fsetdec).
+  assert (HA : swaps_ptyp ((x, supply_fresh S) :: nil) A = A)
+    by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav);
+        clear - Hscope; fsetdec).
+  destruct (e_typing_swaps ((x, supply_fresh S) :: nil) Hd HSadd)
+    as (Sd' & HS & Hd').
+  rewrite !swaps_aenv_app_dist, !swaps_aenv_one_var_typ, swaps_exp_open_var,
+    Hatom, HΘ, HA, (swaps_pskl_fresh_id _ P), (swaps_exp_fresh_id _ e) in Hd'
+    by (apply (swaps_dodge_sub Hav); clear - Hscope; fsetdec).
+  exists Sd'. exact (conj HS (conj HΘ (conj HA Hd'))).
 Qed.
 
 Arguments e_typing_draw_term {S m Θ P} e {A x Sd Ξ Θd B} _ _ _.
@@ -550,15 +537,7 @@ Lemma typing_complete_forall_step : forall S0 Θ0 A0 e Sd Θd A Ξ αd,
 Proof.
   intros S0 Θ0 A0 e Sd Θd A Ξ αd Hstep HP0 He HΘ HD Hu Hcov
     Hsuf HuΞ Hfil HαA Hαd Db h.
-  pose proof (supply_fresh_notin S0) as Hsf.
-  assert (Hav0 : forall a b, In (a, b) ((αd, supply_fresh S0) :: nil) ->
-                 a `notin` S0 /\ b `notin` S0)
-    by (intros a0 b0 [Heq0 | []]; inversion Heq0; subst;
-        split; assumption).
-  assert (Hsαd : swaps_atom ((αd, supply_fresh S0) :: nil) αd
-                 = supply_fresh S0)
-    by (cbn [swaps_atom]; unfold swap_atom;
-        destruct (αd == αd); [ reflexivity | congruence ]).
+  destruct (swaps_onto_fresh Hαd) as (Hav0 & Hsαd & HSadd).
   assert (HfixΘ : swaps_aenv ((αd, supply_fresh S0) :: nil) Θ0 = Θ0)
     by (apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav0);
         clear - Hcov; simpl in *; fsetdec).
@@ -572,13 +551,8 @@ Proof.
                     e = e)
     by (apply swaps_exp_fresh_id, (swaps_dodge_sub Hav0);
         clear - Hcov; simpl in *; fsetdec).
-  destruct (e_typing_swaps ((αd, supply_fresh S0) :: nil) Db
-              (S0' := add (supply_fresh S0) S0)) as [Sd1 [HSd1 Db1]].
-  { cbn [swaps_atoms]. rewrite swap_atoms_add.
-    rewrite (swap_atoms_notin αd (supply_fresh S0) S0)
-      by (clear - Hαd Hsf; fsetdec).
-    unfold swap_atom.
-    destruct (αd == αd); [ reflexivity | congruence ]. }
+  destruct (e_typing_swaps ((αd, supply_fresh S0) :: nil) Db HSadd)
+    as [Sd1 [HSd1 Db1]].
   rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_tvar in Db1.
   rewrite ! swaps_pskl_ptyp_to_pskl, ! swaps_ptyp_open,
     ! swaps_ptyp_var_f in Db1.
@@ -656,9 +630,8 @@ Proof.
             (swaps_aenv ((αd, supply_fresh S0) :: nil) Ξ) ++ Θ0)).
   { assert (HfixΘ2 : swaps_aenv ps2 (swaps_aenv
               ((αd, supply_fresh S0) :: nil) Θ0) = Θ0).
-    { rewrite HfixΘ. apply swaps_aenv_fresh_id. intros a0 b0 Hin.
-      destruct (Hav2 a0 b0 Hin) as [Hka Hkb].
-      split; clear - Hka Hkb Hcov; simpl in *; fsetdec. }
+    { rewrite HfixΘ. apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav2).
+      clear - Hcov; simpl in *; fsetdec. }
     rewrite <- HfixΘ2. rewrite <- ! swaps_aenv_app_dist.
     apply swaps_aenv_uniq. apply swaps_aenv_uniq. exact HuΞ. }
   assert (Hfilr : (dom (swaps_aenv ps2 (swaps_aenv
@@ -677,12 +650,9 @@ Proof.
   split; [ exact HuΞr | ].
   split; [ exact Hfilr | ].
   split.
-  - intros a b Hin. apply in_app_or in Hin.
-    destruct Hin as [Hin | Hin]; [ exact (Hav0 _ _ Hin) | ].
-    destruct (Hav2 _ _ Hin) as [Ha Hb]. split; fsetdec.
+  - apply (swaps_dodge_app Hav0 Hav2); fsetdec.
   - split.
-    + rewrite swaps_atoms_app, <- HS2.
-      apply swaps_atoms_cong. symmetry. exact HSd1.
+    + exact (swaps_atoms_app_transport HSd1 HS2).
     + split; [ rewrite swaps_aenv_app; reflexivity | ].
       rewrite swaps_ptyp_app. exact Hclose.
 Qed.
@@ -1033,8 +1003,7 @@ Proof.
             | eapply swaps_notin_eq; [ reflexivity | exact Hxd ] ]);
       assert (Hx10 : swaps_atom psg (swaps_atom ps1 xd) `notin` S0)
         by (apply swaps_atom_dodge with (S := S0);
-            [ intros a0 b0 Hin; destruct (Havg a0 b0 Hin) as [Hka Hkb];
-              split; clear - Hka Hkb Hgrs; fsetdec
+            [ apply (swaps_dodge_sub Havg); clear - Hgrs; fsetdec
             | apply swaps_atom_dodge with (S := S0);
               [ exact Hav1
               | pose proof (e_guess_mono_supply_grows Hg) as Hgg;
@@ -1353,8 +1322,7 @@ Proof.
               | eapply swaps_notin_eq; [ reflexivity | exact Hxd ] ]).
         assert (Hx10 : swaps_atom psc (swaps_atom ps1 xd) `notin` S0)
           by (apply swaps_atom_dodge with (S := S0);
-              [ intros a0 b0 Hin; destruct (Havc a0 b0 Hin) as [Hka Hkb];
-                split; clear - Hka Hkb Hgrs; fsetdec
+              [ apply (swaps_dodge_sub Havc); clear - Hgrs; fsetdec
               | apply swaps_atom_dodge with (S := S0);
                 [ exact Hav1
                 | pose proof (e_consis_supply_grows Dc) as Hgc0;
@@ -1447,10 +1415,7 @@ Proof.
         destruct (e_typing_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]].
         assert (Hfix2a : swaps_atom ps2 (supply_fresh (cs_supply rc))
                          = supply_fresh (cs_supply rc))
-          by (apply swaps_atom_notin; intros a0 b0 Hin;
-              destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-              split; intro Heqi; [ apply Hka | apply Hkb ];
-              rewrite <- Heqi; clear; fsetdec).
+          by (apply (swaps_atom_dodge_in Hav2); clear; fsetdec).
         assert (Hfix2A : swaps_ptyp ps2 A = A)
           by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2);
               clear - Hcov Hgrs Hgrc; simpl in *; fsetdec).
@@ -1523,9 +1488,8 @@ Proof.
               by (apply swaps_ptyp_fresh_id, swaps_dodge_one;
                   clear - Hx1S Hsfc HcAd Hgrc; fsetdec).
             rewrite Hfx.
-            apply swaps_ptyp_fresh_id. intros a0 b0 Hin.
-            destruct (Hav2 a0 b0 Hin) as [Hka Hkb].
-            split; clear - Hka Hkb HcAd Hgrc; fsetdec.
+            apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2).
+            clear - HcAd Hgrc; fsetdec.
           * rewrite ! swaps_ptyp_app. exact HQ2. }
 
     all: (
@@ -1599,8 +1563,7 @@ Proof.
             | eapply swaps_notin_eq; [ reflexivity | exact Hxd ] ]);
       assert (Hx10 : swaps_atom psc (swaps_atom ps1 xd) `notin` S0)
         by (apply swaps_atom_dodge with (S := S0);
-            [ intros a0 b0 Hin; destruct (Havc a0 b0 Hin) as [Hka Hkb];
-              split; clear - Hka Hkb Hgrs; fsetdec
+            [ apply (swaps_dodge_sub Havc); clear - Hgrs; fsetdec
             | apply swaps_atom_dodge with (S := S0);
               [ exact Hav1
               | pose proof (e_consis_supply_grows Dc) as Hgc0;
@@ -1678,10 +1641,7 @@ Proof.
       destruct (e_typing_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]];
       assert (Hfix2a : swaps_atom ps2 (supply_fresh (cs_supply rc))
                        = supply_fresh (cs_supply rc))
-        by (apply swaps_atom_notin; intros a0 b0 Hin;
-            destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-            split; intro Heqi; [ apply Hka | apply Hkb ];
-            rewrite <- Heqi; clear; fsetdec);
+        by (apply (swaps_atom_dodge_in Hav2); clear; fsetdec);
       assert (Hfix2A : swaps_ptyp ps2 A = A)
         by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2);
             clear - Hcov Hgrs Hgrc; simpl in *; fsetdec);
@@ -1750,12 +1710,12 @@ Proof.
     pose proof (e_pat_supply_grows Hr2) as Hgr2.
     (* the FUNCTION, at the argument's answer *)
     assert (HfixP : forall X, ftvar_in_pskl X [<=] S0 -> swaps_pskl ps1 X = X)
-      by (intros X HX; apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-          destruct (Hav1 a0 b0 Hin) as [Hka Hkb]; split; fsetdec).
+      by (intros X HX; apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
+          exact HX).
     assert (Hfixe : forall E, fvar_in_exp E ∪ ftvar_in_exp E [<=] S0 ->
               swaps_exp ps1 E = E)
-      by (intros E HE; apply swaps_exp_fresh_id; intros a0 b0 Hin;
-          destruct (Hav1 a0 b0 Hin) as [Hka Hkb]; split; fsetdec).
+      by (intros E HE; apply swaps_exp_fresh_id, (swaps_dodge_sub Hav1);
+          exact HE).
     destruct (e_typing_swaps ps1 D2 (S0' := pt_supply r2))
       as [Sd2 [HSd2 D2t]]; [ symmetry; exact HS1 | ].
     rewrite HT1 in D2t.
@@ -1786,9 +1746,8 @@ Proof.
     (* the ARGUMENT again, at the function's domain *)
     assert (Hfixe2 : swaps_exp ps2 (swaps_exp ps1 e2) = e2).
     { rewrite (Hfixe e2) by (clear - Hcov; simpl in *; fsetdec).
-      apply swaps_exp_fresh_id. intros a0 b0 Hin.
-      destruct (Hav2 a0 b0 Hin) as [Hka Hkb].
-      split; clear - Hka Hkb Hcov Hgr2; simpl in *; fsetdec. }
+      apply swaps_exp_fresh_id, (swaps_dodge_sub Hav2).
+      clear - Hcov Hgr2; simpl in *; fsetdec. }
     destruct (e_typing_swaps (ps1 ++ ps2) D3 (S0' := ty_supply r1))
       as [Sd3 [HSd3 D3t]];
       [ rewrite swaps_atoms_app; rewrite <- HS2;
@@ -1942,9 +1901,8 @@ Proof.
     + exact (swaps_atoms_app_transport HSc1 HS2).
     + cbn [ty_ctx]. rewrite swaps_aenv_app. exact HT2.
     + cbn [ty_out]. rewrite swaps_ptyp_app, HfixBd.
-      apply swaps_ptyp_fresh_id. intros a0 b0 Hin.
-      destruct (Hav2 a0 b0 Hin) as [Hka Hkb].
-      split; clear - Hka Hkb Hcov HBe Hgr1; simpl in *; fsetdec.
+      apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2).
+      clear - Hcov HBe Hgr1; simpl in *; fsetdec.
 Qed.
 
 (* ===================================================================== *)
