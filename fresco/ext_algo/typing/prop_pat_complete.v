@@ -285,6 +285,28 @@ Proof.
   exists Sd'. exact (conj HS (conj HΘ (conj HA Hd'))).
 Qed.
 
+(** The chain a binder row answers with — the chain that brought the
+    derivation onto the runner's rails, the binder's realignment onto the
+    draw, and the body's own chain — dodges the row's input supply. *)
+Lemma swaps_dodge_draw {ps1 ps2} {x} {T S : atoms} :
+  (forall a b, In (a, b) ps1 -> a `notin` T /\ b `notin` T) ->
+  x `notin` T -> T [<=] S ->
+  (forall a b, In (a, b) ps2 ->
+     a `notin` add (supply_fresh S) S /\ b `notin` add (supply_fresh S) S) ->
+  forall a b, In (a, b) ((ps1 ++ ((x, supply_fresh S) :: nil)) ++ ps2) ->
+    a `notin` T /\ b `notin` T.
+Proof.
+  intros Hav1 Hx HTS Hav2 a b Hin.
+  pose proof (supply_fresh_notin S) as Hf.
+  rewrite !in_app_iff in Hin.
+  destruct Hin as [[Hin | [Heq | []]] | Hin].
+  - exact (Hav1 _ _ Hin).
+  - inversion Heq; subst. split.
+    + exact Hx.
+    + clear - Hf HTS; fsetdec.
+  - destruct (Hav2 _ _ Hin) as [Ha Hb]. split; clear - Ha Hb HTS; fsetdec.
+Qed.
+
 (** Pushing a binder at the runner's draw keeps the three context
     invariants the motive asks of its input context. *)
 Lemma push_fresh_invariants : forall S (Θ : aenv) b,
@@ -1057,16 +1079,9 @@ Proof.
                 supply_fresh (sp_supply rs)) :: nil)) ++ ps2);
       split; [ cbn [pat_answer proj1_sig]; reflexivity | ];
       repeat apply conj;
-      [ intros a0 b0 Hin; repeat (apply in_app_or in Hin;
-          destruct Hin as [Hin | Hin]);
-        [ exact (Hav1 _ _ Hin)
-        | destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-          split; [ exact Hx10 | clear - Hsf Hgrs; fsetdec ]
-        | destruct (Hav2 _ _ Hin) as [Hka Hkb]; split;
-          clear - Hka Hkb Hgrs; fsetdec ]
-      | cbn [pt_supply]; rewrite ! swaps_atoms_app; rewrite <- HS2;
-        apply swaps_atoms_cong; rewrite HSd2;
-        apply swaps_atoms_cong; symmetry; exact HSd1
+      [ exact (swaps_dodge_draw Hav1 Hx10 Hgrs Hav2)
+      | exact (swaps_atoms_app_transport
+          (swaps_atoms_app_compose HSd2 HSd1) HS2)
       | cbn [pt_ctx]; rewrite swaps_aenv_app_dist, ! swaps_aenv_app;
         reflexivity
       | cbn [pt_skel]; rewrite swaps_pskl_arrow; f_equal;
@@ -1305,19 +1320,11 @@ Proof.
                 supply_fresh (cs_supply rc)) :: nil)) ++ ps2);
       split; [ cbn [pat_answer proj1_sig]; reflexivity | ];
       repeat apply conj;
-      [ intros a0 b0 Hin; repeat (apply in_app_or in Hin;
-          destruct Hin as [Hin | Hin]);
-        [ exact (Hav1 _ _ Hin)
-        | destruct (Havc _ _ Hin) as [Hka Hkb]; split;
-          clear - Hka Hkb Hgrs; fsetdec
-        | destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-          split; [ exact Hx10 | clear - Hsf Hgrs Hgrc; fsetdec ]
-        | destruct (Hav2 _ _ Hin) as [Hka Hkb]; split;
-          clear - Hka Hkb Hgrs Hgrc; fsetdec ]
-      | cbn [pt_supply]; rewrite ! swaps_atoms_app; rewrite <- HS2;
-        apply swaps_atoms_cong; rewrite HSd2;
-        apply swaps_atoms_cong; symmetry;
-        rewrite <- swaps_atoms_app; exact HSd1
+      [ exact (swaps_dodge_draw
+          (swaps_dodge_app Hav1 Havc (reflexivity _) Hgrs)
+          Hx10 (transitivity Hgrs Hgrc) Hav2)
+      | exact (swaps_atoms_app_transport
+          (swaps_atoms_app_compose HSd2 HSd1) HS2)
       | cbn [pt_ctx]; rewrite swaps_aenv_app_dist, ! swaps_aenv_app;
         reflexivity
       | cbn [pt_skel]; rewrite swaps_pskl_arrow; f_equal;

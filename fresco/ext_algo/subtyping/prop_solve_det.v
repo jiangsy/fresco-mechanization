@@ -753,6 +753,15 @@ Proof.
   apply swaps_atoms_cong. symmetry; exact HSt.
 Qed.
 
+(** Two transport steps compose into one along the concatenated chain. *)
+Lemma swaps_atoms_app_compose {ps1 ps2} {S S1 S2 : atoms} :
+  S2 [=] swaps_atoms ps2 S1 -> S1 [=] swaps_atoms ps1 S ->
+  S2 [=] swaps_atoms (ps1 ++ ps2) S.
+Proof.
+  intros H2 H1. rewrite swaps_atoms_app, H2.
+  apply swaps_atoms_cong. exact H1.
+Qed.
+
 (** The recursive chain fixes the new opener, so closing commutes with
     prefixing its alignment swap. *)
 Lemma swaps_pskl_close_binder : forall α β ps S P Q,

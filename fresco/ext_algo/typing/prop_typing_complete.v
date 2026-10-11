@@ -931,16 +931,9 @@ Proof.
                   supply_fresh (sp_supply rs)) :: nil)) ++ ps2).
         split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
         repeat apply conj.
-        + intros a0 b0 Hin. repeat (apply in_app_or in Hin;
-            destruct Hin as [Hin | Hin]).
-          * exact (Hav1 _ _ Hin).
-          * destruct Hin as [Heq0 | []]; inversion Heq0; subst.
-            split; [ exact Hx10 | clear - Hsfs Hgrs; fsetdec ].
-          * destruct (Hav2 _ _ Hin) as [Hka Hkb]. split;
-              clear - Hka Hkb Hgrs; fsetdec.
-        + cbn [ty_supply]. rewrite ! swaps_atoms_app. rewrite <- HS2.
-          apply swaps_atoms_cong. rewrite HSd2.
-          apply swaps_atoms_cong. symmetry. exact HSd1.
+        + exact (swaps_dodge_draw Hav1 Hx10 Hgrs Hav2).
+        + exact (swaps_atoms_app_transport
+            (swaps_atoms_app_compose HSd2 HSd1) HS2).
         + cbn [ty_ctx]. rewrite ! swaps_aenv_app. reflexivity.
         + cbn [ty_out]. rewrite swaps_ptyp_arrow. f_equal.
           * rewrite ! swaps_ptyp_app, HfixAd. exact Hfix2A.
@@ -1149,19 +1142,11 @@ Proof.
                 supply_fresh (gr_supply rg)) :: nil)) ++ ps2);
       split; [ cbn [typing_answer proj1_sig]; reflexivity | ];
       repeat apply conj;
-      [ intros a0 b0 Hin; repeat (apply in_app_or in Hin;
-          destruct Hin as [Hin | Hin]);
-        [ exact (Hav1 _ _ Hin)
-        | destruct (Havg _ _ Hin) as [Hka Hkb]; split;
-          clear - Hka Hkb Hgrs; fsetdec
-        | destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-          split; [ exact Hx10 | clear - Hsf Hgrs Hgrg; fsetdec ]
-        | destruct (Hav2 _ _ Hin) as [Hka Hkb]; split;
-          clear - Hka Hkb Hgrs Hgrg; fsetdec ]
-      | cbn [ty_supply]; rewrite ! swaps_atoms_app; rewrite <- HS2;
-        apply swaps_atoms_cong; rewrite HSd2;
-        apply swaps_atoms_cong; symmetry;
-        rewrite <- swaps_atoms_app; exact HSd1
+      [ exact (swaps_dodge_draw
+          (swaps_dodge_app Hav1 Havg (reflexivity _) Hgrs)
+          Hx10 (transitivity Hgrs Hgrg) Hav2)
+      | exact (swaps_atoms_app_transport
+          (swaps_atoms_app_compose HSd2 HSd1) HS2)
       | cbn [ty_ctx]; rewrite swaps_aenv_app_dist, ! swaps_aenv_app;
         reflexivity
       | cbn [ty_out]; rewrite swaps_ptyp_arrow; f_equal;
@@ -1450,19 +1435,11 @@ Proof.
                   supply_fresh (cs_supply rc)) :: nil)) ++ ps2).
         split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
         repeat apply conj.
-        + intros a0 b0 Hin. repeat (apply in_app_or in Hin;
-            destruct Hin as [Hin | Hin]).
-          * exact (Hav1 _ _ Hin).
-          * destruct (Havc _ _ Hin) as [Hka Hkb]. split;
-              clear - Hka Hkb Hgrs; fsetdec.
-          * destruct Hin as [Heqi | []]; inversion Heqi; subst.
-            split; [ exact Hx10 | clear - Hsfc Hgrs Hgrc; fsetdec ].
-          * destruct (Hav2 _ _ Hin) as [Hka Hkb]. split;
-              clear - Hka Hkb Hgrs Hgrc; fsetdec.
-        + cbn [ty_supply]. rewrite ! swaps_atoms_app. rewrite <- HS2.
-          apply swaps_atoms_cong. rewrite HSd2.
-          apply swaps_atoms_cong. symmetry.
-          rewrite <- swaps_atoms_app. exact HSd1.
+        + exact (swaps_dodge_draw
+            (swaps_dodge_app Hav1 Havc (reflexivity _) Hgrs)
+            Hx10 (transitivity Hgrs Hgrc) Hav2).
+        + exact (swaps_atoms_app_transport
+            (swaps_atoms_app_compose HSd2 HSd1) HS2).
         + cbn [ty_ctx]. rewrite ! swaps_aenv_app. reflexivity.
         + cbn [ty_out]. rewrite swaps_ptyp_arrow. f_equal.
           * rewrite ! swaps_ptyp_app, HfixA1c.
@@ -1649,19 +1626,11 @@ Proof.
                 supply_fresh (cs_supply rc)) :: nil)) ++ ps2);
       split; [ cbn [typing_answer proj1_sig]; reflexivity | ];
       repeat apply conj;
-      [ intros a0 b0 Hin; repeat (apply in_app_or in Hin;
-          destruct Hin as [Hin | Hin]);
-        [ exact (Hav1 _ _ Hin)
-        | destruct (Havc _ _ Hin) as [Hka Hkb]; split;
-          clear - Hka Hkb Hgrs; fsetdec
-        | destruct Hin as [Heqi | []]; inversion Heqi; subst;
-          split; [ exact Hx10 | clear - Hsfc Hgrs Hgrc; fsetdec ]
-        | destruct (Hav2 _ _ Hin) as [Hka Hkb]; split;
-          clear - Hka Hkb Hgrs Hgrc; fsetdec ]
-      | cbn [ty_supply]; rewrite ! swaps_atoms_app; rewrite <- HS2;
-        apply swaps_atoms_cong; rewrite HSd2;
-        apply swaps_atoms_cong; symmetry;
-        rewrite <- swaps_atoms_app; exact HSd1
+      [ exact (swaps_dodge_draw
+          (swaps_dodge_app Hav1 Havc (reflexivity _) Hgrs)
+          Hx10 (transitivity Hgrs Hgrc) Hav2)
+      | exact (swaps_atoms_app_transport
+          (swaps_atoms_app_compose HSd2 HSd1) HS2)
       | cbn [ty_ctx]; rewrite swaps_aenv_app_dist, ! swaps_aenv_app;
         reflexivity
       | cbn [ty_out]; rewrite swaps_ptyp_arrow; f_equal;
