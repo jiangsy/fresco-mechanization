@@ -239,19 +239,10 @@ Proof.
     destruct (e_guess_mono_inv_ghost Hd) as [α [Hα [-> [-> ->]]]].
     exists ((α, α') :: nil). repeat apply conj.
     + intros ? ? [Heqp | []]. inversion Heqp; subst. split; assumption.
-    + cbn [swaps_atoms]. rewrite swap_atoms_add.
-      rewrite (swap_atoms_notin α α' S0 Hα Hα').
-      replace (swap_atom α α' α) with α'
-        by (unfold swap_atom; destruct (α == α); congruence).
-      reflexivity.
+    + symmetry. exact (swap_atoms_fresh_add _ _ _ Hα Hα').
     + rewrite swaps_aenv_app_dist, swaps_aenv_one_flex, swaps_aenv_nil.
-      cbn [swaps_atom].
-      replace (swap_atom α α' α) with α'
-        by (unfold swap_atom; destruct (α == α); congruence).
-      reflexivity.
-    + rewrite swaps_ptyp_var_f. cbn [swaps_atom].
-      replace (swap_atom α α' α) with α'
-        by (unfold swap_atom; destruct (α == α); congruence).
+      cbn [swaps_atom]. rewrite swap_atom_l. reflexivity.
+    + rewrite swaps_ptyp_var_f. cbn [swaps_atom]. rewrite swap_atom_l.
       reflexivity.
   - (* univ_ghost *)
     pose proof (e_guess_mono_inv_univ_ghost Hd) as Dp.
@@ -298,15 +289,10 @@ Proof.
   - (* all_syn — the two openers are paired first, by ONE transposition *)
     destruct (e_guess_mono_inv_all_syn Hd) as [β [Aa [Hβ [-> Dp]]]].
     simpl in Hcov.
-    assert (Heqs : add β' S0 [=] swap_atoms β β' (add β S0)).
-    { rewrite swap_atoms_add. rewrite (swap_atoms_notin β β' S0 Hβ Hβ').
-      unfold swap_atom. destruct (β == β); [ | congruence ]. reflexivity. }
-    destruct (e_guess_mono_swap Dp Heqs) as [S1t [HS1t Dpt]].
-    rewrite swap_pskl_open_var in Dpt.
-    rewrite (swap_pskl_fresh_id β β' P) in Dpt;
-      [ | clear - Hcov Hβ; fsetdec | clear - Hcov Hβ'; fsetdec ].
-    replace (swap_atom β β' β) with β' in Dpt
-      by (unfold swap_atom; destruct (β == β); congruence).
+    destruct (e_guess_mono_swap Dp (swap_atoms_fresh_add _ _ _ Hβ Hβ'))
+      as [S1t [HS1t Dpt]].
+    rewrite swap_pskl_open_var, swap_atom_l, (swap_pskl_fresh_id β β' P)
+      in Dpt by (clear - Hcov Hβ Hβ'; fsetdec).
     pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f β'))
       as Hup.
     destruct (IH S1t (swap_aenv β β' Ξ) (swap_ptyp β β' Aa)
@@ -317,12 +303,9 @@ Proof.
     + eapply swaps_atoms_cons_transport; eassumption.
     + cbn [swaps_aenv]. exact HX'.
     + cbn [swaps_ptyp swap_ptyp]. rewrite swap_ptyp_close.
-      replace (swap_atom β β' β) with β'
-        by (unfold swap_atom; destruct (β == β); congruence).
+      rewrite swap_atom_l.
       rewrite swaps_ptyp_all, swaps_ptyp_close, HA'.
-      f_equal. f_equal. apply swaps_atom_notin.
-      intros a0 b0 Hin. destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; [ clear - Ha0 | clear - Hb0 ]; fsetdec.
+      f_equal. f_equal. apply (swaps_atom_dodge_in Hav'). fsetdec.
 Qed.
 
 (* ===================================================================== *)
@@ -1096,10 +1079,8 @@ Lemma consis_swaps_close : forall S Sd St Θ Q α β ps r,
     pskl_all_syn (close_pskl_wrt_pskl β (cs_out r)).
 Proof.
   intros * Hα Hβ Hav HSt HS HT HQ.
-  assert (Hfix : swaps_atom ps β = β).
-  { apply swaps_atom_notin. intros a b Hin.
-    destruct (Hav _ _ Hin) as [Ha Hb].
-    split; intro Heq; subst; clear - Ha Hb; fsetdec. }
+  assert (Hfix : swaps_atom ps β = β)
+    by (apply (swaps_atom_dodge_in Hav); fsetdec).
   split.
   - rewrite <- HT, swaps_aenv_cons_tvar, Hfix. reflexivity.
   - split.
@@ -1681,23 +1662,16 @@ Proof.
                       ltac:(cbn [consis_call_cover] in *; clear - Hcov;
                             fsetdec)) as Hout1.
         assert (HDl : Δ1 [=] swaps_atoms ps1 Δ1)
-          by (symmetry; apply swaps_atoms_notin; intros a0 b0 Hin;
-              destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0]; split;
-              clear - Ha0 Hb0 Hcov; fsetdec).
+          by (symmetry; apply swaps_atoms_notin, (swaps_dodge_sub Hav1);
+              clear - Hcov; fsetdec).
         assert (HDr : Δ2 [=] swaps_atoms ps1 Δ2)
-          by (symmetry; apply swaps_atoms_notin; intros a0 b0 Hin;
-              destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0]; split;
-              clear - Ha0 Hb0 Hcov; fsetdec).
-        assert (HSm : cs_supply r1 [=] swaps_atoms ps1 Sm)
-          by (symmetry; exact HS1).
-        destruct (e_consis_swaps ps1 D2 HDl HDr HSm) as [S2t [HS2t D2t]].
-        rewrite HT1 in D2t.
-        rewrite (swaps_pskl_fresh_id ps1 P0b) in D2t;
-          [ | intros a0 b0 Hin; destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0];
-              split; clear - Ha0 Hb0 Hcov; fsetdec ].
-        rewrite (swaps_pskl_fresh_id ps1 Pb) in D2t;
-          [ | intros a0 b0 Hin; destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0];
-              split; clear - Ha0 Hb0 Hcov; fsetdec ].
+          by (symmetry; apply swaps_atoms_notin, (swaps_dodge_sub Hav1);
+              clear - Hcov; fsetdec).
+        destruct (e_consis_swaps ps1 D2 HDl HDr (symmetry HS1))
+          as [S2t [HS2t D2t]].
+        rewrite HT1, (swaps_pskl_fresh_id ps1 P0b),
+          (swaps_pskl_fresh_id ps1 Pb) in D2t
+          by (apply (swaps_dodge_sub Hav1); clear - Hcov; fsetdec).
         pose proof (IHtail P0a P0b Pa Pb _ _ _ eq_refl eq_refl Hr1) as IH2.
         assert (Hcov2 : consis_call_cover (cs_ctx r1)
                   (consis_call_consis Δ1 Δ2 P0b Pb) [<=] cs_supply r1)
@@ -1709,18 +1683,13 @@ Proof.
                   (pskl_arrow (cs_out r1) (cs_out r2))), (ps1 ++ ps2).
         split; [ reflexivity | ].
         repeat apply conj.
-        -- intros a0 b0 Hin. apply in_app_or in Hin.
-           destruct Hin as [Hin | Hin]; [ exact (Hav1 a0 b0 Hin) | ].
-           destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
-           split; clear - Ha0 Hb0 Hgr1; fsetdec.
-        -- cbn [cs_supply]. rewrite swaps_atoms_app. rewrite <- HS2.
-           apply swaps_atoms_cong. symmetry. exact HS2t.
+        -- apply (swaps_dodge_app Hav1 Hav2); clear - Hgr1; fsetdec.
+        -- exact (swaps_atoms_app_transport HS2t HS2).
         -- cbn [cs_ctx]. rewrite swaps_aenv_app. exact HT2.
         -- cbn [cs_out]. rewrite swaps_pskl_app, !swaps_pskl_arrow.
            rewrite HQ1 in *. f_equal; [ | exact HQ2 ].
-           apply swaps_pskl_fresh_id. intros a0 b0 Hin.
-           destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
-           split; clear - Ha0 Hb0 Hout1; fsetdec.
+           apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav2).
+           clear - Hout1; fsetdec.
       * (* → ∼ ∀ : no rule fires *) inversion Hd.
       * (* ⭐ → ∼ ◇ — U-Ghost is the only rule at a ◇ subject *)
         destruct (e_consis_inv_ghost_subject Hd
@@ -1741,34 +1710,19 @@ Proof.
         pose proof (supply_fresh_notin S1) as Hz.
         simpl ftvar_in_pskl in Hcov.
         assert (HD1 : add (supply_fresh S1) Δ1
-                  [=] swap_atoms α (supply_fresh S1) (add α Δ1)).
-        { rewrite swap_atoms_add.
-          rewrite (swap_atoms_notin α (supply_fresh S1) Δ1)
-            by (clear - Hα Hz Hcov; fsetdec).
-          unfold swap_atom. destruct (α == α); [ reflexivity | congruence ]. }
+                  [=] swap_atoms α (supply_fresh S1) (add α Δ1))
+          by (apply swap_atoms_fresh_add; clear - Hα Hz Hcov; fsetdec).
         assert (HD2 : add (supply_fresh S1) Δ2
-                  [=] swap_atoms α (supply_fresh S1) (add α Δ2)).
-        { rewrite swap_atoms_add.
-          rewrite (swap_atoms_notin α (supply_fresh S1) Δ2)
-            by (clear - Hα Hz Hcov; fsetdec).
-          unfold swap_atom. destruct (α == α); [ reflexivity | congruence ]. }
-        assert (HSq : add (supply_fresh S1) S1
-                  [=] swap_atoms α (supply_fresh S1) (add α S1)).
-        { rewrite swap_atoms_add.
-          rewrite (swap_atoms_notin α (supply_fresh S1) S1)
-            by (clear - Hα Hz; fsetdec).
-          unfold swap_atom. destruct (α == α); [ reflexivity | congruence ]. }
+                  [=] swap_atoms α (supply_fresh S1) (add α Δ2))
+          by (apply swap_atoms_fresh_add; clear - Hα Hz Hcov; fsetdec).
+        pose proof (swap_atoms_fresh_add _ _ _ Hα Hz) as HSq.
         destruct (e_consis_swap Dp HD1 HD2 HSq) as [S1t [HS1t Dpt]].
-        rewrite !swap_aenv_app, !swap_aenv_one_tvar in Dpt.
-        rewrite (swap_aenv_fresh_id α (supply_fresh S1) Θ') in Dpt
-          by (clear - Hα Hz Hcov; fsetdec).
-        rewrite !swap_pskl_open_var in Dpt.
-        rewrite (swap_pskl_fresh_id α (supply_fresh S1) P0') in Dpt
-          by (clear - Hα Hz Hcov; fsetdec).
-        rewrite (swap_pskl_fresh_id α (supply_fresh S1) Pb) in Dpt
-          by (clear - Hα Hz Hcov; fsetdec).
-        replace (swap_atom α (supply_fresh S1) α) with (supply_fresh S1)
-          in Dpt by (unfold swap_atom; destruct (α == α); congruence).
+        rewrite !swap_aenv_app, !swap_aenv_one_tvar, !swap_pskl_open_var,
+          swap_atom_l in Dpt.
+        rewrite (swap_aenv_fresh_id α (supply_fresh S1) Θ'),
+          (swap_pskl_fresh_id α (supply_fresh S1) P0'),
+          (swap_pskl_fresh_id α (supply_fresh S1) Pb) in Dpt
+          by (clear - Hα Hz Hcov; simpl in *; fsetdec).
         pose proof (dom_subset_ftvar_in_aenv Θ') as Hdm.
         assert (Hu' : uniq ((supply_fresh S1 ~ abind_tvar) ++ Θ'))
           by (apply uniq_push;
@@ -1809,31 +1763,19 @@ Proof.
         pose proof (supply_fresh_notin S1) as Hz.
         simpl ftvar_in_pskl in Hcov.
         assert (HD1 : add (supply_fresh S1) Δ1
-                  [=] swap_atoms α (supply_fresh S1) (add α Δ1)).
-        { rewrite swap_atoms_add.
-          rewrite (swap_atoms_notin α (supply_fresh S1) Δ1)
-            by (clear - Hα Hz Hcov; fsetdec).
-          unfold swap_atom. destruct (α == α); [ reflexivity | congruence ]. }
+                  [=] swap_atoms α (supply_fresh S1) (add α Δ1))
+          by (apply swap_atoms_fresh_add; clear - Hα Hz Hcov; fsetdec).
         assert (HD2 : Δ2 [=] swap_atoms α (supply_fresh S1) Δ2)
           by (symmetry; apply swap_atoms_notin;
               clear - Hα Hz Hcov; fsetdec).
-        assert (HSq : add (supply_fresh S1) S1
-                  [=] swap_atoms α (supply_fresh S1) (add α S1)).
-        { rewrite swap_atoms_add.
-          rewrite (swap_atoms_notin α (supply_fresh S1) S1)
-            by (clear - Hα Hz; fsetdec).
-          unfold swap_atom. destruct (α == α); [ reflexivity | congruence ]. }
+        pose proof (swap_atoms_fresh_add _ _ _ Hα Hz) as HSq.
         destruct (e_consis_swap Dp HD1 HD2 HSq) as [S1t [HS1t Dpt]].
-        rewrite !swap_aenv_app, !swap_aenv_one_tvar in Dpt.
-        rewrite (swap_aenv_fresh_id α (supply_fresh S1) Θ') in Dpt
-          by (clear - Hα Hz Hcov; fsetdec).
-        rewrite !swap_pskl_open_var in Dpt.
-        rewrite (swap_pskl_fresh_id α (supply_fresh S1) P0') in Dpt
-          by (clear - Hα Hz Hcov; fsetdec).
-        rewrite (swap_pskl_fresh_id α (supply_fresh S1) (pskl_univ_ghost Pb))
-          in Dpt by (clear - Hα Hz Hcov; simpl; fsetdec).
-        replace (swap_atom α (supply_fresh S1) α) with (supply_fresh S1)
-          in Dpt by (unfold swap_atom; destruct (α == α); congruence).
+        rewrite !swap_aenv_app, !swap_aenv_one_tvar, !swap_pskl_open_var,
+          swap_atom_l in Dpt.
+        rewrite (swap_aenv_fresh_id α (supply_fresh S1) Θ'),
+          (swap_pskl_fresh_id α (supply_fresh S1) P0'),
+          (swap_pskl_fresh_id α (supply_fresh S1) (pskl_univ_ghost Pb)) in Dpt
+          by (clear - Hα Hz Hcov; simpl in *; fsetdec).
         pose proof (dom_subset_ftvar_in_aenv Θ') as Hdm.
         assert (Hu' : uniq ((supply_fresh S1 ~ abind_tvar) ++ Θ'))
           by (apply uniq_push;
@@ -1930,28 +1872,16 @@ Proof.
           by (symmetry; apply swap_atoms_notin;
               clear - Hα Hz Hcov; fsetdec).
         assert (HD2 : add (supply_fresh S1) Δ2
-                  [=] swap_atoms α (supply_fresh S1) (add α Δ2)).
-        { rewrite swap_atoms_add.
-          rewrite (swap_atoms_notin α (supply_fresh S1) Δ2)
-            by (clear - Hα Hz Hcov; fsetdec).
-          unfold swap_atom. destruct (α == α); [ reflexivity | congruence ]. }
-        assert (HSq : add (supply_fresh S1) S1
-                  [=] swap_atoms α (supply_fresh S1) (add α S1)).
-        { rewrite swap_atoms_add.
-          rewrite (swap_atoms_notin α (supply_fresh S1) S1)
-            by (clear - Hα Hz; fsetdec).
-          unfold swap_atom. destruct (α == α); [ reflexivity | congruence ]. }
+                  [=] swap_atoms α (supply_fresh S1) (add α Δ2))
+          by (apply swap_atoms_fresh_add; clear - Hα Hz Hcov; fsetdec).
+        pose proof (swap_atoms_fresh_add _ _ _ Hα Hz) as HSq.
         destruct (e_consis_swap Dp HD1 HD2 HSq) as [S1t [HS1t Dpt]].
-        rewrite !swap_aenv_app, !swap_aenv_one_tvar in Dpt.
-        rewrite (swap_aenv_fresh_id α (supply_fresh S1) Θ') in Dpt
-          by (clear - Hα Hz Hcov; fsetdec).
-        rewrite !swap_pskl_open_var in Dpt.
-        rewrite (swap_pskl_fresh_id α (supply_fresh S1) (pskl_univ_ghost P0'))
-          in Dpt by (clear - Hα Hz Hcov; simpl; fsetdec).
-        rewrite (swap_pskl_fresh_id α (supply_fresh S1) Pb) in Dpt
-          by (clear - Hα Hz Hcov; fsetdec).
-        replace (swap_atom α (supply_fresh S1) α) with (supply_fresh S1)
-          in Dpt by (unfold swap_atom; destruct (α == α); congruence).
+        rewrite !swap_aenv_app, !swap_aenv_one_tvar, !swap_pskl_open_var,
+          swap_atom_l in Dpt.
+        rewrite (swap_aenv_fresh_id α (supply_fresh S1) Θ'),
+          (swap_pskl_fresh_id α (supply_fresh S1) (pskl_univ_ghost P0')),
+          (swap_pskl_fresh_id α (supply_fresh S1) Pb) in Dpt
+          by (clear - Hα Hz Hcov; simpl in *; fsetdec).
         pose proof (dom_subset_ftvar_in_aenv Θ') as Hdm.
         assert (Hu' : uniq ((supply_fresh S1 ~ abind_tvar) ++ Θ'))
           by (apply uniq_push;

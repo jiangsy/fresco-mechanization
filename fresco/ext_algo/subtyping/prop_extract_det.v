@@ -480,17 +480,14 @@ Proof.
     + intros ? ? [Heqp | []]. inversion Heqp; subst. split; assumption.
     + cbn [swaps_atoms]. rewrite swap_atoms_add.
       rewrite (swap_atoms_notin γ1 γ2 S0 Hα1 Hγ2).
-      replace (swap_atom γ1 γ2 γ1) with γ2
-        by (unfold swap_atom; destruct (γ1 == γ1); congruence).
+      rewrite swap_atom_l.
       reflexivity.
     + rewrite swaps_aenv_app_dist, swaps_aenv_one_flex, swaps_aenv_nil.
       cbn [swaps_atom].
-      replace (swap_atom γ1 γ2 γ1) with γ2
-        by (unfold swap_atom; destruct (γ1 == γ1); congruence).
+      rewrite swap_atom_l.
       reflexivity.
     + cbn [swaps_cstrs swap_cstrs List.map swap_cstr swaps_pskl swap_pskl].
-      replace (swap_atom γ1 γ2 γ1) with γ2
-        by (unfold swap_atom; destruct (γ1 == γ1); congruence).
+      rewrite swap_atom_l.
       reflexivity.
 
   - (* LE-Arrow — the THREADING row *)
