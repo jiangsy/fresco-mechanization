@@ -2965,6 +2965,73 @@ Proof.
   exact (Hscope γ Hc Hγ).
 Qed.
 
+(** Both [_base] rows close on the same arrow equivalence: the domain is the
+    split's [Ad], pushed from the split's witness [ζ] to the final [ζbt]
+    along the glued equivalence (the identity [κ'] composes away), and the
+    codomain is the body's, its term binder stripped. *)
+Lemma a_typing_complete_check_base_arrow :
+  forall {Θ1 Θf Θ ζ ζbt κ' Ad A x Ax B1'} {B1 : btyp},
+  {{ ⊢ Θ1 }}a -> {{ ⊢ Θf }}a -> a_wf_ptyp Θ1 Ad ->
+  is_id_msubst κ' -> κ' ∷ Θ1 ⊑ Θf ->
+  ζ ∷ Θ1 ⊑ Θ -> ζbt ∷ Θf ⊑ Θ ->
+  a_inc_equiv Θ1 ζ (msubst_compose ζbt κ') Θ ->
+  {{ Θ ⊢ (msubst_ptyp ζ Ad) ≡ᵗ A }}a ->
+  {{ ((x ~ abind_var_typ Ax) ++ Θ) ⊢ (msubst_ptyp ζbt B1') ≡ᵗ (btyp_to_ptyp B1) }}a ->
+  {{ Θ ⊢ (msubst_ptyp ζbt (ptyp_arrow Ad B1'))
+       ≡ᵗ (btyp_to_ptyp (btyp_arrow (ptyp_to_btyp_inh A) B1)) }}a.
+Proof.
+  intros Θ1 Θf Θ ζ ζbt κ' Ad A x Ax B1' B1 Hwf1 Hwff HwfAd Hid Hinc Hζ Hζbt
+         Heqv Heqd Heqcb.
+  assert (Hpush : {{ Θ ⊢ (msubst_ptyp ζ Ad)
+                    ≡ᵗ (msubst_ptyp (msubst_compose ζbt κ') Ad) }}a).
+  { apply (@a_inc_equiv_msubst_ptyp Ad Θ1 ζ (msubst_compose ζbt κ') Θ
+             HwfAd Heqv Hwf1
+             ltac:(eapply a_inc_msubst_lc; exact Hζ)
+             ltac:(apply msubst_lc_compose;
+                   [ eapply a_inc_msubst_lc; exact Hζbt
+                   | exact (is_id_msubst_values_lc Hid) ])). }
+  assert (Hcid : msubst_ptyp (msubst_compose ζbt κ') Ad = msubst_ptyp ζbt Ad)
+    by (eapply msubst_compose_id_ptyp;
+        [ exact Hwf1 | exact Hwff | exact Hid | exact Hinc
+        | exact Hζbt | exact HwfAd ]).
+  rewrite Hcid in Hpush.
+  simpl.
+  rewrite btyp_to_ptyp_ptyp_to_btyp_inh.
+  apply a_tyequiv__arrow.
+  - eapply a_tyequiv__trans; [ apply a_tyequiv__sym; exact Hpush | exact Heqd ].
+  - eapply a_tyequiv_ctx_mono;
+      [ exact Heqcb
+      | apply (@aenv_tbinds_le_strip_tm nil x (abind_var_typ Ax) Θ);
+        intros h; exact h ].
+Qed.
+
+(** The disjointness pack of the two [_base] rows: the body run's output
+    [Ξ ++ x:Ad ++ Θo] keeps the discarded suffix away from [Θo], and its
+    identity increase from the body's input [Θc] only grows the domain, so
+    the rule's Barendregt premise (1) [uniq (Ξ ++ Θc)] holds. *)
+Lemma a_typing_body_suffix_facts : forall {Ξ x Ad Θc Θo κb},
+  {{ ⊢ (Ξ ++ (x ~ abind_var_typ Ad) ++ Θo) }}a ->
+  is_id_msubst κb -> κb ∷ Θc ⊑ Θo -> {{ ⊢ Θc }}a ->
+  (forall γ, γ `in` dom Ξ -> γ `notin` dom Θo) /\ dom Θc [<=] dom Θo /\
+  ({{ ⊢ Θo }}a) /\ uniq (Ξ ++ Θc).
+Proof.
+  intros Ξ x Ad Θc Θo κb HwfOut Hidb Hincb Hwfc.
+  assert (HuOut : uniq (Ξ ++ (x ~ abind_var_typ Ad) ++ Θo))
+    by (apply a_wf_aenv_uniq; exact HwfOut).
+  assert (HΞΘo : forall γ, γ `in` dom Ξ -> γ `notin` dom Θo)
+    by (clear - HuOut; intros γ Hγ; destruct_uniq;
+        unfold disjoint in *; simpl_env in *; fsetdec).
+  assert (Hdom : dom Θc [<=] dom Θo)
+    by (eapply a_inc_id_dom_sub_scope; [ exact Hincb | exact Hidb ]).
+  split; [ exact HΞΘo | ]. split; [ exact Hdom | ].
+  split.
+  - eapply a_wf_aenv_strip_prefix with (Ξ := Ξ ++ (x ~ abind_var_typ Ad)).
+    simpl_env; exact HwfOut.
+  - apply uniq_app_of;
+      [ clear - HuOut; solve_uniq | apply a_wf_aenv_uniq; exact Hwfc
+      | intros γ Hγ Hc; exact (HΞΘo γ Hγ (Hdom _ Hc)) ].
+Qed.
+
 (* ===================================================================== *)
 (*  STEP B — the two [_base] check rows.                                  *)
 (*                                                                        *)
@@ -3060,31 +3127,20 @@ Proof.
   destruct (a_typing_run_under_tm_binder HrunB Hwf0x HwfBcx
               (a_ty_mode_compat__tc _) Hexpx)
     as [κb [Ξ [Θ2 [-> [Hidb [Hincb' [Hsuf [HwfOut [_ [HxΞ HxΘ2]]]]]]]]]].
-  assert (HuOut : uniq (Ξ ++ (x ~ abind_var_typ Ad) ++ Θ2))
-    by (apply a_wf_aenv_uniq; exact HwfOut).
   (* the §6.3#2 scoping invariant, at the TERM marker *)
   pose proof (@a_typing_scope_tm_nil x Ad Θ1 Bc
                 (open_exp_wrt_exp e (exp_var_f x)) B1' Ξ Θ2
                 HrunB Hwf0x HwfBcx Hexpx HwfOut Hsuf) as Hscope.
   (* ---- 5. the freshness / disjointness pack ---- *)
-  assert (HuΞ : uniq Ξ) by (clear - HuOut; solve_uniq).
-  assert (HΞΘ2 : forall γ, γ `in` dom Ξ -> γ `notin` dom Θ2)
-    by (clear - HuOut; intros γ Hγ; destruct_uniq;
-        unfold disjoint in *; simpl_env in *; fsetdec).
-  assert (Hdom12 : dom Θ1 [<=] dom Θ2)
-    by (eapply a_inc_id_dom_sub_scope; [ exact Hincb' | exact Hidb ]).
-  assert (Hwf2 : {{ ⊢ Θ2 }}a)
-    by (eapply a_wf_aenv_strip_prefix with (Ξ := Ξ ++ (x ~ abind_var_typ Ad));
-        simpl_env; exact HwfOut).
+  destruct (a_typing_body_suffix_facts HwfOut Hidb Hincb' Hwf1)
+    as [HΞΘ2 [Hdom12 [Hwf2 HuΞΘ1]]].
   (* ---- 6. the run ---- *)
   exists (ptyp_arrow Ad B1'), Θ2.
   split.
   { eapply a_typing__abs_check_base with (x := x) (Ξ := Ξ) (Θ1 := Θ1).
     - exact Hsplit.
     - exact Hsuf.
-    - apply uniq_app_of;
-        [ exact HuΞ | apply a_wf_aenv_uniq; exact Hwf1
-        | intros γ Hγ Hc; exact (HΞΘ2 γ Hγ (Hdom12 _ Hc)) ].
+    - exact HuΞΘ1.
     - exact Hscope.
     - rewrite !dom_app. clear - Hx HxΞ HxΘ2. solve_notin.
     - exact HrunB. }
@@ -3122,28 +3178,9 @@ Proof.
       | exact Hincs | exact Hincb' | exact Hζ | exact Hζbt
       | exact Heqvs | exact Heqvbs ]. }
   (* the arrow equivalence *)
-  assert (Hpush : {{ Θ ⊢ (msubst_ptyp ζ Ad)
-                    ≡ᵗ (msubst_ptyp (msubst_compose ζbt κb) Ad) }}a).
-  { apply (@a_inc_equiv_msubst_ptyp Ad Θ1 ζ (msubst_compose ζbt κb) Θ
-             HwfAd Heqvbs Hwf1
-             ltac:(eapply a_inc_msubst_lc; exact Hζ)
-             ltac:(apply msubst_lc_compose;
-                   [ eapply a_inc_msubst_lc; exact Hζbt
-                   | exact (is_id_msubst_values_lc Hidb) ])). }
-  assert (Hcid : msubst_ptyp (msubst_compose ζbt κb) Ad = msubst_ptyp ζbt Ad)
-    by (eapply msubst_compose_id_ptyp;
-        [ exact Hwf1 | exact Hwf2 | exact Hidb | exact Hincb'
-        | exact Hζbt | exact HwfAd ]).
-  rewrite Hcid in Hpush.
-  simpl.
-  rewrite btyp_to_ptyp_ptyp_to_btyp_inh.
-  apply a_tyequiv__arrow.
-  - eapply a_tyequiv__trans; [ apply a_tyequiv__sym; exact Hpush | exact Heqd ].
-  - rewrite <- Hagree.
-    eapply a_tyequiv_ctx_mono;
-      [ exact Heqcb
-      | apply (@aenv_tbinds_le_strip_tm nil x (abind_var_typ A) Θ);
-        intros h; exact h ].
+  rewrite Hagree in Heqcb.
+  exact (a_typing_complete_check_base_arrow Hwf1 Hwf2 HwfAd Hidb Hincb' Hζ Hζbt
+           Heqvbs Heqd Heqcb).
 Qed.
 
 (* --- the AbsAnnoCheck (→) row ----------------------------------------- *)
@@ -3321,21 +3358,12 @@ Proof.
   destruct (a_typing_run_under_tm_binder HrunB Hwf0x HwfBcx
               (a_ty_mode_compat__tc _) Hexpx)
     as [κb [Ξ [Θ3 [-> [Hidb [Hincb' [Hsuf [HwfOut [_ [HxΞ HxΘ3]]]]]]]]]].
-  assert (HuOut : uniq (Ξ ++ (x ~ abind_var_typ Aan) ++ Θ3))
-    by (apply a_wf_aenv_uniq; exact HwfOut).
   pose proof (@a_typing_scope_tm_nil x Aan Θ2 Bc
                 (open_exp_wrt_exp e (exp_var_f x)) B1' Ξ Θ3
                 HrunB Hwf0x HwfBcx Hexpx HwfOut Hsuf) as Hscope.
   (* ---- 6. the freshness / disjointness pack ---- *)
-  assert (HuΞ : uniq Ξ) by (clear - HuOut; solve_uniq).
-  assert (HΞΘ3 : forall γ, γ `in` dom Ξ -> γ `notin` dom Θ3)
-    by (clear - HuOut; intros γ Hγ; destruct_uniq;
-        unfold disjoint in *; simpl_env in *; fsetdec).
-  assert (Hdom23 : dom Θ2 [<=] dom Θ3)
-    by (eapply a_inc_id_dom_sub_scope; [ exact Hincb' | exact Hidb ]).
-  assert (Hwf3 : {{ ⊢ Θ3 }}a)
-    by (eapply a_wf_aenv_strip_prefix with (Ξ := Ξ ++ (x ~ abind_var_typ Aan));
-        simpl_env; exact HwfOut).
+  destruct (a_typing_body_suffix_facts HwfOut Hidb Hincb' Hwf2)
+    as [HΞΘ3 [Hdom23 [Hwf3 HuΞΘ2]]].
   (* ---- 7. the run ---- *)
   exists (ptyp_arrow Ad B1'), Θ3.
   split.
@@ -3344,9 +3372,7 @@ Proof.
     - exact Hsplit.
     - exists Qc; exact HcRun.
     - exact Hsuf.
-    - apply uniq_app_of;
-        [ exact HuΞ | apply a_wf_aenv_uniq; exact Hwf2
-        | intros γ Hγ Hc; exact (HΞΘ3 γ Hγ (Hdom23 _ Hc)) ].
+    - exact HuΞΘ2.
     - exact Hscope.
     - rewrite !dom_app. clear - Hx HxΞ HxΘ3. solve_notin.
     - exact HrunB. }
@@ -3392,28 +3418,9 @@ Proof.
       (Θmid := Θ1) (Θfin := Θ3) (κ1b := κc) (ζ1 := ζ);
       [ exact Hwf0 | exact Hwf1 | exact Hwf3 | exact HwfΘ      | exact Hids | exact Hidc      | exact Hincs | exact Hinc23 | exact Hζ | exact Hζbt      | exact Heqvs | exact Hglue23 ]. }
   (* ---- 9. the arrow equivalence ---- *)
-  assert (Hpush : {{ Θ ⊢ (msubst_ptyp ζ Ad)
-                    ≡ᵗ (msubst_ptyp (msubst_compose ζbt κc) Ad) }}a).
-  { apply (@a_inc_equiv_msubst_ptyp Ad Θ1 ζ (msubst_compose ζbt κc) Θ
-             HwfAd Hglue23 Hwf1
-             ltac:(eapply a_inc_msubst_lc; exact Hζ)
-             ltac:(apply msubst_lc_compose;
-                   [ eapply a_inc_msubst_lc; exact Hζbt
-                   | exact (is_id_msubst_values_lc Hidc) ])). }
-  assert (Hcid : msubst_ptyp (msubst_compose ζbt κc) Ad = msubst_ptyp ζbt Ad)
-    by (eapply msubst_compose_id_ptyp;
-        [ exact Hwf1 | exact Hwf3 | exact Hidc | exact Hinc23
-        | exact Hζbt | exact HwfAd ]).
-  rewrite Hcid in Hpush.
-  simpl.
-  rewrite btyp_to_ptyp_ptyp_to_btyp_inh.
-  apply a_tyequiv__arrow.
-  - eapply a_tyequiv__trans; [ apply a_tyequiv__sym; exact Hpush | exact Heqd ].
-  - rewrite <- Hagree.
-    eapply a_tyequiv_ctx_mono;
-      [ exact Heqcb
-      | apply (@aenv_tbinds_le_strip_tm nil x (abind_var_typ Aan) Θ);
-        intros h; exact h ].
+  rewrite Hagree in Heqcb.
+  exact (a_typing_complete_check_base_arrow Hwf1 Hwf3 HwfAd Hidc Hinc23 Hζ Hζbt
+           Hglue23 Heqd Heqcb).
 Qed.
 
 (* ===================================================================== *)
