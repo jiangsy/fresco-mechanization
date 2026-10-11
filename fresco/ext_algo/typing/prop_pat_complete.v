@@ -511,60 +511,18 @@ Lemma e_split_flex_realign : forall S0 Θ0 α Qd Sd Θd ad bd,
          (pskl_var_f α) ∼ (swaps_pskl ps0 Qd) ⊣ (swaps_aenv ps0 Θd) }}e.
 Proof.
   intros * Had Hbd Hcov Ds.
-  assert (Hswl : forall x y, swap_atom x y x = y).
-  { intros x y. unfold swap_atom.
-    destruct (x == x) as [_ | Hc]; [ reflexivity | contradiction ]. }
-  remember (supply_fresh S0) as a1 eqn:Ea1.
-  remember (supply_fresh (add a1 S0)) as b1 eqn:Eb1.
-  assert (Ha1 : a1 `notin` S0) by (subst a1; apply supply_fresh_notin).
-  assert (Hb1 : b1 `notin` add a1 S0) by (subst b1; apply supply_fresh_notin).
-  remember (swap_atom ad a1 bd) as c eqn:Ec.
-  assert (Hbdad : bd <> ad) by (clear - Hbd; fsetdec).
-  assert (Hc : c `notin` add a1 S0).
-  { subst c. unfold swap_atom.
-    destruct (bd == ad) as [Hc1 | Hne1]; [ contradiction | ].
-    destruct (bd == a1) as [Hc2 | Hne2].
-    - assert (Hada1 : ad <> a1) by congruence. clear - Had Hada1. fsetdec.
-    - clear - Hbd Hne2. fsetdec. }
-  assert (Hav : forall a b, In (a, b) ((ad, a1) :: (c, b1) :: nil) ->
-                a `notin` S0 /\ b `notin` S0).
-  { intros a b [Heq | [Heq | []]]; inversion Heq; subst;
-      solve [ split; assumption
-            | split; [ clear - Hc; fsetdec | clear - Hb1; fsetdec ] ]. }
-  assert (Hsad : swaps_atom ((ad, a1) :: (c, b1) :: nil) ad = a1).
-  { simpl. rewrite Hswl.
-    apply swap_atom_other; [ clear - Hc | clear - Hb1 ]; fsetdec. }
-  assert (Hsbd : swaps_atom ((ad, a1) :: (c, b1) :: nil) bd = b1).
-  { simpl. rewrite <- Ec. rewrite Hswl. reflexivity. }
-  assert (Hfixa : forall (x : atom), x `in` S0 ->
-            swaps_atom ((ad, a1) :: (c, b1) :: nil) x = x).
-  { intros x Hx. apply swaps_atom_notin. intros a b Hin.
-    destruct (Hav a b Hin) as [Ha Hb]. split; intros ->; contradiction. }
-  assert (HfixΘ : forall (Θ : aenv), ftvar_in_aenv Θ [<=] S0 ->
-            swaps_aenv ((ad, a1) :: (c, b1) :: nil) Θ = Θ).
-  { intros Θ HΘ. apply swaps_aenv_fresh_id. intros a b Hin.
-    destruct (Hav a b Hin) as [Ha Hb]. split; fsetdec. }
-  destruct (e_consis_swaps ((ad, a1) :: (c, b1) :: nil) Ds
-              (Δ1' := empty) (Δ2' := empty)
-              (S0' := add b1 (add a1 S0)))
+  destruct (swaps_two_onto_fresh Had Hbd) as (ps & Hav & Hsad & Hsbd & HSadd).
+  destruct (e_consis_swaps ps Ds (Δ1' := empty) (Δ2' := empty)
+              (symmetry (swaps_atoms_empty ps))
+              (symmetry (swaps_atoms_empty ps)) HSadd)
     as [Sd' [HSd' Ds']].
-  { symmetry. apply swaps_atoms_empty. }
-  { symmetry. apply swaps_atoms_empty. }
-  { rewrite swaps_atoms_add, swaps_atoms_add, Hsad, Hsbd.
-    rewrite (swaps_atoms_notin _ _ Hav). reflexivity. }
-  exists ((ad, a1) :: (c, b1) :: nil), Sd'.
-  split; [ exact Hav | ].
-  split; [ subst a1; exact Hsad | ].
-  split; [ subst a1 b1; exact Hsbd | ].
-  split; [ exact HSd' | ].
-  repeat rewrite swaps_aenv_app_dist in Ds'.
-  rewrite swaps_aenv_one_flex, swaps_aenv_one_flex in Ds'.
-  rewrite swaps_pskl_arrow, swaps_pskl_var_f, swaps_pskl_var_f in Ds'.
-  rewrite swaps_pskl_var_f in Ds'.
-  rewrite Hsad, Hsbd in Ds'.
-  rewrite (Hfixa α) in Ds' by (clear - Hcov; fsetdec).
-  rewrite (HfixΘ Θ0) in Ds' by (clear - Hcov; fsetdec).
-  subst a1 b1. exact Ds'.
+  exists ps, Sd'. refine (conj Hav (conj Hsad (conj Hsbd (conj HSd' _)))).
+  rewrite !swaps_aenv_app_dist, !swaps_aenv_one_flex, swaps_pskl_arrow,
+    !swaps_pskl_var_f, Hsad, Hsbd in Ds'.
+  rewrite (swaps_atom_dodge_in Hav (α := α)) in Ds' by (clear - Hcov; fsetdec).
+  rewrite (swaps_aenv_fresh_id ps Θ0) in Ds'
+    by (apply (swaps_dodge_sub Hav); clear - Hcov; fsetdec).
+  exact Ds'.
 Qed.
 
 (* ⚠️ [Set Implicit Arguments] leaves [Θ0] EXPLICIT — it occurs only under
