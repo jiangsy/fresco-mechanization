@@ -181,6 +181,25 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share the executable typing forall-check step
+
+Extract `typing_complete_forall_step` from the ordinary and annotated
+abstraction cases of executable typing completeness. The lemma moves the
+rule's rigid opener to the supply draw, invokes the recursive completeness
+premise, closes the answer, and establishes the suffix checks. Its result
+states the recursive runner equation and the context/output correspondence
+under swaps. Both callers retain their explicit constructor inversions,
+context decomposition, and runner checks.
+
+Net reduction: **70 physical Coq lines / 69 nonblank, noncomment lines**.
+All 25 existing theorem statements are unchanged; no inline tactic terms
+added. The executable definitions are unchanged.
+
+Validation: focused compilation and final `make coq` passed. All 34
+headline assumption reports are closed under the global context, with no
+axiom reports or errors. Statement comparison and `git diff --check` passed.
+
+
 ## 2026-10-11 — Share suffix removal across typing and subtyping lifting
 
 Add three shared facts to `prop_lift_context`: restoring the caller's
