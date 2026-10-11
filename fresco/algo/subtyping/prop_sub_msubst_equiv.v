@@ -234,49 +234,27 @@ Proof.
   - (* all_syn *)
     apply a_uskl_tyequiv__all_syn with (L := dom κ `union` dom σ).
     intros α Hα.
-    assert (Hoκ : msubst_uskl_syn κ (open_uskl_wrt_uskl R (uskl_var_f α))
-                  = open_uskl_wrt_uskl (msubst_uskl_syn κ R) (uskl_var_f α))
-      by (eapply msubst_uskl_syn_open;
-          [ exact Hincκ | clear - Hα; fsetdec ]).
-    assert (Hoσ : msubst_uskl_syn σ (open_uskl_wrt_uskl R (uskl_var_f α))
-                  = open_uskl_wrt_uskl (msubst_uskl_syn σ R) (uskl_var_f α))
-      by (eapply msubst_uskl_syn_open;
-          [ exact Hincσ | clear - Hα; fsetdec ]).
-    rewrite <- Hoκ, <- Hoσ.
+    rewrite <- (msubst_uskl_syn_open R Hincκ), <- (msubst_uskl_syn_open R Hincσ)
+      by solve_notin_auto.
     eapply H0; try eassumption.
     intros β Hβ.
     destruct (β == α) as [-> | Hne].
     + right. split; clear - Hα; fsetdec.
     + apply Hftv.
-      pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper
-                    R (uskl_var_f α)) as Hup.
-      cbn in Hup. clear - Hβ Hne Hup.
-      assert (Hd : β `in` (singleton α `union` ftvar_in_uskl R)) by fsetdec.
-      apply union_1 in Hd; destruct Hd as [Hd | Hd];
-        [ exfalso; apply Hne; apply singleton_1 in Hd; auto | exact Hd ].
+      pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f α)) as Hup.
+      cbn in Hup. clear - Hβ Hne Hup. fsetdec.
   - (* all_tag *)
     apply a_uskl_tyequiv__all_tag with (L := dom κ `union` dom σ).
     intros α Hα.
-    assert (Hoκ : msubst_uskl_syn κ (open_uskl_wrt_uskl R (uskl_var_f α))
-                  = open_uskl_wrt_uskl (msubst_uskl_syn κ R) (uskl_var_f α))
-      by (eapply msubst_uskl_syn_open;
-          [ exact Hincκ | clear - Hα; fsetdec ]).
-    assert (Hoσ : msubst_uskl_syn σ (open_uskl_wrt_uskl R (uskl_var_f α))
-                  = open_uskl_wrt_uskl (msubst_uskl_syn σ R) (uskl_var_f α))
-      by (eapply msubst_uskl_syn_open;
-          [ exact Hincσ | clear - Hα; fsetdec ]).
-    rewrite <- Hoκ, <- Hoσ.
+    rewrite <- (msubst_uskl_syn_open R Hincκ), <- (msubst_uskl_syn_open R Hincσ)
+      by solve_notin_auto.
     eapply H0; try eassumption.
     intros β Hβ.
     destruct (β == α) as [-> | Hne].
     + right. split; clear - Hα; fsetdec.
     + apply Hftv.
-      pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper
-                    R (uskl_var_f α)) as Hup.
-      cbn in Hup. clear - Hβ Hne Hup.
-      assert (Hd : β `in` (singleton α `union` ftvar_in_uskl R)) by fsetdec.
-      apply union_1 in Hd; destruct Hd as [Hd | Hd];
-        [ exfalso; apply Hne; apply singleton_1 in Hd; auto | exact Hd ].
+      pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R (uskl_var_f α)) as Hup.
+      cbn in Hup. clear - Hβ Hne Hup. fsetdec.
   - (* ghost *) apply a_uskl_tyequiv__ghost.
   - (* univ_ghost *) apply a_uskl_tyequiv__univ_ghost; eauto.
   - (* dot_ghost *) apply a_uskl_tyequiv__dot_ghost.
