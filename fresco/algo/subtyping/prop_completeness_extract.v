@@ -1084,23 +1084,13 @@ Proof.
                 Hfms Hks Hincc) as [_ HincC].
     destruct (@a_inc_flex_prefix_split Ξc κc Θ0 κ Θ HfmΞc Hkeysc HincC)
       as [Hw _]; exact Hw. }
-  assert (HuqΞc : uniq (Ξc ++ Θ0)) by (apply a_wf_aenv_uniq; exact HwfΞc).
   (* the SOLVE block dodges everything its own context MENTIONS — the Ξ
      scoping kit's master invariant, and what makes [Ξs ++ Ξc ++ Θ0] wf *)
   assert (HfrsC : forall x, x `in` dom Ξs ->
             x `notin` ftvar_in_aenv (Ξc ++ Θ0))
     by (intros x Hx; eapply a_solve_cstr_generated_fresh;
           [ exact Hsolve | exact Hx ]).
-  assert (HwfΞs : {{ ⊢ (Ξs ++ Ξc ++ Θ0) }}a).
-  { apply a_wf_aenv_flex_prefix; [ exact Hfms | | exact HwfΞc ].
-    assert (Hdd : dom Ξs ∩ dom (Ξc ++ Θ0) [<=] empty).
-    { intros x Hx.
-      assert (Hx1 : x `in` dom Ξs) by (clear - Hx; fsetdec).
-      assert (Hx2 : x `in` dom (Ξc ++ Θ0)) by (clear - Hx; fsetdec).
-      pose proof (HfrsC x Hx1) as Hf.
-      pose proof (dom_subset_ftvar_in_aenv (Ξc ++ Θ0)) as Hds.
-      exfalso; clear - Hf Hds Hx2; fsetdec. }
-    apply uniq_app_4; [ exact Hus | exact HuqΞc | exact Hdd ]. }
+  pose proof (a_wf_aenv_solve_block HwfΞc Hsolve Hfms Hus) as HwfΞs.
   assert (HuqΞsc : uniq (Ξs ++ Ξc ++ Θ0)) by (apply a_wf_aenv_uniq; exact HwfΞs).
   assert (Hdcs : forall β0, β0 `in` dom κc -> β0 `notin` dom κs).
   { intros β0 Hβ0 Hc.
@@ -1144,19 +1134,11 @@ Proof.
     assert (Hdc : dom κc [=] dom Ξc) by (apply keys_eq_dom; exact Hkeysc).
     assert (Hds : dom κs [=] dom Ξs) by (apply keys_eq_dom; exact Hks).
     assert (HuqAll : uniq (Ξc ++ Ξs ++ Ξ' ++ Θ0)).
-    { assert (Hd1 : disjoint Ξ' Ξc)
-        by (unfold disjoint; intros α0 Hα0;
+    { assert (Hd : disjoint Ξ' (Ξs ++ Ξc ++ Θ0))
+        by (unfold disjoint; intros α0 Hα0; rewrite !dom_app in Hα0;
             assert (Hin : α0 `in` dom Ξ') by (clear - Hα0; fsetdec);
             specialize (Hfr' α0 Hin); clear - Hα0 Hfr'; fsetdec).
-      assert (Hd1s : disjoint Ξ' Ξs)
-        by (unfold disjoint; intros α0 Hα0;
-            assert (Hin : α0 `in` dom Ξ') by (clear - Hα0; fsetdec);
-            specialize (Hfr' α0 Hin); clear - Hα0 Hfr'; fsetdec).
-      assert (Hd2 : disjoint Ξ' Θ0)
-        by (unfold disjoint; intros α0 Hα0;
-            assert (Hin : α0 `in` dom Ξ') by (clear - Hα0; fsetdec);
-            specialize (Hfr' α0 Hin); clear - Hα0 Hfr'; fsetdec).
-      clear - HuqΞsc HuqΞ' Hd1 Hd1s Hd2; solve_uniq. }
+      clear - HuqΞsc HuqΞ' Hd; solve_uniq. }
     exists (Ξc ++ Ξs ++ Ξ'), (ptyp_to_pskl A), (κc ++ κs ++ κ').
     split.
     { eapply a_extract__solve;
