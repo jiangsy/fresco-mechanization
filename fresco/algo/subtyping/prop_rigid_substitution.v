@@ -2833,3 +2833,55 @@ Proof.
     pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_upper R' (uskl_var_f α)).
     simpl in *. clear - Hα H1 H2 Fr. fsetdec.
 Qed.
+
+(** The body family of a well-formed [∀], at the empty Δ. *)
+Lemma a_wf_pskl_all_inv_empty : forall Θ P,
+  {{ Θ ⨟ empty ⊢ₚₛ (pskl_all_syn P) }}a ->
+  exists L, forall α, α `notin` L ->
+    {{ ((α ~ abind_tvar) ++ Θ) ⨟ empty ⊢ₚₛ
+         (open_pskl_wrt_pskl P (pskl_var_f α)) }}a.
+Proof.
+  intros Θ P H.
+  destruct (a_wf_pskl_all_inv H) as [L Hb].
+  exists L. intros α Hα.
+  eapply a_wf_pskl_delta_mono; [ apply Hb; exact Hα | ].
+  intros β _ Hβ. clear - Hβ; fsetdec.
+Qed.
+
+(** Partial precision of a substituted [∀] against an ε-tagged [∀]: the body
+    family under the metasubstitution, with ε split off the tag set, and the
+    body's tags inside any tag set that sorts the target's body. *)
+Lemma ad_partial_precise_msubst_all_tag_inv : forall NM Θ Δ Ψ Ψt κ P ε ψ Lt,
+  {{ ⊢ Θ }}a ->
+  msubst_lc κ ->
+  (forall α, α `notin` Lt ->
+     a_tags_sort NM Ψt (open_uskl_wrt_uskl ψ (uskl_var_f α))) ->
+  {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ (pskl_all_syn P)) ⊑ᵖ[ Ψ ]
+       (uskl_all_tag ε ψ) }}ad ->
+  exists L Ψ0,
+    (forall α, α `notin` L ->
+       {{ Θ ⨟ (add α Δ) ⊢ˢ
+         (msubst_pskl κ (open_pskl_wrt_pskl P (pskl_var_f α)))
+         ⊑ᵖ[ Ψ0 ] (open_uskl_wrt_uskl ψ (uskl_var_f α)) }}ad) /\
+    Ψ [=] add ε Ψ0 /\ Ψ0 [<=] Ψt.
+Proof.
+  intros NM Θ Δ Ψ Ψt κ P ε ψ Lt Hwf Hlcκ Htags H.
+  simpl in H.
+  inversion H as [ | | | L Θ1 Δ1 Ψ1 Ψ0 ε1 P1 ψ1 Hb HΨ | | | | | | ]; subst.
+  assert (Hfam : forall α, α `notin` L `union` dom κ ->
+            {{ Θ ⨟ (add α Δ) ⊢ˢ
+              (msubst_pskl κ (open_pskl_wrt_pskl P (pskl_var_f α)))
+              ⊑ᵖ[ Ψ0 ] (open_uskl_wrt_uskl ψ (uskl_var_f α)) }}ad).
+  { intros α Hα.
+    rewrite msubst_pskl_open_lc.
+    - eapply ad_partial_precise_strengthen_tvar. apply Hb. solve_notin_auto.
+    - exact Hlcκ.
+    - solve_notin_auto. }
+  exists (L `union` dom κ), Ψ0.
+  refine (conj Hfam (conj HΨ _)).
+  pick fresh α for (L `union` dom κ `union` Lt).
+  eapply ad_partial_precise_tags_sub.
+  - exact Hwf.
+  - apply Hfam. solve_notin_auto.
+  - apply a_tags_sort_d_tags with (NM := NM). apply Htags. solve_notin_auto.
+Qed.

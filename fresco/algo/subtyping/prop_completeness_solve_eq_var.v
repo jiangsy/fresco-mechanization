@@ -1615,18 +1615,7 @@ Proof.
             | exact Hml ].
       - (* arrow *) simpl in Hrefine. inversion Hrefine.
       - (* P0 = ∀.P0b: the REAL column *)
-        assert (HwfP0f : exists Lw0, forall α, α `notin` Lw0 ->
-                  {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
-                  (open_pskl_wrt_pskl P0b (pskl_var_f α)) }}a).
-        { assert (Hi : exists Lw0, forall α0, α0 `notin` Lw0 ->
-                    {{ ((α0 ~ abind_tvar) ++ Θ0) ⨟ (add α0 empty) ⊢ₚₛ
-                    (open_pskl_wrt_pskl P0b (pskl_var_f α0)) }}a)
-            by (inversion HwfP0; subst; eexists; eassumption).
-          destruct Hi as (Lw0 & Hi).
-          exists Lw0; intros α0 Hα0.
-          eapply a_wf_pskl_delta_mono;
-            [ apply Hi; exact Hα0 | intros β _ Hβ; clear - Hβ; fsetdec ]. }
-        destruct HwfP0f as (Lw0 & HwfP0f).
+        destruct (a_wf_pskl_all_inv_empty HwfP0) as (Lw0 & HwfP0f).
         assert (Hreff : exists Lq, forall α, α `notin` Lq ->
           {{ Θr ⨟ (add α Δr) ⊢ᵣ
             pskl_to_bskl_inh (msubst_pskl κ
@@ -1752,44 +1741,9 @@ Proof.
         + (* arrow *) simpl in Hpre0. inversion Hpre0.
         + (* Pi = ∀.Pib — ROW A: SE-Forall from a single fresh-α run;
              the family folds via the shared binder-fold lemma *)
-          assert (HwfPif : exists Lwi, forall α, α `notin` Lwi ->
-                    {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
-                    (open_pskl_wrt_pskl Pib (pskl_var_f α)) }}a).
-          { assert (Hi : exists Lwi, forall α0, α0 `notin` Lwi ->
-                      {{ ((α0 ~ abind_tvar) ++ Θ0) ⨟ (add α0 empty) ⊢ₚₛ
-                      (open_pskl_wrt_pskl Pib (pskl_var_f α0)) }}a)
-              by (inversion HwfPi; subst; eexists; eassumption).
-            destruct Hi as (Lwi & Hi).
-            exists Lwi; intros α0 Hα0.
-            eapply a_wf_pskl_delta_mono;
-              [ apply Hi; exact Hα0 | intros β _ Hβ; clear - Hβ; fsetdec ]. }
-          destruct HwfPif as (Lwi & HwfPif).
-          assert (HpreF : exists Lp Ψi',
-            (forall α, α `notin` Lp ->
-               {{ Θ ⨟ (add α Δ) ⊢ˢ
-                 (msubst_pskl κ (open_pskl_wrt_pskl Pib (pskl_var_f α)))
-                 ⊑ᵖ[ Ψi' ] (open_uskl_wrt_uskl ψR (uskl_var_f α)) }}ad) /\
-            Ψi [=] add ε Ψi').
-          { simpl in Hpre0.
-            inversion Hpre0; subst.
-            match goal with
-            | Hf : forall α0, α0 `notin` ?L0 ->
-                {{ _ ⨟ _ ⊢ˢ _ ⊑ᵖ[ ?PS ] _ }}ad |- _ =>
-              exists (L0 `union` dom κ), PS; split;
-                [ intros α0 Hα0;
-                  rewrite msubst_pskl_open_lc;
-                    [ eapply ad_partial_precise_strengthen_tvar; apply Hf; clear - Hα0; fsetdec
-                    | exact Hlcκ | clear - Hα0; fsetdec ]
-                | assumption ]
-            end. }
-          destruct HpreF as (Lp & Ψi' & HpreF & HΨis).
-          assert (HΨi's : Ψi' [<=] Ψ0').
-          { pick fresh αp for (Lp `union` Lt).
-            eapply ad_partial_precise_tags_sub;
-              [ exact HwfΘ
-              | apply HpreF; clear - Fr; solve_notin
-              | exact (a_tags_sort_d_tags
-                        (Htagsf αp ltac:(clear - Fr; solve_notin))) ]. }
+          destruct (a_wf_pskl_all_inv_empty HwfPi) as (Lwi & HwfPif).
+          destruct (ad_partial_precise_msubst_all_tag_inv HwfΘ Hlcκ Htagsf Hpre0)
+            as (Lp & Ψi' & HpreF & HΨis & HΨi's).
           pick fresh α for
             (L `union` Lr `union` Lt `union` Lw0 `union` Lq
                `union` Δ `union` Δρ `union` dom Θ `union` dom Θ0
@@ -2420,44 +2374,9 @@ Proof.
         + (* Pi = ∀.Pib — ForallGhost row: solve = a_solve_eq__all_l_univ_ghost
              (P0i:=∀◇.P0' KEPT, α-free); IHX at Δx:=add α Δ (α∈Δ permits strengthening);
              precision conclusion = ad_ppre__forall (Pa = ∀.close). *)
-          assert (HwfPif : exists Lwi, forall α, α `notin` Lwi ->
-                    {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ
-                    (open_pskl_wrt_pskl Pib (pskl_var_f α)) }}a).
-          { assert (Hi : exists Lwi, forall α0, α0 `notin` Lwi ->
-                      {{ ((α0 ~ abind_tvar) ++ Θ0) ⨟ (add α0 empty) ⊢ₚₛ
-                      (open_pskl_wrt_pskl Pib (pskl_var_f α0)) }}a)
-              by (inversion HwfPi; subst; eexists; eassumption).
-            destruct Hi as (Lwi & Hi).
-            exists Lwi; intros α0 Hα0.
-            eapply a_wf_pskl_delta_mono;
-              [ apply Hi; exact Hα0 | intros β _ Hβ; clear - Hβ; fsetdec ]. }
-          destruct HwfPif as (Lwi & HwfPif).
-          assert (HpreF : exists Lp Ψi',
-            (forall α, α `notin` Lp ->
-               {{ Θ ⨟ (add α Δ) ⊢ˢ
-                 (msubst_pskl κ (open_pskl_wrt_pskl Pib (pskl_var_f α)))
-                 ⊑ᵖ[ Ψi' ] (open_uskl_wrt_uskl ψR (uskl_var_f α)) }}ad) /\
-            Ψi [=] add ε Ψi').
-          { simpl in Hpre0.
-            inversion Hpre0; subst.
-            match goal with
-            | Hf : forall α0, α0 `notin` ?L0 ->
-                {{ _ ⨟ _ ⊢ˢ _ ⊑ᵖ[ ?PS ] _ }}ad |- _ =>
-              exists (L0 `union` dom κ), PS; split;
-                [ intros α0 Hα0;
-                  rewrite msubst_pskl_open_lc;
-                    [ eapply ad_partial_precise_strengthen_tvar; apply Hf; clear - Hα0; fsetdec
-                    | exact Hlcκ | clear - Hα0; fsetdec ]
-                | assumption ]
-            end. }
-          destruct HpreF as (Lp & Ψi' & HpreF & HΨis).
-          assert (HΨi's : Ψi' [<=] Ψ0').
-          { pick fresh αp for (Lp `union` Lt).
-            eapply ad_partial_precise_tags_sub;
-              [ exact HwfΘ
-              | apply HpreF; clear - Fr; solve_notin
-              | exact (a_tags_sort_d_tags
-                        (Htagsf αp ltac:(clear - Fr; solve_notin))) ]. }
+          destruct (a_wf_pskl_all_inv_empty HwfPi) as (Lwi & HwfPif).
+          destruct (ad_partial_precise_msubst_all_tag_inv HwfΘ Hlcκ Htagsf Hpre0)
+            as (Lp & Ψi' & HpreF & HΨis & HΨi's).
           pick fresh α for
             (L `union` Lr `union` Lt `union` Lrb
                `union` Δ `union` Δρ `union` dom Θ `union` dom Θ0 `union` dom Θr
