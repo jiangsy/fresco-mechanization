@@ -104,6 +104,52 @@ Proof.
     + intros α10 Hγ0. apply Hfr. simpl. fsetdec.
 Qed.
 
+(** A flexible walk that SKIPS a mid entry [c ~ b] (Flex-Skip, SkipRigid,
+    SkipTmVar): the walked context re-merges over that entry once it is
+    re-consed on both sides.  [Hcons] is the entry kind's own cons lemma. *)
+Lemma a_isub_prepend_decls_src_cons : forall Ξ Θ0 Θ1 c (b b' : abind),
+  a_decls Ξ ->
+  (Ξ ++ Θ0) ⊴ Θ1 ->
+  (Θ0 ⊴ Θ1 -> ((c ~ b) ++ Θ0) ⊴ ((c ~ b') ++ Θ1)) ->
+  (Ξ ++ (c ~ b) ++ Θ0) ⊴ ((c ~ b') ++ Θ1).
+Proof.
+  intros * Hdecl Hle Hcons.
+  apply a_isub_prepend_decls_src.
+  - exact Hdecl.
+  - intros γ Hb. apply a_binds_tvar_weaken_cons.
+    eapply a_isub_binds_flex; [ exact Hle | ].
+    unfold binds; apply in_or_app; left; exact Hb.
+  - apply Hcons. eapply a_isub_strengthen_decls_src; eauto.
+Qed.
+
+(** Stripping a mid entry that is not the looked-up variable keeps a
+    type-variable binding. *)
+Lemma a_binds_tvar_strip_mid_neq : forall {α c} {b : abind} {Ξ Θ},
+  α <> c ->
+  a_binds_tvar α (Ξ ++ (c ~ b) ++ Θ) ->
+  a_binds_tvar α (Ξ ++ Θ).
+Proof.
+  intros * Hne Hb. eapply a_binds_tvar_strip_mid.
+  - exact Hb.
+  - congruence.
+  - congruence.
+  - intros τ0. congruence.
+Qed.
+
+(** ... and so does stripping a TERM entry, which never binds a type
+    variable. *)
+Lemma a_binds_tvar_strip_mid_tm : forall {α x bd Ξ Θ},
+  a_binds_tvar α (Ξ ++ (x ~ bd) ++ Θ) ->
+  abind_is_tm bd ->
+  a_binds_tvar α (Ξ ++ Θ).
+Proof.
+  intros * Hb Htm. eapply a_binds_tvar_strip_mid.
+  - exact Hb.
+  - intro He. inversion He; subst. contradiction.
+  - intro He. inversion He; subst. contradiction.
+  - intros τ0 He. inversion He; subst. contradiction.
+Qed.
+
 (** Solving a flexible variable as an arrow preserves well-formedness
     and extends the original context, including its pending declarations. *)
 Lemma a_flex_arrow_context : forall Ξ Θ0 α0 α β,
@@ -1963,6 +2009,36 @@ Proof.
   - eapply ad_pat_sub_fuel__flex_mono; [ eassumption | apply IHad_pat_sub_fuel; exact Heq ].
 Qed.
 
+(** The conclusion of a flexible walk that SKIPS a mid entry [c ~ b]
+    (Flex-Skip, SkipRigid, SkipTmVar): the walk's outputs at [Θ1] carry over
+    to [(c ~ b) ++ Θ1], given the entry kind's own cons lemma ([Hcons]) and
+    well-formedness rule ([Hwfc]). *)
+Lemma subtag_flex_concl_cons : forall NM M P0 Θ0 Θ1 Ξ α A c (b : abind),
+  a_decls Ξ ->
+  (Θ0 ⊴ Θ1 -> ((c ~ b) ++ Θ0) ⊴ ((c ~ b) ++ Θ1)) ->
+  (Θ0 ⊴ Θ1 -> {{ ⊢ Θ1 }}a -> {{ ⊢ ((c ~ b) ++ Θ1) }}a) ->
+  (Ξ ++ Θ0) ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\
+  (exists Qt, bskl_to_pskl Qt = A /\
+     (exists n, ad_pat_sub_fuel n NM (mode_fn M) empty Θ1 (uskl_var_f α) Qt) /\
+     {{ Θ1 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ Qt }}ad) ->
+  (Ξ ++ (c ~ b) ++ Θ0) ⊴ ((c ~ b) ++ Θ1) /\ {{ ⊢ ((c ~ b) ++ Θ1) }}a /\
+  (exists Qt, bskl_to_pskl Qt = A /\
+     (exists n, ad_pat_sub_fuel n NM (mode_fn M) empty ((c ~ b) ++ Θ1)
+                  (uskl_var_f α) Qt) /\
+     {{ ((c ~ b) ++ Θ1) ⨟ empty ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ Qt }}ad).
+Proof.
+  intros * Hdecl Hcons Hwfc [Hle [Hwf1 [Qt [HeQt [[n Hsub] Hfill]]]]].
+  assert (Hle0 : Θ0 ⊴ Θ1) by (eapply a_isub_strengthen_decls_src; eauto).
+  split; [ apply a_isub_prepend_decls_src_cons; assumption | ].
+  split; [ apply Hwfc; assumption | ].
+  exists Qt. split; [ exact HeQt | ].
+  split.
+  - exists n. eapply ad_pat_sub_fuel_weaken; [ exact Hsub | ].
+    intros y b0 Hb; unfold binds; right; exact Hb.
+  - eapply ad_refine_syn_weaken; [ exact Hfill | ].
+    intros y b0 Hb; unfold binds; right; exact Hb.
+Qed.
+
 (** The two ForallL rows (tagged / untagged) differ only in the ∀ they
     peel and the declarative constructor that re-attaches it, so the whole
     argument is stated once over that constructor ([Hrule]): instantiate
@@ -2485,13 +2561,12 @@ Proof.
     assert (Hle0 : Θ0 ⊴ Θ1)
       by (eapply a_isub_strengthen_decls_src; eauto).
     split.
-    { apply a_isub_prepend_decls_src; [ exact Hdecl | | ].
-      { intros γ Hb.
-        apply a_binds_tvar_weaken_cons.
-        eapply a_isub_binds_flex; [ exact Hle | ].
-        unfold binds; apply in_or_app; left; exact Hb. }
-      apply a_isub_cons_flex_def;
-        [ exact Hle0 | apply mono_ptyp_lc; exact Hm ]. }
+    { apply a_isub_prepend_decls_src_cons.
+      - exact Hdecl.
+      - exact Hle.
+      - intros _. apply a_isub_cons_flex_def.
+        + exact Hle0.
+        + apply mono_ptyp_lc; exact Hm. }
     split.
     { apply a_wf_aenv__flex_def;
         [ exact Hβ1
@@ -2547,155 +2622,82 @@ Proof.
 
   - (* Flex-Skip : strip the mid entry, IH, re-cons + lift the outputs. *)
     intros NM M P0 Θ0 Θ1 Ξ α β P Hne Hni Hβ1 Hprem IH Hwf Hdecl HwfP0 Hαb Hmod Hgf.
-    assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
-      by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
-      by (eapply a_wf_pskl_strip_mid; eauto).
-    destruct (IH Hwf' Hdecl HwfP0'
-                ltac:(eapply a_binds_tvar_strip_mid;
-                        [ exact Hαb
-                        | intro He; inversion He; subst;
-                          exact (Hne eq_refl)
-                        | intro He; inversion He; subst;
-                          exact (Hne eq_refl)
-                        | intros τ1 He; inversion He; subst;
-                          exact (Hne eq_refl) ])
-                Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
-    assert (Hlift : Θ1 ⊴ ((β ~ abind_flex_mono) ++ Θ1)).
-    { apply a_isub_weaken_suffix;
-        [ apply a_wf_aenv_lc_aenv; exact Hwf1 | ].
-      apply (a_suffix__cons β); [ constructor | constructor ]. }
-    split.
-    { apply a_isub_prepend_decls_src; auto.
-      { intros γ Hb.
-        apply a_binds_tvar_weaken_cons.
-        eapply a_isub_binds_flex; [ exact Hle | ].
-        unfold binds; apply in_or_app; left; exact Hb. }
-      apply a_isub_cons_flex.
-      eapply a_isub_strengthen_decls_src; eauto. }
-    split; [ apply a_wf_aenv__flex; auto | ].
-    exists Qt. split; [ exact HeQt | ].
-    split; [ exists nsub; eapply ad_pat_sub_fuel_isub; eauto
-           | eapply ad_refine_syn_isub; eauto ].
+    apply subtag_flex_concl_cons.
+    + exact Hdecl.
+    + apply a_isub_cons_flex.
+    + intros _ Hwf1. apply a_wf_aenv__flex; assumption.
+    + apply IH.
+      * eapply a_wf_aenv_strip_mid; eauto.
+      * exact Hdecl.
+      * eapply a_wf_pskl_strip_mid; eauto.
+      * exact (a_binds_tvar_strip_mid_neq Hne Hαb).
+      * exact Hmod.
+      * exact Hgf.
 
   - (* Flex-SkipRigid : as Flex-Skip with a rigid head. *)
     intros NM M P0 Θ0 Θ1 Ξ α β P Hne Hni Hβ1 Hprem IH Hwf Hdecl HwfP0 Hαb Hmod Hgf.
-    assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
-      by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
-      by (eapply a_wf_pskl_strip_mid; eauto).
-    destruct (IH Hwf' Hdecl HwfP0'
-                ltac:(eapply a_binds_tvar_strip_mid;
-                        [ exact Hαb
-                        | intro He; inversion He; subst;
-                          exact (Hne eq_refl)
-                        | intro He; inversion He; subst;
-                          exact (Hne eq_refl)
-                        | intros τ1 He; inversion He; subst;
-                          exact (Hne eq_refl) ])
-                Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
-    split.
-    { apply a_isub_prepend_decls_src; auto.
-      { intros γ Hb.
-        apply a_binds_tvar_weaken_cons.
-        eapply a_isub_binds_flex; [ exact Hle | ].
-        unfold binds; apply in_or_app; left; exact Hb. }
-      apply a_isub_cons_tvar.
-      eapply a_isub_strengthen_decls_src; eauto. }
-    split; [ apply a_wf_aenv__tvar; auto | ].
-    exists Qt. split; [ exact HeQt | ].
-    split.
-    + exists nsub. eapply ad_pat_sub_fuel_weaken; [ exact Hsub | ].
-      intros x b0 Hb; unfold binds; right; exact Hb.
-    + eapply ad_refine_syn_weaken; [ exact Hfill | ].
-      intros x b0 Hb; unfold binds; right; exact Hb.
+    apply subtag_flex_concl_cons.
+    + exact Hdecl.
+    + apply a_isub_cons_tvar.
+    + intros _ Hwf1. apply a_wf_aenv__tvar; assumption.
+    + apply IH.
+      * eapply a_wf_aenv_strip_mid; eauto.
+      * exact Hdecl.
+      * eapply a_wf_pskl_strip_mid; eauto.
+      * exact (a_binds_tvar_strip_mid_neq Hne Hαb).
+      * exact Hmod.
+      * exact Hgf.
   - (* Flex-SkipTmVar : as Flex-SkipRigid with a TERM entry.  A term entry is
        never [a_binds_tvar], so [P0] cannot mention it (that is what supplies
        [a_wf_pskl_strip_mid]'s freshness, which the rule does not carry — the
        twin walk's [Assign-SkipTmVar] does not carry it either), and the two
        outputs weaken by [a_isub_cons_var_typ] / [a_wf_ptyp_isub]. *)
     intros NM M P0 Θ0 Θ1 Ξ α x Q P Hxout Hprem IH Hwf Hdecl HwfP0 Hαb Hmod Hgf.
-    assert (Hxfr : x `notin` ftvar_in_pskl P0)
-      by (eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact I | exact HwfP0 ]).
-    assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
-      by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfT : {{ ⊢ ((x ~ abind_var_typ Q) ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_prefix; exact Hwf).
     apply a_wf_aenv_var_typ_inv in HwfT.
     destruct HwfT as [_ [HwfQ0 _]].
-    assert (HwfQ' : a_wf_ptyp (Ξ ++ Θ0) Q)
-      by (eapply a_wf_ptyp_weaken;
-          [ intros y b0 Hb; apply binds_app_3; exact Hb | exact HwfQ0 ]).
-    destruct (IH Hwf' Hdecl
-                ltac:(eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ])
-                ltac:(eapply a_binds_tvar_strip_mid;
-                        [ exact Hαb
-                        | intro He; discriminate He
-                        | intro He; discriminate He
-                        | intros τ1 He; discriminate He ])
-                Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
-    split.
-    { apply a_isub_prepend_decls_src; auto.
-      { intros γ Hb.
-        apply a_binds_tvar_weaken_cons.
-        eapply a_isub_binds_flex; [ exact Hle | ].
-        unfold binds; apply in_or_app; left; exact Hb. }
-      apply a_isub_cons_var_typ;
-        [ eapply a_isub_strengthen_decls_src; eauto
-        | eapply a_wf_ptyp_lc; exact HwfQ0 ]. }
-    split.
-    { apply a_wf_aenv__var_typ; [ exact Hxout | | exact Hwf1 ].
-      eapply a_wf_ptyp_isub; [ exact HwfQ' | exact Hle ]. }
-    exists Qt. split; [ exact HeQt | ].
-    split.
-    + exists nsub. eapply ad_pat_sub_fuel_weaken; [ exact Hsub | ].
-      intros y b0 Hb; unfold binds; right; exact Hb.
-    + eapply ad_refine_syn_weaken; [ exact Hfill | ].
-      intros y b0 Hb; unfold binds; right; exact Hb.
+    apply subtag_flex_concl_cons.
+    + exact Hdecl.
+    + intros Hle0. apply a_isub_cons_var_typ.
+      * exact Hle0.
+      * eapply a_wf_ptyp_lc; exact HwfQ0.
+    + intros Hle0 Hwf1. apply a_wf_aenv__var_typ.
+      * exact Hxout.
+      * eapply a_wf_ptyp_isub; [ exact HwfQ0 | exact Hle0 ].
+      * exact Hwf1.
+    + apply IH.
+      * eapply a_wf_aenv_strip_mid; eauto.
+      * exact Hdecl.
+      * eapply a_wf_pskl_strip_mid; [ exact HwfP0 | ].
+        eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact I | exact HwfP0 ].
+      * exact (a_binds_tvar_strip_mid_tm Hαb I).
+      * exact Hmod.
+      * exact Hgf.
 
   - (* Flex-SkipTmVar (skeleton entry) — the same, at the entry's skeleton wf. *)
     intros NM M P0 Θ0 Θ1 Ξ α x Q P Hxout Hprem IH Hwf Hdecl HwfP0 Hαb Hmod Hgf.
-    assert (Hxfr : x `notin` ftvar_in_pskl P0)
-      by (eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact I | exact HwfP0 ]).
-    assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
-      by (eapply a_wf_aenv_strip_mid; eauto).
     assert (HwfT : {{ ⊢ ((x ~ abind_var_skl Q) ++ Θ0) }}a)
       by (eapply a_wf_aenv_strip_prefix; exact Hwf).
     apply a_wf_aenv_var_skl_inv in HwfT.
     destruct HwfT as [_ [HscQ0 _]].
-    assert (HscQ' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ Q }}a)
-      by (eapply a_wf_pskl_weaken;
-          [ intros y b0 Hb; apply binds_app_3; exact Hb | exact HscQ0 ]).
-    destruct (IH Hwf' Hdecl
-                ltac:(eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ])
-                ltac:(eapply a_binds_tvar_strip_mid;
-                        [ exact Hαb
-                        | intro He; discriminate He
-                        | intro He; discriminate He
-                        | intros τ1 He; discriminate He ])
-                Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
-    split.
-    { apply a_isub_prepend_decls_src; auto.
-      { intros γ Hb.
-        apply a_binds_tvar_weaken_cons.
-        eapply a_isub_binds_flex; [ exact Hle | ].
-        unfold binds; apply in_or_app; left; exact Hb. }
-      apply a_isub_cons_var_skl;
-        [ eapply a_isub_strengthen_decls_src; eauto
-        | eapply a_wf_pskl_lc; eauto ]. }
-    split.
-    { apply a_wf_aenv__var; [ exact Hxout | | exact Hwf1 ].
-      eapply a_wf_pskl_isub; [ exact HscQ' | exact Hle ]. }
-    exists Qt. split; [ exact HeQt | ].
-    split.
-    + exists nsub. eapply ad_pat_sub_fuel_weaken; [ exact Hsub | ].
-      intros y b0 Hb; unfold binds; right; exact Hb.
-    + eapply ad_refine_syn_weaken; [ exact Hfill | ].
-      intros y b0 Hb; unfold binds; right; exact Hb.
+    apply subtag_flex_concl_cons.
+    + exact Hdecl.
+    + intros Hle0. apply a_isub_cons_var_skl.
+      * exact Hle0.
+      * eapply a_wf_pskl_lc; eauto.
+    + intros Hle0 Hwf1. apply a_wf_aenv__var.
+      * exact Hxout.
+      * eapply a_wf_pskl_isub; [ exact HscQ0 | exact Hle0 ].
+      * exact Hwf1.
+    + apply IH.
+      * eapply a_wf_aenv_strip_mid; eauto.
+      * exact Hdecl.
+      * eapply a_wf_pskl_strip_mid; [ exact HwfP0 | ].
+        eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact I | exact HwfP0 ].
+      * exact (a_binds_tvar_strip_mid_tm Hαb I).
+      * exact Hmod.
+      * exact Hgf.
 
 Qed.
 
