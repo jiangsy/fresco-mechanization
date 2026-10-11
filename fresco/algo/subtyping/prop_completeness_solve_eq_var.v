@@ -430,6 +430,27 @@ Proof.
   pose proof (Htvs _ _ Hb) as Hc; discriminate Hc.
 Qed.
 
+(** A RIGID [β] of [Θ0] is fixed by κ, and its paint refines into no
+    non-variable target over the split's refinement-visible part. *)
+Lemma refine_msubst_rigid_nonvar_absurd : forall Θ Θ0 Θtv Θr Δr κ β Q,
+  aenv_split Θ Θtv Θr ->
+  {{ ⊢ Θ }}a ->
+  {{ ⊢ Θ0 }}a ->
+  κ ∷ Θ0 ⊑ Θ ->
+  binds β abind_tvar Θ0 ->
+  {{ Θr ⨟ Δr ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f β))) ⊳ Q }}ad ->
+  (forall β0, Q <> bskl_var_f β0) ->
+  False.
+Proof.
+  intros Θ Θ0 Θtv Θr Δr κ β Q Hsp HwfΘ HwfΘ0 Hκ Hrig Href Hnv.
+  rewrite (msubst_pskl_tvar_id β HwfΘ0 Hκ Hrig) in Href. simpl in Href.
+  eapply (ad_refine_syn_rigid_var_nonvar_absurd Href).
+  - intros x b Hb. eapply aenv_split_sub_r; eassumption.
+  - apply a_wf_aenv_uniq. exact HwfΘ.
+  - eapply a_inc_binds_tvar; eassumption.
+  - exact Hnv.
+Qed.
+
 (** Local closure of a consistency's target — the premise
     [ad_refine_syn_ghost_sskl] now asks for.  Same statement as
     [ad_pat_consis_lc_r] (algo/typing/prop_soundness_typing.v), which sits
@@ -1131,16 +1152,8 @@ Proof.
             destruct Habt as [Hrig | Hflx].
             * (* rigid: no refinement into an arrow *)
               exfalso.
-              assert (Hmid : msubst_pskl κ (pskl_var_f β) = pskl_var_f β)
-                by (eapply msubst_pskl_tvar_id;
-                    [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
-              rewrite Hmid in Hrefine1. simpl in Hrefine1.
-              eapply (ad_refine_syn_rigid_var_nonvar_absurd Hrefine1);
-                [ intros x b Hb; eapply aenv_split_sub_r;
-                    [ exact HspΘ | exact Hb ]
-                | apply a_wf_aenv_uniq; exact HwfΘ
-                | eapply a_inc_binds_tvar; eauto
-                | intros β0 Hcc; discriminate Hcc ].
+              eapply refine_msubst_rigid_nonvar_absurd with (Θ0 := Θ0) (6 := Hrefine1); eauto.
+              intros β0 Hcc; discriminate Hcc.
             * (* flexible: SE-FlexR + the discharge chain *)
               (* [FLEXMONO]: this row needs the counterpart monotype and its
                  SCOPE, neither of which needs the guess to be Δρ-clean. *)
@@ -1387,16 +1400,8 @@ Proof.
               rename Hb into Habt end.
             destruct Habt as [Hrig | Hflx].
             * exfalso.
-              assert (Hmid : msubst_pskl κ (pskl_var_f β) = pskl_var_f β)
-                by (eapply msubst_pskl_tvar_id;
-                    [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
-              rewrite Hmid in Hrefine1. simpl in Hrefine1.
-              eapply (ad_refine_syn_rigid_var_nonvar_absurd Hrefine1);
-                [ intros x b Hb; eapply aenv_split_sub_r;
-                    [ exact HspΘ | exact Hb ]
-                | apply a_wf_aenv_uniq; exact HwfΘ
-                | eapply a_inc_binds_tvar; eauto
-                | intros β0 Hcc; discriminate Hcc ].
+              eapply refine_msubst_rigid_nonvar_absurd with (Θ0 := Θ0) (6 := Hrefine1); eauto.
+              intros β0 Hcc; discriminate Hcc.
             * (* the guess is Δρ-CLEAN for free here: the subject is [◇], so
                  [Hpre1] IS [ad_ppre__ghost] and [Hhd] is its own side
                  condition — with [Δρ ⊆ Δ] that is the cleanliness.  So ρ is
@@ -1675,17 +1680,8 @@ Proof.
         assert (Habt : a_binds_tvar β Θ0)
           by (inversion HwfP0; subst; assumption).
         destruct Habt as [Hrig | Hflx].
-        + assert (Hmid : msubst_pskl κ (pskl_var_f β) = pskl_var_f β)
-            by (eapply msubst_pskl_tvar_id;
-                [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
-          rewrite Hmid in Hrefine. simpl in Hrefine.
-          eapply (ad_refine_syn_rigid_var_nonvar_absurd Hrefine)
-            with (Θfull := Θ);
-            [ intros x b Hb; eapply aenv_split_sub_r;
-                [ exact HspΘ | exact Hb ]
-            | apply a_wf_aenv_uniq; exact HwfΘ
-            | eapply a_inc_binds_tvar; eauto
-            | intros β0 Hcc; discriminate Hcc ].
+        + eapply refine_msubst_rigid_nonvar_absurd with (Θ0 := Θ0) (6 := Hrefine); eauto.
+          intros β0 Hcc; discriminate Hcc.
         + assert (Hml : mono_ptyp (msubst_lookup κ β))
             by (eapply a_inc_lookup_mono; eauto).
           simpl in Hrefine.
@@ -2113,17 +2109,8 @@ Proof.
             assert (Habt : a_binds_tvar v Θ0)
               by (inversion Hwv; subst; assumption);
             destruct Habt as [Hrig | Hflx];
-            [ let Hmid := fresh in
-              assert (Hmid : msubst_pskl κ (pskl_var_f v) = pskl_var_f v)
-                by (eapply msubst_pskl_tvar_id;
-                    [ exact HwfΘ0 | exact Hκ | exact Hrig ]);
-              rewrite Hmid in Hin; simpl in Hin;
-              eapply (ad_refine_syn_rigid_var_nonvar_absurd Hin);
-                [ intros x b Hb; eapply aenv_split_sub_r;
-                    [ exact HspΘ | exact Hb ]
-                | apply a_wf_aenv_uniq; exact HwfΘ
-                | eapply a_inc_binds_tvar; eauto
-                | intros β0 Hcc; discriminate Hcc ]
+            [ eapply refine_msubst_rigid_nonvar_absurd with (Θ0 := Θ0) (6 := Hin); eauto;
+              intros β0 Hcc; discriminate Hcc
             | let Hml := fresh in
               assert (Hml : mono_ptyp (msubst_lookup κ v))
                 by (eapply a_inc_lookup_mono; eauto);
@@ -2211,17 +2198,8 @@ Proof.
         assert (Habt : a_binds_tvar β Θ0)
           by (inversion HwfP0; subst; assumption).
         destruct Habt as [Hrig | Hflx].
-        + assert (Hmid : msubst_pskl κ (pskl_var_f β) = pskl_var_f β)
-            by (eapply msubst_pskl_tvar_id;
-                [ exact HwfΘ0 | exact Hκ | exact Hrig ]).
-          rewrite Hmid in Hrefine. simpl in Hrefine.
-          eapply (ad_refine_syn_rigid_var_nonvar_absurd Hrefine)
-            with (Θfull := Θ);
-            [ intros x b Hb; eapply aenv_split_sub_r;
-                [ exact HspΘ | exact Hb ]
-            | apply a_wf_aenv_uniq; exact HwfΘ
-            | eapply a_inc_binds_tvar; eauto
-            | intros β0 Hcc; discriminate Hcc ].
+        + eapply refine_msubst_rigid_nonvar_absurd with (Θ0 := Θ0) (6 := Hrefine); eauto.
+          intros β0 Hcc; discriminate Hcc.
         + assert (Hml : mono_ptyp (msubst_lookup κ β))
             by (eapply a_inc_lookup_mono; eauto).
           simpl in Hrefine.
