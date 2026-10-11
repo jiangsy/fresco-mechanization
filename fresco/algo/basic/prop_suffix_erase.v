@@ -140,6 +140,22 @@ Proof. intros. apply mono_ptyp_lc. eapply solves_flex_mono; eassumption. Qed.
 Lemma solves_flex_wf : forall τ α b Θ0, solves_flex τ α b Θ0 -> a_wf_ptyp Θ0 τ.
 Proof. intros τ α b Θ0 [_ [Hw _]]. exact Hw. Qed.
 
+Lemma solves_flex_fresh : forall τ α b Θ0, solves_flex τ α b Θ0 -> α `notin` ftvar_in_ptyp τ.
+Proof. intros τ α b Θ0 [_ [_ [Hf _]]]. exact Hf. Qed.
+
+(** A definition found at the eliminated entry IS the solution. *)
+Lemma solves_flex_def_eq : forall τs α0 b Θa Θ0 τ,
+  solves_flex τs α0 b Θ0 ->
+  uniq (Θa ++ (α0 ~ b) ++ Θ0) ->
+  binds α0 (abind_flex_mono_def τ) (Θa ++ (α0 ~ b) ++ Θ0) ->
+  τ = τs.
+Proof.
+  intros * Hs Hu Hbd.
+  assert (Hb : abind_flex_mono_def τ = b) by (eapply binds_mid_eq; eassumption).
+  destruct Hs as [_ [_ [_ [Heqb | Heqb]]]];
+    rewrite Heqb in Hb; [ discriminate | inversion Hb; reflexivity ].
+Qed.
+
 (** ⚙ THE SUBSTITUTION IS APPLIED TO THE WHOLE REMAINING CONTEXT, not just
     to the prefix above [α].  Leaving the tail alone would be sound — its
     payloads are scoped below [α] — but only after an "α does not occur in
@@ -434,23 +450,15 @@ Proof.
     destruct_if as [Heqα | Hne].
     + (* the eliminated variable: the lookup COLLAPSES into its premise *)
       subst α.
-      assert (Hb : abind_flex_mono_def τ = b)
-        by (eapply binds_mid_eq; eassumption).
-      assert (Hfrτs : α0 `notin` ftvar_in_ptyp τs)
-        by (destruct Hs as [_ [_ [Hf _]]]; exact Hf).
-      assert (Hττ : τ = τs).
-      { destruct Hs as [_ [_ [_ [Heqb | Heqb]]]];
-          rewrite Heqb in Hb; [ discriminate | inversion Hb; reflexivity ]. }
+      assert (Hττ : τ = τs) by (eapply solves_flex_def_eq; eassumption).
       subst τ.
-      assert (Hid : subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0
-                      (ptyp_to_bskl_syn τs) = ptyp_to_bskl_syn τs)
-        by (apply subst_bskl_in_bskl_fresh_eq;
-            rewrite ftvar_ptyp_to_bskl_syn; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu Hα0 Hd) as IHx
       end.
-      rewrite Hid in IHx. exact IHx.
+      rewrite (subst_bskl_in_bskl_fresh_eq (ptyp_to_bskl_syn τs)) in IHx;
+        [ exact IHx | ].
+      rewrite ftvar_ptyp_to_bskl_syn. eapply solves_flex_fresh; eassumption.
     + apply ad_refine_syn__flex_l
         with (α := α) (τ := subst_ptyp_in_ptyp τs α0 τ).
       * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
@@ -460,23 +468,15 @@ Proof.
   - (* flex_r : the mirror *)
     destruct_if as [Heqα | Hne].
     + subst α.
-      assert (Hb : abind_flex_mono_def τ = b)
-        by (eapply binds_mid_eq; eassumption).
-      assert (Hfrτs : α0 `notin` ftvar_in_ptyp τs)
-        by (destruct Hs as [_ [_ [Hf _]]]; exact Hf).
-      assert (Hττ : τ = τs).
-      { destruct Hs as [_ [_ [_ [Heqb | Heqb]]]];
-          rewrite Heqb in Hb; [ discriminate | inversion Hb; reflexivity ]. }
+      assert (Hττ : τ = τs) by (eapply solves_flex_def_eq; eassumption).
       subst τ.
-      assert (Hid : subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0
-                      (ptyp_to_bskl_syn τs) = ptyp_to_bskl_syn τs)
-        by (apply subst_bskl_in_bskl_fresh_eq;
-            rewrite ftvar_ptyp_to_bskl_syn; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu Hα0 Hd) as IHx
       end.
-      rewrite Hid in IHx. exact IHx.
+      rewrite (subst_bskl_in_bskl_fresh_eq (ptyp_to_bskl_syn τs)) in IHx;
+        [ exact IHx | ].
+      rewrite ftvar_ptyp_to_bskl_syn. eapply solves_flex_fresh; eassumption.
     + apply ad_refine_syn__flex_r
         with (α := α) (τ := subst_ptyp_in_ptyp τs α0 τ).
       * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
@@ -547,23 +547,15 @@ Proof.
     destruct_if as [Heqα | Hne].
     + (* the eliminated variable: the lookup COLLAPSES into its premise *)
       subst α.
-      assert (Hb : abind_flex_mono_def τ = b)
-        by (eapply binds_mid_eq; eassumption).
-      assert (Hfrτs : α0 `notin` ftvar_in_ptyp τs)
-        by (destruct Hs as [_ [_ [Hf _]]]; exact Hf).
-      assert (Hττ : τ = τs).
-      { destruct Hs as [_ [_ [_ [Heqb | Heqb]]]];
-          rewrite Heqb in Hb; [ discriminate | inversion Hb; reflexivity ]. }
+      assert (Hττ : τ = τs) by (eapply solves_flex_def_eq; eassumption).
       subst τ.
-      assert (Hid : subst_pskl_in_pskl (ptyp_to_pskl τs) α0
-                      (ptyp_to_pskl τs) = ptyp_to_pskl τs)
-        by (apply subst_pskl_in_pskl_fresh_eq;
-            rewrite ftvar_ptyp_to_pskl; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu Hα0 Hd) as IHx
       end.
-      rewrite Hid in IHx. exact IHx.
+      rewrite (subst_pskl_in_pskl_fresh_eq (ptyp_to_pskl τs)) in IHx;
+        [ exact IHx | ].
+      rewrite ftvar_ptyp_to_pskl. eapply solves_flex_fresh; eassumption.
     + apply ad_refine_pskl__flex_l
         with (α := α) (τ := subst_ptyp_in_ptyp τs α0 τ).
       * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
@@ -573,23 +565,15 @@ Proof.
   - (* flex_r : the mirror *)
     destruct_if as [Heqα | Hne].
     + subst α.
-      assert (Hb : abind_flex_mono_def τ = b)
-        by (eapply binds_mid_eq; eassumption).
-      assert (Hfrτs : α0 `notin` ftvar_in_ptyp τs)
-        by (destruct Hs as [_ [_ [Hf _]]]; exact Hf).
-      assert (Hττ : τ = τs).
-      { destruct Hs as [_ [_ [_ [Heqb | Heqb]]]];
-          rewrite Heqb in Hb; [ discriminate | inversion Hb; reflexivity ]. }
+      assert (Hττ : τ = τs) by (eapply solves_flex_def_eq; eassumption).
       subst τ.
-      assert (Hid : subst_pskl_in_pskl (ptyp_to_pskl τs) α0
-                      (ptyp_to_pskl τs) = ptyp_to_pskl τs)
-        by (apply subst_pskl_in_pskl_fresh_eq;
-            rewrite ftvar_ptyp_to_pskl; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu Hα0 Hd) as IHx
       end.
-      rewrite Hid in IHx. exact IHx.
+      rewrite (subst_pskl_in_pskl_fresh_eq (ptyp_to_pskl τs)) in IHx;
+        [ exact IHx | ].
+      rewrite ftvar_ptyp_to_pskl. eapply solves_flex_fresh; eassumption.
     + apply ad_refine_pskl__flex_r
         with (α := α) (τ := subst_ptyp_in_ptyp τs α0 τ).
       * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
@@ -718,23 +702,15 @@ Proof.
     destruct_if as [Heqα | Hne].
     + (* the eliminated variable: the lookup COLLAPSES into its premise *)
       subst α.
-      assert (Hb : abind_flex_mono_def τ = b)
-        by (eapply binds_mid_eq; eassumption).
-      assert (Hfrτs : α0 `notin` ftvar_in_ptyp τs)
-        by (destruct Hs as [_ [_ [Hf _]]]; exact Hf).
-      assert (Hττ : τ = τs).
-      { destruct Hs as [_ [_ [_ [Heqb | Heqb]]]];
-          rewrite Heqb in Hb; [ discriminate | inversion Hb; reflexivity ]. }
+      assert (Hττ : τ = τs) by (eapply solves_flex_def_eq; eassumption).
       subst τ.
-      assert (Hid : subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0
-                      (ptyp_to_uskl_syn τs) = ptyp_to_uskl_syn τs)
-        by (apply subst_uskl_in_uskl_fresh_eq;
-            rewrite ftvar_ptyp_to_uskl_syn; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu) as IHx
       end.
-      rewrite Hid in IHx. exact IHx.
+      rewrite (subst_uskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τs)) in IHx;
+        [ exact IHx | ].
+      rewrite ftvar_ptyp_to_uskl_syn. eapply solves_flex_fresh; eassumption.
     + apply ad_pat_consis__flex_l with (τ := subst_ptyp_in_ptyp τs α0 τ).
       * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
           with (subst_abind τs α0 (abind_flex_mono_def τ)).
@@ -743,23 +719,15 @@ Proof.
   - (* flex_r : the mirror, on the TARGET *)
     destruct_if as [Heqα | Hne].
     + subst α.
-      assert (Hb : abind_flex_mono_def τ = b)
-        by (eapply binds_mid_eq; eassumption).
-      assert (Hfrτs : α0 `notin` ftvar_in_ptyp τs)
-        by (destruct Hs as [_ [_ [Hf _]]]; exact Hf).
-      assert (Hττ : τ = τs).
-      { destruct Hs as [_ [_ [_ [Heqb | Heqb]]]];
-          rewrite Heqb in Hb; [ discriminate | inversion Hb; reflexivity ]. }
+      assert (Hττ : τ = τs) by (eapply solves_flex_def_eq; eassumption).
       subst τ.
-      assert (Hid : subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0
-                      (ptyp_to_bskl_syn τs) = ptyp_to_bskl_syn τs)
-        by (apply subst_bskl_in_bskl_fresh_eq;
-            rewrite ftvar_ptyp_to_bskl_syn; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu) as IHx
       end.
-      rewrite Hid in IHx. exact IHx.
+      rewrite (subst_bskl_in_bskl_fresh_eq (ptyp_to_bskl_syn τs)) in IHx;
+        [ exact IHx | ].
+      rewrite ftvar_ptyp_to_bskl_syn. eapply solves_flex_fresh; eassumption.
     + apply ad_pat_consis__flex_r with (τ := subst_ptyp_in_ptyp τs α0 τ).
       * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
           with (subst_abind τs α0 (abind_flex_mono_def τ)).
@@ -968,23 +936,15 @@ Proof.
   - (* flex_mono *)
     destruct_if as [Heqα | Hne].
     + subst α.
-      assert (Hb : abind_flex_mono_def τ = b)
-        by (eapply binds_mid_eq; eassumption).
-      assert (Hfrτs : α0 `notin` ftvar_in_ptyp τs)
-        by (destruct Hs as [_ [_ [Hf _]]]; exact Hf).
-      assert (Hττ : τ = τs).
-      { destruct Hs as [_ [_ [_ [Heqb | Heqb]]]];
-          rewrite Heqb in Hb; [ discriminate | inversion Hb; reflexivity ]. }
+      assert (Hττ : τ = τs) by (eapply solves_flex_def_eq; eassumption).
       subst τ.
-      assert (Hid : subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0
-                      (ptyp_to_uskl_syn τs) = ptyp_to_uskl_syn τs)
-        by (apply subst_uskl_in_uskl_fresh_eq;
-            rewrite ftvar_ptyp_to_uskl_syn; exact Hfrτs).
       match goal with
       | IH : forall _ _ _ _ _, _ = _ -> _ |- _ =>
           pose proof (IH τs α0 b Θa Θ0 eq_refl Hs Hu) as IHx
       end.
-      rewrite Hid in IHx. exact IHx.
+      rewrite (subst_uskl_in_uskl_fresh_eq (ptyp_to_uskl_syn τs)) in IHx;
+        [ exact IHx | ].
+      rewrite ftvar_ptyp_to_uskl_syn. eapply solves_flex_fresh; eassumption.
     + apply ad_pat_sub__flex_mono with (τ := subst_ptyp_in_ptyp τs α0 τ).
       * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
           with (subst_abind τs α0 (abind_flex_mono_def τ)).
