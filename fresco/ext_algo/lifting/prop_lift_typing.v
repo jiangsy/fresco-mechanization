@@ -1053,43 +1053,10 @@ Proof.
             unfold disjoint in Hd; clear - Hd Hz1; fsetdec).
       apply (Hblk z); [ apply Hαout; exact Hz1 | exact HzΘa | exact Hz2 ]. }
     (* ---- shape data ---- *)
-    assert (Hpieces :
-      {{ Θa ⨟ empty ⊢ₚₛ Pa }}a /\ {{ Θa ⨟ empty ⊢ₚₛ Q0 }}a /\
-      a_ty_mode_compat (decr_mode m0) Q0 /\
-      exists Pa' Q0',
-        rel_pskl ρ V Pa Pa' /\ rel_pskl ρ V Q0 Q0' /\
-        ftvar_in_pskl Pa' ∪ ftvar_in_pskl Q0' [<=] S0 /\
-        {{ S0 ↝ S0 ⊨ Θ0' ⊲ P0' ▹ Pa' ⇢ Q0' ⊣ Θ0' }}e).
-    { destruct Hshape as [[EP0 [EP EQ0]] | EP0].
-      - subst P0a Pa Q0. inversion HrP0; subst.
-        split; [ apply a_wf_pskl__ghost | ].
-        split; [ apply a_wf_pskl__ghost | ].
-        split.
-        { rewrite (a_ty_mode_compat_ghost_inv Hmod).
-          apply a_ty_mode_compat__ti. }
-        exists pskl_ghost, pskl_ghost.
-        split; [ apply rel_pskl__ghost | ].
-        split; [ apply rel_pskl__ghost | ].
-        split; [ simpl; clear; fsetdec | ].
-        apply e_split__ghost.
-      - subst P0a.
-        inversion HrP0 as [ | n0 | u0 v0 Hu0 | B1 B2 Pa' Q0c' HrPa HrQ0c
-                          | B3 B4 Hu1 | | B5 B6 Hu2 ]; subst.
-        inversion Hwfp0 as [ Θx Δx | Θx Δx αx Hbx | Θx Δx Xa Xb HwfPaa HwfQ0a
-                           | Lx Θx Δx Xp Hallx | Θx Δx
-                           | Θx Δx Xp Hgx Hwix ]; subst.
-        destruct (a_ty_mode_compat_arrow_inv Hmod Hne) as (m'' & Em & Hmodc0).
-        subst m0.
-        split; [ exact HwfPaa | ].
-        split; [ exact HwfQ0a | ].
-        split; [ simpl; exact Hmodc0 | ].
-        exists Pa', Q0c'.
-        split; [ exact HrPa | ].
-        split; [ exact HrQ0c | ].
-        split; [ simpl in HcovP; clear - HcovP; fsetdec | ].
-        apply e_split__arrow. }
-    destruct Hpieces as (HwfPa & HwfQ0a & Hmodc
-                         & Pa' & Q0' & HrPa & HrQ0c & HftPQ & Dsp).
+    assert (HcovP0 : ftvar_in_pskl P0' [<=] S0) by (clear - HcovP; fsetdec).
+    destruct (lift_split_identity Θ0' Hshape HrP0 Hwfp0 HcovP0)
+      as (HwfPa & HwfQ0a & Pa' & Q0' & HrPa & HrQ0c & HftPQ & Dsp).
+    pose proof (a_ty_mode_compat_split_decr Hmod Hne Hshape) as Hmodc.
     (* ---- the GUESS lift ---- *)
     assert (Hscpg0 : V [<=] ftvar_in_aenv Θa ∪ ftvar_in_pskl Pa)
       by (clear - Hscp; fsetdec).
@@ -1300,43 +1267,10 @@ Proof.
       apply Hdmb in Ha1. simpl_env in Ha1. simpl_env.
       clear - Ha1 Hax. fsetdec. }
     (* ---- shape data: the split's two outputs ---- *)
-    assert (Hpieces :
-      {{ Θa ⨟ empty ⊢ₚₛ Pa }}a /\ {{ Θa ⨟ empty ⊢ₚₛ Q0 }}a /\
-      a_ty_mode_compat (decr_mode m0) Q0 /\
-      exists Pa' Q0',
-        rel_pskl ρ V Pa Pa' /\ rel_pskl ρ V Q0 Q0' /\
-        ftvar_in_pskl Pa' ∪ ftvar_in_pskl Q0' [<=] S0 /\
-        {{ S0 ↝ S0 ⊨ Θ0' ⊲ P0' ▹ Pa' ⇢ Q0' ⊣ Θ0' }}e).
-    { destruct Hshape as [[EP0 [EP EQ0]] | EP0].
-      - subst P0a Pa Q0. inversion HrP0; subst.
-        split; [ apply a_wf_pskl__ghost | ].
-        split; [ apply a_wf_pskl__ghost | ].
-        split.
-        { rewrite (a_ty_mode_compat_ghost_inv Hmod).
-          apply a_ty_mode_compat__ti. }
-        exists pskl_ghost, pskl_ghost.
-        split; [ apply rel_pskl__ghost | ].
-        split; [ apply rel_pskl__ghost | ].
-        split; [ simpl; clear; fsetdec | ].
-        apply e_split__ghost.
-      - subst P0a.
-        inversion HrP0 as [ | n0 | u0 v0 Hu0 | B1 B2 Pa' Q0c' HrPa HrQ0c
-                          | B3 B4 Hu1 | | B5 B6 Hu2 ]; subst.
-        inversion Hwfp0 as [ Θx Δx | Θx Δx αx Hbx | Θx Δx Xa Xb HwfPaa HwfQ0a
-                           | Lx Θx Δx Xp Hallx | Θx Δx
-                           | Θx Δx Xp Hgx Hwix ]; subst.
-        destruct (a_ty_mode_compat_arrow_inv Hmod Hne) as (m'' & Em & Hmodc0).
-        subst m0.
-        split; [ exact HwfPaa | ].
-        split; [ exact HwfQ0a | ].
-        split; [ simpl; exact Hmodc0 | ].
-        exists Pa', Q0c'.
-        split; [ exact HrPa | ].
-        split; [ exact HrQ0c | ].
-        split; [ simpl in HcovP; clear - HcovP; fsetdec | ].
-        apply e_split__arrow. }
-    destruct Hpieces as (HwfPa & HwfQ0a & Hmodc
-                         & Pa' & Q0' & HrPa & HrQ0c & HftPQ & Dsp).
+    assert (HcovP0 : ftvar_in_pskl P0' [<=] S0) by (clear - HcovP; fsetdec).
+    destruct (lift_split_identity Θ0' Hshape HrP0 Hwfp0 HcovP0)
+      as (HwfPa & HwfQ0a & Pa' & Q0' & HrPa & HrQ0c & HftPQ & Dsp).
+    pose proof (a_ty_mode_compat_split_decr Hmod Hne Hshape) as Hmodc.
     (* ---- the chk lift, and the relation widened by its pairs ---- *)
     assert (Hblk1 : forall a, a `in` dom Θc -> a `notin` dom Θa ->
                     a `notin` cols_l ρ)
