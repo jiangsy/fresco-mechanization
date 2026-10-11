@@ -334,6 +334,26 @@ Qed.
 (*  DERIVATION, which is why these are inductions on it, not on a size.    *)
 (* ===================================================================== *)
 
+(** A defined flexible's monotype, read as the counterpart a [__flex_r] step
+    chases to: inherited painting = synthesised one, ghost-free, locally
+    closed, and scoped by Θ. *)
+Lemma a_flex_def_counterpart : forall Θ Δ α τ,
+  {{ ⊢ Θ }}a -> binds α (abind_flex_mono_def τ) Θ ->
+  ptyp_to_bskl_syn τ = pskl_to_bskl_inh (ptyp_to_pskl τ) /\
+  pskl_ghost_free (ptyp_to_pskl τ) /\ lc_pskl (ptyp_to_pskl τ) /\
+  (forall γ, γ `in` ftvar_in_pskl (ptyp_to_pskl τ) -> γ `notin` Δ ->
+     a_binds_tvar γ Θ).
+Proof.
+  intros Θ Δ α τ HwfΘ Hb.
+  assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eassumption).
+  assert (Hwfτ : a_wf_ptyp Θ τ) by (eapply a_wf_aenv_binds_def_wf; eassumption).
+  refine (conj _ (conj (ptyp_to_pskl_ghost_free _) (conj _ _))).
+  - symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hmτ.
+  - apply ptyp_to_pskl_lc; eapply a_wf_ptyp_lc; exact Hwfτ.
+  - intros γ Hγ _; eapply a_wf_pskl_ftv_binds;
+      [ apply a_wf_ptyp_to_wf_pskl with (Δ := empty); exact Hwfτ | exact Hγ ].
+Qed.
+
 Lemma ad_precise_arrow_l_inv : forall Θ Δ Src Tgt,
   {{ Θ ⨟ Δ ⊢ᵣ Src ⊳ Tgt }}ad ->
   forall S1 S2 X,
@@ -370,18 +390,10 @@ Proof.
     destruct X as [ | n0 | α0 | X1 X2 | X0 | | X0 ]; cbn in HeqT;
       try discriminate HeqT.
     assert (Hαe : α0 = α) by congruence; subst α0.
-    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eassumption).
-    assert (Hwfτ : a_wf_ptyp Θ τ)
-      by (eapply a_wf_aenv_binds_def_wf; eassumption).
-    assert (Hpaint : ptyp_to_bskl_syn τ = pskl_to_bskl_inh (ptyp_to_pskl τ))
-      by (symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hmτ).
+    destruct (@a_flex_def_counterpart Θ Δ α τ HwfΘ H)
+      as (Hpaint & Hgτ & Hlτ & Hsτ).
     destruct (IHad_refine_syn S1 S2 (ptyp_to_pskl τ) HeqS Hpaint HwfΘ
-                ltac:(apply ptyp_to_pskl_ghost_free)
-                ltac:(apply ptyp_to_pskl_lc; eapply a_wf_ptyp_lc; exact Hwfτ)
-                ltac:(intros γ Hγ _; eapply a_wf_pskl_ftv_binds;
-                      [ apply a_wf_ptyp_to_wf_pskl with (Δ := empty);
-                        exact Hwfτ
-                      | exact Hγ ]))
+                Hgτ Hlτ Hsτ)
       as (X1 & X2 & Hg1 & Hg2 & Hl1 & Hl2 & Hs1 & Hs2 & Hp1 & Hp2 & Hreplay).
     exists X1, X2.
     split; [ exact Hg1 | ]. split; [ exact Hg2 | ].
@@ -432,18 +444,10 @@ Proof.
     destruct X as [ | n0 | α0 | X1 X2 | X0 | | X0 ]; cbn in HeqT;
       try discriminate HeqT.
     assert (Hαe : α0 = α) by congruence; subst α0.
-    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eassumption).
-    assert (Hwfτ : a_wf_ptyp Θ τ)
-      by (eapply a_wf_aenv_binds_def_wf; eassumption).
-    assert (Hpaint : ptyp_to_bskl_syn τ = pskl_to_bskl_inh (ptyp_to_pskl τ))
-      by (symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hmτ).
+    destruct (@a_flex_def_counterpart Θ Δ α τ HwfΘ H)
+      as (Hpaint & Hgτ & Hlτ & Hsτ).
     destruct (IHad_refine_syn S0 (ptyp_to_pskl τ) HeqS Hpaint HwfΘ
-                ltac:(apply ptyp_to_pskl_ghost_free)
-                ltac:(apply ptyp_to_pskl_lc; eapply a_wf_ptyp_lc; exact Hwfτ)
-                ltac:(intros γ Hγ _; eapply a_wf_pskl_ftv_binds;
-                      [ apply a_wf_ptyp_to_wf_pskl with (Δ := empty);
-                        exact Hwfτ
-                      | exact Hγ ]))
+                Hgτ Hlτ Hsτ)
       as (X' & Hg' & Hl' & Hs' & Hp' & Hreplay).
     exists X'.
     split; [ exact Hg' | ]. split; [ exact Hl' | ]. split; [ exact Hs' | ].
