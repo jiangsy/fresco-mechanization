@@ -181,6 +181,27 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share the ForallL recursive proof in lookup completeness
+
+Keep tagged and untagged rigid-substitution inversions explicit, then use
+numbered selectors for cases 6 and 7 to share the fresh-rigid recursive
+argument in `a_looksub_solve_complete_gen`. The scope, tag bounds,
+context extension, rigid substitution, and recursive call are now proved
+once. No new wrapper lemma, opaque tactic, or catch-all case matching is
+introduced. Retain the explanation that the guessed skeleton must stay
+outside κ through the extended rigid substitution.
+
+Net reduction: **227 physical Coq lines / 133 nonblank, noncomment lines**.
+The physical count includes replacing a stale historical blocker narrative
+with a short explanation of the implemented repair. All 11 existing theorem
+statements are unchanged. Inline tactic terms decrease from 12 to 10;
+none were added.
+
+Validation: focused compilation and final `make coq` passed. All 34
+headline assumption reports are closed under the global context, with no
+axiom reports or errors. Statement comparison and `git diff --check` passed.
+
+
 ## 2026-10-11 — Share consistency and refinement binder closing
 
 Add named lemmas for closing a source refinement, a skeleton refinement,
