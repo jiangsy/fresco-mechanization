@@ -438,19 +438,18 @@ Proof.
   (* ⭐ FIRST restrict at the JUNK SUFFIX's domain (§8c.39): the rule
      freshens Ξ only against the CONTEXT, so its names can collide with
      ρ's left column — and then the block premise is underivable. *)
-  assert (HΞΘa : dom Ξ ∩ ftvar_in_aenv Θa [=] empty).
-  { assert (Hdisj : disjoint Ξ Θa) by (clear - Huq; solve_uniq).
-    unfold disjoint in Hdisj. clear - Hdisj Hsc0. fsetdec. }
+  assert (HdisjΞ : disjoint Ξ Θa) by (clear - Huq; solve_uniq).
+  unfold disjoint in HdisjΞ.
+  assert (HΞΘa : dom Ξ ∩ ftvar_in_aenv Θa [=] empty)
+    by (clear - HdisjΞ Hsc0; fsetdec).
   assert (HΞP0 : dom Ξ ∩ ftvar_in_pskl (ptyp_to_pskl (ptyp_all A0))
                  [=] empty).
   { assert (Hsub : ftvar_in_pskl (ptyp_to_pskl (ptyp_all A0)) [<=] dom Θa).
     { intros z Hz. apply a_binds_tvar_in_dom; exact (a_wf_pskl_ftv_binds Hwfp0 Hz). }
-    assert (Hdisj : disjoint Ξ Θa) by (clear - Huq; solve_uniq).
-    unfold disjoint in Hdisj. clear - Hdisj Hsub. fsetdec. }
+    clear - HdisjΞ Hsub. fsetdec. }
   assert (HΞe : dom Ξ ∩ (fvar_in_exp t
-                         ∪ ftvar_in_exp t) [=] empty).
-  { assert (Hdisj : disjoint Ξ Θa) by (clear - Huq; solve_uniq).
-    unfold disjoint in Hdisj. clear - Hdisj Hfve Hfte. fsetdec. }
+                         ∪ ftvar_in_exp t) [=] empty)
+    by (clear - HdisjΞ Hfve Hfte; fsetdec).
   destruct (lift_restrict_junk HΞΘa HrΘ Hagr Hinj Hfun Hcov)
     as (Hρ0incl & Hρ0in & Hcl00 & Hcr00 & HΞcols & HrΘ0 & Hagr0 & Hinj0
         & Hfun0 & Hcov0).
@@ -1408,28 +1407,26 @@ Proof.
       destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[E Ebd] | Hb0];
         [ exfalso; subst z; exact (Hxfv Hz) | eapply binds_In; exact Hb0 ]. }
     (* the run reaches the conclusion's output *)
+    assert (HdisjΞ : disjoint Ξ Θb) by (clear - Huq; solve_uniq).
+    unfold disjoint in HdisjΞ.
     assert (Hdmout : dom Θb [<=] dom Θc).
     { intros a Ha.
       assert (Hax : a <> x) by (intros ->; exact (HxΘb Ha)).
       assert (Ha1 : a `in` dom ((x ~ abind_var_typ A) ++ Θb))
         by (simpl_env; clear - Ha; fsetdec).
       apply Hdmb in Ha1. simpl_env in Ha1.
-      assert (HaΞ : a `notin` dom Ξ).
-      { assert (Hd : disjoint Ξ Θb) by (clear - Huq; solve_uniq).
-        unfold disjoint in Hd. clear - Hd Ha. fsetdec. }
+      assert (HaΞ : a `notin` dom Ξ)
+        by (clear - HdisjΞ Ha; fsetdec).
       clear - Ha1 Hax HaΞ. fsetdec. }
     (* ⭐ FIRST restrict at the JUNK SUFFIX's domain (§8c.39) *)
-    assert (HΞΘa : dom Ξ ∩ ftvar_in_aenv Θa [=] empty).
-    { assert (Hdisj : disjoint Ξ Θb) by (clear - Huq; solve_uniq).
-      unfold disjoint in Hdisj. clear - Hdisj Hsc0 Hdm0. fsetdec. }
+    assert (HΞΘa : dom Ξ ∩ ftvar_in_aenv Θa [=] empty)
+      by (clear - HdisjΞ Hsc0 Hdm0; fsetdec).
     assert (HΞP0 : dom Ξ ∩ ftvar_in_pskl (ptyp_to_pskl A0) [=] empty).
     { assert (Hsub : ftvar_in_pskl (ptyp_to_pskl A0) [<=] dom Θa).
       { intros z Hz. apply a_binds_tvar_in_dom; exact (a_wf_pskl_ftv_binds Hwfp0 Hz). }
-      assert (Hdisj : disjoint Ξ Θb) by (clear - Huq; solve_uniq).
-      unfold disjoint in Hdisj. clear - Hdisj Hsub Hdm0. fsetdec. }
-    assert (HΞeb : dom Ξ ∩ (fvar_in_exp ea ∪ ftvar_in_exp ea) [=] empty).
-    { assert (Hdisj : disjoint Ξ Θb) by (clear - Huq; solve_uniq).
-      unfold disjoint in Hdisj. clear - Hdisj Hfvb Hfte Hdm0. fsetdec. }
+      clear - HdisjΞ Hsub Hdm0. fsetdec. }
+    assert (HΞeb : dom Ξ ∩ (fvar_in_exp ea ∪ ftvar_in_exp ea) [=] empty)
+      by (clear - HdisjΞ Hfvb Hfte Hdm0; fsetdec).
     destruct (lift_restrict_junk HΞΘa HrΘ Hagr Hinj Hfun Hcov)
       as (Hρ0incl & Hρ0in & Hcl00 & Hcr00 & HΞcols & HrΘ0 & Hagr0 & Hinj0
           & Hfun0 & Hcov0).
@@ -1592,32 +1589,29 @@ Proof.
       destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[E Ebd] | Hb0];
         [ exfalso; subst z; exact (Hxfv Hz) | eapply binds_In; exact Hb0 ]. }
     (* the run reaches the conclusion's output *)
+    assert (HdisjΞ : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
+    unfold disjoint in HdisjΞ.
     assert (Hdmout : dom Θc [<=] dom Θd).
     { intros a Ha.
       assert (Hax : a <> x) by (intros ->; exact (HxΘc Ha)).
       assert (Ha1 : a `in` dom ((x ~ abind_var_typ A) ++ Θc))
         by (simpl_env; clear - Ha; fsetdec).
       apply Hdmb in Ha1. simpl_env in Ha1.
-      assert (HaΞ : a `notin` dom Ξ).
-      { assert (Hd : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
-        unfold disjoint in Hd. clear - Hd Ha. fsetdec. }
+      assert (HaΞ : a `notin` dom Ξ)
+        by (clear - HdisjΞ Ha; fsetdec).
       clear - Ha1 Hax HaΞ. fsetdec. }
     (* ⭐ FIRST restrict at the JUNK SUFFIX's domain (§8c.39) *)
-    assert (HΞΘa : dom Ξ ∩ ftvar_in_aenv Θa [=] empty).
-    { assert (Hdisj : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
-      unfold disjoint in Hdisj. clear - Hdisj Hsc0 Hdm0 Hdmc. fsetdec. }
+    assert (HΞΘa : dom Ξ ∩ ftvar_in_aenv Θa [=] empty)
+      by (clear - HdisjΞ Hsc0 Hdm0 Hdmc; fsetdec).
     assert (HΞP0 : dom Ξ ∩ ftvar_in_pskl (ptyp_to_pskl A0) [=] empty).
     { assert (Hsub : ftvar_in_pskl (ptyp_to_pskl A0) [<=] dom Θa).
       { intros z Hz. apply a_binds_tvar_in_dom; exact (a_wf_pskl_ftv_binds Hwfp0 Hz). }
-      assert (Hdisj : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
-      unfold disjoint in Hdisj. clear - Hdisj Hsub Hdm0 Hdmc. fsetdec. }
-    assert (HΞeb : dom Ξ ∩ (fvar_in_exp ea ∪ ftvar_in_exp ea) [=] empty).
-    { assert (Hdisj : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
-      unfold disjoint in Hdisj. clear - Hdisj Hfvb Hfte Hdm0 Hdmc. fsetdec. }
+      clear - HdisjΞ Hsub Hdm0 Hdmc. fsetdec. }
+    assert (HΞeb : dom Ξ ∩ (fvar_in_exp ea ∪ ftvar_in_exp ea) [=] empty)
+      by (clear - HdisjΞ Hfvb Hfte Hdm0 Hdmc; fsetdec).
     assert (HΞAan : dom Ξ ∩ ftvar_in_pskl (ptyp_to_pskl A) [=] empty).
     { pose proof (ftvar_ptyp_to_pskl A) as He.
-      assert (Hdisj : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
-      unfold disjoint in Hdisj. clear - He Hdisj HftAan Hdm0 Hdmc. fsetdec. }
+      clear - He HdisjΞ HftAan Hdm0 Hdmc. fsetdec. }
     destruct (lift_restrict_junk HΞΘa HrΘ Hagr Hinj Hfun Hcov)
       as (Hρ0incl & Hρ0in & Hcl00 & Hcr00 & HΞcols & HrΘ0 & Hagr0 & Hinj0
           & Hfun0 & Hcov0).

@@ -473,19 +473,18 @@ Proof.
     (* ⭐ FIRST restrict at the JUNK SUFFIX's domain: the rule freshens Ξ
        only against the CONTEXT, so its names can collide with ρ's left
        column — and then [Hblk'] below is underivable. *)
-    assert (HΞΘ0 : dom Ξ ∩ ftvar_in_aenv Θ0 [=] empty).
-    { assert (Hdisj : disjoint Ξ Θ0) by (clear - Huq; solve_uniq).
-      unfold disjoint in Hdisj. clear - Hdisj Hsc0. fsetdec. }
+    assert (HdisjΞ : disjoint Ξ Θ0) by (clear - Huq; solve_uniq).
+    unfold disjoint in HdisjΞ.
+    assert (HΞΘ0 : dom Ξ ∩ ftvar_in_aenv Θ0 [=] empty)
+      by (clear - HdisjΞ Hsc0; fsetdec).
     assert (HΞB : dom Ξ ∩ ftvar_in_pskl (pskl_all_syn B) [=] empty).
     { assert (Hsub : ftvar_in_pskl (pskl_all_syn B) [<=] dom Θ0).
       { intros x Hx. apply a_binds_tvar_in_dom; exact (a_wf_pskl_ftv_binds Hwfp0 Hx). }
-      assert (Hdisj : disjoint Ξ Θ0) by (clear - Huq; solve_uniq).
-      unfold disjoint in Hdisj. clear - Hdisj Hsub. fsetdec. }
+      clear - HdisjΞ Hsub. fsetdec. }
     assert (HΞA : dom Ξ ∩ ftvar_in_pskl A [=] empty).
     { assert (Hsub : ftvar_in_pskl A [<=] dom Θ0).
       { intros x Hx. apply a_binds_tvar_in_dom; exact (a_wf_pskl_ftv_binds Hwfp Hx). }
-      assert (Hdisj : disjoint Ξ Θ0) by (clear - Huq; solve_uniq).
-      unfold disjoint in Hdisj. clear - Hdisj Hsub. fsetdec. }
+      clear - HdisjΞ Hsub. fsetdec. }
     destruct (lift_restrict_junk HΞΘ0 HrΘ Hagr Hinj Hfun Hcov)
       as (Hρ0incl & Hρ0in & Hcl00 & Hcr00 & HΞcols & HrΘ0 & Hagr0 & Hinj0
           & Hfun0 & Hcov0).
