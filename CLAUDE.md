@@ -9,7 +9,9 @@ DEVELOPMENT** since 2026-10-10.  It used to be ported from
 that tree is now frozen at `884cdc3a` and nothing flows from it any more.
 Work here, then sync downward:
 - `public` branch — the outside-reader release: the SAME proofs with ALL
-  comments removed (since 2026-10-10), no `cex/`, `test/`, `docs/`.
+  Coq comments removed (since 2026-10-10), no `cex/`, `test/`, `docs/`.
+  Include `frontend/` and `examples/`, with their documentation and regression
+  tests, and retain the public Makefile's frontend/example build targets.
   `README.v` is the only commented file: a short header with the notation
   legend, and one pointer per entry giving the paper's number and name, e.g.
   `(* Lemma C.7 (Completeness and optimality of consistency) *)` — no
@@ -22,10 +24,11 @@ Work here, then sync downward:
   `scripts/strip_coq_comments.py`, `scripts/make_public_readme.py` (its
   `POINTER` table maps each README entry to the paper's number and name —
   update it when an entry is added or the paper is renumbered).
-- the hosted browser <https://jiang.sy/research/popl2027b/> — repo
+- the hosted browser <https://jiang.sy/research/popl2027b/mech/v0/> — repo
   `personal_web`: pin the new `public` commit in `sources.lock.json`
   (`fresco` entry, `localPath` = the `public` checkout), then
-  `python3 scripts/export-rocq-navigation.py fresco <public checkout>`,
+  `python3 scripts/export-rocq-navigation.py fresco <public checkout> --use-compiled`
+  after `make coq` (the exporter verifies every source/glob digest), then
   `npm run build:fresco && npm test && npm run check`, commit, push.
 
 The paper is NOT in this repository: it lives in the `impredicative`
