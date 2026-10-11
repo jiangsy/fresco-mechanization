@@ -2301,3 +2301,56 @@ Proof.
   - destruct (Hdom1 _ _ Hin) as [Hd1 Hd2].
     split; [ clear - Hd1 Hdm1; fsetdec | clear - Hd2 Hdm2; fsetdec ].
 Qed.
+
+(* ===================================================================== *)
+(*  ⭐ THE ∀-ROW SHAPES.  Several binder rows of the solve and consistency *)
+(*  layers differ only in which side OPENS at the binder (the other keeps  *)
+(*  its [∀◇]) and in which Δ-tracker gains the opener; these name the     *)
+(*  two choices so one generic lift serves every such row.                 *)
+(* ===================================================================== *)
+
+Definition binder_head (opens : bool) (P : pskl) : pskl :=
+  if opens then pskl_all_syn P else pskl_univ_ghost P.
+
+Definition binder_body (opens : bool) (P : pskl) (α : atom) : pskl :=
+  if opens then open_pskl_wrt_pskl P (pskl_var_f α) else pskl_univ_ghost P.
+
+Definition binder_delta (grows : bool) (α : atom) (Δ : atoms) : atoms :=
+  if grows then add α Δ else Δ.
+
+Lemma rel_pskl_binder_head_inv : forall {ρ V opens P P'},
+  rel_pskl ρ V (binder_head opens P) P' ->
+  exists P2, P' = binder_head opens P2 /\ rel_pskl ρ V P P2.
+Proof.
+  intros ρ V [] P P' Hr; inversion Hr; subst; eexists; split;
+    solve [ reflexivity | eassumption ].
+Qed.
+
+Lemma ftvar_in_pskl_binder_head : forall opens P,
+  ftvar_in_pskl (binder_head opens P) = ftvar_in_pskl P.
+Proof. intros [] P; reflexivity. Qed.
+
+Lemma ftvar_in_pskl_binder_body_upper : forall opens P α,
+  ftvar_in_pskl (binder_body opens P α) [<=] add α (ftvar_in_pskl P).
+Proof.
+  intros [] P α; simpl.
+  - pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α))
+      as Hu.
+    simpl in Hu. clear - Hu. fsetdec.
+  - clear. fsetdec.
+Qed.
+
+Lemma binder_delta_upper : forall grows α Δ,
+  Δ [<=] binder_delta grows α Δ /\ binder_delta grows α Δ [<=] add α Δ.
+Proof. intros [] α Δ; simpl; split; clear; fsetdec. Qed.
+
+Lemma rel_pskl_binder_body : forall ρ V opens P P2 α α2,
+  rel_pskl ρ V P P2 ->
+  rel_pskl ((α, α2) :: ρ) V (binder_body opens P α) (binder_body opens P2 α2).
+Proof.
+  intros ρ V [] P P2 α α2 Hr; simpl.
+  - apply rel_pskl_open_pair; exact Hr.
+  - apply rel_pskl__univ_ghost; eapply rel_pskl_mono;
+      [ exact Hr | intros x y Hx; right; exact Hx | intros x Hx; exact Hx ].
+Qed.
+
