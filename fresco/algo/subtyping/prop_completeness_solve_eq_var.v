@@ -528,6 +528,61 @@ Proof.
     [ exact Hstep | intros κ0 Pa0 Hq; exact Hq | exact H ].
 Qed.
 
+(** For sorted targets, reflexive substitution is a structural substitution.
+    Consumers therefore only distinguish replacement leaves from congruence. *)
+Lemma uskl_rsubst_all_tag_cases : forall NM Θ Δρ Ψρ ε R ψ Ψ,
+  uskl_rsubst NM Θ Δρ Ψρ (uskl_all_tag ε R) ψ ->
+  a_tags_sort NM Ψ ψ ->
+  rsubst_leaf NM Θ Δρ Ψρ (uskl_all_tag ε R) ψ \/
+  exists L R', ψ = uskl_all_tag ε R' /\
+    forall α, α `notin` L ->
+      uskl_rsubst NM Θ Δρ Ψρ (open_uskl_wrt_uskl R (uskl_var_f α))
+                            (open_uskl_wrt_uskl R' (uskl_var_f α)).
+Proof.
+  intros * Hrho Htags.
+  destruct (uskl_rsubst_all_tag_l_inv Hrho) as [[-> Hempty] | [Hleaf | Hbody]];
+    [ | auto | auto ].
+  destruct (a_tags_sort_all_tag_inv Htags) as (L & Ψ0 & Hbody & _ & _).
+  right. exists L, R. split; [ reflexivity | ].
+  intros α Hα. apply ursubst__refl; [ | exact Hempty ].
+  apply is_dskl_lc. destruct (Hbody α Hα); assumption.
+Qed.
+
+Lemma uskl_rsubst_arrow_cases : forall NM Θ Δρ Ψρ R1 R2 ψ Ψ,
+  uskl_rsubst NM Θ Δρ Ψρ (uskl_arrow R1 R2) ψ ->
+  a_tags_sort NM Ψ ψ ->
+  rsubst_leaf NM Θ Δρ Ψρ (uskl_arrow R1 R2) ψ \/
+  exists R1' R2' Ψ1 Ψ2, ψ = uskl_arrow R1' R2' /\
+    uskl_rsubst NM Θ Δρ Ψ1 R1 R1' /\
+    uskl_rsubst NM Θ Δρ Ψ2 R2 R2' /\ Ψρ [=] Ψ1 `union` Ψ2.
+Proof.
+  intros * Hrho Htags.
+  destruct (uskl_rsubst_arrow_l_inv Hrho) as [[-> Hempty] | [Hleaf | Hbody]];
+    [ | auto | auto ].
+  assert (Hd : is_dskl (uskl_arrow R1 R2)) by (inversion Htags; assumption).
+  right. exists R1, R2, empty, empty.
+  split; [ reflexivity | ].
+  split; [ apply ursubst__refl;
+    [ apply is_dskl_lc; inversion Hd; assumption | clear; fsetdec ] | ].
+  split; [ apply ursubst__refl;
+    [ apply is_dskl_lc; inversion Hd; assumption | clear; fsetdec ] | ].
+  clear - Hempty; fsetdec.
+Qed.
+
+Lemma uskl_rsubst_dot_univ_ghost_cases : forall NM Θ Δρ Ψρ R ψ Ψ,
+  uskl_rsubst NM Θ Δρ Ψρ (uskl_dot_univ_ghost R) ψ ->
+  a_tags_sort NM Ψ ψ ->
+  rsubst_leaf NM Θ Δρ Ψρ (uskl_dot_univ_ghost R) ψ \/
+  exists R', ψ = uskl_dot_univ_ghost R' /\ uskl_rsubst NM Θ Δρ Ψρ R R'.
+Proof.
+  intros * Hrho Htags.
+  destruct (uskl_rsubst_dot_univ_ghost_l_inv Hrho)
+    as [[-> Hempty] | [Hleaf | Hbody]]; [ | auto | auto ].
+  pose proof (a_tags_sort_dot_univ_ghost_inv Htags) as Hbody.
+  right. exists R. split; [ reflexivity | ].
+  apply ursubst__refl; [ apply is_dskl_lc; destruct Hbody; assumption | exact Hempty ].
+Qed.
+
 (** Fold a body precision derivation after changing its fresh binder.
     The metasubstitution images stay in the ambient context. *)
 Lemma ad_partial_precise_msubst_fold : forall Θ κ Δ Δ' Ψc PaR ψR α α',
@@ -757,18 +812,18 @@ Proof.
         as (Pa & Hs & Hq).
       eapply solve_ext_nil; [ exact Hs | ].
       intros Δ' HS1 HS2 HS3. cbn [app]. apply Hq. clear; fsetdec.
-  - (* arrow: KEY continuation; CORE grid on size Pi + size P0 at the
+  - (* arrow: CORE grid on size Pi + size P0 at the
        fixed arrow target, with the PRIMARY (Θr, Δr) refinement threaded
        through the recursion and ∀Δ' families out of every row. *)
     assert (HwfΘr2 := HwfΘr).
-    assert (KEY : forall ψa1 ψa2 Ψρ1 Ψρ2,
-      uskl_rsubst NM Θ Δρ Ψρ1 R1 ψa1 ->
-      uskl_rsubst NM Θ Δρ Ψρ2 R2 ψa2 ->
-      Ψρ [=] Ψρ1 `union` Ψρ2 ->
-      a_tags_sort NM Ψ' (uskl_arrow ψa1 ψa2) ->
-      {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_arrow ψa1 ψa2) }}ad ->
-      solve_eq_complete_var_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa (uskl_arrow ψa1 ψa2) Pi P0 Lav).
-    { intros ψa1 ψa2 Ψρ1 Ψρ2 Hrho1 Hrho2 HΨρs Htags0 Hpre0.
+    destruct (uskl_rsubst_arrow_cases Hrho Htags)
+      as [Hleaf | (ψa1 & ψa2 & Ψρ1 & Ψρ2 & -> & Hrho1 & Hrho2 & HΨρs)].
+    { destruct (@a_solve_eq_complete_rsubst_var _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
+                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
+        as (Pa & Hs & Hq).
+      eapply solve_ext_nil with (Pa := Pa); [ exact Hs | ].
+      intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec. }
+    { rename Htags into Htags0, Hpre into Hpre0.
       destruct (a_tags_sort_arrow_inv Htags0)
         as (Ψ'1 & Ψ'2 & Htags1 & Htags2 & HΨ'disj & HΨ's).
       (* the branch SUBJECTS are decorated (the guesses are), so they carry no
@@ -1487,31 +1542,6 @@ Proof.
       eapply CORE;
         [ exact Hsz | exact HwfPi | exact HwfP0 | exact Hapart
         | exact Hpre0 | exact Hrefine ]. }
-    destruct (uskl_rsubst_arrow_l_inv Hrho)
-      as [[Heqψa HΨρe]
-         | [Hleaf | (ψa1 & ψa2 & Ψρ1 & Ψρ2 & Heqψa & Hrho1 & Hrho2 & HΨρs)]].
-    + (* refl: recast as a congruence with refl branch-ρs *)
-      subst ψa.
-      assert (Htsk : is_dskl (uskl_arrow R1 R2))
-        by (inversion Htags; assumption).
-      assert (HlcR1 : lc_uskl R1)
-        by (apply is_dskl_lc; inversion Htsk; assumption).
-      assert (HlcR2 : lc_uskl R2)
-        by (apply is_dskl_lc; inversion Htsk; assumption).
-      apply (KEY R1 R2 empty empty);
-        [ apply ursubst__refl; [ exact HlcR1 | clear; fsetdec ]
-        | apply ursubst__refl; [ exact HlcR2 | clear; fsetdec ]
-        | clear - HΨρe; fsetdec
-        | exact Htags | exact Hpre ].
-    + destruct (@a_solve_eq_complete_rsubst_var _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
-                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
-        as (Pa & Hs & Hq).
-      eapply solve_ext_nil with (Pa := Pa); [ exact Hs | ].
-      intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec.
-    + subst ψa.
-      apply (KEY ψa1 ψa2 Ψρ1 Ψρ2);
-        [ exact Hrho1 | exact Hrho2 | exact HΨρs
-        | exact Htags | exact Hpre ].
   - (* forall_inh_tagged (case 1): rows A (Pi=∀) / B (Pi=□) / C (Pi=∀◇
        via the precision fill); everything else is absurd (guardedness /
        paint-shape / ε-tag contradictions).  DESIGN §6(o). *)
@@ -1519,14 +1549,14 @@ Proof.
     assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hκ).
     assert (Himav : forall p, In p κ -> ftvar_in_ptyp (snd p) [<=] dom Θ)
       by (intros p Hp; eapply a_inc_image_ftv_dom; [ exact Hκ | exact Hp ]).
-    assert (KEYF : forall ψR Lr,
-      (forall α, α `notin` Lr ->
-         uskl_rsubst NM Θ Δρ Ψρ (open_uskl_wrt_uskl R (uskl_var_f α))
-                             (open_uskl_wrt_uskl ψR (uskl_var_f α))) ->
-      a_tags_sort NM Ψ' (uskl_all_tag ε ψR) ->
-      {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_all_tag ε ψR) }}ad ->
-      solve_eq_complete_var_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa (uskl_all_tag ε ψR) Pi P0 Lav).
-    { intros ψR Lr Hrhof Htags0 Hpre0.
+    destruct (uskl_rsubst_all_tag_cases Hrho Htags)
+      as [Hleaf | (Lr & ψR & -> & Hrhof)].
+    { destruct (@a_solve_eq_complete_rsubst_var _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
+                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
+        as (Pa & Hs & Hq).
+      eapply solve_ext_nil with (Pa := Pa); [ exact Hs | ].
+      intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec. }
+    { rename Htags into Htags0, Hpre into Hpre0.
       destruct (a_tags_sort_all_tag_inv Htags0)
         as (Lt & Ψ0' & Htagsf & Hεnin & HΨ'eq).
       assert (HngR : uskl_no_ghost (uskl_all_tag ε R)).
@@ -1691,27 +1721,13 @@ Proof.
           - apply Htagsf. clear - HXf; solve_notin.
           - clear - HΨi0s Hsub HΨ'eq; fsetdec.
           - exact Hintb.
-          - intros x Hx.
-            destruct (Hfresh x Hx) as (Hb & Hav & Hdef).
-            repeat split.
-            + apply binds_cons_3; exact Hb.
-            + exact Hav.
-            + intros αd τ Hbd.
-              destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hc] | Hbd'];
-                [ discriminate Hc | exact (Hdef _ _ Hbd') ].
+          - apply rsubst_fresh_weaken_tvar; exact Hfresh.
           - exact HΔρx.
           - exact Hapart0.
           - intros Yd αd τ HYd Hbd.
-            destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hc] | Hbd'];
-              [ discriminate Hc | ].
-            assert (HYx : Yd `in` add α Δ) by (clear - HYd HΔxs; fsetdec).
-            destruct (Yd == α) as [-> | Hne].
-            + assert (Hd : ftvar_in_ptyp τ [<=] dom Θ)
-                by (eapply a_wf_aenv_def_ftv_dom;
-                    [ exact HwfΘ | exact Hbd' ]).
-              clear - Hd HXf; destruct_notin; fsetdec.
-            + eapply Hdfresh; [ | exact Hbd' ].
-              clear - HYx Hne; fsetdec.
+            eapply (@delta_def_fresh_open_tvar Δ Θ α);
+              [ exact HwfΘ | clear - HXf; solve_notin | exact Hdfresh
+              | apply HΔxs; exact HYd | exact Hbd ].
           - exact Hpre0x.
           - exact Hsubeq1b.
           - exact Hsubeq2b.
@@ -2132,29 +2148,6 @@ Proof.
               pskl_to_bskl_inh (msubst_pskl κ (pskl_arrow _ _)) ⊳ _ }}ad
             |- _ => simpl in Hin; inversion Hin
           end. }
-    destruct (uskl_rsubst_all_tag_l_inv Hrho)
-      as [[Heqψa HΨρe] | [Hleaf | (Lr & ψR & Heqψa & Hrhof)]].
-    + (* refl: recast as a congruence with refl bodies *)
-      subst ψa.
-      assert (Htskf : exists Li, forall α, α `notin` Li ->
-                is_dskl (open_uskl_wrt_uskl R (uskl_var_f α))).
-      { destruct (a_tags_sort_all_tag_inv Htags)
-          as (Lt0 & Ψt0 & Hf & _ & _).
-        exists Lt0; intros α0 Hα0.
-        destruct (Hf α0 Hα0); assumption. }
-      destruct Htskf as (Li & Htskf).
-      apply (KEYF R Li);
-        [ intros α0 Hα0; apply ursubst__refl;
-            [ apply is_dskl_lc; apply Htskf; exact Hα0 | exact HΨρe ]
-        | exact Htags | exact Hpre ].
-    + destruct (@a_solve_eq_complete_rsubst_var _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
-                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
-        as (Pa & Hs & Hq).
-      eapply solve_ext_nil with (Pa := Pa); [ exact Hs | ].
-      intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec.
-    + subst ψa.
-      apply (KEYF ψR Lr);
-        [ exact Hrhof | exact Htags | exact Hpre ].
   - (* forall_inh_untagged: tag-sort absurd *)
     destruct (uskl_rsubst_all_syn_l_inv Hrho)
       as [[-> _] | [Hleaf | (L' & R' & -> & _)]].
@@ -2172,14 +2165,14 @@ Proof.
     assert (Hlcκ : msubst_lc κ) by (eapply a_inc_msubst_lc; exact Hκ).
     assert (Himav : forall p, In p κ -> ftvar_in_ptyp (snd p) [<=] dom Θ)
       by (intros p Hp; eapply a_inc_image_ftv_dom; [ exact Hκ | exact Hp ]).
-    assert (KEYF : forall ψR Lr,
-      (forall α, α `notin` Lr ->
-         uskl_rsubst NM Θ Δρ Ψρ (open_uskl_wrt_uskl R (uskl_var_f α))
-                             (open_uskl_wrt_uskl ψR (uskl_var_f α))) ->
-      a_tags_sort NM Ψ' (uskl_all_tag ε ψR) ->
-      {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_all_tag ε ψR) }}ad ->
-      solve_eq_complete_var_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa (uskl_all_tag ε ψR) Pi P0 Lav).
-    { intros ψR Lr Hrhof Htags0 Hpre0.
+    destruct (uskl_rsubst_all_tag_cases Hrho Htags)
+      as [Hleaf | (Lr & ψR & -> & Hrhof)].
+    { destruct (@a_solve_eq_complete_rsubst_var _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
+                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
+        as (Pa & Hs & Hq).
+      eapply solve_ext_nil with (Pa := Pa); [ exact Hs | ].
+      intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec. }
+    { rename Htags into Htags0, Hpre into Hpre0.
       destruct (a_tags_sort_all_tag_inv Htags0)
         as (Lt & Ψ0' & Htagsf & Hεnin & HΨ'eq).
       assert (HngR : uskl_no_ghost (uskl_all_tag ε R)).
@@ -2397,27 +2390,13 @@ Proof.
           - apply Htagsf. clear - HXf; solve_notin.
           - clear - HΨi0s HΨaΨ0'; fsetdec.
           - exact Hintb.
-          - intros x Hx.
-            destruct (Hfresh x Hx) as (Hb & Hav & Hdef).
-            repeat split.
-            + apply binds_cons_3; exact Hb.
-            + exact Hav.
-            + intros αd τ Hbd.
-              destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hc] | Hbd'];
-                [ discriminate Hc | exact (Hdef _ _ Hbd') ].
+          - apply rsubst_fresh_weaken_tvar; exact Hfresh.
           - exact HΔρx.
           - exact Hapart0.
           - intros Yd αd τ HYd Hbd.
-            destruct (binds_cons_1 _ _ _ _ _ _ Hbd) as [[_ Hc] | Hbd'];
-              [ discriminate Hc | ].
-            assert (HYx : Yd `in` add α0 Δ) by (clear - HYd HΔxs; fsetdec).
-            destruct (Yd == α0) as [-> | Hne].
-            + assert (Hd : ftvar_in_ptyp τ [<=] dom Θ)
-                by (eapply a_wf_aenv_def_ftv_dom;
-                    [ exact HwfΘ | exact Hbd' ]).
-              clear - Hd HXf; destruct_notin; fsetdec.
-            + eapply Hdfresh; [ | exact Hbd' ].
-              clear - HYx Hne; fsetdec.
+            eapply (@delta_def_fresh_open_tvar Δ Θ α0);
+              [ exact HwfΘ | clear - HXf; solve_notin | exact Hdfresh
+              | apply HΔxs; exact HYd | exact Hbd ].
           - exact Hpre0x.
           - exact Hsubeq1.
           - exact Hsubeq2.
@@ -2851,32 +2830,11 @@ Proof.
                       by (eapply a_wf_aenv_def_ftv_dom;
                           [ exact HwfΘ | exact Hbd' ]);
                     clear - Hd Fr; destruct_notin; fsetdec ]
-              | clear; fsetdec ]. }
+              | clear; fsetdec ].
     (* the univ_ghost_fill family leaves the rule's ε-witness unconstrained
        (any ε inhabits the same family); discharge it with the case's ε. *)
     Unshelve. all: match goal with |- εvar => exact ε | |- _ => idtac end.
-    destruct (uskl_rsubst_all_tag_l_inv Hrho)
-      as [[Heqψa HΨρe] | [Hleaf | (Lr & ψR & Heqψa & Hrhof)]].
-    + (* refl *)
-      subst ψa.
-      assert (Htskf : exists Li, forall α, α `notin` Li ->
-                is_dskl (open_uskl_wrt_uskl R (uskl_var_f α))).
-      { destruct (a_tags_sort_all_tag_inv Htags)
-          as (Lt0 & Ψt0 & Hf & _ & _).
-        exists Lt0; intros α0 Hα0. destruct (Hf α0 Hα0); assumption. }
-      destruct Htskf as (Li & Htskf).
-      apply (KEYF R Li);
-        [ intros α0 Hα0; apply ursubst__refl;
-            [ apply is_dskl_lc; apply Htskf; exact Hα0 | exact HΨρe ]
-        | exact Htags | exact Hpre ].
-    + destruct (@a_solve_eq_complete_rsubst_var _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
-                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
-        as (Pa & Hs & Hq).
-      eapply solve_ext_nil with (Pa := Pa); [ exact Hs | ].
-      intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec.
-    + subst ψa.
-      apply (KEYF ψR Lr);
-        [ exact Hrhof | exact Htags | exact Hpre ].
+    }
   - (* forall_syn: tag-sort absurd *)
     destruct (uskl_rsubst_all_syn_l_inv Hrho)
       as [[-> _] | [Hleaf | (L' & R' & -> & _)]].
@@ -2906,14 +2864,16 @@ Proof.
       eapply solve_ext_nil with (Pa := Pa); [ exact Hs | ].
       intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec.
   - (* dot_univ_ghost: the ∀◈ congruence — recurse through the main IH.  Both
-       the refl and congruence branches of the ρ-inversion land in KEY. *)
+       reflexive substitution and congruence share the same body case. *)
     assert (HwfΘr2 := HwfΘr).
-    assert (KEY : forall ψa0,
-      uskl_rsubst NM Θ Δρ Ψρ R ψa0 ->
-      a_tags_sort NM Ψ' (uskl_dot_univ_ghost ψa0) ->
-      {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi ] (uskl_dot_univ_ghost ψa0) }}ad ->
-      solve_eq_complete_var_concl Θ0 Θ Θw Θr κ Δ Ψi Ψa (uskl_dot_univ_ghost ψa0) Pi P0 Lav).
-    { intros ψa0 Hrho0 Htags0 Hpre0.
+    destruct (uskl_rsubst_dot_univ_ghost_cases Hrho Htags)
+      as [Hleaf | (ψa0 & -> & Hrho0)].
+    { destruct (@a_solve_eq_complete_rsubst_var _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
+                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
+        as (Pa & Hs & Hq).
+      eapply solve_ext_nil with (Pa := Pa); [ exact Hs | ].
+      intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec. }
+    { rename Htags into Htags0, Hpre into Hpre0.
       assert (Htags1 : a_tags_sort NM Ψ' ψa0)
         by (apply a_tags_sort_dot_univ_ghost_inv; exact Htags0).
       assert (HngR : uskl_no_ghost R)
@@ -3168,26 +3128,6 @@ Proof.
                intros Δ' HS1 HS2 HS3.
                simpl. apply ad_ppre__univ_ghost_keep.
                exact (Hq' Δ' HS1 HS2 HS3). }
-    destruct (uskl_rsubst_dot_univ_ghost_l_inv Hrho)
-      as [[Heqψa HΨρ] | [Hleaf | (ψa0 & Heqψa & Hrho0)]].
-    + (* refl: recast as a congruence with a refl body-ρ *)
-      subst ψa.
-      assert (HlcR : lc_uskl R).
-      { apply is_dskl_lc.
-        match goal with Ht : a_tags_sort _ _ (uskl_dot_univ_ghost R) |- _ =>
-          inversion Ht; subst;
-          match goal with Hti : is_dskl (uskl_dot_univ_ghost _) |- _ =>
-            inversion Hti; subst; assumption end end. }
-      apply KEY;
-        [ apply ursubst__refl; [ exact HlcR | exact HΨρ ]
-        | exact Htags | exact Hpre ].
-    + destruct (@a_solve_eq_complete_rsubst_var _ Θ0 _ _ _ _ _ _ _ _ _ _ _ P0
-                  HwfΘ Htags Hsub Hfresh Hdelta Hapart Hpre Hleaf)
-        as (Pa & Hs & Hq).
-      eapply solve_ext_nil with (Pa := Pa); [ exact Hs | ].
-      intros Δ' HS1 HS2 HS3. apply Hq. clear; fsetdec.
-    + subst ψa.
-      apply KEY; [ exact Hrho0 | exact Htags | exact Hpre ].
   - (* ghost: ψa is tag-sorted, hence never a PLAIN ghost *)
     destruct (uskl_rsubst_ghost_l_inv Hrho) as [[-> _] | Hleaf].
     + pose proof (a_tags_sort_d_tags Htags) as Hd; inversion Hd.

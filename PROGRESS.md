@@ -181,6 +181,25 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Remove deferred consistency case continuations
+
+Normalize sorted rigid substitution into replacement-leaf or structural
+cases using three named inversion lemmas. The arrow, two tagged-forall,
+and dotted universal-ghost cases of `a_solve_eq_complete_var_gen` now
+proceed directly after leaf dispatch. Remove their four local `KEY`/`KEYF`
+continuation assertions and the repeated conversion of reflexive
+substitution into structural substitution at their call sites.
+
+Reuse `rsubst_fresh_weaken_tvar` and `delta_def_fresh_open_tvar` for the
+two binder induction calls instead of repeating their proofs.
+
+Net reduction: **60 physical Coq lines / 65 nonblank, noncomment lines**.
+All 21 existing theorem statements are unchanged; no inline tactic terms
+added. Focused compilation and the final `make coq` passed. All 34 headline
+assumption reports are closed under the global context, with no axiom
+reports or errors; `git diff --check` passes.
+
+
 ## 2026-10-11 — Share precision binder folding
 
 Replace the two large local `FOLD` assertions in
