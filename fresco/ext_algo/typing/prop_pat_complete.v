@@ -1182,8 +1182,7 @@ Proof.
                       ∪ ftvar_in_pskl (ptyp_to_pskl A) ∪ empty ∪ empty
                       [<=] sp_supply rs)
         by (clear - Hcvs Hpqs Hcov HAe Hgrs; simpl in *; fsetdec);
-      kill_consis_call Dc1 Hus Hcovc rc Hrc psc Havc HSc HTc
-        HQc;
+      kill_consis_call Dc1 Hus Hcovc rc Hrc psc Havc HSc HTc HQc;
       unfold consis_spec in Hrc;
       destruct ((proj2 (proj2 e_assign_unify_consis_sound))
                   _ _ _ _ _ _ _ _ _ Hrc Hus Hcovc) as [Hca [Huc Hcvc]];

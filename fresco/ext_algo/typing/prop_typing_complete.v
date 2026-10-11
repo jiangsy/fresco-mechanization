@@ -1240,8 +1240,7 @@ Proof.
                         ∪ ftvar_in_pskl (sp_dom rs)
                         ∪ empty ∪ empty [<=] sp_supply rs)
           by (clear - Hcvs Hpqs Hcov HAe Hgrs; simpl in *; fsetdec).
-        kill_consis_call Dc1 Hus Hcovc rc Hrc psc Havc HSc HTc
-          HQc.
+        kill_consis_call Dc1 Hus Hcovc rc Hrc psc Havc HSc HTc HQc.
         unfold consis_spec in Hrc.
         destruct ((proj2 (proj2 e_assign_unify_consis_sound))
                     _ _ _ _ _ _ _ _ _ Hrc Hus Hcovc) as [Hca [Huc Hcvc]].
@@ -1447,8 +1446,7 @@ Proof.
                       ∪ ftvar_in_pskl (ptyp_to_pskl A) ∪ empty ∪ empty
                       [<=] sp_supply rs)
         by (clear - Hcvs Hpqs Hcov HAe Hgrs; simpl in *; fsetdec);
-      kill_consis_call Dc1 Hus Hcovc rc Hrc psc Havc HSc HTc
-        HQc;
+      kill_consis_call Dc1 Hus Hcovc rc Hrc psc Havc HSc HTc HQc;
       unfold consis_spec in Hrc;
       destruct ((proj2 (proj2 e_assign_unify_consis_sound))
                   _ _ _ _ _ _ _ _ _ Hrc Hus Hcovc) as [Hca [Huc Hcvc]];
@@ -1766,8 +1764,7 @@ Proof.
                     ∪ empty ∪ empty [<=] ty_supply r1).
     { pose proof (ftvar_ptyp_to_pskl (ty_out r1)) as Ho1.
       clear - Hcov Hcv1 Hq1 HBe Ho1 Hgr1; simpl in *; fsetdec. }
-    kill_consis_call Dc1 Hu1 Hcovc rc Hrc ps2 Hav2 HS2 HT2
-      HQ2.
+    kill_consis_call Dc1 Hu1 Hcovc rc Hrc ps2 Hav2 HS2 HT2 HQ2.
     eexists; exists (ps1 ++ ps2).
     split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
     repeat apply conj.
