@@ -551,10 +551,10 @@ Ltac solve_ctx_change_ih_app :=
             rewrite ! ftvar_in_aenv_app; clear - Hf; fsetdec end
         | intros α0 Hft;
           match goal with Hm : forall a, a_flex_tvar _ a -> _ |- _ =>
-            eapply a_flex_tvar_app_mono; eassumption end
+            eapply a_flex_tvar_app_mono; [ exact Hm | exact Hft ] end
         | intros P0 Hf0;
           match goal with Hl : forall p, a_flex _ p -> _ |- _ =>
-            eapply a_flex_app_anti; eassumption end ]
+            eapply a_flex_app_anti; [ exact Hl | exact Hf0 ] end ]
   end.
 
 Ltac solve_ctx_change_binder :=
