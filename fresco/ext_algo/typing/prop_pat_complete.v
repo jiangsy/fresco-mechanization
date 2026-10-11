@@ -1241,14 +1241,10 @@ Proof.
       [ rewrite swaps_atoms_add, swaps_atom_app, swaps_atoms_app, HScc;
         reflexivity
       | ];
-      rewrite ! swaps_aenv_app_dist in Db1;
-      rewrite ! swaps_aenv_one_var_typ in Db1;
-      rewrite ! swaps_exp_open_var in Db1;
-      rewrite ! swaps_aenv_app, ! swaps_pskl_app, ! swaps_atom_app,
-        ! swaps_ptyp_app in Db1;
-      rewrite HQ1, HTc, HfixQ0, Hfixe1 in Db1;
-      rewrite ! swaps_ptyp_app in HfixA2;
-      rewrite HfixA2 in Db1;
+      rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ,
+        ! swaps_exp_open_var, Hfixe1, HfixA2 in Db1;
+      rewrite ! swaps_aenv_app, ! swaps_pskl_app, ! swaps_atom_app in Db1;
+      rewrite HQ1, HTc, HfixQ0 in Db1;
       (* onto the runner's own draw *)
       assert (Hdscope : ftvar_in_aenv (cs_ctx rc) ∪ ftvar_in_pskl (sp_cod rs)
                 ∪ ftvar_in_ptyp A ∪ fvar_in_exp e1 ∪ ftvar_in_exp e1

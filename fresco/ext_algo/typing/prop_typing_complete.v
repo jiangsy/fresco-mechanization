@@ -1025,14 +1025,11 @@ Proof.
         rewrite swaps_atoms_add, swaps_atom_app, swaps_atoms_app, Heq3;
         reflexivity
       | ];
-      rewrite ! swaps_aenv_app_dist in Db1;
-      rewrite ! swaps_aenv_one_var_typ in Db1;
-      rewrite ! swaps_exp_open_var in Db1;
+      rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ,
+        ! swaps_exp_open_var, Hfixe1 in Db1;
       rewrite ! swaps_aenv_app, ! swaps_pskl_app, ! swaps_atom_app,
-        ! swaps_ptyp_app, ! swaps_exp_app in Db1;
+        ! swaps_ptyp_app in Db1;
       rewrite HT1, HQ1, HTg, HAg, HfixCtx1, HfixCod1 in Db1;
-      rewrite swaps_exp_app in Hfixe1;
-      rewrite Hfixe1 in Db1;
       (* onto the runner's own draw *)
       assert (HdrawScope : ftvar_in_aenv (gr_block rg ++ sp_ctx rs) ∪ ftvar_in_pskl (sp_cod rs)
         ∪ ftvar_in_ptyp (gr_type rg) ∪ fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] gr_supply rg)
@@ -1341,13 +1338,10 @@ Proof.
           [ rewrite swaps_atoms_add, swaps_atom_app, swaps_atoms_app, HScc;
             reflexivity
           | ].
-        rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ in Db1.
-        rewrite ! swaps_exp_open_var, ! swaps_pskl_ptyp_to_pskl in Db1.
-        rewrite ! swaps_aenv_app, ! swaps_atom_app, ! swaps_ptyp_app,
-          ! swaps_exp_app in Db1.
+        rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ,
+          ! swaps_exp_open_var, ! swaps_pskl_ptyp_to_pskl, Hfixe1, HfixA2 in Db1.
+        rewrite ! swaps_aenv_app, ! swaps_atom_app, ! swaps_ptyp_app in Db1.
         rewrite HTc, HfixB1 in Db1.
-        rewrite swaps_exp_app in Hfixe1. rewrite Hfixe1 in Db1.
-        rewrite ! swaps_ptyp_app in HfixA2. rewrite HfixA2 in Db1.
         (* onto the runner's own draw *)
         assert (HdrawScope : ftvar_in_aenv (cs_ctx rc) ∪ ftvar_in_pskl (ptyp_to_pskl (swaps_ptyp ps1 B))
           ∪ ftvar_in_ptyp (A) ∪ fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] cs_supply rc)
@@ -1572,13 +1566,11 @@ Proof.
       [ rewrite swaps_atoms_add, swaps_atom_app, swaps_atoms_app, HScc;
         reflexivity
       | ];
-      rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ in Db1;
-      rewrite ! swaps_exp_open_var in Db1;
+      rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ,
+        ! swaps_exp_open_var, Hfixe1, HfixA2 in Db1;
       rewrite ! swaps_aenv_app, ! swaps_pskl_app, ! swaps_atom_app,
-        ! swaps_ptyp_app, ! swaps_exp_app in Db1;
-      rewrite swaps_exp_app in Hfixe1;
-      rewrite ! swaps_ptyp_app in HfixA2;
-      rewrite HQ1, HTc, HfixQ0, Hfixe1, HfixA2 in Db1;
+        ! swaps_ptyp_app in Db1;
+      rewrite HQ1, HTc, HfixQ0 in Db1;
       assert (HdrawScope : ftvar_in_aenv (cs_ctx rc) ∪ ftvar_in_pskl (sp_cod rs)
         ∪ ftvar_in_ptyp (A) ∪ fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] cs_supply rc)
         by ( clear - Hcvc Hpqs Hcov Hgrs Hgrc; simpl in *; fsetdec);
@@ -1672,7 +1664,7 @@ Proof.
       | cbn [ty_ctx]; rewrite swaps_aenv_app_dist, ! swaps_aenv_app;
         reflexivity
       | cbn [ty_out]; rewrite swaps_ptyp_arrow; f_equal;
-        [ rewrite ! swaps_ptyp_app, HfixA2, HfixAnn; exact Hfix2A
+        [ rewrite swaps_ptyp_app, swaps_ptyp_app, HfixA2, HfixAnn; exact Hfix2A
         | rewrite ! swaps_ptyp_app; exact HQ2 ] ]
     ).
 
