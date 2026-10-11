@@ -360,7 +360,7 @@ Proof.
     intros α Hα.
     rewrite <- msubst_ptyp_open_lc
       by (first [ exact Hκlc | clear - Hα; fsetdec ]).
-    apply H0; [ exact Hκlc | exact Hpt ].
+    apply H0; eassumption.
 Qed.
 
 (** [a_tyequiv_weaken_cons] at a single cons entry (the [++]-form does not
@@ -1092,12 +1092,12 @@ Proof.
       end;
       [ assumption | apply mono_ptyp__var | assumption | assumption
       | assumption | exact Hwf
-      | eapply ad_pat_consis__flex_l; [ exact H | exact Hc ] ].
+      | eapply ad_pat_consis__flex_l; eassumption ].
     + (* __var *)
-      eapply ad_pat_consis__flex_l; [ exact H | exact Hc ].
+      eapply ad_pat_consis__flex_l; eassumption.
   - (* __flex_r *)
     eapply ad_pat_consis__flex_r; [ exact H | ].
-    apply IHHc; [ exact Hwf | exact Htyeq ].
+    apply IHHc; eassumption.
 Qed.
 
 (* ===================================================================== *)
@@ -1119,7 +1119,7 @@ Proof.
   - exact (iff_trans (IHa_tyequiv1 Hwf) (IHa_tyequiv2 Hwf)).
   - (* flex_def *)
     split; intro Hm;
-      [ eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact H ]
+      [ eapply a_wf_aenv_binds_def_mono; eassumption
       | apply mono_ptyp__var ].
   - (* arrow *)
     split; intro Hm; inversion Hm; subst; apply mono_ptyp__arrow;
@@ -1149,9 +1149,9 @@ Proof.
   intros Θ α τ Hb Hwf.
   change (uskl_var_f α) with (ptyp_to_uskl_syn (ptyp_var_f α)).
   apply a_uskl_tyequiv__mono;
-    [ eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb ]
+    [ eapply a_wf_aenv_binds_def_mono; eassumption
     | apply mono_ptyp__var
-    | eapply a_wf_aenv_binds_def_wf; [ exact Hwf | exact Hb ]
+    | eapply a_wf_aenv_binds_def_wf; eassumption
     | apply a_wf_ptyp__var; right; right; exists τ; exact Hb
     | apply a_tyequiv__sym; apply a_tyequiv__flex_def; exact Hb ].
 Qed.
@@ -1225,7 +1225,7 @@ Proof.
   - (* check *)
     subst T.
     assert (Hm : mono_ptyp τ0)
-      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb ]).
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
     apply ad_pat_sub_fuel__check;
       [ apply mono_paint_guarded;
           [ exact Hm | apply mono_ptyp_to_uskl_syn_lc; exact Hm ]
@@ -1241,7 +1241,7 @@ Proof.
   - (* univ_ghost_r *)
     subst R.
     assert (Hm : mono_ptyp τ0)
-      by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact Hb ]).
+      by (eapply a_wf_aenv_binds_def_mono; eassumption).
     apply ad_pat_sub_fuel__univ_ghost_r;
       [ assumption
       | apply mono_paint_guarded;
@@ -1336,10 +1336,10 @@ Proof.
       by (eapply a_tyequiv_preserves_mono;
           [ apply a_tyequiv__sym; exact Heq | exact Hwf | exact Hm ]).
     destruct (IHHeq Hwf Θ' Hm' Hwf' Hmon) as [d1 d2].
-    split; [ exact d2 | exact d1 ].
+    split; eassumption.
   - (* trans *)
     assert (HmB : mono_ptyp B)
-      by (eapply a_tyequiv_preserves_mono; [ exact Heq1 | exact Hwf | exact Hm ]).
+      by (eapply a_tyequiv_preserves_mono; eassumption).
     destruct (IHHeq1 Hwf Θ' Hm Hwf' Hmon) as [d1a d1b].
     destruct (IHHeq2 Hwf Θ' HmB Hwf' Hmon) as [d2a d2b].
     split; intros n NM M Ψ Q HD;
@@ -1359,9 +1359,9 @@ Proof.
         rename Hma into Hm1; rename Hmb into Hm2
     end.
     assert (HmB1 : mono_ptyp B1)
-      by (eapply a_tyequiv_preserves_mono; [ exact Heq1 | exact Hwf | exact Hm1 ]).
+      by (eapply a_tyequiv_preserves_mono; eassumption).
     assert (HmB2 : mono_ptyp B2)
-      by (eapply a_tyequiv_preserves_mono; [ exact Heq2 | exact Hwf | exact Hm2 ]).
+      by (eapply a_tyequiv_preserves_mono; eassumption).
     split.
     + (* A-painting → B-painting *)
       intros n NM M Ψ Q HD.
@@ -1506,15 +1506,13 @@ Proof.
   intros n NM M Ψ Θ R Q HD; induction HD; intros Hwf T' Htyeq.
   - (* infer *)
     apply ad_pat_sub_fuel__infer; [ exact H | | exact H1 ].
-    eapply ad_consis_join_tyequiv_subject;
-      [ exact H0 | exact Hwf | exact Htyeq ].
+    eapply ad_consis_join_tyequiv_subject; eassumption.
   - (* check *)
     apply ad_pat_sub_fuel__check;
       [ eapply a_uskl_tyequiv_guarded;
           [ apply a_uskl_tyequiv_sym; exact Htyeq | exact H ]
       | exact H0 |].
-    eapply ad_consis_join_tyequiv_subject;
-      [ exact H1 | exact Hwf | exact Htyeq ].
+    eapply ad_consis_join_tyequiv_subject; eassumption.
   - (* forall_r *)
     eapply ad_pat_sub_fuel__forall_r with (L := L `union` dom Θ).
     intros α Hα.
@@ -1527,8 +1525,7 @@ Proof.
       | eapply a_uskl_tyequiv_guarded;
           [ apply a_uskl_tyequiv_sym; exact Htyeq | exact H0 ]
       | exact H1 | exact H2 |].
-    eapply ad_consis_join_tyequiv_subject;
-      [ exact H3 | exact Hwf | exact Htyeq ].
+    eapply ad_consis_join_tyequiv_subject; eassumption.
   - (* arrow *)
     inversion Htyeq; subst.
     + (* __mono : reconstitute the node and run the painting transport *)
@@ -1569,8 +1566,7 @@ Proof.
         | exact H2 | exact H3
         | apply IHHD;
             [ exact Hwf
-            | eapply a_uskl_tyequiv_open;
-                [ exact Hfam | exact Hlcψ ] ] ]
+            | eapply a_uskl_tyequiv_open; eassumption ] ]
     end.
   - (* forall_l_untagged *)
     inversion Htyeq; subst;
@@ -1589,8 +1585,7 @@ Proof.
         | exact H2 | exact H3
         | apply IHHD;
             [ exact Hwf
-            | eapply a_uskl_tyequiv_open;
-                [ exact Hfam | exact Hlcψ ] ] ]
+            | eapply a_uskl_tyequiv_open; eassumption ] ]
     end.
   - (* ghost *)
     inversion Htyeq; subst;
@@ -1605,7 +1600,7 @@ Proof.
         | Hm2 : mono_ptyp ?t2, He2 : ptyp_to_uskl_syn ?t2 = _ |- _ =>
             destruct Hm2; cbn in He2; discriminate He2
         end | ].
-    apply ad_pat_sub_fuel__ghostg; [ exact H | exact H0 ].
+    apply ad_pat_sub_fuel__ghostg; eassumption.
   - (* univ_ghost_l *)
     inversion Htyeq; subst;
       [ lazymatch goal with
@@ -1636,7 +1631,7 @@ Proof.
       assert (Hrr : ad_pat_sub_fuel n NM (mode_fn M) Ψ Θ
                       (ptyp_to_uskl_syn (ptyp_var_f α)) Q)
         by (change (ptyp_to_uskl_syn (ptyp_var_f α)) with (uskl_var_f α);
-            eapply ad_pat_sub_fuel__flex_mono; [ exact H | exact HD ]).
+            eapply ad_pat_sub_fuel__flex_mono; eassumption).
       lazymatch goal with
       | Hm1 : mono_ptyp ?t1, Ht : {{ Θ ⊢ ?t1 ≡ᵗ ptyp_var_f α }}a |- _ =>
         destruct (@ad_pat_sub_fuel_paint_tyequiv_subject
@@ -1645,5 +1640,5 @@ Proof.
       end.
       apply d2. exact Hrr.
     + (* __var *)
-      eapply ad_pat_sub_fuel__flex_mono; [ exact H | exact HD ].
+      eapply ad_pat_sub_fuel__flex_mono; eassumption.
 Qed.
