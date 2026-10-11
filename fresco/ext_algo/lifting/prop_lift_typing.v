@@ -1101,47 +1101,13 @@ Proof.
       assert (Hz1 : z `in` dom αs2) by (clear - Hz; fsetdec).
       pose proof (e_guess_mono_generated_fresh Hgm2 Hz1) as Hn.
       clear - Hn Hz. fsetdec. }
-    assert (HαsV : dom αs ∩ V [=] empty).
-    { assert (Hd : disjoint αs Θa) by (clear - Huq; solve_uniq).
-      unfold disjoint in Hd. clear - Hd Hscp Hsc0. fsetdec. }
-    assert (Hnl : cols_l ρn ∩ (V ∪ cols_l ρ) [=] empty)
-      by (clear - Hdfl HαsV Hαscl; fsetdec).
-    assert (Hnr : cols_r ρn ∩ (V ∪ cols_r ρ) [=] empty)
-      by (clear - Hdfr Hfrg Hcov; fsetdec).
+    destruct (lift_flex_block_push Eαs1 Eαs2 Huq Huqαs2 Hfrg Hing Hgrg Hαscl HrΘ
+                Hagr Hinj Hfun Hwf Huq2p Hftv2 Hscp Hblk HdΘ Hcov)
+      as (HrΘg & Hagrg & Hextg & Hinjg & Hfung & Hwfαs & Huq2g & Hftv2g
+          & Hscpg & Hblkg & HdΘg & Hcovg).
     assert (Hρnincl : forall a b, In (a, b) ρ -> In (a, b) (ρn ++ ρ))
       by (intros a b Hin; apply in_or_app; right; exact Hin).
-    assert (HrΘg : rel_aenv (ρn ++ ρ) V (αs ++ Θa) (αs2 ++ Θ0')).
-    { apply rel_aenv_app.
-      - rewrite Eαs1, Eαs2. apply rel_aenv_flex_pairs.
-      - eapply rel_aenv_mono;
-          [ exact HrΘ | exact Hρnincl | intros z Hz; exact Hz ]. }
-    assert (Hagrg : flex_agree_rel (ρn ++ ρ) V (αs ++ Θa) (αs2 ++ Θ0')).
-    { rewrite Eαs1, Eαs2. apply flex_agree_rel_push_pairs;
-        [ exact Hagr | exact Hnl | exact Hnr ]. }
-    assert (HαsftvΘa : cols_l ρn ∩ ftvar_in_aenv Θa [=] empty).
-    { assert (Hd : disjoint αs Θa) by (clear - Huq; solve_uniq).
-      unfold disjoint in Hd. clear - Hd Hsc0 Hdfl. fsetdec. }
-    assert (Hextg : rel_ext ρn (ftvar_in_aenv Θa) S0).
-    { apply rel_ext_flex_pairs;
-        [ rewrite <- Eαs1; clear - Huq; solve_uniq
-        | rewrite <- Eαs2; exact Huqαs2
-        | exact HαsftvΘa
-        | clear - Hdfr Hfrg; fsetdec ]. }
-    assert (Hinjg : rel_inj (ρn ++ ρ) V)
-      by (eapply rel_inj_app; [ exact Hinj | exact Hextg | exact Hcov ]).
-    assert (Hfung : rel_fun (ρn ++ ρ) V (dom (αs ++ Θa))).
-    { eapply rel_fun_app;
-        [ exact Hfun | exact Hextg | apply dom_subset_ftvar_in_aenv
-        | intros a Ha Hn; rewrite dom_app in Ha;
-          assert (Haαs : a `in` dom αs) by (clear - Ha Hn; fsetdec);
-          clear - Haαs Hαscl; fsetdec
-        | intros a Ha Hn; rewrite dom_app in Ha;
-          assert (Haαs : a `in` dom αs) by (clear - Ha Hn; fsetdec);
-          clear - Haαs HαsV; fsetdec ]. }
     (* ---- side 1's wf at the block ---- *)
-    assert (Hdecls : a_decls αs) by (eapply a_guess_mono_decls; exact Hgm).
-    assert (Hwfαs : {{ ⊢ (αs ++ Θa) }}a)
-      by (apply a_wf_aenv_decls_app; assumption).
     assert (HΞtv : forall α1, binds α1 abind_flex_mono αs ->
                      a_binds_tvar α1 (αs ++ Θa)).
     { intros α1 Hb. right; left.
@@ -1167,32 +1133,6 @@ Proof.
         [ eapply a_wf_exp_abs_pick; exact Hwfe
         | apply aenv_tbinds_le_of_binds_le; apply aenv_binds_le_weaken_l ]. }
     (* ---- side 2's package at the block ---- *)
-    assert (Huq2g : uniq (αs2 ++ Θ0')).
-    { apply uniq_app_4;
-        [ exact Huqαs2 | exact Huq2p
-        | intros z Hz;
-          assert (Hz1 : z `in` dom αs2) by (clear - Hz; fsetdec);
-          assert (Hz2 : z `in` dom Θ0') by (clear - Hz; fsetdec);
-          clear - Hz1 Hz2 Hfrg HdΘ; fsetdec ]. }
-    assert (Hftv2g : ftvar_in_aenv (αs2 ++ Θ0') [<=] S1g).
-    { rewrite ftvar_in_aenv_app.
-      assert (H1 : ftvar_in_aenv αs2 [<=] S1g).
-      { rewrite Eαs2. pose proof (ftvar_in_aenv_flex_pairs_r ρn) as He.
-        rewrite He. clear - Hdfr Hing. fsetdec. }
-      clear - H1 Hftv2 Hgrg. fsetdec. }
-    assert (Hscpg : V [<=] ftvar_in_aenv (αs ++ Θa))
-      by (rewrite ftvar_in_aenv_app; clear - Hscp; fsetdec).
-    assert (Hblkg : forall a, a `in` dom (Ξ ++ Θc) ->
-              a `notin` dom (αs ++ Θa) -> a `notin` cols_l (ρn ++ ρ)).
-    { intros a Ha Hn. rewrite dom_app in Hn. rewrite cols_l_app.
-      assert (H1 : a `notin` cols_l ρn) by (clear - Hn Hdfl; fsetdec).
-      assert (H2 : a `notin` cols_l ρ)
-        by (apply Hblk; [ exact Ha | clear - Hn; fsetdec ]).
-      clear - H1 H2. fsetdec. }
-    assert (HdΘg : dom (αs2 ++ Θ0') [<=] S1g)
-      by (rewrite dom_app; clear - Hing HdΘ Hgrg; fsetdec).
-    assert (Hcovg : V ∪ cols_r (ρn ++ ρ) [<=] S1g)
-      by (rewrite cols_r_app; clear - Hcov Hdfr Hing Hgrg; fsetdec).
     assert (HrQ0g : rel_pskl (ρn ++ ρ) V Q0 Q0')
       by (eapply rel_pskl_mono;
           [ exact HrQ0c | exact Hρnincl | intros z Hz; exact Hz ]).
@@ -1274,8 +1214,6 @@ Proof.
       by (apply a_wf_ptyp_to_wf_pskl; exact HwfA).
     assert (HrAp : rel_pskl ρ V (ptyp_to_pskl A) (ptyp_to_pskl A2))
       by (exact HrA).
-    assert (Hsc0 : ftvar_in_aenv Θa [<=] dom Θa)
-      by (apply a_wf_aenv_ftv_dom; exact Hwf).
     assert (Hdmc : dom Θa [<=] dom Θc) by (exact (auc_dom_mono_consis Hcc)).
     pose proof (a_typing_dom_mono Ht) as Hdmb.
     pose proof Hxf as Hxf2. simpl_env in Hxf2.

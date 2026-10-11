@@ -2396,3 +2396,105 @@ Proof.
       [ exact Hfun | exact Hincl | intros z Hz; exact Hz ]. }
   clear - Hcov Hcr; fsetdec.
 Qed.
+
+(** ⭐ A GENERATED FLEXIBLE BLOCK JOINS THE RELATION.  A guess or an
+    extract invents a block [Ξ] on side 1 and its paired block [Ξ2] on side
+    2 ([Ξ = flex_pairs_l ρn], [Ξ2 = flex_pairs_r ρn]); the premise that
+    runs on top of the block then needs every relation and scope at
+    [Ξ ++ Θ] / [Ξ2 ++ Θ'] over [ρn ++ ρ]. *)
+Lemma lift_flex_block_push : forall {ρn ρ V Ξ Ξ2 Θ Θ'} {Θout : aenv} {S0 S1},
+  Ξ = flex_pairs_l ρn ->
+  Ξ2 = flex_pairs_r ρn ->
+  uniq (Ξ ++ Θ) ->
+  uniq Ξ2 ->
+  dom Ξ2 ∩ S0 [=] empty ->
+  dom Ξ2 [<=] S1 ->
+  S0 [<=] S1 ->
+  dom Ξ ∩ cols_l ρ [=] empty ->
+  rel_aenv ρ V Θ Θ' ->
+  flex_agree_rel ρ V Θ Θ' ->
+  rel_inj ρ V ->
+  rel_fun ρ V (dom Θ) ->
+  {{ ⊢ Θ }}a ->
+  uniq Θ' ->
+  ftvar_in_aenv Θ' [<=] S0 ->
+  V [<=] ftvar_in_aenv Θ ->
+  (forall a, a `in` dom Θout -> a `notin` dom Θ -> a `notin` cols_l ρ) ->
+  dom Θ' [<=] S0 ->
+  V ∪ cols_r ρ [<=] S0 ->
+  rel_aenv (ρn ++ ρ) V (Ξ ++ Θ) (Ξ2 ++ Θ')
+  /\ flex_agree_rel (ρn ++ ρ) V (Ξ ++ Θ) (Ξ2 ++ Θ')
+  /\ rel_ext ρn (ftvar_in_aenv Θ) S0
+  /\ rel_inj (ρn ++ ρ) V
+  /\ rel_fun (ρn ++ ρ) V (dom (Ξ ++ Θ))
+  /\ {{ ⊢ (Ξ ++ Θ) }}a
+  /\ uniq (Ξ2 ++ Θ')
+  /\ ftvar_in_aenv (Ξ2 ++ Θ') [<=] S1
+  /\ V [<=] ftvar_in_aenv (Ξ ++ Θ)
+  /\ (forall a, a `in` dom Θout -> a `notin` dom (Ξ ++ Θ) ->
+        a `notin` cols_l (ρn ++ ρ))
+  /\ dom (Ξ2 ++ Θ') [<=] S1
+  /\ V ∪ cols_r (ρn ++ ρ) [<=] S1.
+Proof.
+  intros ρn ρ V Ξ Ξ2 Θ Θ' Θout S0 S1 E1 E2 Huq HuqΞ2 HfrΞ2 HinΞ2 Hgr HΞcl
+    HrΘ Hagr Hinj Hfun Hwf Huq2p Hftv2 Hscp Hblk HdΘ Hcov.
+  assert (Hdfl : dom Ξ [=] cols_l ρn) by (rewrite E1; apply dom_flex_pairs_l).
+  assert (Hdfr : dom Ξ2 [=] cols_r ρn) by (rewrite E2; apply dom_flex_pairs_r).
+  assert (Hsc0 : ftvar_in_aenv Θ [<=] dom Θ)
+    by (apply a_wf_aenv_ftv_dom; exact Hwf).
+  assert (HdisjΞ : disjoint Ξ Θ) by (clear - Huq; solve_uniq).
+  unfold disjoint in HdisjΞ.
+  assert (HΞV : dom Ξ ∩ V [=] empty) by (clear - HdisjΞ Hscp Hsc0; fsetdec).
+  assert (Hext : rel_ext ρn (ftvar_in_aenv Θ) S0).
+  { apply rel_ext_flex_pairs;
+      [ rewrite <- E1; clear - Huq; solve_uniq
+      | rewrite <- E2; exact HuqΞ2
+      | clear - Hdfl HdisjΞ Hsc0; fsetdec
+      | clear - Hdfr HfrΞ2; fsetdec ]. }
+  split.
+  { apply rel_aenv_app.
+    - rewrite E1, E2. apply rel_aenv_flex_pairs.
+    - eapply rel_aenv_mono;
+        [ exact HrΘ | intros a b Hin; apply in_or_app; right; exact Hin
+        | intros z Hz; exact Hz ]. }
+  split.
+  { rewrite E1, E2. apply flex_agree_rel_push_pairs;
+      [ exact Hagr | clear - Hdfl HΞV HΞcl; fsetdec
+      | clear - Hdfr HfrΞ2 Hcov; fsetdec ]. }
+  split; [ exact Hext | ].
+  split; [ eapply rel_inj_app; [ exact Hinj | exact Hext | exact Hcov ] | ].
+  split.
+  { eapply rel_fun_app;
+      [ exact Hfun | exact Hext | apply dom_subset_ftvar_in_aenv
+      | intros a Ha Hn; rewrite dom_app in Ha;
+        assert (HaΞ : a `in` dom Ξ) by (clear - Ha Hn; fsetdec);
+        clear - HaΞ HΞcl; fsetdec
+      | intros a Ha Hn; rewrite dom_app in Ha;
+        assert (HaΞ : a `in` dom Ξ) by (clear - Ha Hn; fsetdec);
+        clear - HaΞ HΞV; fsetdec ]. }
+  split.
+  { apply a_wf_aenv_decls_app;
+      [ rewrite E1; apply a_decls_flex_pairs_l | exact Huq | exact Hwf ]. }
+  split.
+  { apply uniq_app_4;
+      [ exact HuqΞ2 | exact Huq2p
+      | intros z Hz;
+        assert (Hz1 : z `in` dom Ξ2) by (clear - Hz; fsetdec);
+        assert (Hz2 : z `in` dom Θ') by (clear - Hz; fsetdec);
+        clear - Hz1 Hz2 HfrΞ2 HdΘ; fsetdec ]. }
+  split.
+  { rewrite ftvar_in_aenv_app.
+    assert (H1 : ftvar_in_aenv Ξ2 [<=] S1).
+    { rewrite E2. pose proof (ftvar_in_aenv_flex_pairs_r ρn) as He.
+      rewrite He. clear - Hdfr HinΞ2. fsetdec. }
+    clear - H1 Hftv2 Hgr. fsetdec. }
+  split; [ rewrite ftvar_in_aenv_app; clear - Hscp; fsetdec | ].
+  split.
+  { intros a Ha Hn. rewrite dom_app in Hn. rewrite cols_l_app.
+    assert (H1 : a `notin` cols_l ρn) by (clear - Hn Hdfl; fsetdec).
+    assert (H2 : a `notin` cols_l ρ)
+      by (apply Hblk; [ exact Ha | clear - Hn; fsetdec ]).
+    clear - H1 H2. fsetdec. }
+  split; [ rewrite dom_app; clear - HinΞ2 HdΘ Hgr; fsetdec | ].
+  rewrite cols_r_app. clear - Hcov Hdfr HinΞ2 Hgr. fsetdec.
+Qed.
