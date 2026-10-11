@@ -492,6 +492,50 @@ Proof.
   - in_incl.
 Qed.
 
+(** ⭐ A THREADED PAIR OF SOLVE CALLS (SE-Arrow, SS-Arrow, SS-GhostLF,
+    SC-Eq): the first call's generated block [Ξ1 ↔ Ξ2a] joins the relation
+    as flexible pairs, and everything the second call's motive asks of the
+    context moves to the extended contexts. *)
+Lemma solve_seq_push : forall {ρ ρnA V Θ Θ2 Ξ1 Ξ2 Ξ2a S0 S1},
+  Ξ1 = flex_pairs_l ρnA ->
+  Ξ2a = flex_pairs_r ρnA ->
+  flex_agree_rel ρ V Θ Θ2 ->
+  V [<=] ftvar_in_aenv Θ ->
+  dom (Ξ2 ++ Ξ1) ∩ cols_l ρ [=] empty ->
+  dom Ξ1 ∩ ftvar_in_aenv Θ [=] empty ->
+  dom Ξ2 ∩ ftvar_in_aenv (Ξ1 ++ Θ) [=] empty ->
+  dom Ξ2a ∩ S0 [=] empty ->
+  dom Ξ2a [<=] S1 ->
+  S0 [<=] S1 ->
+  dom Θ2 [<=] S0 ->
+  V ∪ cols_r ρ [<=] S0 ->
+  flex_agree_rel (ρnA ++ ρ) V (Ξ1 ++ Θ) (Ξ2a ++ Θ2)
+  /\ V [<=] ftvar_in_aenv (Ξ1 ++ Θ)
+  /\ dom Ξ2 ∩ cols_l (ρnA ++ ρ) [=] empty
+  /\ dom (Ξ2a ++ Θ2) [<=] S1
+  /\ V ∪ cols_r (ρnA ++ ρ) [<=] S1.
+Proof.
+  intros ρ ρnA V Θ Θ2 Ξ1 Ξ2 Ξ2a S0 S1 E1a E2a Hagr Hscp1 Hblk Hd1a Hd1b
+    Hd2a Hi2a Hgr1 HdΘ Hscp2.
+  pose proof (dom_flex_pairs_l ρnA) as Hdfl. rewrite <- E1a in Hdfl.
+  pose proof (dom_flex_pairs_r ρnA) as Hdfr. rewrite <- E2a in Hdfr.
+  rewrite dom_app in Hblk.
+  split.
+  { rewrite E1a, E2a. apply flex_agree_rel_push_pairs.
+    - exact Hagr.
+    (* ⭐ the head block dodges the pair columns — the SECOND half of the
+       old scoping premise, now hypothesised directly. *)
+    - clear - Hd1a Hscp1 Hdfl Hblk. fsetdec.
+    - clear - Hd2a Hscp2 Hdfr. fsetdec. }
+  split; [ rewrite ftvar_in_aenv_app; clear - Hscp1; fsetdec | ].
+  split.
+  { rewrite cols_l_app. rewrite ftvar_in_aenv_app in Hd1b.
+    pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds.
+    clear - Hd1b Hds Hdfl Hblk. fsetdec. }
+  split; [ rewrite dom_app; clear - Hi2a HdΘ Hgr1; fsetdec | ].
+  rewrite cols_r_app. clear - Hscp2 Hdfr Hi2a Hgr1. fsetdec.
+Qed.
+
 Lemma a_solve_eq_rel_e : forall Θ1 P1 Q1 Ξ1 P1',
   {{ Θ1 ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}a ->
   forall S0 Θ2 P2 Q2 ρ V,
@@ -601,21 +645,6 @@ Proof.
     assert (Hd2a : dom Ξ2a ∩ S0 [=] empty)
       by (apply (proj2 e_solve_sub_eq_block) in D2a; tauto).
     assert (Hi2a : dom Ξ2a [<=] S1) by (exact (e_solve_eq_block_in_supply D2a)).
-    pose proof (dom_flex_pairs_l ρnA) as Hdfl. rewrite <- E1a in Hdfl.
-    pose proof (dom_flex_pairs_r ρnA) as Hdfr. rewrite <- E2a in Hdfr.
-    assert (Hagr' : flex_agree_rel (ρnA ++ ρ) V (Ξ1 ++ Θ) (Ξ2a ++ Θ2)).
-    { rewrite E1a, E2a. apply flex_agree_rel_push_pairs.
-      - exact Hagr.
-      (* ⭐ the head block dodges the pair columns — the SECOND half of the
-         old scoping premise, now hypothesised directly. *)
-      - clear - Hd1a Hscp1 Hdfl Hblk1. fsetdec.
-      - clear - Hd2a Hscp2 Hdfr. fsetdec. }
-    assert (Hscp1' : V [<=] ftvar_in_aenv (Ξ1 ++ Θ))
-      by (rewrite ftvar_in_aenv_app; clear - Hscp1; fsetdec).
-    assert (HdΘ' : dom (Ξ2a ++ Θ2) [<=] S1)
-      by (rewrite dom_app; clear - Hi2a HdΘ Hgr1; fsetdec).
-    assert (Hscp2' : V ∪ cols_r (ρnA ++ ρ) [<=] S1).
-    { rewrite cols_r_app. clear - Hscp2 Hdfr Hi2a Hgr1. fsetdec. }
     assert (HcovB : ftvar_in_pskl P2b ∪ ftvar_in_pskl Q2b [<=] S1)
       by (clear - Hcov Hgr1; simpl in *; fsetdec).
     assert (HrPb' : rel_pskl (ρnA ++ ρ) V P2 P2b)
@@ -624,11 +653,9 @@ Proof.
       by (apply rel_pskl_widen; exact HrQb).
     assert (Hd1b : dom Ξ2 ∩ ftvar_in_aenv (Ξ1 ++ Θ) [=] empty)
       by (exact ((proj2 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ HD2)).
-    assert (Hblk2 : dom Ξ2 ∩ cols_l (ρnA ++ ρ) [=] empty).
-    { rewrite cols_l_app. rewrite ftvar_in_aenv_app in Hd1b.
-      pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds.
-      rewrite dom_app in Hblk.
-      clear - Hd1b Hds Hdfl Hblk. fsetdec. }
+    destruct (solve_seq_push E1a E2a Hagr Hscp1 Hblk Hd1a Hd1b Hd2a Hi2a Hgr1
+                HdΘ Hscp2)
+      as (Hagr' & Hscp1' & Hblk2 & HdΘ' & Hscp2').
     destruct (IHHD2 S1 (Ξ2a ++ Θ2) P2b Q2b (ρnA ++ ρ) V
                 HrPb' HrQb' Hagr' Hscp1' Hblk2 HdΘ' Hscp2' HcovB)
       as (S2 & ρnB & Ξ2b & P2b' & D2b & E1b & E2b & HrelB').
@@ -1057,30 +1084,13 @@ Proof.
     assert (Hd2a : dom Ξ2a ∩ S0 [=] empty)
       by (apply (proj2 e_solve_sub_eq_block) in D2a; tauto).
     assert (Hi2a : dom Ξ2a [<=] S1) by (exact (e_solve_eq_block_in_supply D2a)).
-    pose proof (dom_flex_pairs_l ρnA) as Hdfl. rewrite <- E1a in Hdfl.
-    pose proof (dom_flex_pairs_r ρnA) as Hdfr. rewrite <- E2a in Hdfr.
-    assert (Hagr' : flex_agree_rel (ρnA ++ ρ) V (Ξ1 ++ Θ) (Ξ2a ++ Θ2)).
-    { rewrite E1a, E2a. apply flex_agree_rel_push_pairs.
-      - exact Hagr.
-      (* ⭐ the head block dodges the pair columns — the SECOND half of the
-         old scoping premise, now hypothesised directly. *)
-      - clear - Hd1a Hscp1 Hdfl Hblk1. fsetdec.
-      - clear - Hd2a Hscp2 Hdfr. fsetdec. }
-    assert (Hscp1' : V [<=] ftvar_in_aenv (Ξ1 ++ Θ))
-      by (rewrite ftvar_in_aenv_app; clear - Hscp1; fsetdec).
-    assert (HdΘ' : dom (Ξ2a ++ Θ2) [<=] S1)
-      by (rewrite dom_app; clear - Hi2a HdΘ Hgr1; fsetdec).
-    assert (Hscp2' : V ∪ cols_r (ρnA ++ ρ) [<=] S1).
-    { rewrite cols_r_app. clear - Hscp2 Hdfr Hi2a Hgr1. fsetdec. }
     assert (HcovB : ftvar_in_pskl P3b ∪ ftvar_in_pskl Q3b [<=] S1)
       by (clear - Hcov Hgr1; simpl in *; fsetdec).
     assert (Hd1b : dom Ξ2 ∩ ftvar_in_aenv (Ξ1 ++ Θ) [=] empty)
       by (exact ((proj1 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ _ HD)).
-    assert (Hblk2 : dom Ξ2 ∩ cols_l (ρnA ++ ρ) [=] empty).
-    { rewrite cols_l_app. rewrite ftvar_in_aenv_app in Hd1b.
-      pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds.
-      rewrite dom_app in Hblk.
-      clear - Hd1b Hds Hdfl Hblk. fsetdec. }
+    destruct (solve_seq_push E1a E2a Hagr Hscp1 Hblk Hd1a Hd1b Hd2a Hi2a Hgr1
+                HdΘ Hscp2)
+      as (Hagr' & Hscp1' & Hblk2 & HdΘ' & Hscp2').
     destruct (IHHD S1 (Ξ2a ++ Θ2) P3b Q3b (ρnA ++ ρ) V
                 ltac:(apply rel_pskl_widen; exact HrPb)
                 ltac:(apply rel_pskl_widen; exact HrQb)
@@ -1124,30 +1134,13 @@ Proof.
     assert (Hd2a : dom Ξ2a ∩ S0 [=] empty)
       by (apply (proj2 e_solve_sub_eq_block) in D2a; tauto).
     assert (Hi2a : dom Ξ2a [<=] S1) by (exact (e_solve_eq_block_in_supply D2a)).
-    pose proof (dom_flex_pairs_l ρnA) as Hdfl. rewrite <- E1a in Hdfl.
-    pose proof (dom_flex_pairs_r ρnA) as Hdfr. rewrite <- E2a in Hdfr.
-    assert (Hagr' : flex_agree_rel (ρnA ++ ρ) V (Ξ1 ++ Θ) (Ξ2a ++ Θ2)).
-    { rewrite E1a, E2a. apply flex_agree_rel_push_pairs.
-      - exact Hagr.
-      (* ⭐ the head block dodges the pair columns — the SECOND half of the
-         old scoping premise, now hypothesised directly. *)
-      - clear - Hd1a Hscp1 Hdfl Hblk1. fsetdec.
-      - clear - Hd2a Hscp2 Hdfr. fsetdec. }
-    assert (Hscp1' : V [<=] ftvar_in_aenv (Ξ1 ++ Θ))
-      by (rewrite ftvar_in_aenv_app; clear - Hscp1; fsetdec).
-    assert (HdΘ' : dom (Ξ2a ++ Θ2) [<=] S1)
-      by (rewrite dom_app; clear - Hi2a HdΘ Hgr1; fsetdec).
-    assert (Hscp2' : V ∪ cols_r (ρnA ++ ρ) [<=] S1).
-    { rewrite cols_r_app. clear - Hscp2 Hdfr Hi2a Hgr1. fsetdec. }
     assert (HcovB : ftvar_in_pskl pskl_ghost ∪ ftvar_in_pskl Q3b [<=] S1)
       by (clear - Hcov Hgr1; simpl in *; fsetdec).
     assert (Hd1b : dom Ξ2 ∩ ftvar_in_aenv (Ξ1 ++ Θ) [=] empty)
       by (exact ((proj1 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ _ HD)).
-    assert (Hblk2 : dom Ξ2 ∩ cols_l (ρnA ++ ρ) [=] empty).
-    { rewrite cols_l_app. rewrite ftvar_in_aenv_app in Hd1b.
-      pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds.
-      rewrite dom_app in Hblk.
-      clear - Hd1b Hds Hdfl Hblk. fsetdec. }
+    destruct (solve_seq_push E1a E2a Hagr Hscp1 Hblk Hd1a Hd1b Hd2a Hi2a Hgr1
+                HdΘ Hscp2)
+      as (Hagr' & Hscp1' & Hblk2 & HdΘ' & Hscp2').
     destruct (IHHD S1 (Ξ2a ++ Θ2) pskl_ghost Q3b (ρnA ++ ρ) V
                 (rel_pskl__ghost (ρnA ++ ρ) V)
                 ltac:(apply rel_pskl_widen; exact HrQb)
@@ -1286,30 +1279,13 @@ Proof.
     assert (Hd2a : dom Ξ2a ∩ S0 [=] empty)
       by (apply (proj2 e_solve_sub_eq_block) in D2a; tauto).
     assert (Hi2a : dom Ξ2a [<=] S1) by (exact (e_solve_eq_block_in_supply D2a)).
-    pose proof (dom_flex_pairs_l ρnA) as Hdfl. rewrite <- E1a in Hdfl.
-    pose proof (dom_flex_pairs_r ρnA) as Hdfr. rewrite <- E2a in Hdfr.
-    assert (Hagr' : flex_agree_rel (ρnA ++ ρ) V (Ξ1 ++ Θ) (Ξ2a ++ Θ2)).
-    { rewrite E1a, E2a. apply flex_agree_rel_push_pairs.
-      - exact Hagr.
-      (* ⭐ the head block dodges the pair columns — the SECOND half of the
-         old scoping premise, now hypothesised directly. *)
-      - clear - Hd1a Hscp1 Hdfl Hblk1. fsetdec.
-      - clear - Hd2a Hscp2 Hdfr. fsetdec. }
-    assert (Hscp1' : V [<=] ftvar_in_aenv (Ξ1 ++ Θ))
-      by (rewrite ftvar_in_aenv_app; clear - Hscp1; fsetdec).
-    assert (HdΘ' : dom (Ξ2a ++ Θ2) [<=] S1)
-      by (rewrite dom_app; clear - Hi2a HdΘ Hgr1; fsetdec).
-    assert (Hscp2' : V ∪ cols_r (ρnA ++ ρ) [<=] S1).
-    { rewrite cols_r_app. clear - Hscp2 Hdfr Hi2a Hgr1. fsetdec. }
     assert (HcovT : ftvar_in_pskl Pmid2 ∪ ftvar_in_a_cstrs C2' [<=] S1)
       by (clear - Hout Hcov Hgr1; simpl in *; fsetdec).
     assert (Hd1b : dom Ξ2 ∩ ftvar_in_aenv (Ξ1 ++ Θ) [=] empty)
       by (exact (a_solve_cstr_generated_fresh_set HD)).
-    assert (Hblk2 : dom Ξ2 ∩ cols_l (ρnA ++ ρ) [=] empty).
-    { rewrite cols_l_app. rewrite ftvar_in_aenv_app in Hd1b.
-      pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds.
-      rewrite dom_app in Hblk.
-      clear - Hd1b Hds Hdfl Hblk. fsetdec. }
+    destruct (solve_seq_push E1a E2a Hagr Hscp1 Hblk Hd1a Hd1b Hd2a Hi2a Hgr1
+                HdΘ Hscp2)
+      as (Hagr' & Hscp1' & Hblk2 & HdΘ' & Hscp2').
     destruct (IHHD S1 (Ξ2a ++ Θ2) C2' Pmid2 (ρnA ++ ρ) V
                 HrelM
                 ltac:(apply rel_a_cstrs_widen; exact HrelC')
