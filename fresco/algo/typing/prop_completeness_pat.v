@@ -1018,10 +1018,6 @@ Lemma a_pat_complete_abs_check : forall Θ0 e κ Θ Q,
   pat_complete_concl mode_tc Θ0 pskl_ghost (exp_abs e) κ Θ Q.
 Proof.
   intros Θ0 e κ Θ Q Hwf0 HwfΘ Hinc Hrig Hlc IH Hd.
-  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf0 Hb)
-    as Hskl.
-  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps HwfΘ Hb)
-    as HsklT.
   inversion Hd; subst; [ exfalso; auto | ].
   match goal with
   | H : forall x, x `notin` ?L0 -> {{ _ ⊢ˢ[ _ ] _ ⦂ _ }}ad |- _ =>
@@ -1054,11 +1050,6 @@ Proof.
     pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
     simpl in Hup.
     apply binds_cons_3. apply Hrig. clear - Hα Hup; fsetdec. }
-  (* the body target is wf at the extended contexts (K1) *)
-  assert (HwfP : {{ ((x ~ bx) ++ Θ) ⨟ empty ⊢ₚₛ P }}a).
-  { pose proof (ad_pat_target_wf (Hbody x ltac:(clear - Hx; solve_notin_auto)) HwfΘx)
-      as Hw.
-    rewrite bskl_to_pskl_pskl_to_bskl_syn in Hw. exact Hw. }
   (* ---- 2. the IH, once ---- *)
   destruct (IH x mode_tc ((x ~ bx) ++ Θ0) pskl_ghost κ ((x ~ bx) ++ Θ)
               (pskl_to_bskl_syn P)
@@ -1096,13 +1087,6 @@ Proof.
         [ exact Hsuf | exact Hwf1' | exact I ]).
   assert (HxΘ2 : x `notin` (dom Θ2 `union` ftvar_in_aenv Θ2))
     by (eapply a_wf_aenv_notin_ftv_tm_below; exact Hwf1').
-  assert (HwfQ' : {{ (Ξ ++ (x ~ bx) ++ Θ2) ⨟ empty ⊢ₚₛ Q' }}a)
-    by (eapply a_pat_output_wf;
-        [ exact Hrun | exact Hwf0x
-        | apply a_wf_pskl__ghost | apply a_sk_mode_compat__tc | exact Hexpx ]).
-  assert (HxQ' : x `notin` ftvar_in_pskl Q')
-    by (eapply a_wf_pskl_notin_ftv_tm;
-        [ exact HwfQ' | exact Hu1' | exact Hbx1 | exact I ]).
   (* ---- 5. the run ---- *)
   exists (pskl_univ_ghost (pskl_arrow pskl_ghost Q')), (Ξ ++ Θ2).
   split.
@@ -1165,10 +1149,6 @@ Lemma a_pat_complete_abs_anno_check : forall Θ0 A e κ Θ Q,
   pat_complete_concl mode_tc Θ0 pskl_ghost (exp_abs_anno A e) κ Θ Q.
 Proof.
   intros Θ0 A e κ Θ Q Hwf0 HwfΘ Hinc Hrig Hlc IH Hd.
-  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf0 Hb)
-    as Hskl.
-  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps HwfΘ Hb)
-    as HsklT.
   inversion Hd; subst; [ exfalso; auto | ].
   match goal with
   | H : forall x, x `notin` ?L0 -> {{ _ ⊢ˢ[ _ ] _ ⦂ _ }}ad |- _ =>
@@ -1214,10 +1194,6 @@ Proof.
     pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
     simpl in Hup.
     apply binds_cons_3. apply Hrig. clear - Hα Hup; fsetdec. }
-  assert (HwfP : {{ ((x ~ bx) ++ Θ) ⨟ empty ⊢ₚₛ P }}a).
-  { pose proof (ad_pat_target_wf (Hbody x ltac:(clear - Hx; solve_notin_auto)) HwfΘx)
-      as Hw.
-    rewrite bskl_to_pskl_pskl_to_bskl_syn in Hw. exact Hw. }
   (* ---- 2. the IH, once ---- *)
   destruct (IH x mode_tc ((x ~ bx) ++ Θ0) pskl_ghost κ ((x ~ bx) ++ Θ)
               (pskl_to_bskl_syn P)
@@ -1253,13 +1229,6 @@ Proof.
         [ exact Hsuf | exact Hwf1' | exact I ]).
   assert (HxΘ2 : x `notin` (dom Θ2 `union` ftvar_in_aenv Θ2))
     by (eapply a_wf_aenv_notin_ftv_tm_below; exact Hwf1').
-  assert (HwfQ' : {{ (Ξ ++ (x ~ bx) ++ Θ2) ⨟ empty ⊢ₚₛ Q' }}a)
-    by (eapply a_pat_output_wf;
-        [ exact Hrun | exact Hwf0x
-        | apply a_wf_pskl__ghost | apply a_sk_mode_compat__tc | exact Hexpx ]).
-  assert (HxQ' : x `notin` ftvar_in_pskl Q')
-    by (eapply a_wf_pskl_notin_ftv_tm;
-        [ exact HwfQ' | exact Hu1' | exact Hbx1 | exact I ]).
   (* ---- 5. the run ---- *)
   exists (pskl_univ_ghost (pskl_arrow (ptyp_to_pskl A) Q')), (Ξ ++ Θ2).
   split.
@@ -1402,10 +1371,6 @@ Lemma a_pat_complete_abs : forall M Θ0 P0 e κ Θ Q,
 Proof.
   intros M Θ0 P0 e κ Θ Q Hwf0 HwfΘ HwfP0 Hmod HMne Hinc Hrig
          Hlc IH Hd Href.
-  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf0 Hb)
-    as Hskl.
-  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps HwfΘ Hb)
-    as HsklT.
   inversion Hd; subst; [ | exfalso; auto ].
   match goal with
   | H : forall x, x `notin` ?L0 -> {{ _ ⊢ˢ[ _ ] _ ⦂ _ }}ad |- _ =>
@@ -1540,13 +1505,6 @@ Proof.
         [ exact Hsuf | exact Hwf1' | exact I ]).
   assert (HxΘ2 : x `notin` (dom Θ2 `union` ftvar_in_aenv Θ2))
     by (eapply a_wf_aenv_notin_ftv_tm_below; exact Hwf1').
-  assert (HwfQ' : {{ (Ξ ++ (x ~ bq) ++ Θ2) ⨟ empty ⊢ₚₛ Q' }}a)
-    by (eapply a_pat_output_wf;
-        [ exact Hrun | exact Hwf0x
-        | exact HwfQ1x | exact HmodQ1 | exact Hexpx ]).
-  assert (HxQ' : x `notin` ftvar_in_pskl Q')
-    by (eapply a_wf_pskl_notin_ftv_tm;
-        [ exact HwfQ' | exact Hu1' | exact Hbx1 | exact I ]).
   (* ---- 8. the run ---- *)
   exists (pskl_arrow P1 Q'), (Ξ ++ Θ2).
   split.
@@ -1695,10 +1653,6 @@ Lemma a_pat_complete_abs_anno : forall M Θ0 P0 A e κ Θ Q,
 Proof.
   intros M Θ0 P0 A e κ Θ Q Hwf0 HwfΘ HwfP0 Hmod HMne Hinc Hrig
          Hlc IH Hd Href.
-  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf0 Hb)
-    as Hskl.
-  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps HwfΘ Hb)
-    as HsklT.
   inversion Hd; subst; [ | exfalso; auto ].
   match goal with
   | H : forall x, x `notin` ?L0 -> {{ _ ⊢ˢ[ _ ] _ ⦂ _ }}ad |- _ =>
@@ -1874,13 +1828,6 @@ Proof.
         [ exact Hsuf | exact HwfB' | exact I ]).
   assert (HxΘ3 : x `notin` (dom Θ3 `union` ftvar_in_aenv Θ3))
     by (eapply a_wf_aenv_notin_ftv_tm_below; exact HwfB').
-  assert (HwfQ' : {{ (Ξ ++ (x ~ bA) ++ Θ3) ⨟ empty ⊢ₚₛ Q' }}a)
-    by (eapply a_pat_output_wf;
-        [ exact HrunB | exact Hwf0x
-        | exact HwfQ1midx | exact HmodQ1 | exact Hexpx ]).
-  assert (HxQ' : x `notin` ftvar_in_pskl Q')
-    by (eapply a_wf_pskl_notin_ftv_tm;
-        [ exact HwfQ' | exact HuB' | exact Hbx1 | exact I ]).
   (* ---- 9. the run ---- *)
   exists (pskl_arrow (ptyp_to_pskl A) Q'), (Ξ ++ Θ3).
   split.
@@ -2093,10 +2040,6 @@ Lemma a_pat_complete_app : forall M Θ0 P0 e1 e2 κ Θ Q,
 Proof.
   intros M Θ0 P0 e1 e2 κ Θ Q Hwf0 HwfΘ HwfP0 Hmod Hinc Hrig
          Hlc IH2 IH1 Hd Href.
-  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps Hwf0 Hb)
-    as Hskl.
-  pose proof (fun y Ps Hb => @a_wf_aenv_binds_var_skl_wf _ y Ps HwfΘ Hb)
-    as HsklT.
   inversion Hd; subst.
   match goal with
   | H : {{ Θ ⊢ˢ[ mode_tc ] e2 ⦂ pskl_to_bskl_syn ?PP }}ad |- _ =>
