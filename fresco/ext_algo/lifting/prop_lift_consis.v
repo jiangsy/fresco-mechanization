@@ -1939,21 +1939,14 @@ Proof.
       by (apply dom_subset_ftvar_in_aenv).
     assert (HΔsc1 : Δ1 ∪ Δ2 [<=] ftvar_in_aenv Θ1)
       by (clear - HΔdom Hdm0 Hd1s; fsetdec).
-    assert (Hscp1 : V [<=] ftvar_in_aenv Θ1)
-      by (clear - Hscp Hsc0 Hdm0 Hd1s; fsetdec).
     assert (Hwfp0b1 : {{ Θ1 ⨟ empty ⊢ₚₛ P0b }}a)
       by (eapply a_isub_wf_pskl; [ exact Hinc1 | exact Hw0b ]).
     assert (Hwfp21 : {{ Θ1 ⨟ empty ⊢ₚₛ P2 }}a)
       by (eapply a_isub_wf_pskl; [ exact Hinc1 | exact Hw1b ]).
     (* ---- the relation, widened by the first half's new pairs ---- *)
-    assert (Hinj1 : rel_inj (ρe1 ++ ρ) V)
-      by (eapply rel_inj_app; [ exact Hinj | exact Hext1 | exact Hcov ]).
-    assert (HVdom0 : V [<=] dom Θ0) by (clear - Hscp Hsc0; fsetdec).
-    assert (Hfun1 : rel_fun (ρe1 ++ ρ) V (dom Θ1)).
-    { eapply rel_fun_app;
-        [ exact Hfun | exact Hext1 | apply dom_subset_ftvar_in_aenv
-        | intros a Ha Hn; exact (Hblk1 a Ha Hn)
-        | intros a Ha Hn; clear - HVdom0 Hn; fsetdec ]. }
+    destruct (lift_seq_widen Hinj Hfun Hext1 Hdom1 Hwf Hscp Hcov Hblk Hdm0
+                Hdm1 Hgr1 HdΘ1)
+      as (Hinj1 & Hfun1 & Hscp1 & Hcov1 & Hblk2).
     assert (Hrd1' : rel_atoms (ρe1 ++ ρ) V Δ1 Δ1')
       by (eapply rel_atoms_app;
           [ exact Hrd1 | exact Hext1 | clear - HΔsc; fsetdec
@@ -1966,20 +1959,6 @@ Proof.
       by (apply rel_pskl_widen; exact HrP0b).
     assert (HrP2' : rel_pskl (ρe1 ++ ρ) V P2 P22)
       by (apply rel_pskl_widen; exact HrP2).
-    assert (Hc1r : cols_r ρe1 [<=] S1).
-    { intros y Hy. destruct (cols_r_in_inv _ _ Hy) as (a & Hin).
-      destruct (Hdom1 _ _ Hin) as [_ Hd2]. clear - Hd2 HdΘ1. fsetdec. }
-    assert (Hcov1 : V ∪ cols_r (ρe1 ++ ρ) [<=] S1).
-    { rewrite cols_r_app. clear - Hcov Hc1r Hgr1. fsetdec. }
-    assert (Hblk2 : forall a, a `in` dom Θ2 -> a `notin` dom Θ1 ->
-                    a `notin` cols_l (ρe1 ++ ρ)).
-    { intros a Ha Hn. rewrite cols_l_app.
-      assert (Hc1 : a `notin` cols_l ρe1).
-      { intros Hy. destruct (cols_l_in_inv _ _ Hy) as (y & Hin).
-        destruct (Hdom1 _ _ Hin) as [Hd1 _]. contradiction. }
-      assert (Hc2 : a `notin` cols_l ρ)
-        by (apply Hblk; [ exact Ha | clear - Hn Hdm0; fsetdec ]).
-      clear - Hc1 Hc2. fsetdec. }
     assert (HcovP2 : ftvar_in_pskl P0b2 ∪ ftvar_in_pskl P22 [<=] S1)
       by (simpl in HcovP; clear - HcovP Hgr1; fsetdec).
     assert (HcovΔ1 : Δ1' ∪ Δ2' [<=] S1) by (clear - HcovΔ Hgr1; fsetdec).
@@ -1998,21 +1977,12 @@ Proof.
       eapply rel_pskl_mono;
         [ exact HrQ1 | intros x y Hx; apply in_or_app; right; exact Hx
         | intros x Hx; exact Hx ]. }
-    split.
-    { eapply rel_ext_app;
-        [ exact Hext1 | exact Hext2
-        | clear - Hsc0 Hdm0 Hd1s; fsetdec
-        | exact Hgr1
-        | intros a b Hin; destruct (Hdom1 _ _ Hin) as [Hd1 Hd2];
-          split; [ clear - Hd1 Hd1s; fsetdec | clear - Hd2 HdΘ1; fsetdec ] ]. }
     assert (Hdm2' : dom Θ1' [<=] dom Θ2').
     { pose proof (e_consis_sound D2e Huq1'
                     ltac:(clear - Hftv1 HcovP2 HcovΔ1; fsetdec)) as Ha2.
       exact (auc_dom_mono_consis Ha2). }
-    intros a b Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
-    + destruct (Hdom2 _ _ Hin) as [Hd1 Hd2]. split; [ exact Hd1 | exact Hd2 ].
-    + destruct (Hdom1 _ _ Hin) as [Hd1 Hd2].
-      split; [ clear - Hd1 Hdm1; fsetdec | clear - Hd2 Hdm2'; fsetdec ].
+    exact (lift_seq_ext Hext1 Hext2 Hdom1 Hdom2 Hwf Hdm0 Hdm1 Hgr1 HdΘ1
+             Hdm2').
   - (* ⭐⭐ C-ForallInh *)
     intros Δ1 Δ2 Θ0 Θ1 P0 P Q α Hfr HD IH.
     eapply lift_consis_forall_inh_row; [ exact Hfr | exact HD | exact IH ].
