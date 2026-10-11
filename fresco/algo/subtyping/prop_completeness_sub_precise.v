@@ -1120,12 +1120,9 @@ Proof.
     try discriminate HeqR.
   - (* refl *)
     subst R.
-    eapply ad_pat_sub_fuel_refl_transport with
-      (Ψsup := Ψsup) (Ψna := Ψna);
-      [ eapply ad_pat_sub_fuel__forall_l_tagged with (Ψ' := Ψi') (ψ := ψg);
-        [ exact HMti | exact Hictx | exact Hihyg | exact Htags
-        | exact Hwfψ | exact HDp ]
-      | exact HΨf | exact HΨa | exact Hftag ].
+    eapply ad_pat_sub_fuel_refl_transport with (Ψsup := Ψsup) (Ψna := Ψna);
+      eauto.
+    apply ad_pat_sub_fuel__forall_l_tagged with (Ψ' := Ψi') (ψ := ψg); assumption.
   - (* all_tag congruence: rebuild ForallL-tagged with ψg *)
     inversion HeqR; subst. simpl in Hihyg.
     pose proof (uskl_precise_ftag_sub (upre__all_syn _ _ H)) as Hfsb.
@@ -1203,12 +1200,9 @@ Proof.
     try discriminate HeqR.
   - (* refl *)
     subst R.
-    eapply ad_pat_sub_fuel_refl_transport with
-      (Ψsup := Ψsup) (Ψna := Ψna);
-      [ eapply ad_pat_sub_fuel__forall_l_untagged with (Ψ' := Ψi') (ψ := ψg);
-        [ exact HMti | exact Hictx | exact Hihyg | exact Htags
-        | exact Hwfψ | exact HDp ]
-      | exact HΨf | exact HΨa | exact Hftag ].
+    eapply ad_pat_sub_fuel_refl_transport with (Ψsup := Ψsup) (Ψna := Ψna);
+      eauto.
+    apply ad_pat_sub_fuel__forall_l_untagged with (Ψ' := Ψi') (ψ := ψg); assumption.
   - (* all_syn congruence *)
     inversion HeqR; subst. simpl in Hihyg.
     pose proof (uskl_precise_ftag_sub (upre__all_syn _ _ H)) as Hfsb.
@@ -1222,24 +1216,15 @@ Proof.
     destruct NM.
     + exfalso. specialize (Hgf eq_refl). inversion Hgf.
     + apply ad_pat_sub_fuel_wrap_univ_ghost.
-      eapply IHHup with (Ψna := Ψna);
-        [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-        | exact HMti | exact Hictx | exact Hihyg | exact Htags | exact Hwfψ
-        | exact HDp | exact Hrec | exact HΨf | exact HΨa | exact Hdisj
-        | clear - Hftag; simpl in Hftag; fsetdec | exact Hwfq
-        | intro He; discriminate He ].
+      eapply IHHup with (Ψfull := Ψfull) (Ψi' := Ψi') (Ψna := Ψna); eauto.
+      intro He; discriminate He.
   - (* flex_l *)
     eapply ad_pat_sub_fuel_fold_flex with (τ := τ);
       [ | reflexivity | apply Hmon; exact H | exact Hwf ].
-    eapply IHHup with (Ψna := Ψna);
-      [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-      | exact HMti | exact Hictx | exact Hihyg | exact Htags | exact Hwfψ
-      | exact HDp | exact Hrec | exact HΨf | exact HΨa | exact Hdisj
-      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
-      | exact Hwfq
-      | intro He;
-        apply mono_ptyp_to_uskl_syn_ghost_free;
-        eapply a_wf_aenv_binds_def_mono; [ exact Hwf | apply Hmon; exact H ] ].
+    eapply IHHup with (Ψfull := Ψfull) (Ψi' := Ψi') (Ψna := Ψna); eauto.
+    + pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec.
+    + intro He. apply mono_ptyp_to_uskl_syn_ghost_free.
+      eapply a_wf_aenv_binds_def_mono; eauto.
 Qed.
 
 (** [UnivGhostL], leaf-valid. *)
@@ -1280,15 +1265,12 @@ Proof.
     subst R.
     eapply ad_pat_sub_fuel_refl_transport with
       (Ψsup := Ψsup) (Ψna := Ψna);
-      [ apply ad_pat_sub_fuel__univ_ghost_l; [ exact HMti | exact HDp ]
+      [ apply ad_pat_sub_fuel__univ_ghost_l; eassumption
       | exact HΨf | exact HΨa | exact Hftag ].
   - (* univ_ghost congruence *)
     inversion HeqR; subst.
     apply ad_pat_sub_fuel__univ_ghost_l; [ exact HMti | ].
-    eapply Hrec with (Ψr0 := Ψrep) (Ψsup0 := Ψsup) (Ψna0 := Ψna);
-      [ exact Hup | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-      | exact HΨf | exact HΨa | exact Hdisj
-      | clear - Hftag; simpl in Hftag; fsetdec | exact Hwfq ].
+    eapply Hrec with (Ψsup0 := Ψsup) (Ψna0 := Ψna); eauto.
   - (* ghost *)
     subst R.
     eapply ad_pat_sub_fuel_ghost_intro with
@@ -1298,19 +1280,12 @@ Proof.
       | clear - HΨf; fsetdec ].
   - (* univ_ghost_remove *)
     apply ad_pat_sub_fuel_wrap_univ_ghost.
-    eapply IHHup with (Ψna := Ψna);
-      [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-      | exact HMti | exact HDp | exact Hrec | exact HΨf | exact HΨa
-      | exact Hdisj | clear - Hftag; simpl in Hftag; fsetdec | exact Hwfq ].
+    eapply IHHup with (Ψfull := Ψfull) (Ψna := Ψna); eauto.
   - (* flex_l *)
     eapply ad_pat_sub_fuel_fold_flex with (τ := τ);
       [ | reflexivity | apply Hmon; exact H | exact Hwf ].
-    eapply IHHup with (Ψna := Ψna);
-      [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-      | exact HMti | exact HDp | exact Hrec | exact HΨf | exact HΨa
-      | exact Hdisj
-      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
-      | exact Hwfq ].
+    eapply IHHup with (Ψfull := Ψfull) (Ψna := Ψna); eauto.
+    pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec.
 Qed.
 
 (** [UnivGhostLG], leaf-valid. *)
@@ -1351,22 +1326,16 @@ Proof.
     subst R.
     eapply ad_pat_sub_fuel_refl_transport with
       (Ψsup := Ψsup) (Ψna := Ψna);
-      [ apply ad_pat_sub_fuel__univ_ghost_lg; [ exact HMti | exact HDp ]
+      [ apply ad_pat_sub_fuel__univ_ghost_lg; eassumption
       | exact HΨf | exact HΨa | exact Hftag ].
   - (* dot_univ_ghost congruence *)
     inversion HeqR; subst.
     apply ad_pat_sub_fuel__univ_ghost_lg; [ exact HMti | ].
-    eapply Hrec with (Ψr0 := Ψrep) (Ψsup0 := Ψsup) (Ψna0 := Ψna);
-      [ exact Hup | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-      | exact HΨf | exact HΨa | exact Hdisj
-      | clear - Hftag; simpl in Hftag; fsetdec | exact Hwfq ].
+    eapply Hrec with (Ψsup0 := Ψsup) (Ψna0 := Ψna); eauto.
   - (* univ_ghost_keepg: plain ∀◇ on the ghostier side *)
     inversion HeqR; subst.
     apply ad_pat_sub_fuel__univ_ghost_l; [ exact HMti | ].
-    eapply Hrec with (Ψr0 := Ψrep) (Ψsup0 := Ψsup) (Ψna0 := Ψna);
-      [ exact Hup | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-      | exact HΨf | exact HΨa | exact Hdisj
-      | clear - Hftag; simpl in Hftag; fsetdec | exact Hwfq ].
+    eapply Hrec with (Ψsup0 := Ψsup) (Ψna0 := Ψna); eauto.
   - (* ghost *)
     subst R.
     eapply ad_pat_sub_fuel_ghost_intro with
@@ -1376,19 +1345,12 @@ Proof.
       | clear - HΨf; fsetdec ].
   - (* univ_ghost_remove *)
     apply ad_pat_sub_fuel_wrap_univ_ghost.
-    eapply IHHup with (Ψna := Ψna);
-      [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-      | exact HMti | exact HDp | exact Hrec | exact HΨf | exact HΨa
-      | exact Hdisj | clear - Hftag; simpl in Hftag; fsetdec | exact Hwfq ].
+    eapply IHHup with (Ψfull := Ψfull) (Ψna := Ψna); eauto.
   - (* flex_l *)
     eapply ad_pat_sub_fuel_fold_flex with (τ := τ);
       [ | reflexivity | apply Hmon; exact H | exact Hwf ].
-    eapply IHHup with (Ψna := Ψna);
-      [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-      | exact HMti | exact HDp | exact Hrec | exact HΨf | exact HΨa
-      | exact Hdisj
-      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
-      | exact Hwfq ].
+    eapply IHHup with (Ψfull := Ψfull) (Ψna := Ψna); eauto.
+    pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec.
 Qed.
 
 (** [FlexMono], leaf-valid. *)
@@ -1431,7 +1393,7 @@ Proof.
     subst R.
     eapply ad_pat_sub_fuel_refl_transport with
       (Ψsup := Ψsup) (Ψna := Ψna);
-      [ eapply ad_pat_sub_fuel__flex_mono; [ exact Hbnd | exact HDp ]
+      [ eapply ad_pat_sub_fuel__flex_mono; eassumption
       | exact HΨf | exact HΨa | exact Hftag ].
   - (* ghost *)
     destruct NM.
@@ -1439,40 +1401,29 @@ Proof.
     + subst R.
       eapply ad_pat_sub_fuel_ghost_intro with
         (n := n) (Ψfull := Ψfull) (R := uskl_var_f αg);
-        [ eapply ad_pat_sub_fuel__flex_mono; [ exact Hbnd | exact HDp ]
+        [ eapply ad_pat_sub_fuel__flex_mono; eassumption
         | reflexivity | exact Hwf | exact H0 | exact Hwfq
         | clear - HΨf; fsetdec ].
   - (* univ_ghost_remove *)
     destruct NM.
     + exfalso. specialize (Hgf eq_refl). inversion Hgf.
     + apply ad_pat_sub_fuel_wrap_univ_ghost.
-      eapply IHHup with (Ψna := Ψna);
-        [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-        | exact Hbnd | exact HDp | exact Hrec | exact HΨf | exact HΨa
-        | exact Hdisj | clear - Hftag; simpl in Hftag; fsetdec | exact Hwfq
-        | intro He; discriminate He ].
+      eapply IHHup with (Ψfull := Ψfull) (Ψna := Ψna); eauto.
+      intro He; discriminate He.
   - (* flex_l: another defined variable on the ghostier side *)
     eapply ad_pat_sub_fuel_fold_flex with (τ := τ);
       [ | reflexivity | apply Hmon; exact H | exact Hwf ].
-    eapply IHHup with (Ψna := Ψna);
-      [ exact HeqR | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-      | exact Hbnd | exact HDp | exact Hrec | exact HΨf | exact HΨa
-      | exact Hdisj
-      | pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec
-      | exact Hwfq
-      | intro He;
-        apply mono_ptyp_to_uskl_syn_ghost_free;
-        eapply a_wf_aenv_binds_def_mono; [ exact Hwf | apply Hmon; exact H ] ].
+    eapply IHHup with (Ψfull := Ψfull) (Ψna := Ψna); eauto.
+    + pose proof (ftag_ptyp_to_uskl_syn τ) as Hpt; clear - Hpt; fsetdec.
+    + intro He. apply mono_ptyp_to_uskl_syn_ghost_free.
+      eapply a_wf_aenv_binds_def_mono; eauto.
   - (* flex_r: unfold to the definition — unique by wf *)
     inversion HeqR; subst.
     assert (Hb' : binds αg (abind_flex_mono_def τ) Θ')
       by (apply Hmon; exact H).
     assert (Hu : uniq Θ') by (apply a_wf_aenv_uniq; exact Hwf).
     pose proof (binds_unique _ _ _ _ _ Hb' Hbnd Hu) as He; inversion He; subst.
-    eapply Hrec with (Ψr0 := Ψrep) (Ψsup0 := Ψsup) (Ψna0 := Ψna);
-      [ exact Hup | exact Hwfb | exact HΨsup | exact Hmon | exact Hwf
-      | exact HΨf | exact HΨa | exact Hdisj | exact Hftag | exact Hwfq
-      | exact Hgf ].
+    eapply Hrec with (Ψsup0 := Ψsup) (Ψna0 := Ψna); eauto.
 Qed.
 
 (* ===================================================================== *)
@@ -1543,82 +1494,35 @@ Proof.
   - (* UnivGhostR (SK) *)
     assert (HΨe : Ψn [=] empty) by (clear - H HΨf; fsetdec).
     simpl in Hwfq. destruct (a_wf_pskl_univ_ghost_inv Hwfq) as [HgP HwbP].
-    eapply ad_pat_sub_fuel_ughost_r_transport;
-      [ exact Hup | exact Hwfb | exact HΨsup | exact Hftag
-      | exact Hmon | exact Hwf | exact H0 | exact H3
-      | exact H1 | exact H2 | exact HwbP | exact HΨe ].
+    eapply ad_pat_sub_fuel_ughost_r_transport with (1 := Hup); eauto.
   - (* Arrow *)
-    eapply ad_pat_sub_fuel_arrow_transport;
-      [ exact Hup | reflexivity | exact Hwfb | exact HΨsup | exact Hmon
-      | exact Hwf | exact H | exact HD | exact H0
-      | intros Θb0 Ψr0 Rg2' Ψsup0 Ψn0 Ψna0 h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11;
-        eapply IHHD;
-          [ exact h1 | exact h2 | exact h3 | exact h4 | exact h5
-          | exact h6 | exact h7 | exact h8 | exact h9 | exact h10 | exact h11 ]
-      | exact HΨf | exact HΨa | exact Hdisj | exact Hftag
-      | exact Hwfq | exact Hgf ].
+    eapply ad_pat_sub_fuel_arrow_transport with (1 := Hup); eauto.
   - (* ForallL tagged *)
-    eapply ad_pat_sub_fuel_forall_l_tagged_transport;
-      [ exact Hup | reflexivity | exact Hwfb | exact HΨsup | exact Hmon
+    eapply ad_pat_sub_fuel_forall_l_tagged_transport with (1 := Hup);
+      [ reflexivity | exact Hwfb | exact HΨsup | exact Hmon
       | exact Hwf | exact H | exact H0 | exact H1 | exact H2 | exact H3
-      | exact HD
-      | intros Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0 h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11;
-        eapply IHHD;
-          [ exact h1 | exact h2 | exact h3 | exact h4 | exact h5
-          | exact h6 | exact h7 | exact h8 | exact h9 | exact h10 | exact h11 ]
-      | exact HΨf | exact HΨa | exact Hdisj | exact Hftag
-      | exact Hwfq | exact Hgf ].
+      | exact HD | exact IHHD | exact HΨf | exact HΨa | exact Hdisj
+      | exact Hftag | exact Hwfq | exact Hgf ].
   - (* ForallL untagged *)
-    eapply ad_pat_sub_fuel_forall_l_untagged_transport;
-      [ exact Hup | reflexivity | exact Hwfb | exact HΨsup | exact Hmon
+    eapply ad_pat_sub_fuel_forall_l_untagged_transport with (1 := Hup);
+      [ reflexivity | exact Hwfb | exact HΨsup | exact Hmon
       | exact Hwf | exact H | exact H0 | exact H1 | exact H2 | exact H3
-      | exact HD
-      | intros Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0 h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11;
-        eapply IHHD;
-          [ exact h1 | exact h2 | exact h3 | exact h4 | exact h5
-          | exact h6 | exact h7 | exact h8 | exact h9 | exact h10 | exact h11 ]
-      | exact HΨf | exact HΨa | exact Hdisj | exact Hftag
-      | exact Hwfq | exact Hgf ].
+      | exact HD | exact IHHD | exact HΨf | exact HΨa | exact Hdisj
+      | exact Hftag | exact Hwfq | exact Hgf ].
   - (* Ghost (SK) *)
     assert (HΨe : Ψn [=] empty) by (clear - H HΨf; fsetdec).
-    eapply ad_pat_sub_fuel_ghost_transport;
-      [ exact Hup | reflexivity | exact Hwfb | exact Hmon | exact Hwf
-      | exact H0 | exact HΨe ].
+    eapply ad_pat_sub_fuel_ghost_transport with (1 := Hup); eauto.
   - (* GhostG (SK) *)
     assert (HΨe : Ψn [=] empty) by (clear - H HΨf; fsetdec).
-    eapply ad_pat_sub_fuel_ghostg_transport;
-      [ exact Hup | reflexivity | exact Hwfb | exact Hmon | exact Hwf
-      | exact H0 | exact HΨe ].
+    eapply ad_pat_sub_fuel_ghostg_transport with (1 := Hup); eauto.
   - (* UnivGhostL (SK) *)
-    eapply ad_pat_sub_fuel_ughost_l_transport;
-      [ exact Hup | reflexivity | exact Hwfb | exact HΨsup | exact Hmon
-      | exact Hwf | exact H | exact HD
-      | intros Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0 h1 h2 h3 h4 h5 h6 h7 h8 h9 h10;
-        eapply IHHD;
-          [ exact h1 | exact h2 | exact h3 | exact h4 | exact h5
-          | exact h6 | exact h7 | exact h8 | exact h9 | exact h10
-          | intro Habs; discriminate Habs ]
-      | exact HΨf | exact HΨa | exact Hdisj | exact Hftag | exact Hwfq ].
+    eapply ad_pat_sub_fuel_ughost_l_transport with (1 := Hup); eauto.
+    intros; eapply IHHD; eauto. intro Habs; discriminate Habs.
   - (* UnivGhostLG (SK) *)
-    eapply ad_pat_sub_fuel_ughost_lg_transport;
-      [ exact Hup | reflexivity | exact Hwfb | exact HΨsup | exact Hmon
-      | exact Hwf | exact H | exact HD
-      | intros Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0 h1 h2 h3 h4 h5 h6 h7 h8 h9 h10;
-        eapply IHHD;
-          [ exact h1 | exact h2 | exact h3 | exact h4 | exact h5
-          | exact h6 | exact h7 | exact h8 | exact h9 | exact h10
-          | intro Habs; discriminate Habs ]
-      | exact HΨf | exact HΨa | exact Hdisj | exact Hftag | exact Hwfq ].
+    eapply ad_pat_sub_fuel_ughost_lg_transport with (1 := Hup); eauto.
+    intros; eapply IHHD; eauto. intro Habs; discriminate Habs.
   - (* FlexMono *)
-    eapply ad_pat_sub_fuel_flex_mono_transport;
-      [ exact Hup | reflexivity | exact Hwfb | exact HΨsup | exact Hmon
-      | exact Hwf | exact H | exact HD
-      | intros Θb0 Ψr0 Rg'' Ψsup0 Ψn0 Ψna0 h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11;
-        eapply IHHD;
-          [ exact h1 | exact h2 | exact h3 | exact h4 | exact h5
-          | exact h6 | exact h7 | exact h8 | exact h9 | exact h10 | exact h11 ]
-      | exact HΨf | exact HΨa | exact Hdisj | exact Hftag
-      | exact Hwfq | exact Hgf ].
+    eapply ad_pat_sub_fuel_flex_mono_transport with (1 := Hup); eauto.
 Qed.
 
 (* ===================================================================== *)
