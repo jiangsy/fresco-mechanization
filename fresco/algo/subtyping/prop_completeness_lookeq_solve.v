@@ -776,6 +776,26 @@ Proof.
   apply mono_bskl_guarded, mono_ptyp_to_bskl_syn; exact Hmτ.
 Qed.
 
+(* …and through a metasubstitution and the inherited painting. *)
+Lemma ad_refine_syn_msubst_guarded_not_all : forall Θ0 Θ κ P0 Q,
+  {{ ⊢ Θ }}a -> κ ∷ Θ0 ⊑ Θ -> guarded_pskl P0 ->
+  {{ Θ ⨟ empty ⊢ᵣ pskl_to_bskl_inh (msubst_pskl κ P0) ⊳ Q }}ad ->
+  forall Q0, Q <> bskl_all_inh Q0 /\ Q <> bskl_all_syn Q0.
+Proof.
+  intros Θ0 Θ κ P0 Q HwfΘ Hκ Hg Href.
+  apply (ad_refine_syn_guarded_r_not_all HwfΘ Href).
+  apply guarded_pskl_to_bskl_inh; eapply guarded_pskl_msubst_inc; eassumption.
+Qed.
+
+(* A well-formed arrow skeleton is guarded. *)
+Lemma a_wf_pskl_arrow_guarded : forall Θ Δ P1 P2,
+  {{ Θ ⨟ Δ ⊢ₚₛ pskl_arrow P1 P2 }}a -> guarded_pskl (pskl_arrow P1 P2).
+Proof.
+  intros Θ Δ P1 P2 Hwf.
+  pose proof (a_wf_pskl_lc Hwf) as Hlc; inversion Hlc; subst.
+  apply guarded_pskl__arrow; assumption.
+Qed.
+
 (* The ∀-target form of [ad_refine_syn_guarded_r]: there the conclusion is
    absurd, so no lc side condition is needed. *)
 Lemma ad_refine_syn_guarded_r_all : forall Θ Δr Q Q',
@@ -2690,40 +2710,24 @@ Proof.
   { intros x Hx. destruct (Hrfr x Hx) as (Hb & _ & _).
     eapply binds_In; exact Hb. }
   assert (Hlcψa : lc_uskl ψa) by (apply is_dskl_lc; inversion Htags; assumption).
+  (* a GUARDED source refines to no ∀, so P0 is not guarded *)
+  assert (HP0ng : ~ guarded_pskl P0).
+  { intros Hg.
+    destruct Hrefs as [Href | Href].
+    - exact (proj1 (ad_refine_syn_msubst_guarded_not_all HwfΘ Hκ Hg Href Q0)
+                   eq_refl).
+    - exact (proj2 (ad_refine_syn_msubst_guarded_not_all HwfΘ Hκ Hg Href Q0)
+                   eq_refl). }
   destruct Hrefs as [HrefInh | HrefSyn].
   + (* C-ForallInh: Q = ∀ᴵ.Q0.  Refinement inversion gives P0 = ∀.P0' and the
        binder in Θ and Δ; dropping it from Δ ([ad_refine_syn_delta_mono])
        matches the consistency's; LE-ForallInh then needs a β-FREE
        constraint set, which the conclusion's ftv-bound supplies. *)
     destruct P0 as [ | n0 | β0 | P01 P02 | P0' | | P0s ].
-    * (* unit *)
-      exfalso.
-      assert (Hbad : guarded_bskl (bskl_all_inh Q0)).
-      { eapply ad_refine_syn_guarded_r_all;
-        [ exact HwfΘ | exact HrefInh | | eexists; (left + right); reflexivity ].
-        apply guarded_pskl_to_bskl_inh;
-          eapply guarded_pskl_msubst_inc; [ exact Hκ | apply guarded_pskl__unit ]. }
-      inversion Hbad.
+    * (* unit *) contradiction (HP0ng guarded_pskl__unit).
     * (* var_b *) inversion HwfP0.
-    * (* var_f *)
-      exfalso.
-      assert (Hbad : guarded_bskl (bskl_all_inh Q0)).
-      { eapply ad_refine_syn_guarded_r_all;
-        [ exact HwfΘ | exact HrefInh | | eexists; (left + right); reflexivity ].
-        apply guarded_pskl_to_bskl_inh;
-          eapply guarded_pskl_msubst_inc; [ exact Hκ | apply guarded_pskl__var ]. }
-      inversion Hbad.
-    * (* arrow *)
-      exfalso.
-      assert (HgP0 : guarded_pskl (pskl_arrow P01 P02)).
-      { pose proof (a_wf_pskl_lc HwfP0) as Hlc0; inversion Hlc0; subst.
-        apply guarded_pskl__arrow; assumption. }
-      assert (Hbad : guarded_bskl (bskl_all_inh Q0)).
-      { eapply ad_refine_syn_guarded_r_all;
-        [ exact HwfΘ | exact HrefInh | | eexists; (left + right); reflexivity ].
-        apply guarded_pskl_to_bskl_inh;
-          eapply guarded_pskl_msubst_inc; [ exact Hκ | exact HgP0 ]. }
-      inversion Hbad.
+    * (* var_f *) contradiction (HP0ng (guarded_pskl__var _)).
+    * (* arrow *) contradiction (HP0ng (a_wf_pskl_arrow_guarded HwfP0)).
     * (* P0 = ∀.P0' : LE-ForallInh *)
       cbn [msubst_pskl pskl_to_bskl_inh] in HrefInh.
       inversion HrefInh; subst.
@@ -2875,33 +2879,11 @@ Proof.
        fill rule's binder enters Θ — matching the consistency's. *)
     destruct P0 as [ | n0 | β0 | P01 P02 | P0s | | P0s ].
     * (* unit : guarded source ⇒ guarded target, but ∀ˢ is not guarded *)
-      exfalso.
-      assert (Hbad : guarded_bskl (bskl_all_syn Q0)).
-      { eapply ad_refine_syn_guarded_r_all;
-        [ exact HwfΘ | exact HrefSyn | | eexists; (left + right); reflexivity ].
-        apply guarded_pskl_to_bskl_inh;
-          eapply guarded_pskl_msubst_inc; [ exact Hκ | apply guarded_pskl__unit ]. }
-      inversion Hbad.
+      contradiction (HP0ng guarded_pskl__unit).
     * (* var_b : not well-formed *) inversion HwfP0.
-    * (* var_f : guarded *)
-      exfalso.
-      assert (Hbad : guarded_bskl (bskl_all_syn Q0)).
-      { eapply ad_refine_syn_guarded_r_all;
-        [ exact HwfΘ | exact HrefSyn | | eexists; (left + right); reflexivity ].
-        apply guarded_pskl_to_bskl_inh;
-          eapply guarded_pskl_msubst_inc; [ exact Hκ | apply guarded_pskl__var ]. }
-      inversion Hbad.
+    * (* var_f : guarded *) contradiction (HP0ng (guarded_pskl__var _)).
     * (* arrow : guarded *)
-      exfalso.
-      assert (HgP0 : guarded_pskl (pskl_arrow P01 P02)).
-      { pose proof (a_wf_pskl_lc HwfP0) as Hlc0; inversion Hlc0; subst.
-        apply guarded_pskl__arrow; assumption. }
-      assert (Hbad : guarded_bskl (bskl_all_syn Q0)).
-      { eapply ad_refine_syn_guarded_r_all;
-        [ exact HwfΘ | exact HrefSyn | | eexists; (left + right); reflexivity ].
-        apply guarded_pskl_to_bskl_inh;
-          eapply guarded_pskl_msubst_inc; [ exact Hκ | exact HgP0 ]. }
-      inversion Hbad.
+      contradiction (HP0ng (a_wf_pskl_arrow_guarded HwfP0)).
     * (* all_syn : an INHERITED ∀ source never refines to a SYNTHESISED ∀ *)
       exfalso. cbn [msubst_pskl pskl_to_bskl_inh] in HrefSyn.
       inversion HrefSyn.
@@ -4206,9 +4188,13 @@ Proof.
     assert (Hmeas0 : forall P0', size_pskl P0' <= size_pskl P0 ->
                      size_uskl R0 + size_pskl P0' <= n)
       by (intros P0' HP0'; cbn in Hn; lia).
-    destruct P0 as [ | n0 | β0 | P01 P02 | P0s | | P0s ].
-    + (* P0 = unit : GUARDED ⇒ the ghost is dropped ⇒ LE-UnivGhost2 *)
-      assert (HgP0 : guarded_pskl pskl_unit) by apply guarded_pskl__unit.
+    (* a GUARDED counterpart (the unit, a rigid variable, an arrow) makes the
+       target guarded, so the ghost is DROPPED (C-UnivGhost2) and the row is
+       LE-UnivGhost2 over the IH at the ∀◇-body *)
+    assert (Hdrop : guarded_pskl P0 -> flex_r_off Θ0 P0 ->
+              lookeq_solve_result Θ0 Θ Θw κ Δ Ψi Ψa ψa α
+                (pskl_univ_ghost (uskl_to_pskl R0)) P0 Pi L).
+    { intros HgP0 Hoff.
       assert (HgQ : guarded_bskl Q).
       { eapply ad_refine_syn_guarded_r;
         [ exact HwfΘ | exact Hrefine | | lc_tgt ].
@@ -4217,31 +4203,27 @@ Proof.
       destruct (ad_pat_consis_univ_ghost_guarded_unify HwfΘ Hconsis eq_refl
         (delta_def_fresh_empty Θ) Hrefine HgQ HlcQ)
         as (Q0 & Hc0 & Href0 & HgQ0 & HlcQ0).
-      edestruct (IHn NM Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψsub ψa Q0
-                   (uskl_to_pskl R0) pskl_unit Pi R0 α Θs Δρ Ψρ Rsub0
-                   (Hmeas0 pskl_unit ltac:(cbn; lia))
-                   HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0 HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
-                   HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 ltac:(lc_tgt) HwfSub0 Href0
-                   Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rsubst_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; solve_notin_auto
-                          | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
-        as (𝒞 & Ξc & Ξs & Pa & κc & κs
-              & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
-              & HwfPa & HwfΞ & HαΞ
-              & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
+      destruct (IHn NM Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψsub ψa Q0
+                  (uskl_to_pskl R0) P0 Pi R0 α Θs Δρ Ψρ Rsub0
+                  (Hmeas0 P0 (le_n _))
+                  HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0 HwfPi Hκ Hκw Hψaw HαΘ HαΘ0
+                  eq_refl HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2
+                  Hc0 HlcQ0 HwfSub0 Href0 Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw
+                  HΔρftv HΔρPi Hψaap L HL)
+        as (𝒞 & Ξc & Ξs & Pa & κc & κs & HLK & Hrest).
       exists 𝒞, Ξc, Ξs, Pa, κc, κs.
-      repeat split; try assumption.
-      apply a_lookeq__univ_ghost2;
-         [ exact HgP0
-         | apply flex_r_off_nonvar; intros ?; discriminate
-         | exact HLK ].
+      exact (conj (a_lookeq__univ_ghost2 HgP0 Hoff HLK) Hrest). }
+    destruct P0 as [ | n0 | β0 | P01 P02 | P0s | | P0s ].
+    + (* P0 = unit *)
+      apply Hdrop.
+      * apply guarded_pskl__unit.
+      * apply flex_r_off_nonvar; intros ?; discriminate.
     + (* P0 = var_b : not well-formed *) inversion HwfP0.
     + (* P0 = var_f β0 : ⭐ THE FlexR-PRIORITY SPLIT (2026-08-18).  At a RIGID
          β0 the row is still LE-UnivGhost2; at a FLEXIBLE one it is BARRED, and
          the case IS the arrow grid's flex-P0 one — which is why that block was
          factored out ([a_lookeq_flex_p0_complete]).  ⚙ The block never looked
          at the subject's shape, so it applies here verbatim. *)
-      assert (HgP0 : guarded_pskl (pskl_var_f β0)) by apply guarded_pskl__var.
       assert (Hbt0 : a_binds_tvar β0 Θ0).
       { inversion HwfP0; subst; assumption. }
       destruct Hbt0 as [Hrig | Hflx].
@@ -4252,69 +4234,20 @@ Proof.
           solve [ eassumption | reflexivity | right; exact Hflx
                 | assumption | cbn; assumption ]. }
       (* RIGID β0 — LE-UnivGhost2 survives, and the guard reads off rigidity *)
-      assert (HgQ : guarded_bskl Q).
-      { eapply ad_refine_syn_guarded_r;
-        [ exact HwfΘ | exact Hrefine | | lc_tgt ].
-        apply guarded_pskl_to_bskl_inh;
-          eapply guarded_pskl_msubst_inc; [ exact Hκ | exact HgP0 ]. }
-      destruct (ad_pat_consis_univ_ghost_guarded_unify HwfΘ Hconsis eq_refl
-        (delta_def_fresh_empty Θ) Hrefine HgQ HlcQ)
-        as (Q0 & Hc0 & Href0 & HgQ0 & HlcQ0).
-      edestruct (IHn NM Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψsub ψa Q0
-                   (uskl_to_pskl R0) (pskl_var_f β0) Pi R0 α Θs Δρ Ψρ Rsub0
-                   (Hmeas0 (pskl_var_f β0) ltac:(cbn; lia))
-                   HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0 HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
-                   HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 ltac:(lc_tgt) HwfSub0 Href0
-                   Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rsubst_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; solve_notin_auto
-                          | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
-        as (𝒞 & Ξc & Ξs & Pa & κc & κs
-              & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
-              & HwfPa & HwfΞ & HαΞ
-              & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
-      exists 𝒞, Ξc, Ξs, Pa, κc, κs.
-      repeat split; try assumption.
-      apply a_lookeq__univ_ghost2;
-        [ exact HgP0
-        | apply flex_r_off_rigid; intro Hf;
+      apply Hdrop.
+      * apply guarded_pskl__var.
+      * apply flex_r_off_rigid; intro Hf;
           pose proof (a_wf_aenv_uniq HwfΘ0) as Huq;
           destruct Hf as [Hb2 | [τx Hb2]];
           [ assert (Hc : abind_tvar = abind_flex_mono)
               by (eapply binds_unique; [ exact Hrig | exact Hb2 | exact Huq ])
           | assert (Hc : abind_tvar = abind_flex_mono_def τx)
               by (eapply binds_unique; [ exact Hrig | exact Hb2 | exact Huq ]) ];
-          discriminate Hc
-        | exact HLK ].
-    + (* P0 = arrow P01 P02 : GUARDED ⇒ LE-UnivGhost2 *)
-      assert (HgP0 : guarded_pskl (pskl_arrow P01 P02)).
-      { pose proof (a_wf_pskl_lc HwfP0) as Hlc0; inversion Hlc0; subst.
-        apply guarded_pskl__arrow; assumption. }
-      assert (HgQ : guarded_bskl Q).
-      { eapply ad_refine_syn_guarded_r;
-        [ exact HwfΘ | exact Hrefine | | lc_tgt ].
-        apply guarded_pskl_to_bskl_inh;
-          eapply guarded_pskl_msubst_inc; [ exact Hκ | exact HgP0 ]. }
-      destruct (ad_pat_consis_univ_ghost_guarded_unify HwfΘ Hconsis eq_refl
-        (delta_def_fresh_empty Θ) Hrefine HgQ HlcQ)
-        as (Q0 & Hc0 & Href0 & HgQ0 & HlcQ0).
-      edestruct (IHn NM Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψsub ψa Q0
-                   (uskl_to_pskl R0) (pskl_arrow P01 P02) Pi R0 α Θs Δρ Ψρ Rsub0
-                   (Hmeas0 (pskl_arrow P01 P02) ltac:(cbn; lia))
-                   HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0 HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
-                   HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 ltac:(lc_tgt) HwfSub0 Href0
-                   Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rsubst_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; solve_notin_auto
-                          | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
-        as (𝒞 & Ξc & Ξs & Pa & κc & κs
-              & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
-              & HwfPa & HwfΞ & HαΞ
-              & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
-      exists 𝒞, Ξc, Ξs, Pa, κc, κs.
-      repeat split; try assumption.
-      apply a_lookeq__univ_ghost2;
-         [ exact HgP0
-         | apply flex_r_off_nonvar; intros ?; discriminate
-         | exact HLK ].
+          discriminate Hc.
+    + (* P0 = arrow P01 P02 *)
+      apply Hdrop.
+      * exact (a_wf_pskl_arrow_guarded HwfP0).
+      * apply flex_r_off_nonvar; intros ?; discriminate.
     + (* P0 = ∀.P0' : C-UnivGhost1 → LE-UnivGhost1.  The ∀-binder kit applies:
          the refinement's binder is dropped from Δ by
          [ad_refine_syn_delta_mono], the IH runs at β,Θ / β,Θ0 with R'
