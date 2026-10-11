@@ -210,18 +210,9 @@ Proof.
     replace (ptyp_to_pskl τ) with (uskl_to_pskl (ptyp_to_uskl_syn τ))
       by (apply uskl_to_pskl_ptyp_to_uskl_syn).
     eapply IHad_partial_precise; [ exact Hwf | | ].
-    + (* build at concrete [empty] FIRST (no evar), then re-tag to Ψ [=] empty
-         — psi_cong with an evar source would make [fsetdec] hang. *)
-      assert (Htagpaint : a_tags_sort NM empty (ptyp_to_uskl_syn τ)).
-      { destruct NM.
-        - apply a_tags_sort__ty.
-          + exact (mono_ptyp_to_uskl_syn_is_dskl Hmono).
-          + apply (mono_ptyp_to_uskl_syn_tags Hmono). reflexivity.
-          + exact (mono_ptyp_to_uskl_syn_ghost_free Hmono).
-        - apply a_tags_sort__sk.
-          + exact (mono_ptyp_to_uskl_syn_is_dskl Hmono).
-          + apply (mono_ptyp_to_uskl_syn_tags Hmono). reflexivity. }
-      eapply a_tags_sort_psi_cong; [ exact Htagpaint | clear - HΨ; fsetdec ].
+    + destruct NM; constructor;
+        auto using mono_ptyp_to_uskl_syn_is_dskl, mono_ptyp_to_uskl_syn_tags,
+                   mono_ptyp_to_uskl_syn_ghost_free.
     + rewrite uskl_to_pskl_ptyp_to_uskl_syn.
       apply a_wf_pskl_of_ptyp_vis.
       * eapply a_wf_ptyp_lc; exact Hwfτ.
