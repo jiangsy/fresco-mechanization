@@ -566,23 +566,7 @@ Proof.
   assert (HcΘ : ftvar_in_aenv Θ0 [<=] S0) by (clear - Hcov; fsetdec).
   destruct (push_fresh_invariants Hu HΘ HD HcΘ lc_abind_tvar
               (entry_def_mono_tvar _)) as (Hu1 & HΘ1 & HD1).
-  assert (Hcov1 : ftvar_in_aenv ((supply_fresh S0 ~ abind_tvar) ++ Θ0)
-                  ∪ ftvar_in_pskl (ptyp_to_pskl
-                       (open_ptyp_wrt_ptyp A0
-                          (ptyp_var_f (supply_fresh S0))))
-                  ∪ fvar_in_exp e
-                  ∪ ftvar_in_exp e
-                  [<=] add (supply_fresh S0) S0).
-  { pose proof (ftvar_ptyp_to_pskl (open_ptyp_wrt_ptyp A0
-                  (ptyp_var_f (supply_fresh S0)))) as Hpa.
-    pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0
-                  (ptyp_var_f (supply_fresh S0))) as Hup.
-    simpl in Hup.
-    assert (Hcpat : ftvar_in_pskl (ptyp_to_pskl
-              (open_ptyp_wrt_ptyp A0 (ptyp_var_f (supply_fresh S0))))
-            [<=] add (supply_fresh S0) S0)
-      by (clear - Hpa Hup HcA0; fsetdec).
-    clear - Hcov Hcpat. simpl in *. fsetdec. }
+  pose proof (cover_open_tvar (supply_fresh S0) Hcov) as Hcov1.
   destruct (Hstep h Hlcop He HΘ1 HD1 Hu1 Hcov1 _ _ _ Db1)
     as (r0 & ps2 & Hrun & Hav2 & HS2 & HT2 & HQ2).
   destruct (e_typing_impl _ _ _ _ _ h) as [[r Hr] | ] eqn:Hcall;

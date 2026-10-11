@@ -235,23 +235,12 @@ Proof.
       simpl. clear - Hqb Hcov Hgs Hgc Hgb HAe. fsetdec.
 
   - (* AT-AbsCheck (step) *)
+    pose proof (cover_open_tvar α Hcov) as Hcov'.
     simpl in Hcov.
     pose proof (dom_subset_ftvar_in_aenv Θ0) as Hd0.
     assert (Hαd : α `notin` dom Θ0) by (clear - Hd0 Hcov H3; fsetdec).
     assert (Hu' : uniq ((α ~ abind_tvar) ++ Θ0))
       by (clear - Hu Hαd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0)
-                      ∪ ftvar_in_pskl
-                          (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
-                      ∪ fvar_in_exp (exp_abs e) ∪ ftvar_in_exp (exp_abs e)
-                      [<=] add α S0).
-    { pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0 (ptyp_var_f α))
-        as Hup.
-      pose proof (ftvar_ptyp_to_pskl
-                    (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) as He1.
-      pose proof (ftvar_ptyp_to_pskl (ptyp_all A0)) as He2.
-      simpl in Hup, He2, Hcov |- *.
-      clear - Hup He1 He2 Hcov. env_simp. fsetdec. }
     destruct (IHe_typing Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
     assert (HαΞ : α `notin` dom Ξ)
       by (clear - Hub; simpl_env in *; solve_uniq).
@@ -301,24 +290,12 @@ Proof.
       simpl. clear - Hqs Hqb Hgb HeA. fsetdec.
 
   - (* AT-AbsAnnoCheck (step) *)
+    pose proof (cover_open_tvar α Hcov) as Hcov'.
     simpl in Hcov.
     pose proof (dom_subset_ftvar_in_aenv Θ0) as Hd0.
     assert (Hαd : α `notin` dom Θ0) by (clear - Hd0 Hcov H3; fsetdec).
     assert (Hu' : uniq ((α ~ abind_tvar) ++ Θ0))
       by (clear - Hu Hαd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0)
-                      ∪ ftvar_in_pskl
-                          (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
-                      ∪ fvar_in_exp (exp_abs_anno Aan e)
-                      ∪ ftvar_in_exp (exp_abs_anno Aan e)
-                      [<=] add α S0).
-    { pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0 (ptyp_var_f α))
-        as Hup.
-      pose proof (ftvar_ptyp_to_pskl
-                    (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) as He1.
-      pose proof (ftvar_ptyp_to_pskl (ptyp_all A0)) as He2.
-      simpl in Hup, He2, Hcov |- *.
-      clear - Hup He1 He2 Hcov. env_simp. fsetdec. }
     destruct (IHe_typing Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
     assert (HαΞ : α `notin` dom Ξ)
       by (clear - Hub; simpl_env in *; solve_uniq).

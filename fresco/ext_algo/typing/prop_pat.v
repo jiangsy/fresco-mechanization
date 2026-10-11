@@ -182,8 +182,26 @@ Proof.
   simpl in *. fsetdec.
 Qed.
 
+(** The same at a ∀-peeling CHECK row, which pushes a TYPE variable and
+    opens the pattern rather than the body. *)
+Lemma cover_open_tvar : forall (S : atoms) (Θ : aenv) A0 e α,
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl (ptyp_to_pskl (ptyp_all A0))
+    ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S ->
+  ftvar_in_aenv ((α ~ abind_tvar) ++ Θ)
+    ∪ ftvar_in_pskl (ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
+    ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] add α S.
+Proof.
+  intros * H.
+  pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0 (ptyp_var_f α)) as Hup.
+  pose proof (ftvar_ptyp_to_pskl (open_ptyp_wrt_ptyp A0 (ptyp_var_f α)))
+    as He1.
+  pose proof (ftvar_ptyp_to_pskl (ptyp_all A0)) as He2.
+  simpl in *. fsetdec.
+Qed.
+
 Arguments cover_open_body_skl {S Θ P0 P e} x _.
 Arguments cover_open_body_typ {S Θ P0 A e} x _.
+Arguments cover_open_tvar {S Θ A0 e} α _.
 
 (* ===================================================================== *)
 (*  §3  ⭐ THE [e_pat] BRIDGE                                              *)
