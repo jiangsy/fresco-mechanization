@@ -733,6 +733,16 @@ Proof.
   apply swaps_atoms_cong. symmetry; exact HSt.
 Qed.
 
+(** The same transport along a chain that runs [ps1] and then [ps2]: the
+    shape of every threading row's supply obligation. *)
+Lemma swaps_atoms_app_transport {ps1 ps2} {S St S' : atoms} :
+  St [=] swaps_atoms ps1 S -> swaps_atoms ps2 St [=] S' ->
+  swaps_atoms (ps1 ++ ps2) S [=] S'.
+Proof.
+  intros HSt HS. rewrite swaps_atoms_app, <- HS.
+  apply swaps_atoms_cong. symmetry; exact HSt.
+Qed.
+
 (** The recursive chain fixes the new opener, so closing commutes with
     prefixing its alignment swap. *)
 Lemma swaps_pskl_close_binder : forall α β ps S P Q,

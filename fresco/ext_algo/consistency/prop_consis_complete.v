@@ -293,12 +293,8 @@ Proof.
       by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2);
           clear - Hdom1' HftA1' Hcov Hgr1'; fsetdec).
     exists (ps1 ++ ps2). repeat apply conj.
-    + intros a0 b0 Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
-      * exact (Hav1 a0 b0 Hin).
-      * destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
-        split; clear - Ha0 Hb0 Hgr1'; fsetdec.
-    + rewrite swaps_atoms_app. rewrite <- HS2.
-      apply swaps_atoms_cong. symmetry. exact HS2t.
+    + apply (swaps_dodge_app Hav1 Hav2); clear - Hgr1'; fsetdec.
+    + exact (swaps_atoms_app_transport HS2t HS2).
     + rewrite swaps_aenv_app, !swaps_aenv_app_dist, HX1, HX2, HX1'.
       reflexivity.
     + rewrite swaps_ptyp_app, !swaps_ptyp_arrow, HA1, HA2, HA1'.
