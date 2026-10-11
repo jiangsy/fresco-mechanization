@@ -1343,15 +1343,21 @@ Proof.
   intros Δ Θ α Hfaf [Hb | [τ Hb]]; eapply faf_flex_notin; eauto; discriminate.
 Qed.
 
+(** A flexible variable is bound. *)
+Lemma a_flex_tvar_binds_tvar : forall Θ α,
+  a_flex_tvar Θ α -> a_binds_tvar α Θ.
+Proof.
+  intros Θ α [Hb | [τ Hb]]; [ right; left | right; right; exists τ ]; exact Hb.
+Qed.
+
 (** A flexible variable of the input stays bound in an increased context. *)
 Lemma a_isub_flex_binds_tvar : forall Θ Θ' α,
   Θ ⊴ Θ' ->
   a_flex_tvar Θ α ->
   a_binds_tvar α Θ'.
 Proof.
-  intros Θ Θ' α Hle Hf. eapply a_isub_binds_tvarish; [ exact Hle | ].
-  destruct Hf as [Hb | [τ Hb]]; [ right; left | right; right; exists τ ];
-    exact Hb.
+  intros Θ Θ' α Hle Hf.
+  exact (a_isub_binds_tvarish Hle (a_flex_tvar_binds_tvar Hf)).
 Qed.
 
 (** The subjects of a variable unification are flexible. *)
@@ -2693,10 +2699,7 @@ Proof.
         | exact Hτm
         | apply pskl_to_uskl_subst ]. }
     (* (d) fold the definition on the JOIN side (subsidiary induction #2) *)
-    assert (Hbα1 : a_binds_tvar α ((β ~ abind_flex_mono_def τ) ++ Θ1)).
-    { eapply a_isub_binds_tvarish; [ exact HleF | ].
-      destruct Hfl as [Hb | [τ' Hb]];
-        [ right; left | right; right; exists τ' ]; exact Hb. }
+    pose proof (a_isub_flex_binds_tvar HleF Hfl) as Hbα1.
     assert (Heqα : {{ ((β ~ abind_flex_mono_def τ) ++ Θ1) ⊢
                      (ptyp_var_f α) ≡ᵗ C }}a).
     { eapply a_tyequiv__trans.
@@ -2921,9 +2924,7 @@ Proof.
     intros Θ0 α β Hne Hfβ Hwf.
     assert (Hαd : α `notin` dom Θ0) by (inversion Hwf; auto).
     assert (Hwf0 : {{ ⊢ Θ0 }}a) by (inversion Hwf; auto).
-    assert (Hbβ : a_binds_tvar β Θ0)
-      by (destruct Hfβ as [Hb | [τ Hb]];
-          [ right; left | right; right; exists τ ]; exact Hb).
+    pose proof (a_flex_tvar_binds_tvar Hfβ) as Hbβ.
     assert (Hβd : β `in` dom Θ0)
       by (destruct Hfβ as [Hb | [τ Hb]]; apply binds_In in Hb; auto).
     split.
@@ -2969,9 +2970,7 @@ Proof.
     intros Θ0 α β Hne Hfα Hwf.
     assert (Hβd : β `notin` dom Θ0) by (inversion Hwf; auto).
     assert (Hwf0 : {{ ⊢ Θ0 }}a) by (inversion Hwf; auto).
-    assert (Hbα : a_binds_tvar α Θ0)
-      by (destruct Hfα as [Hb | [τ Hb]];
-          [ right; left | right; right; exists τ ]; exact Hb).
+    pose proof (a_flex_tvar_binds_tvar Hfα) as Hbα.
     assert (Hαd : α `in` dom Θ0)
       by (destruct Hfα as [Hb | [τ Hb]]; apply binds_In in Hb; auto).
     split.
@@ -3748,9 +3747,7 @@ Lemma a_assign_subject_binds : forall Θ0 Ξ α P Θ1,
 Proof.
   intros * Ha Hdecl Hwf HwfP.
   destruct (a_assign_sound Ha Hdecl Hwf HwfP) as [Hle _].
-  eapply a_isub_binds_tvarish; [ exact Hle | ].
-  destruct (a_assign_subject_flex Ha) as [Hb | [τ Hb]];
-    [ right; left | right; right; exists τ ]; exact Hb.
+  exact (a_isub_flex_binds_tvar Hle (a_assign_subject_flex Ha)).
 Qed.
 
 (** Part 2, packaged (thm:sound-consistency part 2, paper reading). *)
