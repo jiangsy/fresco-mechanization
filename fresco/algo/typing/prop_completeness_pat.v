@@ -1972,6 +1972,38 @@ Qed.
 (*  ([a_inc_binds_tvar_rev]) where the atom is already flexible.          *)
 (* ===================================================================== *)
 
+(** A head entry that is not flexible is not the flexibility witness. *)
+Lemma a_flex_tvar_strip_nonflex_head : forall c (b : abind) Θ α,
+  a_flex_tvar ((c ~ b) ++ Θ) α -> ~ a_suffix_binding b -> a_flex_tvar Θ α.
+Proof.
+  intros c b Θ α [Hb | [τ Hb]] Hnb;
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'].
+  - subst. exfalso. apply Hnb. constructor.
+  - left. exact Hb'.
+  - subst. exfalso. apply Hnb. constructor.
+  - right. exists τ. exact Hb'.
+Qed.
+
+(** The image [var α] of an identity entry for a fresh flexible [α] is
+    well-formed only at a flexible entry: a RIGID one would have had to come
+    from the source, where [α] is not bound. *)
+Lemma a_inc_var_image_flex : forall Θ κ Θ' α,
+  κ ∷ Θ ⊑ Θ' ->
+  α `notin` dom Θ ->
+  a_wf_ptyp Θ' (ptyp_var_f α) ->
+  a_flex_tvar Θ' α.
+Proof.
+  intros Θ κ Θ' α Hinc Hfr Hwfv.
+  inversion Hwfv; subst.
+  match goal with
+  | Htv : a_binds_tvar _ _ |- _ => destruct Htv as [Hb1 | [Hb1 | [τ1 Hb1]]]
+  end.
+  - exfalso. apply Hfr. eapply binds_In.
+    eapply a_inc_binds_tvar_rev; [ exact Hinc | exact Hb1 ].
+  - left. exact Hb1.
+  - right. exists τ1. exact Hb1.
+Qed.
+
 Lemma a_inc_id_flex_preserve : forall Θ0 κ Θ1 α,
   κ ∷ Θ0 ⊑ Θ1 ->
   is_id_msubst κ ->
@@ -1982,101 +2014,35 @@ Proof.
   intros Θ0 κ Θ1 α Hinc; induction Hinc; intros Hid Hwf Hflex.
   - (* empty *)
     exfalso. destruct Hflex as [Hb | [τ' Hb]]; inversion Hb.
-  - (* flex declaration *)
+  - (* flex declaration: the peeled head's image [var α] is wf in the target *)
     destruct (is_id_msubst_inv Hid) as [-> Hid'].
     inversion Hwf; subst.
-    destruct Hflex as [Hb | [τ' Hb]];
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'];
-      try discriminate Heq;
-      try solve [ apply IHHinc;
-                  [ assumption | assumption
-                  | unfold a_flex_tvar;
-                    first [ left; exact Hb' | right; eexists; exact Hb' ] ] ].
-    (* the peeled head itself: its image [var α] is wf in the target *)
-    match goal with
-    | Hwfv : a_wf_ptyp ?T (ptyp_var_f ?a) |- a_flex_tvar ?T ?a =>
-        inversion Hwfv; subst;
-        match goal with
-        | Htv : a_binds_tvar a T |- _ =>
-            destruct Htv as [Hb1 | [Hb1 | [τ1 Hb1]]];
-              [ exfalso;
-                match goal with
-                | Hincr : _ ∷ _ ⊑ T |- _ =>
-                    pose proof (@a_inc_binds_tvar_rev _ _ _ _ Hincr Hb1) as Hb0;
-                    apply binds_In in Hb0;
-                    match goal with
-                    | Hfr : a `notin` dom _ |- _ => clear - Hfr Hb0; fsetdec
-                    end
-                end
-              | unfold a_flex_tvar; left; exact Hb1
-              | unfold a_flex_tvar; right; exists τ1; exact Hb1 ]
-        end
-    end.
+    destruct (α == α0) as [-> | Hne].
+    + eapply a_inc_var_image_flex; eassumption.
+    + apply IHHinc; [ exact Hid' | assumption | ].
+      exact (proj1 (a_flex_tvar_cons_other _ _ Hne) Hflex).
   - (* flex definition *)
     destruct (is_id_msubst_inv Hid) as [-> Hid'].
     inversion Hwf; subst.
-    destruct Hflex as [Hb | [τ' Hb]];
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'];
-      try discriminate Heq;
-      try solve [ apply IHHinc;
-                  [ assumption | assumption
-                  | unfold a_flex_tvar;
-                    first [ left; exact Hb' | right; eexists; exact Hb' ] ] ].
-    match goal with
-    | Hwfv : a_wf_ptyp ?T (ptyp_var_f ?a) |- a_flex_tvar ?T ?a =>
-        inversion Hwfv; subst;
-        match goal with
-        | Htv : a_binds_tvar a T |- _ =>
-            destruct Htv as [Hb1 | [Hb1 | [τ1 Hb1]]];
-              [ exfalso;
-                match goal with
-                | Hincr : _ ∷ _ ⊑ T |- _ =>
-                    pose proof (@a_inc_binds_tvar_rev _ _ _ _ Hincr Hb1) as Hb0;
-                    apply binds_In in Hb0;
-                    match goal with
-                    | Hfr : a `notin` dom _ |- _ => clear - Hfr Hb0; fsetdec
-                    end
-                end
-              | unfold a_flex_tvar; left; exact Hb1
-              | unfold a_flex_tvar; right; exists τ1; exact Hb1 ]
-        end
-    end.
+    destruct (α == α0) as [-> | Hne].
+    + eapply a_inc_var_image_flex; eassumption.
+    + apply IHHinc; [ exact Hid' | assumption | ].
+      exact (proj1 (a_flex_tvar_cons_other _ _ Hne) Hflex).
   - (* type term entry *)
     inversion Hwf; subst.
-    assert (Hflex' : a_flex_tvar Θ α).
-    { unfold a_flex_tvar;
-        destruct Hflex as [Hb | [τ' Hb]];
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'];
-        try discriminate Heq;
-        [ left; exact Hb' | right; exists τ'; exact Hb' ]. }
-    destruct (IHHinc Hid ltac:(assumption) Hflex') as [Hb1 | [τ1 Hb1]];
-      unfold a_flex_tvar;
-      [ left | right; exists τ1 ];
-      apply binds_app_3; apply binds_cons_3; exact Hb1.
+    do 2 apply a_flex_tvar_weaken_app.
+    apply IHHinc; [ exact Hid | assumption | ].
+    apply (a_flex_tvar_strip_nonflex_head Hflex). intros Hs; inversion Hs.
   - (* skeleton term entry *)
     inversion Hwf; subst.
-    assert (Hflex' : a_flex_tvar Θ α).
-    { unfold a_flex_tvar;
-        destruct Hflex as [Hb | [τ' Hb]];
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'];
-        try discriminate Heq;
-        [ left; exact Hb' | right; exists τ'; exact Hb' ]. }
-    destruct (IHHinc Hid ltac:(assumption) Hflex') as [Hb1 | [τ1 Hb1]];
-      unfold a_flex_tvar;
-      [ left | right; exists τ1 ];
-      apply binds_app_3; apply binds_cons_3; exact Hb1.
+    do 2 apply a_flex_tvar_weaken_app.
+    apply IHHinc; [ exact Hid | assumption | ].
+    apply (a_flex_tvar_strip_nonflex_head Hflex). intros Hs; inversion Hs.
   - (* rigid entry *)
     inversion Hwf; subst.
-    assert (Hflex' : a_flex_tvar Θ α).
-    { unfold a_flex_tvar;
-        destruct Hflex as [Hb | [τ' Hb]];
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> Heq] | Hb'];
-        try discriminate Heq;
-        [ left; exact Hb' | right; exists τ'; exact Hb' ]. }
-    destruct (IHHinc Hid ltac:(assumption) Hflex') as [Hb1 | [τ1 Hb1]];
-      unfold a_flex_tvar;
-      [ left | right; exists τ1 ];
-      apply binds_app_3; apply binds_cons_3; exact Hb1.
+    do 2 apply a_flex_tvar_weaken_app.
+    apply IHHinc; [ exact Hid | assumption | ].
+    apply (a_flex_tvar_strip_nonflex_head Hflex). intros Hs; inversion Hs.
 Qed.
 
 (** [a_inc_equiv_glue] when both first-stage increases are identities: the
