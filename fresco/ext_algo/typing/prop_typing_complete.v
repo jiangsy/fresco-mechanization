@@ -1076,11 +1076,8 @@ Proof.
         by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Havg);
             clear - Hpqs; fsetdec);
       assert (Hfixe1 : swaps_exp (ps1 ++ psg) e1 = e1)
-        by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-            apply in_app_or in Hin; destruct Hin as [Hin | Hin];
-            [ destruct (Hav1 a0 b0 Hin) as [Hka Hkb]
-            | destruct (Havg a0 b0 Hin) as [Hka Hkb] ];
-            split; clear - Hka Hkb Hcov Hgrs; simpl in *; fsetdec);
+        by (apply swaps_exp_fresh_id, (swaps_dodge_app Hav1 Havg);
+            clear - Hcov Hgrs; simpl in *; fsetdec);
       destruct (e_typing_swaps (ps1 ++ psg) Db
                   (S0' := add (swaps_atom psg (swaps_atom ps1 xd))
                             (gr_supply rg))) as [Sd1 [HSd1 Db1]];
@@ -1399,17 +1396,11 @@ Proof.
                 | pose proof (e_consis_supply_grows Dc) as Hgc0;
                   clear - Hxd Hgrd Hgc0; fsetdec ] ]).
         assert (Hfixe1 : swaps_exp (ps1 ++ psc) e1 = e1)
-          by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-              apply in_app_or in Hin; destruct Hin as [Hin | Hin];
-              [ destruct (Hav1 a0 b0 Hin) as [Hka Hkb]
-              | destruct (Havc a0 b0 Hin) as [Hka Hkb] ];
-              split; clear - Hka Hkb Hcov Hgrs; simpl in *; fsetdec).
+          by (apply swaps_exp_fresh_id, (swaps_dodge_app Hav1 Havc);
+              clear - Hcov Hgrs; simpl in *; fsetdec).
         assert (HfixA2 : swaps_ptyp (ps1 ++ psc) A = A)
-          by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-              apply in_app_or in Hin; destruct Hin as [Hin | Hin];
-              [ destruct (Hav1 a0 b0 Hin) as [Hka Hkb]
-              | destruct (Havc a0 b0 Hin) as [Hka Hkb] ];
-              split; clear - Hka Hkb Hcov Hgrs; simpl in *; fsetdec).
+          by (apply swaps_ptyp_fresh_id, (swaps_dodge_app Hav1 Havc);
+              clear - Hcov Hgrs; simpl in *; fsetdec).
         assert (HfixB1 : swaps_ptyp psc (swaps_ptyp ps1 B)
                          = swaps_ptyp ps1 B)
           by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Havc);
@@ -1665,17 +1656,11 @@ Proof.
               | pose proof (e_consis_supply_grows Dc) as Hgc0;
                 clear - Hxd Hgrd Hgc0; fsetdec ] ]);
       assert (Hfixe1 : swaps_exp (ps1 ++ psc) e1 = e1)
-        by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-            apply in_app_or in Hin; destruct Hin as [Hin | Hin];
-            [ destruct (Hav1 a0 b0 Hin) as [Hka Hkb]
-            | destruct (Havc a0 b0 Hin) as [Hka Hkb] ];
-            split; clear - Hka Hkb Hcov Hgrs; simpl in *; fsetdec);
+        by (apply swaps_exp_fresh_id, (swaps_dodge_app Hav1 Havc);
+            clear - Hcov Hgrs; simpl in *; fsetdec);
       assert (HfixA2 : swaps_ptyp (ps1 ++ psc) A = A)
-        by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-            apply in_app_or in Hin; destruct Hin as [Hin | Hin];
-            [ destruct (Hav1 a0 b0 Hin) as [Hka Hkb]
-            | destruct (Havc a0 b0 Hin) as [Hka Hkb] ];
-            split; clear - Hka Hkb Hcov Hgrs; simpl in *; fsetdec);
+        by (apply swaps_ptyp_fresh_id, (swaps_dodge_app Hav1 Havc);
+            clear - Hcov Hgrs; simpl in *; fsetdec);
       assert (HfixQ0 : swaps_pskl psc (sp_cod rs) = sp_cod rs)
         by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Havc);
             clear - Hpqs; fsetdec);
@@ -1954,10 +1939,7 @@ Proof.
     eexists; exists (ps1 ++ ps2).
     split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
     repeat apply conj.
-    + intros a0 b0 Hin. apply in_app_or in Hin.
-      destruct Hin as [Hin | Hin]; [ exact (Hav1 _ _ Hin) | ].
-      destruct (Hav2 _ _ Hin) as [Hka Hkb]. split;
-        clear - Hka Hkb Hgr1; fsetdec.
+    + apply (swaps_dodge_app Hav1 Hav2); clear - Hgr1; fsetdec.
     + cbn [ty_supply]. rewrite swaps_atoms_app. rewrite <- HS2.
       apply swaps_atoms_cong. symmetry. exact HSd2.
     + cbn [ty_ctx]. rewrite swaps_aenv_app. exact HT2.
@@ -2020,10 +2002,7 @@ Proof.
     eexists; exists (ps1 ++ ps2).
     split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
     repeat apply conj.
-    + intros a0 b0 Hin. apply in_app_or in Hin.
-      destruct Hin as [Hin | Hin]; [ exact (Hav1 _ _ Hin) | ].
-      destruct (Hav2 _ _ Hin) as [Hka Hkb]. split;
-        clear - Hka Hkb Hgr1; fsetdec.
+    + apply (swaps_dodge_app Hav1 Hav2); clear - Hgr1; fsetdec.
     + cbn [ty_supply]. rewrite swaps_atoms_app. rewrite <- HS2.
       apply swaps_atoms_cong. symmetry. exact HSc1.
     + cbn [ty_ctx]. rewrite swaps_aenv_app. exact HT2.

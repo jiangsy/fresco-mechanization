@@ -1314,9 +1314,7 @@ Proof.
         exists r, (ps0 ++ ps).
         split; [ reflexivity | ].
         repeat apply conj.
-        -- intros a0 b0 Hin. apply in_app_or in Hin.
-          destruct Hin as [Hin | Hin]; [ exact (Hav0 _ _ Hin) | ].
-          destruct (Hav _ _ Hin) as [Ha0 Hb0]. split; fsetdec.
+        -- apply (swaps_dodge_app Hav0 Hav); fsetdec.
         -- rewrite swaps_atoms_app. rewrite <- HS.
           apply swaps_atoms_cong. symmetry. exact HS0.
         -- rewrite swaps_aenv_app. exact HT.
