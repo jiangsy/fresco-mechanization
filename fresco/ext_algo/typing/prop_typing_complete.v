@@ -926,12 +926,11 @@ Proof.
               symmetry; exact HSg1
             | eapply swaps_notin_eq; [ reflexivity | exact Hxd ] ]);
       assert (Hx10 : swaps_atom psg (swaps_atom ps1 xd) `notin` S0)
-        by (apply swaps_atom_dodge with (S := S0);
-            [ apply (swaps_dodge_sub Havg); clear - Hgrs; fsetdec
-            | apply swaps_atom_dodge with (S := S0);
-              [ exact Hav1
-              | pose proof (e_guess_mono_supply_grows Hg) as Hgg;
-                clear - Hxd Hgrd Hgg; fsetdec ] ]);
+        by (rewrite <- swaps_atom_app;
+            apply (@swaps_atom_dodge _ _ _
+                     (swaps_dodge_app Hav1 Havg (reflexivity _) Hgrs));
+            pose proof (e_guess_mono_supply_grows Hg) as Hgg;
+            clear - Hxd Hgrd Hgg; fsetdec);
       assert (HfixCtx1 : swaps_aenv psg (sp_ctx rs) = sp_ctx rs)
         by (apply swaps_aenv_fresh_id, (swaps_dodge_sub Havg);
             clear - Hcvs; fsetdec);
@@ -1118,11 +1117,9 @@ Proof.
         assert (HfixA1 : swaps_pskl ps1 (ptyp_to_pskl A) = ptyp_to_pskl A)
           by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
               clear - Hcov HAe; simpl in *; fsetdec).
-        destruct (e_consis_swaps ps1 Dc (Δ1' := empty) (Δ2' := empty)
-                    (S0' := sp_supply rs)) as [Sc1 [HSc1 Dc1]];
-          [ symmetry; apply swaps_atoms_empty
-          | symmetry; apply swaps_atoms_empty
-          | symmetry; exact HS1 | ].
+        destruct (e_consis_swaps ps1 Dc (symmetry (swaps_atoms_empty ps1))
+                    (symmetry (swaps_atoms_empty ps1)) (symmetry HS1))
+          as [Sc1 [HSc1 Dc1]];
         rewrite HT1, HfixA1, HP1 in Dc1.
         assert (Hcovc : ftvar_in_aenv (sp_ctx rs)
                         ∪ ftvar_in_pskl (ptyp_to_pskl A)
@@ -1146,12 +1143,11 @@ Proof.
               [ symmetry; exact HScc
               | eapply swaps_notin_eq; [ reflexivity | exact Hxd ] ]).
         assert (Hx10 : swaps_atom psc (swaps_atom ps1 xd) `notin` S0)
-          by (apply swaps_atom_dodge with (S := S0);
-              [ apply (swaps_dodge_sub Havc); clear - Hgrs; fsetdec
-              | apply swaps_atom_dodge with (S := S0);
-                [ exact Hav1
-                | pose proof (e_consis_supply_grows Dc) as Hgc0;
-                  clear - Hxd Hgrd Hgc0; fsetdec ] ]).
+          by (rewrite <- swaps_atom_app;
+              apply (@swaps_atom_dodge _ _ _
+                       (swaps_dodge_app Hav1 Havc (reflexivity _) Hgrs));
+              pose proof (e_consis_supply_grows Dc) as Hgc0;
+              clear - Hxd Hgrd Hgc0; fsetdec).
         assert (Hfixe1 : swaps_exp (ps1 ++ psc) e1 = e1)
           by (apply swaps_exp_fresh_id, (swaps_dodge_app Hav1 Havc);
               clear - Hcov Hgrs; simpl in *; fsetdec).
@@ -1289,12 +1285,9 @@ Proof.
       assert (HfixA1 : swaps_pskl ps1 (ptyp_to_pskl A) = ptyp_to_pskl A)
         by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
             clear - Hcov HAe; simpl in *; fsetdec);
-      destruct (e_consis_swaps ps1 Dc (Δ1' := empty) (Δ2' := empty)
-                  (S0' := sp_supply rs)) as [Sc1 [HSc1 Dc1]];
-      [ symmetry; apply swaps_atoms_empty
-      | symmetry; apply swaps_atoms_empty
-      | symmetry; exact HS1
-      | ];
+      destruct (e_consis_swaps ps1 Dc (symmetry (swaps_atoms_empty ps1))
+                  (symmetry (swaps_atoms_empty ps1)) (symmetry HS1))
+        as [Sc1 [HSc1 Dc1]];
       rewrite HT1, HP1, HfixA1 in Dc1;
       assert (Hcovc : ftvar_in_aenv (sp_ctx rs) ∪ ftvar_in_pskl (sp_dom rs)
                       ∪ ftvar_in_pskl (ptyp_to_pskl A) ∪ empty ∪ empty
@@ -1315,12 +1308,11 @@ Proof.
             [ symmetry; exact HScc
             | eapply swaps_notin_eq; [ reflexivity | exact Hxd ] ]);
       assert (Hx10 : swaps_atom psc (swaps_atom ps1 xd) `notin` S0)
-        by (apply swaps_atom_dodge with (S := S0);
-            [ apply (swaps_dodge_sub Havc); clear - Hgrs; fsetdec
-            | apply swaps_atom_dodge with (S := S0);
-              [ exact Hav1
-              | pose proof (e_consis_supply_grows Dc) as Hgc0;
-                clear - Hxd Hgrd Hgc0; fsetdec ] ]);
+        by (rewrite <- swaps_atom_app;
+            apply (@swaps_atom_dodge _ _ _
+                     (swaps_dodge_app Hav1 Havc (reflexivity _) Hgrs));
+            pose proof (e_consis_supply_grows Dc) as Hgc0;
+            clear - Hxd Hgrd Hgc0; fsetdec);
       assert (Hfixe1 : swaps_exp (ps1 ++ psc) e1 = e1)
         by (apply swaps_exp_fresh_id, (swaps_dodge_app Hav1 Havc);
             clear - Hcov Hgrs; simpl in *; fsetdec);
@@ -1572,11 +1564,9 @@ Proof.
     pose proof (e_typing_supply_grows Hr1) as Hgr1.
     bool_true_ty.
     destruct Dc as [Qc Dc].
-    destruct (e_consis_swaps ps1 Dc (Δ1' := empty) (Δ2' := empty)
-                (S0' := ty_supply r1)) as [Sc1 [HSc1 Dc1]];
-      [ symmetry; apply swaps_atoms_empty
-      | symmetry; apply swaps_atoms_empty
-      | symmetry; exact HS1 | ].
+    destruct (e_consis_swaps ps1 Dc (symmetry (swaps_atoms_empty ps1))
+                (symmetry (swaps_atoms_empty ps1)) (symmetry HS1))
+      as [Sc1 [HSc1 Dc1]];
     rewrite HT1, ! swaps_pskl_ptyp_to_pskl, HQ1 in Dc1.
     assert (HfixBd : swaps_ptyp ps1 Bd = Bd)
       by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav1);
