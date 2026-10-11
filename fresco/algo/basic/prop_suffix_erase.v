@@ -203,6 +203,19 @@ Proof.
   destruct Hb as [Heq | []]. inversion Heq; subst. contradiction.
 Qed.
 
+(** The definition-carrying instance: a surviving definition is substituted. *)
+Lemma binds_def_subst_strip_mid : forall τs α0 (b : abind) Θa Θ0 α τ,
+  binds α (abind_flex_mono_def τ) (Θa ++ (α0 ~ b) ++ Θ0) ->
+  α <> α0 ->
+  binds α (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
+    (subst_aenv τs α0 (Θa ++ Θ0)).
+Proof.
+  intros * Hb Hne.
+  change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
+    with (subst_abind τs α0 (abind_flex_mono_def τ)).
+  eapply binds_subst_strip_mid; eassumption.
+Qed.
+
 Lemma a_binds_tvar_subst_mid : forall τ α (b : abind) Θa Θ0 β,
   a_binds_tvar β (Θa ++ (α ~ b) ++ Θ0) ->
   β <> α ->
@@ -395,9 +408,7 @@ Proof.
       rewrite subst_ptyp_in_ptyp_fresh_eq by exact Hfrτ.
       apply a_tyequiv__refl. apply mono_ptyp_lc; exact Hm.
     + apply a_tyequiv__flex_def with (α := α).
-      change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
-        with (subst_abind τs α0 (abind_flex_mono_def τ)).
-      eapply binds_subst_strip_mid; eassumption.
+      eapply binds_def_subst_strip_mid; eassumption.
   - (* arrow *) simpl. apply a_tyequiv__arrow; eauto.
   - (* all *)
     simpl. apply a_tyequiv__all
@@ -481,9 +492,7 @@ Proof.
       rewrite ftvar_ptyp_to_bskl_syn. eapply solves_flex_fresh; eassumption.
     + apply ad_refine_syn__flex_l
         with (α := α) (τ := subst_ptyp_in_ptyp τs α0 τ).
-      * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
-          with (subst_abind τs α0 (abind_flex_mono_def τ)).
-        eapply binds_subst_strip_mid; eassumption.
+      * eapply binds_def_subst_strip_mid; eassumption.
       * rewrite ptyp_to_bskl_syn_subst. eauto.
   - (* flex_r : the mirror *)
     destruct_if as [Heqα | Hne].
@@ -499,9 +508,7 @@ Proof.
       rewrite ftvar_ptyp_to_bskl_syn. eapply solves_flex_fresh; eassumption.
     + apply ad_refine_syn__flex_r
         with (α := α) (τ := subst_ptyp_in_ptyp τs α0 τ).
-      * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
-          with (subst_abind τs α0 (abind_flex_mono_def τ)).
-        eapply binds_subst_strip_mid; eassumption.
+      * eapply binds_def_subst_strip_mid; eassumption.
       * rewrite ptyp_to_bskl_syn_subst. eauto.
 Qed.
 
@@ -574,9 +581,7 @@ Proof.
       rewrite ftvar_ptyp_to_pskl. eapply solves_flex_fresh; eassumption.
     + apply ad_refine_pskl__flex_l
         with (α := α) (τ := subst_ptyp_in_ptyp τs α0 τ).
-      * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
-          with (subst_abind τs α0 (abind_flex_mono_def τ)).
-        eapply binds_subst_strip_mid; eassumption.
+      * eapply binds_def_subst_strip_mid; eassumption.
       * rewrite ptyp_to_pskl_subst. eauto.
   - (* flex_r : the mirror *)
     destruct_if as [Heqα | Hne].
@@ -592,9 +597,7 @@ Proof.
       rewrite ftvar_ptyp_to_pskl. eapply solves_flex_fresh; eassumption.
     + apply ad_refine_pskl__flex_r
         with (α := α) (τ := subst_ptyp_in_ptyp τs α0 τ).
-      * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
-          with (subst_abind τs α0 (abind_flex_mono_def τ)).
-        eapply binds_subst_strip_mid; eassumption.
+      * eapply binds_def_subst_strip_mid; eassumption.
       * rewrite ptyp_to_pskl_subst. eauto.
 Qed.
 
@@ -701,9 +704,7 @@ Proof.
         [ exact IHx | ].
       rewrite ftvar_ptyp_to_uskl_syn. eapply solves_flex_fresh; eassumption.
     + apply ad_pat_consis__flex_l with (τ := subst_ptyp_in_ptyp τs α0 τ).
-      * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
-          with (subst_abind τs α0 (abind_flex_mono_def τ)).
-        eapply binds_subst_strip_mid; eassumption.
+      * eapply binds_def_subst_strip_mid; eassumption.
       * rewrite ptyp_to_uskl_syn_subst. eauto.
   - (* flex_r : the mirror, on the TARGET *)
     destruct_if as [Heqα | Hne].
@@ -718,9 +719,7 @@ Proof.
         [ exact IHx | ].
       rewrite ftvar_ptyp_to_bskl_syn. eapply solves_flex_fresh; eassumption.
     + apply ad_pat_consis__flex_r with (τ := subst_ptyp_in_ptyp τs α0 τ).
-      * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
-          with (subst_abind τs α0 (abind_flex_mono_def τ)).
-        eapply binds_subst_strip_mid; eassumption.
+      * eapply binds_def_subst_strip_mid; eassumption.
       * rewrite ptyp_to_bskl_syn_subst. eauto.
 Qed.
 
@@ -934,9 +933,7 @@ Proof.
         [ exact IHx | ].
       rewrite ftvar_ptyp_to_uskl_syn. eapply solves_flex_fresh; eassumption.
     + apply ad_pat_sub__flex_mono with (τ := subst_ptyp_in_ptyp τs α0 τ).
-      * change (abind_flex_mono_def (subst_ptyp_in_ptyp τs α0 τ))
-          with (subst_abind τs α0 (abind_flex_mono_def τ)).
-        eapply binds_subst_strip_mid; eassumption.
+      * eapply binds_def_subst_strip_mid; eassumption.
       * rewrite ptyp_to_uskl_syn_subst. eauto.
 Qed.
 
