@@ -981,7 +981,6 @@ Proof.
       pose proof (e_split_supply_grows Hrs) as Hgrs;
       pose proof (e_split_supply_grows Dsp) as Hgrd;
       pose proof (supply_fresh_notin (sp_supply rs)) as Hsf;
-      pose proof (dom_subset_ftvar_in_aenv (sp_ctx rs)) as Hdoms;
       (* the derivation's binder, first along the split's chain … *)
       assert (Hx1S : swaps_atom ps1 xd `notin` sp_supply rs)
         by (eapply swaps_notin_eq; [ symmetry; exact HS1 | exact Hxd ]);
@@ -1212,7 +1211,6 @@ Proof.
       pose proof (e_consis_env_lc Hrc HΘs) as HΘc;
       pose proof (e_consis_supply_grows Hrc) as Hgrc;
       pose proof (supply_fresh_notin (cs_supply rc)) as Hsf;
-      pose proof (dom_subset_ftvar_in_aenv (cs_ctx rc)) as Hdoms;
       (* the derivation's binder, along BOTH chains and onto the draw *)
       assert (HScc : swaps_atoms psc (swaps_atoms ps1 S2) [=] cs_supply rc)
         by (rewrite <- HSc; apply swaps_atoms_cong; symmetry; exact HSc1);

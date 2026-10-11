@@ -551,7 +551,6 @@ Proof.
   intros S0 Θ0 A0 e Sd Θd A Ξ αd Hstep HP0 He HΘ HD Hu Hcov
     Hsuf HuΞ Hfil HαA Hαd Db h.
   pose proof (supply_fresh_notin S0) as Hsf.
-  pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdom0.
   assert (Hav0 : forall a b, In (a, b) ((αd, supply_fresh S0) :: nil) ->
                  a `notin` S0 /\ b `notin` S0)
     by (intros a0 b0 [Heq0 | []]; inversion Heq0; subst;
@@ -590,15 +589,9 @@ Proof.
   assert (Hlcop : lc_pskl (ptyp_to_pskl
             (open_ptyp_wrt_ptyp A0 (ptyp_var_f (supply_fresh S0)))))
     by (apply ptyp_to_pskl_lc; inversion HA0lc; subst; auto).
-  assert (Hsfd : supply_fresh S0 `notin` dom Θ0)
-    by (clear - Hsf Hdom0 Hcov; simpl in *; fsetdec).
-  assert (Hu1 : uniq ((supply_fresh S0 ~ abind_tvar) ++ Θ0))
-    by (clear - Hu Hsfd; solve_uniq).
-  assert (HΘ1 : lc_aenv ((supply_fresh S0 ~ abind_tvar) ++ Θ0))
-    by (apply lc_aenv_app_intro;
-        [ constructor; [ exact I | apply lc_aenv_nil ] | exact HΘ ]).
-  assert (HD1 : aenv_defs_mono ((supply_fresh S0 ~ abind_tvar) ++ Θ0))
-    by (simpl; constructor; [ apply entry_def_mono_tvar | exact HD ]).
+  assert (HcΘ : ftvar_in_aenv Θ0 [<=] S0) by (clear - Hcov; fsetdec).
+  destruct (push_fresh_invariants Hu HΘ HD HcΘ lc_abind_tvar
+              (entry_def_mono_tvar _)) as (Hu1 & HΘ1 & HD1).
   assert (Hcov1 : ftvar_in_aenv ((supply_fresh S0 ~ abind_tvar) ++ Θ0)
                   ∪ ftvar_in_pskl (ptyp_to_pskl
                        (open_ptyp_wrt_ptyp A0
@@ -758,8 +751,6 @@ Proof.
 
     2: { (* -------- the CHECK-mode abs rows: STEP, then BASE -------- *)
       rewrite e_typing_impl_equation_5.
-      pose proof (supply_fresh_notin S0) as Hsf.
-      pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdom0.
       destruct (pskl_readback_all P0) as [ [A0 HA0] | ] eqn:Hrba;
         cbv beta iota.
 
@@ -840,7 +831,6 @@ Proof.
         pose proof (e_split_supply_grows Hrs) as Hgrs.
         pose proof (e_split_supply_grows Dsp) as Hgrd.
         pose proof (supply_fresh_notin (sp_supply rs)) as Hsfs.
-        pose proof (dom_subset_ftvar_in_aenv (sp_ctx rs)) as Hdoms.
         (* the two readbacks the runner performs *)
         assert (HdomR : sp_dom rs = ptyp_to_pskl (swaps_ptyp ps1 A))
           by (rewrite <- HP1; apply swaps_pskl_ptyp_to_pskl).
@@ -877,25 +867,11 @@ Proof.
         destruct (e_typing_draw_term e1 Hx1S HdrawScope Db1)
           as (Sd2 & HSd2 & HfixCtx & HfixAd & Db2).
         (* the recursive call's own side conditions *)
-        assert (Hsfd : supply_fresh (sp_supply rs) `notin` dom (sp_ctx rs))
-          by (clear - Hsfs Hdoms Hcvs; fsetdec).
-        assert (Hu1 : uniq ((supply_fresh (sp_supply rs)
-                               ~ abind_var_typ (swaps_ptyp ps1 A))
-                            ++ sp_ctx rs))
-          by (clear - Hus Hsfd; solve_uniq).
         assert (HlcAd : lc_ptyp (swaps_ptyp ps1 A))
           by (rewrite HdomR in Hlcd; eapply ptyp_to_pskl_lc_inv; exact Hlcd).
-        assert (HΘ1 : lc_aenv ((supply_fresh (sp_supply rs)
-                                  ~ abind_var_typ (swaps_ptyp ps1 A))
-                               ++ sp_ctx rs))
-          by (apply lc_aenv_app_intro;
-              [ constructor; [ apply lc_abind_var_typ; exact HlcAd
-                             | apply lc_aenv_nil ]
-              | exact HΘs ]).
-        assert (HD1 : aenv_defs_mono ((supply_fresh (sp_supply rs)
-                         ~ abind_var_typ (swaps_ptyp ps1 A)) ++ sp_ctx rs))
-          by (simpl; constructor;
-              [ apply entry_def_mono_var_typ | exact HDs ]).
+        destruct (push_fresh_invariants Hus HΘs HDs Hcvs
+                    (lc_abind_var_typ HlcAd) (entry_def_mono_var_typ _ _))
+          as (Hu1 & HΘ1 & HD1).
         assert (Hcov1 : ftvar_in_aenv ((supply_fresh (sp_supply rs)
                             ~ abind_var_typ (swaps_ptyp ps1 A))
                          ++ sp_ctx rs)
@@ -1243,8 +1219,6 @@ Proof.
 
     2: { (* ---- the CHECK-mode abs_anno rows: STEP, then BASE ---- *)
       rewrite e_typing_impl_equation_8.
-      pose proof (supply_fresh_notin S0) as Hsf.
-      pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdom0.
       destruct (pskl_readback_all P0) as [ [A0 HA0] | ] eqn:Hrba;
         cbv beta iota.
 
@@ -1369,7 +1343,6 @@ Proof.
         pose proof (e_consis_env_lc Hrc HΘs) as HΘc.
         pose proof (e_consis_supply_grows Hrc) as Hgrc.
         pose proof (supply_fresh_notin (cs_supply rc)) as Hsfc.
-        pose proof (dom_subset_ftvar_in_aenv (cs_ctx rc)) as Hdoms.
         (* the binder, along both chains and onto the runner's draw *)
         assert (HScc : swaps_atoms psc (swaps_atoms ps1 S2) [=] cs_supply rc)
           by (rewrite <- HSc; apply swaps_atoms_cong; symmetry; exact HSc1).
@@ -1425,21 +1398,9 @@ Proof.
         destruct (e_typing_draw_term e1 Hx1S HdrawScope Db1)
           as (Sd2 & HSd2 & HfixCtx & HfixAnn & Db2).
         (* the recursive call's own side conditions *)
-        assert (Hsfd : supply_fresh (cs_supply rc) `notin` dom (cs_ctx rc))
-          by (clear - Hsfc Hdoms Hcvc; fsetdec).
-        assert (Hu1 : uniq ((supply_fresh (cs_supply rc)
-                               ~ abind_var_typ A) ++ cs_ctx rc))
-          by (clear - Huc Hsfd; solve_uniq).
-        assert (HΘ1 : lc_aenv ((supply_fresh (cs_supply rc)
-                                  ~ abind_var_typ A) ++ cs_ctx rc))
-          by (apply lc_aenv_app_intro;
-              [ constructor; [ apply lc_abind_var_typ; exact HAan
-                             | apply lc_aenv_nil ]
-              | exact HΘc ]).
-        assert (HD1 : aenv_defs_mono ((supply_fresh (cs_supply rc)
-                         ~ abind_var_typ A) ++ cs_ctx rc))
-          by (simpl; constructor;
-              [ apply entry_def_mono_var_typ | exact HDc ]).
+        destruct (push_fresh_invariants Huc HΘc HDc Hcvc
+                    (lc_abind_var_typ HAan) (entry_def_mono_var_typ _ _))
+          as (Hu1 & HΘ1 & HD1).
         assert (Hlccod : lc_pskl (ptyp_to_pskl (swaps_ptyp ps1 B)))
           by (rewrite <- HcodR; exact Hlcc).
         assert (Hcov1 : ftvar_in_aenv ((supply_fresh (cs_supply rc)
@@ -1629,7 +1590,6 @@ Proof.
       pose proof (e_consis_env_lc Hrc HΘs) as HΘc;
       pose proof (e_consis_supply_grows Hrc) as Hgrc;
       pose proof (supply_fresh_notin (cs_supply rc)) as Hsfc;
-      pose proof (dom_subset_ftvar_in_aenv (cs_ctx rc)) as Hdoms;
       assert (HScc : swaps_atoms psc (swaps_atoms ps1 S2) [=] cs_supply rc)
         by (rewrite <- HSc; apply swaps_atoms_cong; symmetry; exact HSc1);
       assert (Hx1S : swaps_atom psc (swaps_atom ps1 xd)
@@ -1676,21 +1636,9 @@ Proof.
         by ( clear - Hcvc Hpqs Hcov Hgrs Hgrc; simpl in *; fsetdec);
       destruct (e_typing_draw_term e1 Hx1S HdrawScope Db1)
         as (Sd2 & HSd2 & HfixCtx & HfixAnn & Db2);
-      assert (Hsfd : supply_fresh (cs_supply rc) `notin` dom (cs_ctx rc))
-        by (clear - Hsfc Hdoms Hcvc; fsetdec);
-      assert (Hu1 : uniq ((supply_fresh (cs_supply rc)
-                             ~ abind_var_typ A) ++ cs_ctx rc))
-        by (clear - Huc Hsfd; solve_uniq);
-      assert (HΘ1 : lc_aenv ((supply_fresh (cs_supply rc)
-                                ~ abind_var_typ A) ++ cs_ctx rc))
-        by (apply lc_aenv_app_intro;
-            [ constructor; [ apply lc_abind_var_typ; exact HAan
-                           | apply lc_aenv_nil ]
-            | exact HΘc ]);
-      assert (HD1 : aenv_defs_mono ((supply_fresh (cs_supply rc)
-                       ~ abind_var_typ A) ++ cs_ctx rc))
-        by (simpl; constructor;
-            [ apply entry_def_mono_var_typ | exact HDc ]);
+      destruct (push_fresh_invariants Huc HΘc HDc Hcvc
+                  (lc_abind_var_typ HAan) (entry_def_mono_var_typ _ _))
+        as (Hu1 & HΘ1 & HD1);
       assert (Hcov1 : ftvar_in_aenv ((supply_fresh (cs_supply rc)
                           ~ abind_var_typ A) ++ cs_ctx rc)
                       ∪ ftvar_in_pskl (sp_cod rs)
