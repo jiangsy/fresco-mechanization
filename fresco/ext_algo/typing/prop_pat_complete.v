@@ -307,6 +307,35 @@ Proof.
   - destruct (Hav2 _ _ Hin) as [Ha Hb]. split; clear - Ha Hb HTS; fsetdec.
 Qed.
 
+(** The motive's coverage at an abs row's recursive call — the body opened
+    at the runner's draw, under the binding the row pushes — read off the
+    draw's own coverage.  Once per payload sort. *)
+Lemma cover_open_body_skl : forall (S : atoms) (Θ : aenv) P0 P e x,
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P
+    ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S ->
+  ftvar_in_aenv ((x ~ abind_var_skl P) ++ Θ) ∪ ftvar_in_pskl P0
+    ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
+    ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) [<=] add x S.
+Proof.
+  intros * H.
+  pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hfo.
+  pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hto.
+  simpl in *. fsetdec.
+Qed.
+
+Lemma cover_open_body_typ : forall (S : atoms) (Θ : aenv) P0 A e x,
+  ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_ptyp A
+    ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S ->
+  ftvar_in_aenv ((x ~ abind_var_typ A) ++ Θ) ∪ ftvar_in_pskl P0
+    ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
+    ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) [<=] add x S.
+Proof.
+  intros * H.
+  pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hfo.
+  pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hto.
+  simpl in *. fsetdec.
+Qed.
+
 (** Pushing a binder at the runner's draw keeps the three context
     invariants the motive asks of its input context. *)
 Lemma push_fresh_invariants : forall S (Θ : aenv) b,
@@ -330,6 +359,8 @@ Qed.
 Arguments e_pat_draw_term_skl {S m Θ P0} e {P x Sd Ξ Θd Q} _ _ _.
 Arguments e_pat_draw_term_typ {S m Θ P0} e {A x Sd Ξ Θd Q} _ _ _.
 Arguments push_fresh_invariants {S Θ b} _ _ _ _ _ _.
+Arguments cover_open_body_skl {S Θ P0 P e} x _.
+Arguments cover_open_body_typ {S Θ P0 A e} x _.
 
 (* ===================================================================== *)
 (*  §2  ROOT INVERSIONS — the case backbone                               *)
@@ -927,19 +958,7 @@ Proof.
       destruct (push_fresh_invariants Hu HΘ HD HcΘ
                   (lc_abind_var_skl lc_pskl_ghost) (entry_def_mono_var_skl _ _))
         as (Hu1 & HΘ1 & HD1).
-      assert (Hcov1 : ftvar_in_aenv ((supply_fresh S0
-                                        ~ abind_var_skl pskl_ghost) ++ Θ0)
-                      ∪ ftvar_in_pskl pskl_ghost
-                      ∪ fvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh S0)))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh S0)))
-                      [<=] add (supply_fresh S0) S0).
-      { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e1
-                      (exp_var_f (supply_fresh S0))) as Hfo.
-        pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e1
-                      (exp_var_f (supply_fresh S0))) as Hto.
-        clear - Hcov Hfo Hto. simpl in *. fsetdec. }
+      pose proof (cover_open_body_skl (supply_fresh S0) Hdscope) as Hcov1.
       kill_pat (Habsc e1 eq_refl) lc_pskl_ghost (Hbody (supply_fresh S0))
         HΘ1 HD1 Hu1 Hcov1 Db1 r Hr ps2 Hav2 HS2 HT2 HQ2.
       (* the recursive answer's context, split at the runner's own marker *)
@@ -1015,19 +1034,8 @@ Proof.
       destruct (push_fresh_invariants Hus HΘs HDs Hcvs
                   (lc_abind_var_skl Hlcd) (entry_def_mono_var_skl _ _))
         as (Hu1 & HΘ1 & HD1);
-      assert (Hcov1 : ftvar_in_aenv ((supply_fresh (sp_supply rs)
-                          ~ abind_var_skl (sp_dom rs)) ++ sp_ctx rs)
-                      ∪ ftvar_in_pskl (sp_cod rs)
-                      ∪ fvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh (sp_supply rs))))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh (sp_supply rs))))
-                      [<=] add (supply_fresh (sp_supply rs)) (sp_supply rs))
-        by (pose proof (fvar_in_exp_open_exp_wrt_exp_upper e1
-                          (exp_var_f (supply_fresh (sp_supply rs)))) as Hfo;
-            pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e1
-                          (exp_var_f (supply_fresh (sp_supply rs)))) as Hto;
-            clear - Hcov Hfo Hto Hcvs Hpqs Hgrs; simpl in *; fsetdec);
+      pose proof (cover_open_body_skl (supply_fresh (sp_supply rs)) Hdscope)
+        as Hcov1;
       kill_pat (Habs e1 eq_refl _ _ _ _ Hrs) Hlcc
         (Hbody (supply_fresh (sp_supply rs))) HΘ1 HD1 Hu1 Hcov1 Db2
         r Hr ps2 Hav2 HS2 HT2 HQ2;
@@ -1100,19 +1108,7 @@ Proof.
       destruct (push_fresh_invariants Hu HΘ HD HcΘ
                   (lc_abind_var_typ HA) (entry_def_mono_var_typ _ _))
         as (Hu1 & HΘ1 & HD1).
-      assert (Hcov1 : ftvar_in_aenv ((supply_fresh S0 ~ abind_var_typ A)
-                                     ++ Θ0)
-                      ∪ ftvar_in_pskl pskl_ghost
-                      ∪ fvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh S0)))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh S0)))
-                      [<=] add (supply_fresh S0) S0).
-      { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e1
-                      (exp_var_f (supply_fresh S0))) as Hfo.
-        pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e1
-                      (exp_var_f (supply_fresh S0))) as Hto.
-        clear - Hcov Hfo Hto. simpl in *. fsetdec. }
+      pose proof (cover_open_body_typ (supply_fresh S0) Hdscope) as Hcov1.
       kill_pat (Habsac A e1 eq_refl) lc_pskl_ghost (Hbody (supply_fresh S0))
         HΘ1 HD1 Hu1 Hcov1 Db1 r Hr ps2 Hav2 HS2 HT2 HQ2.
       destruct (e_pat_sound Hr Hu1 Hcov1) as [Hra [Hur [Hcvr Hqr]]].
@@ -1234,19 +1230,8 @@ Proof.
       destruct (push_fresh_invariants Huc HΘc HDc Hcvc
                   (lc_abind_var_typ HA) (entry_def_mono_var_typ _ _))
         as (Hu1 & HΘ1 & HD1);
-      assert (Hcov1 : ftvar_in_aenv ((supply_fresh (cs_supply rc)
-                          ~ abind_var_typ A) ++ cs_ctx rc)
-                      ∪ ftvar_in_pskl (sp_cod rs)
-                      ∪ fvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh (cs_supply rc))))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh (cs_supply rc))))
-                      [<=] add (supply_fresh (cs_supply rc)) (cs_supply rc))
-        by (pose proof (fvar_in_exp_open_exp_wrt_exp_upper e1
-                          (exp_var_f (supply_fresh (cs_supply rc)))) as Hfo;
-            pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e1
-                          (exp_var_f (supply_fresh (cs_supply rc)))) as Hto;
-            clear - Hcov Hfo Hto Hcvc Hpqs Hgrs Hgrc; simpl in *; fsetdec);
+      pose proof (cover_open_body_typ (supply_fresh (cs_supply rc)) Hdscope)
+        as Hcov1;
       kill_pat (Habsa A e1 eq_refl _ _ _ _ Hrs _ _ _ Hrc) Hlcc
         (Hbody (supply_fresh (cs_supply rc))) HΘ1 HD1 Hu1 Hcov1 Db2
         r Hr ps2 Hav2 HS2 HT2 HQ2;

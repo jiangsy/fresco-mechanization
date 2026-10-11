@@ -833,37 +833,8 @@ Proof.
         destruct (push_fresh_invariants Hus HΘs HDs Hcvs
                     (lc_abind_var_typ HlcAd) (entry_def_mono_var_typ _ _))
           as (Hu1 & HΘ1 & HD1).
-        assert (Hcov1 : ftvar_in_aenv ((supply_fresh (sp_supply rs)
-                            ~ abind_var_typ (swaps_ptyp ps1 A))
-                         ++ sp_ctx rs)
-                        ∪ ftvar_in_pskl (ptyp_to_pskl (swaps_ptyp ps1 B))
-                        ∪ fvar_in_exp (open_exp_wrt_exp e1
-                             (exp_var_f (supply_fresh (sp_supply rs))))
-                        ∪ ftvar_in_exp (open_exp_wrt_exp e1
-                             (exp_var_f (supply_fresh (sp_supply rs))))
-                        [<=] add (supply_fresh (sp_supply rs))
-                               (sp_supply rs)).
-        { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e1
-                        (exp_var_f (supply_fresh (sp_supply rs)))) as Hfo.
-          pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e1
-                        (exp_var_f (supply_fresh (sp_supply rs)))) as Hto.
-          pose proof (ftvar_ptyp_to_pskl (swaps_ptyp ps1 B)) as Hpb.
-          simpl in Hfo, Hto.
-          assert (Hcove : fvar_in_exp e1 ∪ ftvar_in_exp e1
-                          [<=] sp_supply rs)
-            by (clear - Hcov Hgrs; simpl in *; fsetdec).
-          assert (Hcf : fvar_in_exp (open_exp_wrt_exp e1
-                          (exp_var_f (supply_fresh (sp_supply rs))))
-                        [<=] add (supply_fresh (sp_supply rs))
-                               (sp_supply rs))
-            by (clear - Hfo Hcove; fsetdec).
-          assert (Hct : ftvar_in_exp (open_exp_wrt_exp e1
-                          (exp_var_f (supply_fresh (sp_supply rs))))
-                        [<=] add (supply_fresh (sp_supply rs))
-                               (sp_supply rs))
-            by (clear - Hto Hcove; fsetdec).
-          rewrite ftvar_in_aenv_app. simpl.
-          clear - Hcvs HcAd HcBd Hpb Hcf Hct. fsetdec. }
+        pose proof (cover_open_body_typ (supply_fresh (sp_supply rs))
+                      HdrawScope) as Hcov1.
         assert (Hlccod : lc_pskl (ptyp_to_pskl (swaps_ptyp ps1 B)))
           by (rewrite <- HcodR; exact Hlcc).
         kill_typing (Hbase e1 eq_refl _ _ _ _ Hrs _ _ HdomR HcodR)
@@ -1021,48 +992,8 @@ Proof.
                   (lc_abind_var_typ (e_guess_mono_lc_type Hrg Hlcd))
                   (entry_def_mono_var_typ _ _))
         as (Hu1 & HΘ1 & HD1);
-      (* ⚠️⚠️ the coverage side condition is assembled SUMMAND BY SUMMAND:
-         one [fsetdec] over the seven set variables at once does not
-         return.  Each step below stays at four or five. *)
-      assert (HS0g : S0 [<=] gr_supply rg) by (clear - Hgrs Hgrg; fsetdec);
-      assert (Hcove : fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] gr_supply rg)
-        by (clear - Hcov HS0g; simpl in *; fsetdec);
-      assert (Hblk1 : ftvar_in_aenv (gr_block rg) [<=] gr_supply rg)
-        by (clear - HftG HdomG; fsetdec);
-      assert (Hctx1 : ftvar_in_aenv (sp_ctx rs) [<=] gr_supply rg)
-        by (clear - Hcvs Hgrg; fsetdec);
-      assert (HcQ : ftvar_in_pskl (sp_cod rs) [<=] gr_supply rg)
-        by (clear - Hpqs Hgrg; fsetdec);
-      assert (HcA : ftvar_in_aenv ((supply_fresh (gr_supply rg)
-                        ~ abind_var_typ (gr_type rg))
-                     ++ gr_block rg ++ sp_ctx rs)
-                    [<=] add (supply_fresh (gr_supply rg)) (gr_supply rg))
-        by (rewrite ! ftvar_in_aenv_app; simpl;
-            clear - HftyG Hblk1 Hctx1; fsetdec);
-      assert (Hcov1 : ftvar_in_aenv ((supply_fresh (gr_supply rg)
-                          ~ abind_var_typ (gr_type rg))
-                       ++ gr_block rg ++ sp_ctx rs)
-                      ∪ ftvar_in_pskl (sp_cod rs)
-                      ∪ fvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh (gr_supply rg))))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh (gr_supply rg))))
-                      [<=] add (supply_fresh (gr_supply rg)) (gr_supply rg));
-      [ pose proof (fvar_in_exp_open_exp_wrt_exp_upper e1
-                      (exp_var_f (supply_fresh (gr_supply rg)))) as Hfo;
-        pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e1
-                      (exp_var_f (supply_fresh (gr_supply rg)))) as Hto;
-        simpl in Hfo, Hto;
-        assert (Hcf : fvar_in_exp (open_exp_wrt_exp e1
-                        (exp_var_f (supply_fresh (gr_supply rg))))
-                      [<=] add (supply_fresh (gr_supply rg)) (gr_supply rg))
-          by (clear - Hfo Hcove; fsetdec);
-        assert (Hct : ftvar_in_exp (open_exp_wrt_exp e1
-                        (exp_var_f (supply_fresh (gr_supply rg))))
-                      [<=] add (supply_fresh (gr_supply rg)) (gr_supply rg))
-          by (clear - Hto Hcove; fsetdec);
-        clear - HcA HcQ Hcf Hct; fsetdec
-      | ];
+      pose proof (cover_open_body_typ (supply_fresh (gr_supply rg))
+                    HdrawScope) as Hcov1;
       kill_typing (Habs e1 eq_refl _ _ _ _ Hrs _ _ _ Hrg) Hlcc
         (Hbody (supply_fresh (gr_supply rg))) HΘ1 HD1 Hu1 Hcov1 Db2
         r Hr ps2 Hav2 HS2 HT2 HQ2;
@@ -1278,43 +1209,8 @@ Proof.
           as (Hu1 & HΘ1 & HD1).
         assert (Hlccod : lc_pskl (ptyp_to_pskl (swaps_ptyp ps1 B)))
           by (rewrite <- HcodR; exact Hlcc).
-        assert (Hcov1 : ftvar_in_aenv ((supply_fresh (cs_supply rc)
-                            ~ abind_var_typ A) ++ cs_ctx rc)
-                        ∪ ftvar_in_pskl (ptyp_to_pskl (swaps_ptyp ps1 B))
-                        ∪ fvar_in_exp (open_exp_wrt_exp e1
-                             (exp_var_f (supply_fresh (cs_supply rc))))
-                        ∪ ftvar_in_exp (open_exp_wrt_exp e1
-                             (exp_var_f (supply_fresh (cs_supply rc))))
-                        [<=] add (supply_fresh (cs_supply rc))
-                               (cs_supply rc)).
-        { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e1
-                        (exp_var_f (supply_fresh (cs_supply rc)))) as Hfo.
-          pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e1
-                        (exp_var_f (supply_fresh (cs_supply rc)))) as Hto.
-          pose proof (ftvar_ptyp_to_pskl (swaps_ptyp ps1 B)) as Hpb.
-          simpl in Hfo, Hto.
-          assert (HS0c : S0 [<=] cs_supply rc)
-            by (clear - Hgrs Hgrc; fsetdec).
-          assert (Hcove : fvar_in_exp e1 ∪ ftvar_in_exp e1
-                          [<=] cs_supply rc)
-            by (clear - Hcov HS0c; simpl in *; fsetdec).
-          assert (HcAnn : ftvar_in_ptyp A [<=] cs_supply rc)
-            by (clear - Hcov HS0c; simpl in *; fsetdec).
-          assert (HcB1 : ftvar_in_ptyp (swaps_ptyp ps1 B)
-                         [<=] cs_supply rc)
-            by (clear - HcBd Hgrc; fsetdec).
-          assert (Hcf : fvar_in_exp (open_exp_wrt_exp e1
-                          (exp_var_f (supply_fresh (cs_supply rc))))
-                        [<=] add (supply_fresh (cs_supply rc))
-                               (cs_supply rc))
-            by (clear - Hfo Hcove; fsetdec).
-          assert (Hct : ftvar_in_exp (open_exp_wrt_exp e1
-                          (exp_var_f (supply_fresh (cs_supply rc))))
-                        [<=] add (supply_fresh (cs_supply rc))
-                               (cs_supply rc))
-            by (clear - Hto Hcove; fsetdec).
-          rewrite ftvar_in_aenv_app. simpl.
-          clear - Hcvc HcAnn HcB1 Hpb Hcf Hct. fsetdec. }
+        pose proof (cover_open_body_typ (supply_fresh (cs_supply rc))
+                      HdrawScope) as Hcov1.
         kill_typing (Hbasea A e1 eq_refl _ _ _ _ Hrs _ _ _ Hrc _ HcodR)
           Hlccod (Hbody (supply_fresh (cs_supply rc)))
           HΘ1 HD1 Hu1 Hcov1 Db2 r Hr ps2 Hav2 HS2 HT2 HQ2.
@@ -1473,38 +1369,8 @@ Proof.
       destruct (push_fresh_invariants Huc HΘc HDc Hcvc
                   (lc_abind_var_typ HAan) (entry_def_mono_var_typ _ _))
         as (Hu1 & HΘ1 & HD1);
-      assert (Hcov1 : ftvar_in_aenv ((supply_fresh (cs_supply rc)
-                          ~ abind_var_typ A) ++ cs_ctx rc)
-                      ∪ ftvar_in_pskl (sp_cod rs)
-                      ∪ fvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh (cs_supply rc))))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e1
-                           (exp_var_f (supply_fresh (cs_supply rc))))
-                      [<=] add (supply_fresh (cs_supply rc)) (cs_supply rc));
-      [ pose proof (fvar_in_exp_open_exp_wrt_exp_upper e1
-                      (exp_var_f (supply_fresh (cs_supply rc)))) as Hfo;
-        pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e1
-                      (exp_var_f (supply_fresh (cs_supply rc)))) as Hto;
-        simpl in Hfo, Hto;
-        assert (HS0c : S0 [<=] cs_supply rc)
-          by (clear - Hgrs Hgrc; fsetdec);
-        assert (Hcove : fvar_in_exp e1 ∪ ftvar_in_exp e1 [<=] cs_supply rc)
-          by (clear - Hcov HS0c; simpl in *; fsetdec);
-        assert (HcAnn : ftvar_in_ptyp A [<=] cs_supply rc)
-          by (clear - Hcov HS0c; simpl in *; fsetdec);
-        assert (HcQ : ftvar_in_pskl (sp_cod rs) [<=] cs_supply rc)
-          by (clear - Hpqs Hgrc; fsetdec);
-        assert (Hcf : fvar_in_exp (open_exp_wrt_exp e1
-                        (exp_var_f (supply_fresh (cs_supply rc))))
-                      [<=] add (supply_fresh (cs_supply rc)) (cs_supply rc))
-          by (clear - Hfo Hcove; fsetdec);
-        assert (Hct : ftvar_in_exp (open_exp_wrt_exp e1
-                        (exp_var_f (supply_fresh (cs_supply rc))))
-                      [<=] add (supply_fresh (cs_supply rc)) (cs_supply rc))
-          by (clear - Hto Hcove; fsetdec);
-        rewrite ftvar_in_aenv_app; simpl;
-        clear - Hcvc HcAnn HcQ Hcf Hct; fsetdec
-      | ];
+      pose proof (cover_open_body_typ (supply_fresh (cs_supply rc))
+                    HdrawScope) as Hcov1;
       kill_typing (Habsa A e1 eq_refl _ _ _ _ Hrs _ _ _ Hrc) Hlcc
         (Hbody (supply_fresh (cs_supply rc))) HΘ1 HD1 Hu1 Hcov1 Db2
         r Hr ps2 Hav2 HS2 HT2 HQ2;
