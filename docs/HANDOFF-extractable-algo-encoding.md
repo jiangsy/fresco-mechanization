@@ -5587,7 +5587,7 @@ collection-flexible), and again INVISIBLE at `a_extract`'s conclusion.
 - ⛔ Put the openers in `V` instead of `ρx`: only legal when the two sides
   pick the SAME atom, and the e-side opener must be supply-fresh.
 - 🟡 Pre-freshen the collection's openers away from the solve's binders.
-  The machinery exists in one direction (`a_looksub_rename_tvar` moves a
+  The machinery exists in one direction (`a_looksub_rename_tvar`, since replaced by the swap kit, moves a
   leaked binder and substitutes `𝒞`), but doing it for ALL openers at once
   is transport 5 again, now on the a-side.
 - 🟡 A guard on `a_extract__solve`.  Same shape as the one just landed, and
@@ -6648,7 +6648,8 @@ was DESIGN.md §4.3's freshness campaign, for one discipline per layer, not
 because cofinite was wrong there.
 
 ⚠️ **The renaming lemma is NOT a substitute.**
-`a_assign_unify_consis_rename_tvar` (L9) moves a derivation's rigid opener
+`a_assign_unify_consis_rename_tvar` (L9; since replaced by the swap kit,
+`a_consis_move_binder`) moves a derivation's rigid opener
 to any fresh atom — but it produces a NEW derivation term, and an induction
 on the ORIGINAL derivation has no IH for it.  Only a cofinite RULE, or a
 motive quantified over a swap, gives the IH at the atom one wants.

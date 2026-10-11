@@ -11,8 +11,8 @@
     side condition: distinctness, [uniq], [binds] and every input-only
     freshness condition [γ ∉ ftvar_in_aenv Θ] are preserved verbatim.  The
     substitution-shaped rename must either hand back an existential avoid-set
-    (cluster 4's [a_assign_unify_consis_rename_tvar]) or lean on a decreasing
-    measure (cluster 3) — neither of which exists for [a_sub]/[a_sub_flex],
+    (cluster 4's consistency rename, now retired for [a_consis_move_binder]) or
+    lean on a decreasing measure (cluster 3) — neither of which exists for [a_sub]/[a_sub_flex],
     and neither of which is UNIFORM.  The consumption-shaped renames (a junk
     name renamed away from a delivered run's outputs, its inputs untouched)
     fall out as corollaries: when both atoms avoid a component's free atoms,

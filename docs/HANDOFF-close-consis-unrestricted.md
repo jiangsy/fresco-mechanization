@@ -298,7 +298,8 @@ C5 + C6) rather than by the collapse function:
     (`e_assign_isub` et al.): `a_isub`'s definition clause preserves
     definitions SYNTACTICALLY.
   - ⚙ Closest precedent for the mechanics: prop_consis_rename.v L9
-    (`a_assign_unify_consis_rename_tvar`) — mid-entry surgery over the
+    (`a_assign_unify_consis_rename_tvar`, since replaced by the swap kit:
+    `a_consis_move_binder`) — mid-entry surgery over the
     trio, with `binds_mid_swap` / `a_flex_tvar_mid_swap`; but L9's entry
     is RIGID and its walk skips it verbatim, while the alias entry is
     where the action is.
