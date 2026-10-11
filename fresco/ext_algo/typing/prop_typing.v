@@ -181,16 +181,11 @@ Proof.
       by (clear - Huαs Hxd; simpl_env in *; solve_uniq).
     assert (HAcov : ftvar_in_ptyp A [<=] S2)
       by (clear - Hgftv Hbin Hqs Hgg; fsetdec).
-    assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_typ A) ++ αs ++ Θ1)
-                      ∪ ftvar_in_pskl Q
-                      ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      [<=] add x S2).
-    { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hv.
-      pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Ht.
-      simpl in Hv, Ht.
-      clear - Hv Ht Hcov Hcv1 Hqs Hgs Hgg Hbin Hbftv HAcov. env_simp. fsetdec. }
-    destruct (IHe_typing Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
+    assert (Hsc : ftvar_in_aenv (αs ++ Θ1) ∪ ftvar_in_pskl Q
+              ∪ ftvar_in_ptyp A ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S2)
+      by (clear - Hcov Hcv1 Hqs Hgs Hgg Hbin Hbftv HAcov; env_simp; fsetdec).
+    destruct (IHe_typing Hu' (cover_open_body_typ x Hsc))
+      as [Ha [Hub [Hcvb Hqb]]].
     assert (HxΞ : x `notin` dom Ξ)
       by (clear - Hub; simpl_env in *; solve_uniq).
     assert (HxΘ2 : x `notin` dom Θ2)
@@ -220,16 +215,11 @@ Proof.
     assert (Hxd : x `notin` dom Θ2) by (clear - Hd2 Hcv2 H3; fsetdec).
     assert (Hu' : uniq ((x ~ abind_var_typ A) ++ Θ2))
       by (clear - Hu2 Hxd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_typ A) ++ Θ2)
-                      ∪ ftvar_in_pskl Q
-                      ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      [<=] add x S2).
-    { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hv.
-      pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Ht.
-      simpl in Hv, Ht.
-      clear - Hv Ht Hcov Hcv2 Hqs Hgs Hgc HAe. env_simp. fsetdec. }
-    destruct (IHe_typing Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
+    assert (Hsc : ftvar_in_aenv Θ2 ∪ ftvar_in_pskl Q
+              ∪ ftvar_in_ptyp A ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S2)
+      by (clear - Hcov Hcv2 Hqs Hgs Hgc HAe; env_simp; fsetdec).
+    destruct (IHe_typing Hu' (cover_open_body_typ x Hsc))
+      as [Ha [Hub [Hcvb Hqb]]].
     assert (HxΞ : x `notin` dom Ξ)
       by (clear - Hub; simpl_env in *; solve_uniq).
     assert (HxΘ3 : x `notin` dom Θ3)
@@ -291,16 +281,11 @@ Proof.
     assert (Hxd : x `notin` dom Θ1) by (clear - Hd1 Hcv1 H3; fsetdec).
     assert (Hu' : uniq ((x ~ abind_var_typ A) ++ Θ1))
       by (clear - Hu1 Hxd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_typ A) ++ Θ1)
-                      ∪ ftvar_in_pskl (ptyp_to_pskl B)
-                      ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      [<=] add x S1).
-    { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hv.
-      pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Ht.
-      simpl in Hv, Ht.
-      clear - Hv Ht Hcov Hcv1 Hqs Hgs HeA HeB. env_simp. fsetdec. }
-    destruct (IHe_typing Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
+    assert (Hsc : ftvar_in_aenv Θ1 ∪ ftvar_in_pskl (ptyp_to_pskl B)
+              ∪ ftvar_in_ptyp A ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S1)
+      by (clear - Hcov Hcv1 Hqs Hgs HeA HeB; env_simp; fsetdec).
+    destruct (IHe_typing Hu' (cover_open_body_typ x Hsc))
+      as [Ha [Hub [Hcvb Hqb]]].
     assert (HxΞ : x `notin` dom Ξ)
       by (clear - Hub; simpl_env in *; solve_uniq).
     assert (HxΘ2 : x `notin` dom Θ2)
@@ -370,16 +355,11 @@ Proof.
     assert (Hxd : x `notin` dom Θ2) by (clear - Hd2 Hcv2 H4; fsetdec).
     assert (Hu' : uniq ((x ~ abind_var_typ A) ++ Θ2))
       by (clear - Hu2 Hxd; solve_uniq).
-    assert (Hcov' : ftvar_in_aenv ((x ~ abind_var_typ A) ++ Θ2)
-                      ∪ ftvar_in_pskl (ptyp_to_pskl B)
-                      ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-                      [<=] add x S2).
-    { pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hv.
-      pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Ht.
-      simpl in Hv, Ht.
-      clear - Hv Ht Hcov Hcv2 Hqs Hgs Hgc HeA HeB. env_simp. fsetdec. }
-    destruct (IHe_typing Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
+    assert (Hsc : ftvar_in_aenv Θ2 ∪ ftvar_in_pskl (ptyp_to_pskl B)
+              ∪ ftvar_in_ptyp A ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S2)
+      by (clear - Hcov Hcv2 Hqs Hgs Hgc HeA HeB; env_simp; fsetdec).
+    destruct (IHe_typing Hu' (cover_open_body_typ x Hsc))
+      as [Ha [Hub [Hcvb Hqb]]].
     assert (HxΞ : x `notin` dom Ξ)
       by (clear - Hub; simpl_env in *; solve_uniq).
     assert (HxΘ3 : x `notin` dom Θ3)

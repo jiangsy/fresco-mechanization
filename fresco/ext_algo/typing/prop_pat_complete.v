@@ -307,35 +307,6 @@ Proof.
   - destruct (Hav2 _ _ Hin) as [Ha Hb]. split; clear - Ha Hb HTS; fsetdec.
 Qed.
 
-(** The motive's coverage at an abs row's recursive call — the body opened
-    at the runner's draw, under the binding the row pushes — read off the
-    draw's own coverage.  Once per payload sort. *)
-Lemma cover_open_body_skl : forall (S : atoms) (Θ : aenv) P0 P e x,
-  ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P
-    ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S ->
-  ftvar_in_aenv ((x ~ abind_var_skl P) ++ Θ) ∪ ftvar_in_pskl P0
-    ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-    ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) [<=] add x S.
-Proof.
-  intros * H.
-  pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hfo.
-  pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hto.
-  simpl in *. fsetdec.
-Qed.
-
-Lemma cover_open_body_typ : forall (S : atoms) (Θ : aenv) P0 A e x,
-  ftvar_in_aenv Θ ∪ ftvar_in_pskl P0 ∪ ftvar_in_ptyp A
-    ∪ fvar_in_exp e ∪ ftvar_in_exp e [<=] S ->
-  ftvar_in_aenv ((x ~ abind_var_typ A) ++ Θ) ∪ ftvar_in_pskl P0
-    ∪ fvar_in_exp (open_exp_wrt_exp e (exp_var_f x))
-    ∪ ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) [<=] add x S.
-Proof.
-  intros * H.
-  pose proof (fvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hfo.
-  pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hto.
-  simpl in *. fsetdec.
-Qed.
-
 (** Pushing a binder at the runner's draw keeps the three context
     invariants the motive asks of its input context. *)
 Lemma push_fresh_invariants : forall S (Θ : aenv) b,
@@ -359,8 +330,6 @@ Qed.
 Arguments e_pat_draw_term_skl {S m Θ P0} e {P x Sd Ξ Θd Q} _ _ _.
 Arguments e_pat_draw_term_typ {S m Θ P0} e {A x Sd Ξ Θd Q} _ _ _.
 Arguments push_fresh_invariants {S Θ b} _ _ _ _ _ _.
-Arguments cover_open_body_skl {S Θ P0 P e} x _.
-Arguments cover_open_body_typ {S Θ P0 A e} x _.
 
 (* ===================================================================== *)
 (*  §2  ROOT INVERSIONS — the case backbone                               *)
