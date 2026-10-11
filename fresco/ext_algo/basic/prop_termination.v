@@ -445,11 +445,7 @@ Lemma e_looksub_lookeq_cstrs_lc :
      {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
      lc_pskl P -> lc_pskl P' -> Forall lc_a_cstr C).
 Proof.
-  apply (e_looksub_lookeq_mutind
-           (fun S0 Θ α m P P' S1 Ξ C _ =>
-              lc_pskl P -> lc_pskl P' -> Forall lc_a_cstr C)
-           (fun S0 Θ α P P' S1 Ξ C _ =>
-              lc_pskl P -> lc_pskl P' -> Forall lc_a_cstr C));
+  apply e_looksub_lookeq_mutind;
     intros;
     repeat match goal with
     | H : lc_pskl (pskl_arrow _ _) |- _ =>
@@ -480,9 +476,7 @@ Lemma e_solve_sub_eq_lc :
      {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
      lc_pskl P -> lc_pskl Q -> lc_pskl P').
 Proof.
-  apply (e_solve_sub_eq_mutind
-           (fun S0 Θ m P Q S1 Ξ P' _ => lc_pskl P -> lc_pskl Q -> lc_pskl P')
-           (fun S0 Θ P Q S1 Ξ P' _ => lc_pskl P -> lc_pskl Q -> lc_pskl P'));
+  apply e_solve_sub_eq_mutind;
     intros;
     (* SE-FlexR's output is [guess^TY]'s *)
     try solve [ eapply e_guess_mono_lc_pskl; eassumption ];
@@ -783,9 +777,7 @@ Lemma e_looksub_lookeq_block_flex :
   (forall S0 Θ α P P' S1 Ξ C,
      {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e -> all_flex_mono Ξ).
 Proof.
-  apply (e_looksub_lookeq_mutind
-           (fun S0 Θ α m P P' S1 Ξ C _ => all_flex_mono Ξ)
-           (fun S0 Θ α P P' S1 Ξ C _ => all_flex_mono Ξ));
+  apply e_looksub_lookeq_mutind;
     intros;
     try solve [ repeat constructor ];
     try solve [ apply all_flex_mono_app; assumption ];
@@ -798,9 +790,7 @@ Lemma e_solve_sub_eq_block_flex :
   (forall S0 Θ P Q S1 Ξ P',
      {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e -> all_flex_mono Ξ).
 Proof.
-  apply (e_solve_sub_eq_mutind
-           (fun S0 Θ m P Q S1 Ξ P' _ => all_flex_mono Ξ)
-           (fun S0 Θ P Q S1 Ξ P' _ => all_flex_mono Ξ));
+  apply e_solve_sub_eq_mutind;
     intros;
     try solve [ repeat constructor ];
     try solve [ apply all_flex_mono_app; assumption ];
@@ -862,13 +852,7 @@ Lemma e_assign_unify_consis_defs_mono :
      {{ S0 ↝ S1 ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}e ->
      aenv_defs_mono Θ -> aenv_defs_mono Θ').
 Proof.
-  apply (e_assign_unify_consis_mutind
-           (fun S0 Θ Ξ α P S1 Θ' _ =>
-              aenv_defs_mono Θ -> aenv_defs_mono Ξ -> aenv_defs_mono Θ')
-           (fun S0 Θ α β S1 Θ' _ =>
-              aenv_defs_mono Θ -> aenv_defs_mono Θ')
-           (fun Δ1 Δ2 S0 Θ P0 P Q S1 Θ' _ =>
-              aenv_defs_mono Θ -> aenv_defs_mono Θ'));
+  apply e_assign_unify_consis_mutind;
     intros;
     (* reduce the [(x ~ b) ++ Θ] spellings to cons form so the [Forall]
        patterns below see them *)
@@ -1028,12 +1012,7 @@ Lemma e_assign_unify_consis_ndef_mono :
      {{ S0 ↝ S1 ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}e ->
      ndef_aenv Θ <= ndef_aenv Θ').
 Proof.
-  apply (e_assign_unify_consis_mutind
-           (fun S0 Θ Ξ α P S1 Θ' _ =>
-              ndef_aenv Ξ + ndef_aenv Θ <= ndef_aenv Θ')
-           (fun S0 Θ α β S1 Θ' _ => ndef_aenv Θ <= ndef_aenv Θ')
-           (fun Δ1 Δ2 S0 Θ P0 P Q S1 Θ' _ =>
-              ndef_aenv Θ <= ndef_aenv Θ'));
+  apply e_assign_unify_consis_mutind;
     intros; simpl in *;
     repeat rewrite ndef_aenv_app in *; simpl in *;
     (* Flex-Flex-Skip' carries its binding as a disjunction *)
@@ -1069,16 +1048,7 @@ Lemma e_assign_unify_consis_wpres :
      nundef_aenv Θ' + ndef_aenv Θ'
      <= nundef_aenv Θ + ndef_aenv Θ + nholes_pskl P0 + nholes_pskl P).
 Proof.
-  apply (e_assign_unify_consis_mutind
-           (fun S0 Θ Ξ α P S1 Θ' _ =>
-              nundef_aenv Θ' + ndef_aenv Θ'
-              <= nundef_aenv (Ξ ++ Θ) + ndef_aenv (Ξ ++ Θ) + nholes_pskl P)
-           (fun S0 Θ α β S1 Θ' _ =>
-              nundef_aenv Θ' + ndef_aenv Θ' <= nundef_aenv Θ + ndef_aenv Θ)
-           (fun Δ1 Δ2 S0 Θ P0 P Q S1 Θ' _ =>
-              nundef_aenv Θ' + ndef_aenv Θ'
-              <= nundef_aenv Θ + ndef_aenv Θ
-                 + nholes_pskl P0 + nholes_pskl P));
+  apply e_assign_unify_consis_mutind;
     intros; simpl in *;
     (* Assign-SolveM: the guess block is the pattern's ghosts, and flex-only *)
     repeat match goal with

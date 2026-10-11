@@ -225,10 +225,7 @@ Lemma a_assign_unify_consis_tm_le :
   (forall Δ1 Δ2 Θ0 P0 P Q Θ1,
      a_consis Δ1 Δ2 Θ0 P0 P Q Θ1 -> aenv_tm_le Θ0 Θ1).
 Proof.
-  apply (a_assign_unify_consis_mutind
-           (fun Θ0 Ξ α P Θ1 _ => aenv_tm_le Θ0 Θ1)
-           (fun Θ0 α β Θ1 _ => aenv_tm_le Θ0 Θ1)
-           (fun Δ1 Δ2 Θ0 P0 P Q Θ1 _ => aenv_tm_le Θ0 Θ1)).
+  apply a_assign_unify_consis_mutind.
   (* ---------- a_assign ---------- *)
   - (* univ_ghost_id *) intros; apply aenv_tm_le_refl.
   - (* solve_m *)
@@ -305,9 +302,7 @@ Lemma a_sub_sub_flex_tm_le :
   (forall NM M P0 Θ0 Ξ α Q Θ1,
      a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 -> aenv_tm_le Θ0 Θ1).
 Proof.
-  apply (a_sub_sub_flex_tm_mutind
-           (fun NM M P0 Θ0 P Q Θ1 _ => aenv_tm_le Θ0 Θ1)
-           (fun NM M P0 Θ0 Ξ α Q Θ1 _ => aenv_tm_le Θ0 Θ1)).
+  apply a_sub_sub_flex_tm_mutind.
   (* ---------- a_sub ---------- *)
   - (* infer *) intros; apply aenv_tm_le_refl.
   - (* check *)

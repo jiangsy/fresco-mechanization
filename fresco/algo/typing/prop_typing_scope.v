@@ -703,10 +703,7 @@ Lemma a_assign_unify_consis_region :
      {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 }}a ->
      consis_region_concl Θ0 P0 P Θ1).
 Proof.
-  apply (a_assign_unify_consis_mutind
-           (fun Θ0 Ξ α P Θ1 _ => assign_region_concl Θ0 Ξ α P Θ1)
-           (fun Θ0 α β Θ1 _ => True)
-           (fun Δ1 Δ2 Θ0 P0 P P' Θ1 _ => consis_region_concl Θ0 P0 P Θ1));
+  apply a_assign_unify_consis_mutind;
     unfold assign_region_concl, consis_region_concl.
   - (* Assign-UnivGhost-Id : the subject IS the head, hence ABOVE [m] *)
     intros Θ0 α m b Hbm Hmk Huq Hdec HdΞ Hnab Hnv.
@@ -1203,10 +1200,7 @@ Lemma a_sub_sub_flex_scope :
      a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
      sub_flex_scope_concl NM M P0 Θ0 Ξ α Q Θ1).
 Proof.
-  apply (a_sub_sub_flex_tm_mutind
-           (fun NM M P0 Θ0 P Q Θ1 _ => sub_scope_concl NM M P0 Θ0 P Q Θ1)
-           (fun NM M P0 Θ0 Ξ α Q Θ1 _ =>
-              sub_flex_scope_concl NM M P0 Θ0 Ξ α Q Θ1));
+  apply a_sub_sub_flex_tm_mutind;
     unfold sub_scope_concl, sub_flex_scope_concl.
   - (* Infer : TI has no core *)
     intros; match goal with H : pskl_ty_core _ _ _ |- _ => inversion H end.

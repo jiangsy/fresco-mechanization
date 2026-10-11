@@ -91,10 +91,7 @@ Lemma e_sub_tc_yield :
   (forall S0 NM M P0 Θ0 Ξ α Q S1 Θ1,
      e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1 -> True).
 Proof.
-  apply (e_sub_sub_flex_mutind
-           (fun S0 NM M P0 Θ0 P Q S1 Θ1 _ =>
-              NM = a_sub_mode_ty -> M = mode_tc -> Q = P0)
-           (fun S0 NM M P0 Θ0 Ξ α Q S1 Θ1 _ => True));
+  apply e_sub_sub_flex_mutind;
     try solve [ intros; exact I ];
     intros; try discriminate; try reflexivity.
   - (* ForallL passes the premise's yield through *)
@@ -459,10 +456,7 @@ Theorem a_sub_sub_flex_rel_e :
   (forall NM M P0 Θ0 Ξ α Q Θ1, a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
      lift_sub_flex_concl NM M P0 Θ0 Ξ α Q Θ1).
 Proof.
-  apply (a_sub_sub_flex_tm_mutind
-           (fun NM M P0 Θ0 P Q Θ1 _ => lift_sub_concl NM M P0 Θ0 P Q Θ1)
-           (fun NM M P0 Θ0 Ξ α Q Θ1 _ =>
-              lift_sub_flex_concl NM M P0 Θ0 Ξ α Q Θ1)).
+  apply a_sub_sub_flex_tm_mutind.
   - (* S-Infer : output = subject, context unchanged *)
     intros NM P Θ0.
     intros S0 Θ0' P0' P' ρ V HrΘ HrP0 HrP Hagr Hinj Hfun Hwf Huq2p Hftv2

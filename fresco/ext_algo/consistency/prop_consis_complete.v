@@ -716,13 +716,7 @@ Lemma e_unify_consis_refl_mono :
      P0 = P -> (exists A, P = ptyp_to_pskl A /\ mono_ptyp A) ->
      aenv_defs_mono Θ0 -> S1 = S0 /\ Θ1 = Θ0).
 Proof.
-  apply (e_assign_unify_consis_mutind
-           (fun S0 Θ0 Ξ α P S1 Θ1 _ => True)
-           (fun S0 Θ0 α β S1 Θ1 _ =>
-              α = β -> aenv_defs_mono Θ0 -> S1 = S0 /\ Θ1 = Θ0)
-           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
-              P0 = P -> (exists A, P = ptyp_to_pskl A /\ mono_ptyp A) ->
-              aenv_defs_mono Θ0 -> S1 = S0 /\ Θ1 = Θ0)).
+  apply e_assign_unify_consis_mutind.
   (* ---- assign: superseded by §8's [e_assign_target_flex] ---- *)
   1-8: intros; exact I.
   (* ---- unify ---- *)

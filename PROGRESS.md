@@ -181,6 +181,24 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Infer mutual-induction motives from theorem conclusions
+
+Remove 71 explicit motive applications across 24 proof files. These repeat
+the conclusions already present in their mutual theorems; direct application
+of the mutual induction principle lets Coq infer them. Preserve every case
+proof, named obligation, and theorem statement. The lookup lifting proof
+alone removes 38 lines of duplicated conclusions.
+
+Net reduction: **436 physical Coq lines / 436 nonblank, noncomment lines**.
+All 875 existing theorem statements across the edited files are unchanged;
+inline tactic terms remain at 679, with none added.
+
+Validation: the lookup lifting proof passed focused compilation, then
+`make coq` passed with all 34 headline assumption reports closed under the
+global context, no axioms and no errors. Statement comparison and
+`git diff --check` passed.
+
+
 ## 2026-10-11 — Share soundness invariant transport through binders
 
 Add `sound_invariants_strip_tvar`: invariant preservation under a shared

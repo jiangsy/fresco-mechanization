@@ -102,13 +102,7 @@ Lemma a_assign_unify_consis_flex_preserve :
      {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 }}a ->
      forall α1, a_flex_tvar Θ0 α1 -> a_flex_tvar Θ1 α1).
 Proof.
-  apply (a_assign_unify_consis_mutind
-           (fun Θ0 Ξ α P Θ1 _ =>
-              forall α1, a_flex_tvar (Ξ ++ Θ0) α1 -> a_flex_tvar Θ1 α1)
-           (fun Θ0 α β Θ1 _ =>
-              forall α1, a_flex_tvar Θ0 α1 -> a_flex_tvar Θ1 α1)
-           (fun Δ1 Δ2 Θ0 P0 P P' Θ1 _ =>
-              forall α1, a_flex_tvar Θ0 α1 -> a_flex_tvar Θ1 α1));
+  apply a_assign_unify_consis_mutind;
     intros;
     (* Instantiate preservation at the queried atom, then reduce context
        surgery to disjunctions of flexible occurrences. *)

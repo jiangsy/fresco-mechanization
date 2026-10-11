@@ -76,11 +76,7 @@ Lemma a_sub_sub_flex_fn_arrow_shape :
      NM = a_sub_mode_ty ->
      fn_arrow_shape_pskl (mode_fn M) Q).
 Proof.
-  apply (a_sub_sub_flex_tm_mutind
-           (fun NM M P0 Θ0 P Q Θ1 _ =>
-              NM = a_sub_mode_ty -> fn_arrow_shape_pskl M Q)
-           (fun NM M P0 Θ0 Ξ α Q Θ1 _ =>
-              NM = a_sub_mode_ty -> fn_arrow_shape_pskl (mode_fn M) Q));
+  apply a_sub_sub_flex_tm_mutind;
     intros;
     try match goal with
         | H : a_sub_mode_sk = a_sub_mode_ty |- _ => discriminate H

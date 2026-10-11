@@ -1192,13 +1192,7 @@ Lemma a_solvetag_sub_eq_rename_var :
      forall α β0, {{ (subst_uskl_in_uskl (uskl_var_f β0) α ψ) ∼
                  (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da).
 Proof.
-  apply (a_solvetag_sub_eq_mutind
-           (fun ψ M P Ψ _ => forall α β0,
-              {{ (subst_uskl_in_uskl (uskl_var_f β0) α ψ) ≼[ M ]
-              (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da)
-           (fun ψ P Ψ _ => forall α β0,
-              {{ (subst_uskl_in_uskl (uskl_var_f β0) α ψ) ∼
-              (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da));
+  apply a_solvetag_sub_eq_mutind;
     intros; simpl.
   - (* SSub-Var *)
     destruct_if;
@@ -3027,11 +3021,7 @@ Theorem a_sub_decorate_bundle :
      a_sub_flex NM M P0 Θ0 Ξw αf P' Θ1 ->
      sub_flex_decorate_concl NM M P0 Θ0 Ξw αf P' Θ1).
 Proof.
-  apply (a_sub_sub_flex_mutind
-           (fun NM M P0 Θ0 P P' Θ1 _ =>
-              sub_decorate_concl NM M P0 Θ0 P P' Θ1)
-           (fun NM M P0 Θ0 Ξw αf P' Θ1 _ =>
-              sub_flex_decorate_concl NM M P0 Θ0 Ξw αf P' Θ1));
+  apply a_sub_sub_flex_mutind;
     unfold sub_decorate_concl, sub_flex_decorate_concl.
   - (* Infer *)
     intros NM P Θ0 Hwf HwfP0 HwfP Hmod Hgf0.

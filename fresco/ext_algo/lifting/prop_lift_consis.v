@@ -1387,10 +1387,7 @@ Theorem a_assign_unify_consis_rel_e :
   (forall Δ1 Δ2 Θ0 P0 P Q Θ1, {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a ->
      lift_consis_concl Δ1 Δ2 Θ0 P0 P Q Θ1).
 Proof.
-  apply (a_assign_unify_consis_mutind
-           (fun Θ0 Ξ α P Θ1 _ => lift_assign_concl Θ0 Ξ α P Θ1)
-           (fun Θ0 α β Θ1 _ => lift_unify_concl Θ0 α β Θ1)
-           (fun Δ1 Δ2 Θ0 P0 P Q Θ1 _ => lift_consis_concl Δ1 Δ2 Θ0 P0 P Q Θ1)).
+  apply a_assign_unify_consis_mutind.
   - (* Assign-UnivGhost-Id *)
     intros Θ0 α.
     intros S0 Θ0' Ξ' α' P' ρ V HrΘ HrΞ Hrα HrP Hagr Hinj Hfun Hfl Hwf Hdec

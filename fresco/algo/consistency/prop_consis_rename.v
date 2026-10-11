@@ -111,10 +111,7 @@ Lemma a_assign_unify_consis_dom_mono :
   (forall Δ1 Δ2 Θ0 P0 P P' Θ1,
      {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 }}a -> dom Θ0 [<=] dom Θ1).
 Proof.
-  apply (a_assign_unify_consis_mutind
-           (fun Θ0 Ξ α P Θ1 _ => dom (Ξ ++ Θ0) [<=] dom Θ1)
-           (fun Θ0 α β Θ1 _ => dom Θ0 [<=] dom Θ1)
-           (fun Δ1 Δ2 Θ0 P0 P P' Θ1 _ => dom Θ0 [<=] dom Θ1));
+  apply a_assign_unify_consis_mutind;
     intros;
     (* the three ∀ rows first — strip the rule's own binder (see
        [dom_sub_strip_tvar]); the rewriting below would destroy the shape *)
@@ -146,16 +143,7 @@ Lemma a_assign_unify_consis_tvar_prefix :
      forall Ξr Θt, Θi = Ξr ++ Θt -> tvar_prefix Ξr ->
      exists Θt', Θo = Ξr ++ Θt').
 Proof.
-  apply (a_assign_unify_consis_mutind
-           (fun Θi Ξ α P Θo _ =>
-              forall Ξr Θt, Θi = Ξr ++ Θt -> tvar_prefix Ξr ->
-              exists Θt', Θo = Ξr ++ Θt')
-           (fun Θi α β Θo _ =>
-              forall Ξr Θt, Θi = Ξr ++ Θt -> tvar_prefix Ξr ->
-              exists Θt', Θo = Ξr ++ Θt')
-           (fun Δ1 Δ2 Θi P0 P P' Θo _ =>
-              forall Ξr Θt, Θi = Ξr ++ Θt -> tvar_prefix Ξr ->
-              exists Θt', Θo = Ξr ++ Θt')).
+  apply a_assign_unify_consis_mutind.
   - (* univ_ghost_id : flex head *)
     intros Θ0 α Ξr Θt Heq Htv. tvp_dispatch.
   - (* solve_m : flex head *)
@@ -267,12 +255,7 @@ Lemma a_assign_unify_consis_delta_compat :
      forall Δ1' Δ2', Δ1 [=] Δ1' -> Δ2 [=] Δ2' ->
      {{ Θ0 ⊢[ Δ1' | Δ2' | P0 ] P ∼ P' ⊣ Θ1 }}a).
 Proof.
-  apply (a_assign_unify_consis_mutind
-           (fun Θ0 Ξ α P Θ1 _ => True)
-           (fun Θ0 α β Θ1 _ => True)
-           (fun Δ1 Δ2 Θ0 P0 P P' Θ1 _ =>
-              forall Δ1' Δ2', Δ1 [=] Δ1' -> Δ2 [=] Δ2' ->
-              {{ Θ0 ⊢[ Δ1' | Δ2' | P0 ] P ∼ P' ⊣ Θ1 }}a));
+  apply a_assign_unify_consis_mutind;
     (* the assign / unify motives are trivial — but their cases still
        quantify over the rule's variables, so [exact I] needs the intros *)
     try (intros; exact I).
@@ -340,10 +323,7 @@ Lemma a_assign_unify_subject_flex :
   (forall Δ1 Δ2 Θ0 P0 P P' Θ1,
      {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 }}a -> True).
 Proof.
-  apply (a_assign_unify_consis_mutind
-           (fun Θ0 Ξ α P Θ1 _ => a_flex_tvar (Ξ ++ Θ0) α)
-           (fun Θ0 α β Θ1 _ => a_flex_tvar Θ0 α /\ a_flex_tvar Θ0 β)
-           (fun Δ1 Δ2 Θ0 P0 P P' Θ1 _ => True));
+  apply a_assign_unify_consis_mutind;
     try solve [ intros; exact I ].
   - (* univ_ghost_id *)
     intros Θ0 α. simpl. left. left. reflexivity.
@@ -414,10 +394,7 @@ Lemma a_assign_unify_consis_uniq :
   (forall Δ1 Δ2 Θ0 P0 P P' Θ1,
      {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P' ⊣ Θ1 }}a -> uniq Θ0 -> uniq Θ1).
 Proof.
-  apply (a_assign_unify_consis_mutind
-           (fun Θ0 Ξ α P Θ1 _ => uniq (Ξ ++ Θ0) -> uniq Θ1)
-           (fun Θ0 α β Θ1 _ => uniq Θ0 -> uniq Θ1)
-           (fun Δ1 Δ2 Θ0 P0 P P' Θ1 _ => uniq Θ0 -> uniq Θ1)).
+  apply a_assign_unify_consis_mutind.
   (* ---------- a_assign ---------- *)
   - (* univ_ghost_id : output = input *)
     intros Θ0 α Hu. simpl_env in Hu. exact Hu.
@@ -794,53 +771,7 @@ Lemma a_assign_unify_consis_rename_tvar : forall (α : atom),
          ⊣ (Ξr ++ (β0 ~ abind_tvar) ++ Θt) }}a).
 Proof.
   intros α.
-  apply (a_assign_unify_consis_mutind
-           (fun Θi Ξ s P Θo _ =>
-              exists L, forall (β0 : atom), β0 `notin` L ->
-              forall Ξr Θb, Θi = Ξr ++ (α ~ abind_tvar) ++ Θb ->
-              tvar_prefix Ξr ->
-              uniq (Ξ ++ Θi) ->
-              β0 `notin` dom (Ξ ++ Θi) ->
-              β0 `notin` dom Θo ->
-              β0 `notin` ftvar_in_pskl P ->
-              s <> α -> s <> β0 ->
-              exists Θt,
-                Θo = Ξr ++ (α ~ abind_tvar) ++ Θt /\
-                {{ (Ξr ++ (β0 ~ abind_tvar) ++ Θb) ⊲[ Ξ ] s ≔
-                  (subst_pskl_in_pskl (pskl_var_f β0) α P)
-                  ⊣ (Ξr ++ (β0 ~ abind_tvar) ++ Θt) }}a)
-           (fun Θi s1 s2 Θo _ =>
-              exists L, forall (β0 : atom), β0 `notin` L ->
-              forall Ξr Θb, Θi = Ξr ++ (α ~ abind_tvar) ++ Θb ->
-              tvar_prefix Ξr ->
-              uniq Θi ->
-              β0 `notin` dom Θi ->
-              β0 `notin` dom Θo ->
-              s1 <> α -> s1 <> β0 -> s2 <> α -> s2 <> β0 ->
-              exists Θt,
-                Θo = Ξr ++ (α ~ abind_tvar) ++ Θt /\
-                {{ (Ξr ++ (β0 ~ abind_tvar) ++ Θb) ⊲ s1 ≈ᵘ s2
-                  ⊣ (Ξr ++ (β0 ~ abind_tvar) ++ Θt) }}a)
-           (fun Δ1 Δ2 Θi P0 P P' Θo _ =>
-              exists L, forall (β0 : atom), β0 `notin` L ->
-              forall Ξr Θb, Θi = Ξr ++ (α ~ abind_tvar) ++ Θb ->
-              tvar_prefix Ξr ->
-              uniq Θi ->
-              β0 `notin` dom Θi ->
-              β0 `notin` dom Θo ->
-              β0 `notin` ftvar_in_pskl P0 ->
-              β0 `notin` ftvar_in_pskl P ->
-              β0 `notin` ftvar_in_pskl P' ->
-              β0 `notin` Δ1 ->
-              β0 `notin` Δ2 ->
-              exists Θt,
-                Θo = Ξr ++ (α ~ abind_tvar) ++ Θt /\
-                {{ (Ξr ++ (β0 ~ abind_tvar) ++ Θb)
-                  ⊢[ (rn_set β0 α Δ1) | (rn_set β0 α Δ2)
-                  | (subst_pskl_in_pskl (pskl_var_f β0) α P0) ]
-                  (subst_pskl_in_pskl (pskl_var_f β0) α P)
-                  ∼ (subst_pskl_in_pskl (pskl_var_f β0) α P')
-                  ⊣ (Ξr ++ (β0 ~ abind_tvar) ++ Θt) }}a)).
+  apply a_assign_unify_consis_mutind.
   - (* univ_ghost_id : flex head, vacuous under the all-rigid split *)
     intros Θ0 s. exists empty.
     intros β0 HL Ξr Θb Heq Htv. rn_vacuous.

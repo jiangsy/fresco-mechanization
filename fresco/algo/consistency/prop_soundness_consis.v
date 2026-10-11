@@ -2108,11 +2108,7 @@ Theorem a_assign_unify_consis_sound :
      {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ P3 ⊣ Θ1 }}a ->
      consis_sound_concl Δ1 Δ2 Θ0 P0 P P3 Θ1).
 Proof.
-  apply (a_assign_unify_consis_mutind
-           (fun Θ0 Ξ α P Θ1 _ => assign_sound_concl Θ0 Ξ α P Θ1)
-           (fun Θ0 α β Θ1 _ => unify_sound_concl Θ0 α β Θ1)
-           (fun Δ1 Δ2 Θ0 P0 P P3 Θ1 _ =>
-              consis_sound_concl Δ1 Δ2 Θ0 P0 P P3 Θ1));
+  apply a_assign_unify_consis_mutind;
     unfold assign_sound_concl, unify_sound_concl, consis_sound_concl,
            assign_sound_post, unify_sound_post, consis_sound_post.
   (* Cases 19, 20 and 22: ForallInh, ForallSyn and UnivGhost1.

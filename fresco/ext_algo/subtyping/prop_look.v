@@ -41,9 +41,7 @@ Lemma e_looksub_lookeq_supply_grows :
   (forall S0 Θ α P P' S1 Ξ C,
      {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e -> S0 [<=] S1).
 Proof.
-  apply (e_looksub_lookeq_mutind
-           (fun S0 Θ α m P P' S1 Ξ C _ => S0 [<=] S1)
-           (fun S0 Θ α P P' S1 Ξ C _ => S0 [<=] S1));
+  apply e_looksub_lookeq_mutind;
     intros; fsetdec.
 Qed.
 
@@ -92,13 +90,7 @@ Lemma e_looksub_lookeq_block :
      dom Ξ [<=] S1 /\ dom Ξ ∩ S0 [=] empty /\ uniq Ξ
      /\ ftvar_in_aenv Ξ [<=] dom Ξ).
 Proof.
-  apply (e_looksub_lookeq_mutind
-           (fun S0 Θ α m P P' S1 Ξ C _ =>
-              dom Ξ [<=] S1 /\ dom Ξ ∩ S0 [=] empty /\ uniq Ξ
-              /\ ftvar_in_aenv Ξ [<=] dom Ξ)
-           (fun S0 Θ α P P' S1 Ξ C _ =>
-              dom Ξ [<=] S1 /\ dom Ξ ∩ S0 [=] empty /\ uniq Ξ
-              /\ ftvar_in_aenv Ξ [<=] dom Ξ));
+  apply e_looksub_lookeq_mutind;
     intros;
     repeat match goal with H : _ /\ _ |- _ => destruct H end;
     look_grow_facts;
@@ -164,11 +156,7 @@ Lemma e_looksub_lookeq_cstr_ftvar :
      {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
      ftvar_in_a_cstrs C [<=] S1 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P').
 Proof.
-  apply (e_looksub_lookeq_mutind
-           (fun S0 Θ α m P P' S1 Ξ C _ =>
-              ftvar_in_a_cstrs C [<=] S1 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P')
-           (fun S0 Θ α P P' S1 Ξ C _ =>
-              ftvar_in_a_cstrs C [<=] S1 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P'));
+  apply e_looksub_lookeq_mutind;
     intros; look_grow_facts; open_upper_facts;
     repeat rewrite ftvar_in_a_cstrs_app in *;
     simpl in *; fsetdec.
@@ -204,13 +192,7 @@ Lemma e_looksub_lookeq_cstr_old :
      {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
      ftvar_in_a_cstrs C ∩ S0 [<=] ftvar_in_pskl P ∪ ftvar_in_pskl P').
 Proof.
-  apply (e_looksub_lookeq_mutind
-           (fun S0 Θ α m P P' S1 Ξ C _ =>
-              ftvar_in_a_cstrs C ∩ S0
-                [<=] ftvar_in_pskl P ∪ ftvar_in_pskl P')
-           (fun S0 Θ α P P' S1 Ξ C _ =>
-              ftvar_in_a_cstrs C ∩ S0
-                [<=] ftvar_in_pskl P ∪ ftvar_in_pskl P'));
+  apply e_looksub_lookeq_mutind;
     intros; look_grow_facts; open_upper_facts;
     repeat rewrite ftvar_in_a_cstrs_app in *;
     simpl in *; fsetdec.
@@ -273,11 +255,7 @@ Lemma e_looksub_lookeq_absent_pins :
 Proof.
   (* ⚠️ NOT [repeat split]: [S1 [=] S0] unfolds to an [iff], which
      [repeat split] happily dives into.  Every split below is spelled out. *)
-  apply (e_looksub_lookeq_mutind
-    (fun S0 Θ α m P P' S1 Ξ C _ =>
-       α `notin` ftvar_in_pskl P -> Ξ = nil /\ C = nil /\ S1 [=] S0)
-    (fun S0 Θ α P P' S1 Ξ C _ =>
-       α `notin` ftvar_in_pskl P -> Ξ = nil /\ C = nil /\ S1 [=] S0)).
+  apply e_looksub_lookeq_mutind.
 
   - (* LS-Var — the subject IS α *)
     intros S Θ α m P Habs. exfalso. simpl in Habs. clear - Habs. fsetdec.
@@ -374,13 +352,7 @@ Lemma e_looksub_lookeq_sound :
      add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
      {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a).
 Proof.
-  apply (e_looksub_lookeq_mutind
-    (fun S0 Θ α m P P' S1 Ξ C _ =>
-       add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
-       {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a)
-    (fun S0 Θ α P P' S1 Ξ C _ =>
-       add α (ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl P') [<=] S0 ->
-       {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}a)).
+  apply e_looksub_lookeq_mutind.
 
   - (* LS-Var *) intros. apply a_looksub__var.
   - (* LS-Absent *) intros. apply a_looksub__absent; assumption.
@@ -544,19 +516,7 @@ Lemma e_looksub_lookeq_swap : forall a b,
           ⤳ (swap_aenv a b Ξ) ⨾ (swap_cstrs a b C) }}e).
 Proof.
   intros a b.
-  apply (e_looksub_lookeq_mutind
-    (fun S0 Θ α m P P' S1 Ξ C _ =>
-       forall S0', S0' [=] swap_atoms a b S0 ->
-       exists S1', S1' [=] swap_atoms a b S1 /\
-         {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ (swap_pskl a b P)
-            ≼[ (swap_atom a b α) , m ] (swap_pskl a b P')
-            ⤳ (swap_aenv a b Ξ) ⨾ (swap_cstrs a b C) }}e)
-    (fun S0 Θ α P P' S1 Ξ C _ =>
-       forall S0', S0' [=] swap_atoms a b S0 ->
-       exists S1', S1' [=] swap_atoms a b S1 /\
-         {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ (swap_pskl a b P)
-            ∼[ (swap_atom a b α) ] (swap_pskl a b P')
-            ⤳ (swap_aenv a b Ξ) ⨾ (swap_cstrs a b C) }}e)).
+  apply e_looksub_lookeq_mutind.
 
   (* ------------------------- e_looksub ------------------------- *)
   - (* LS-Var *)

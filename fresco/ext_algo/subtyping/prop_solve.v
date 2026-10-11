@@ -46,9 +46,7 @@ Lemma e_solve_sub_eq_supply_grows :
   (forall S0 Θ P Q S1 Ξ P',
      {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e -> S0 [<=] S1).
 Proof.
-  apply (e_solve_sub_eq_mutind
-           (fun S0 Θ m P Q S1 Ξ P' _ => S0 [<=] S1)
-           (fun S0 Θ P Q S1 Ξ P' _ => S0 [<=] S1));
+  apply e_solve_sub_eq_mutind;
     intros;
     try (match goal with
          | Hg : e_guess_mono _ _ _ _ _ |- _ =>
@@ -132,13 +130,7 @@ Lemma e_solve_sub_eq_block :
      dom Ξ [<=] S1 /\ dom Ξ ∩ S0 [=] empty /\ uniq Ξ
      /\ ftvar_in_aenv Ξ [<=] dom Ξ).
 Proof.
-  apply (e_solve_sub_eq_mutind
-           (fun S0 Θ m P Q S1 Ξ P' _ =>
-              dom Ξ [<=] S1 /\ dom Ξ ∩ S0 [=] empty /\ uniq Ξ
-              /\ ftvar_in_aenv Ξ [<=] dom Ξ)
-           (fun S0 Θ P Q S1 Ξ P' _ =>
-              dom Ξ [<=] S1 /\ dom Ξ ∩ S0 [=] empty /\ uniq Ξ
-              /\ ftvar_in_aenv Ξ [<=] dom Ξ));
+  apply e_solve_sub_eq_mutind;
     intros;
     repeat match goal with H : _ /\ _ |- _ => destruct H end;
     solve_grow_facts; guess_block_facts;
@@ -207,11 +199,7 @@ Lemma e_solve_sub_eq_out_ftvar :
      {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
      ftvar_in_pskl P' [<=] S1 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q).
 Proof.
-  apply (e_solve_sub_eq_mutind
-           (fun S0 Θ m P Q S1 Ξ P' _ =>
-              ftvar_in_pskl P' [<=] S1 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q)
-           (fun S0 Θ P Q S1 Ξ P' _ =>
-              ftvar_in_pskl P' [<=] S1 ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q));
+  apply e_solve_sub_eq_mutind;
     intros; solve_grow_facts;
     (* SE-FlexR: the output is the GUESS's, so M1 bounds it *)
     repeat match goal with
@@ -259,13 +247,7 @@ Lemma e_solve_sub_eq_sound :
      ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
      {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a).
 Proof.
-  apply (e_solve_sub_eq_mutind
-    (fun S0 Θ m P Q S1 Ξ P' _ =>
-       ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
-       {{ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}a)
-    (fun S0 Θ P Q S1 Ξ P' _ =>
-       ftvar_in_aenv Θ ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q [<=] S0 ->
-       {{ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}a)).
+  apply e_solve_sub_eq_mutind.
 
   (* ---- solve_sub ---- *)
   - (* SS-Var *) intros. apply a_solve_sub__var.
@@ -489,17 +471,7 @@ Lemma e_solve_sub_eq_swap : forall a b,
           (swap_pskl a b Q) ⤳ (swap_aenv a b Ξ) ⨾ (swap_pskl a b P') }}e).
 Proof.
   intros a b.
-  apply (e_solve_sub_eq_mutind
-    (fun S0 Θ m P Q S1 Ξ P' _ =>
-       forall S0', S0' [=] swap_atoms a b S0 ->
-       exists S1', S1' [=] swap_atoms a b S1 /\
-         {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ₛ (swap_pskl a b P) ≼[ m ]
-            (swap_pskl a b Q) ⤳ (swap_aenv a b Ξ) ⨾ (swap_pskl a b P') }}e)
-    (fun S0 Θ P Q S1 Ξ P' _ =>
-       forall S0', S0' [=] swap_atoms a b S0 ->
-       exists S1', S1' [=] swap_atoms a b S1 /\
-         {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ) ⊢ₑ (swap_pskl a b P) ∼
-            (swap_pskl a b Q) ⤳ (swap_aenv a b Ξ) ⨾ (swap_pskl a b P') }}e)).
+  apply e_solve_sub_eq_mutind.
 
   (* ------------------------ e_solve_sub ------------------------ *)
   - (* SS-Var + SS-Flex *)

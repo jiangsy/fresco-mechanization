@@ -594,10 +594,7 @@ Lemma a_sub_output_wf_bundle :
      a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
      sub_flex_owf_concl NM M P0 Θ0 Ξ α Q Θ1).
 Proof.
-  apply (a_sub_sub_flex_tm_mutind
-           (fun NM M P0 Θ0 P P' Θ1 _ => sub_owf_concl NM M P0 Θ0 P P' Θ1)
-           (fun NM M P0 Θ0 Ξ α Q Θ1 _ =>
-              sub_flex_owf_concl NM M P0 Θ0 Ξ α Q Θ1));
+  apply a_sub_sub_flex_tm_mutind;
     unfold sub_owf_concl, sub_flex_owf_concl.
   - (* Infer : output = subject, context unchanged *)
     intros NM P Θ0 Hwf HwfP0 HwfP.
@@ -991,9 +988,7 @@ Lemma a_sub_sub_flex_dom_mono :
   (forall NM M P0 Θ0 Ξ α Q Θ1, a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
      dom (Ξ ++ Θ0) [<=] dom Θ1).
 Proof.
-  apply (a_sub_sub_flex_tm_mutind
-           (fun NM M P0 Θ0 P Q Θ1 _ => dom Θ0 [<=] dom Θ1)
-           (fun NM M P0 Θ0 Ξ α Q Θ1 _ => dom (Ξ ++ Θ0) [<=] dom Θ1)).
+  apply a_sub_sub_flex_tm_mutind.
   - (* Infer *) intros; clear; fsetdec.
   - (* Check *) intros Θ0 Θ1 A B Hgfa Hgfb Hga Hgb [Qc Hc].
     exact (auc_dom_mono_consis Hc).

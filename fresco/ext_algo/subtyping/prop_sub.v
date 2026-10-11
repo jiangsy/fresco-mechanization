@@ -63,9 +63,7 @@ Lemma e_sub_sub_flex_supply_grows :
   (forall S0 NM M P0 Θ0 Ξ α Q S1 Θ1,
      e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1 -> S0 [<=] S1).
 Proof.
-  apply (e_sub_sub_flex_mutind
-           (fun S0 NM M P0 Θ0 P Q S1 Θ1 _ => S0 [<=] S1)
-           (fun S0 NM M P0 Θ0 Ξ α Q S1 Θ1 _ => S0 [<=] S1));
+  apply e_sub_sub_flex_mutind;
     intros;
     (* [Check]'s premise is the consistency abbreviation, so its growth comes
        from M2 rather than from an IH *)
@@ -164,10 +162,7 @@ Lemma e_sub_sub_flex_dom_upper :
      e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1 ->
      dom Θ1 [<=] dom (Ξ ++ Θ0) ∪ (S1 ∖ S0)).
 Proof.
-  apply (e_sub_sub_flex_mutind
-           (fun S0 NM M P0 Θ0 P Q S1 Θ1 _ => dom Θ1 [<=] dom Θ0 ∪ (S1 ∖ S0))
-           (fun S0 NM M P0 Θ0 Ξ α Q S1 Θ1 _ =>
-              dom Θ1 [<=] dom (Ξ ++ Θ0) ∪ (S1 ∖ S0)));
+  apply e_sub_sub_flex_mutind;
     intros; sub_dom_facts;
     (* ⭐ Every row is set arithmetic once the growth facts and the two
        outside bounds are in.  The three rows that DRAW from the supply
@@ -238,17 +233,7 @@ Lemma e_sub_sub_flex_sound :
      a_sub_flex NM M P0 Θ0 Ξ α Q Θ1
      /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1 /\ ftvar_in_pskl Q [<=] S1).
 Proof.
-  apply (e_sub_sub_flex_mutind
-    (fun S0 NM M P0 Θ0 P Q S1 Θ1 _ =>
-       uniq Θ0 ->
-       ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P [<=] S0 ->
-       {{ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}a
-       /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1 /\ ftvar_in_pskl Q [<=] S1)
-    (fun S0 NM M P0 Θ0 Ξ α Q S1 Θ1 _ =>
-       uniq (Ξ ++ Θ0) ->
-       add α (ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P0) [<=] S0 ->
-       a_sub_flex NM M P0 Θ0 Ξ α Q Θ1
-       /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1 /\ ftvar_in_pskl Q [<=] S1)).
+  apply e_sub_sub_flex_mutind.
 
   (* ---------------- a_sub ---------------- *)
   - (* Infer *)
@@ -614,19 +599,7 @@ Lemma e_sub_sub_flex_swap : forall a b,
          S1' (swap_aenv a b Θ1)).
 Proof.
   intros a b.
-  apply (e_sub_sub_flex_mutind
-    (fun S0 NM M P0 Θ0 P Q S1 Θ1 _ =>
-       forall S0', S0' [=] swap_atoms a b S0 ->
-       exists S1', S1' [=] swap_atoms a b S1 /\
-         {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊢[ NM | M | (swap_pskl a b P0) ]
-            (swap_pskl a b P) ⩽ (swap_pskl a b Q)
-            ⊣ (swap_aenv a b Θ1) }}e)
-    (fun S0 NM M P0 Θ0 Ξ α Q S1 Θ1 _ =>
-       forall S0', S0' [=] swap_atoms a b S0 ->
-       exists S1', S1' [=] swap_atoms a b S1 /\
-         e_sub_flex S0' NM M (swap_pskl a b P0) (swap_aenv a b Θ0)
-           (swap_aenv a b Ξ) (swap_atom a b α) (swap_pskl a b Q)
-           S1' (swap_aenv a b Θ1))).
+  apply e_sub_sub_flex_mutind.
 
   (* --------------------------- e_sub --------------------------- *)
   - (* SI-Infer *)

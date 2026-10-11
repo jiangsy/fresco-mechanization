@@ -497,10 +497,7 @@ Lemma e_assign_unify_consis_env_lc :
      {{ S0 ↝ S1 ⊨ Θ ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ' }}e ->
      lc_aenv Θ -> lc_aenv Θ').
 Proof.
-  apply (e_assign_unify_consis_mutind
-           (fun S0 Θ Ξ α P S1 Θ' _ => lc_aenv Θ -> lc_aenv Ξ -> lc_aenv Θ')
-           (fun S0 Θ α β S1 Θ' _ => lc_aenv Θ -> lc_aenv Θ')
-           (fun Δ1 Δ2 S0 Θ P0 P Q S1 Θ' _ => lc_aenv Θ -> lc_aenv Θ'));
+  apply e_assign_unify_consis_mutind;
     intros;
     unfold lc_aenv in *;
     simpl in *;

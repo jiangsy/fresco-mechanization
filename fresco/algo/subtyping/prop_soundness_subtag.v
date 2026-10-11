@@ -1971,11 +1971,7 @@ Theorem a_subtag_sound_bundle :
      a_subtag_flex NM M P0 Θ0 Ξ α P Θ1 ->
      subtag_flex_sound_concl NM M P0 Θ0 Ξ α P Θ1).
 Proof.
-  apply (a_subtag_subtag_flex_mutind
-           (fun NM M P0 Ψ Θ0 R P' Θ1 _ =>
-              subtag_sound_concl NM M P0 Ψ Θ0 R P' Θ1)
-           (fun NM M P0 Θ0 Ξ α P Θ1 _ =>
-              subtag_flex_sound_concl NM M P0 Θ0 Ξ α P Θ1));
+  apply a_subtag_subtag_flex_mutind;
     unfold subtag_sound_concl, subtag_flex_sound_concl.
 
   - (* Infer : output ⌊R⌋, context unchanged *)

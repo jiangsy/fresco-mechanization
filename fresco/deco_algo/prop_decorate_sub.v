@@ -80,9 +80,7 @@ Lemma a_solvetag_sub_eq_psi_cong :
   (forall ψ P Ψ, {{ ψ ∼ P ⤳ Ψ }}da ->
      forall Ψ', Ψ [=] Ψ' -> {{ ψ ∼ P ⤳ Ψ' }}da).
 Proof.
-  apply (a_solvetag_sub_eq_mutind
-           (fun ψ M P Ψ _ => forall Ψ', Ψ [=] Ψ' -> {{ ψ ≼[ M ] P ⤳ Ψ' }}da)
-           (fun ψ P Ψ _ => forall Ψ', Ψ [=] Ψ' -> {{ ψ ∼ P ⤳ Ψ' }}da));
+  apply a_solvetag_sub_eq_mutind;
     intros; try (econstructor; eauto; fsetdec).
 Qed.
 
@@ -798,9 +796,7 @@ Lemma a_solvetag_sub_eq_tags_bound :
   (forall ψ M P Ψ, {{ ψ ≼[ M ] P ⤳ Ψ }}da -> Ψ [<=] ftag_in_uskl ψ) /\
   (forall ψ P Ψ, {{ ψ ∼ P ⤳ Ψ }}da -> Ψ [<=] ftag_in_uskl ψ).
 Proof.
-  apply (a_solvetag_sub_eq_mutind
-           (fun ψ M P Ψ _ => Ψ [<=] ftag_in_uskl ψ)
-           (fun ψ P Ψ _ => Ψ [<=] ftag_in_uskl ψ));
+  apply a_solvetag_sub_eq_mutind;
     intros; simpl;
     try solve [ clear - e; fsetdec ];
     try solve [ assumption ];
@@ -826,9 +822,7 @@ Lemma a_solvetag_sub_eq_ghost_empty :
   (forall ψ M P Ψ, {{ ψ ≼[ M ] P ⤳ Ψ }}da -> P = pskl_ghost -> Ψ [=] empty) /\
   (forall ψ P Ψ, {{ ψ ∼ P ⤳ Ψ }}da -> P = pskl_ghost -> Ψ [=] empty).
 Proof.
-  apply (a_solvetag_sub_eq_mutind
-           (fun ψ M P Ψ _ => P = pskl_ghost -> Ψ [=] empty)
-           (fun ψ P Ψ _ => P = pskl_ghost -> Ψ [=] empty));
+  apply a_solvetag_sub_eq_mutind;
     intros; subst; try discriminate;
     try solve [ assumption ];
     try solve [ auto ];
@@ -857,11 +851,7 @@ Lemma a_solvetag_sub_eq_target_rename :
   (forall ψ P Ψ, {{ ψ ∼ P ⤳ Ψ }}da ->
      forall α β0, {{ ψ ∼ (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da).
 Proof.
-  apply (a_solvetag_sub_eq_mutind
-           (fun ψ M P Ψ _ =>
-              forall α β0, {{ ψ ≼[ M ] (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da)
-           (fun ψ P Ψ _ =>
-              forall α β0, {{ ψ ∼ (subst_pskl_in_pskl (pskl_var_f β0) α P) ⤳ Ψ }}da));
+  apply a_solvetag_sub_eq_mutind;
     intros; simpl;
     (* target-shape-preserving rules whose premises close by auto *)
     try solve [ constructor; auto ];
@@ -2334,11 +2324,7 @@ Lemma a_looksub_lookeq_ghost_cstrs :
   (forall Θ α P P' Ξ 𝒞, {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a -> P' = pskl_ghost ->
      forall ψa Ψa, {{ 𝒞 ⊩ ψa ⤳ Ψa }}da -> Ψa [=] empty).
 Proof.
-  apply (a_looksub_lookeq_mutind
-           (fun Θ α m P P' Ξ 𝒞 _ => P' = pskl_ghost ->
-              forall ψa Ψa, {{ 𝒞 ⊩ ψa ⤳ Ψa }}da -> Ψa [=] empty)
-           (fun Θ α P P' Ξ 𝒞 _ => P' = pskl_ghost ->
-              forall ψa Ψa, {{ 𝒞 ⊩ ψa ⤳ Ψa }}da -> Ψa [=] empty));
+  apply a_looksub_lookeq_mutind;
     intros; subst; try discriminate;
     (* empty collections *)
     try solve [ match goal with

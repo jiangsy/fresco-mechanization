@@ -124,45 +124,7 @@ Lemma a_looksub_lookeq_rel_e :
        /\ cols_l ρx ∩ dom Ξ1 [=] empty
        /\ rel_a_cstrs (ρx ++ ρn ++ ρ) V C1 C2).
 Proof.
-  apply (a_looksub_lookeq_mutind
-    (fun Θ1 α m P1 P1' Ξ1 C1 _ =>
-       forall S0 Θ2 P2 P2' ρ V,
-       rel_pskl ρ V P1 P2 ->
-       rel_pskl ρ V P1' P2' ->
-       α `in` V ->
-       α `notin` cols_l ρ ->
-       α `notin` cols_r ρ ->
-       flex_agree_rel ρ V Θ1 Θ2 ->
-       V ∪ cols_r ρ ∪ ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] S0 ->
-       exists S1 ρx ρn Ξ2 C2,
-         {{ S0 ↝ S1 ⊨ Θ2 ⊢ P2 ≼[ α , m ] P2' ⤳ Ξ2 ⨾ C2 }}e
-         /\ Ξ1 = flex_pairs_l ρn /\ Ξ2 = flex_pairs_r ρn
-         /\ (forall a b, In (a, b) (ρx ++ ρn) ->
-               a `notin` add α (ftvar_in_aenv Θ1)
-               /\ b `in` S1 /\ b `notin` S0)
-         /\ cols_r ρx ∩ dom Ξ2 [=] empty
-         /\ (forall a b, In (a, b) ρx -> a `in` ftvar_in_a_cstrs C1)
-         /\ cols_l ρx ∩ dom Ξ1 [=] empty
-         /\ rel_a_cstrs (ρx ++ ρn ++ ρ) V C1 C2)
-    (fun Θ1 α P1 P1' Ξ1 C1 _ =>
-       forall S0 Θ2 P2 P2' ρ V,
-       rel_pskl ρ V P1 P2 ->
-       rel_pskl ρ V P1' P2' ->
-       α `in` V ->
-       α `notin` cols_l ρ ->
-       α `notin` cols_r ρ ->
-       flex_agree_rel ρ V Θ1 Θ2 ->
-       V ∪ cols_r ρ ∪ ftvar_in_pskl P2 ∪ ftvar_in_pskl P2' [<=] S0 ->
-       exists S1 ρx ρn Ξ2 C2,
-         {{ S0 ↝ S1 ⊨ Θ2 ⊢ P2 ∼[ α ] P2' ⤳ Ξ2 ⨾ C2 }}e
-         /\ Ξ1 = flex_pairs_l ρn /\ Ξ2 = flex_pairs_r ρn
-         /\ (forall a b, In (a, b) (ρx ++ ρn) ->
-               a `notin` add α (ftvar_in_aenv Θ1)
-               /\ b `in` S1 /\ b `notin` S0)
-         /\ cols_r ρx ∩ dom Ξ2 [=] empty
-         /\ (forall a b, In (a, b) ρx -> a `in` ftvar_in_a_cstrs C1)
-         /\ cols_l ρx ∩ dom Ξ1 [=] empty
-         /\ rel_a_cstrs (ρx ++ ρn ++ ρ) V C1 C2)).
+  apply a_looksub_lookeq_mutind.
   - (* LS-Var *)
     intros Θ1 α m Pt S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
     inversion HrelP; subst.

@@ -222,13 +222,7 @@ Lemma a_assign_unify_consis_rigid_only :
      a_consis Δ1 Δ2 Θ0 P0 P Q Θ1 ->
      forall γ, a_rigid_only Θ0 γ -> a_rigid_only Θ1 γ).
 Proof.
-  apply (a_assign_unify_consis_mutind
-           (fun Θ0 Ξ α P Θ1 _ =>
-              forall γ, a_rigid_only (Ξ ++ Θ0) γ -> a_rigid_only Θ1 γ)
-           (fun Θ0 α β Θ1 _ =>
-              forall γ, a_rigid_only Θ0 γ -> a_rigid_only Θ1 γ)
-           (fun Δ1 Δ2 Θ0 P0 P Q Θ1 _ =>
-              forall γ, a_rigid_only Θ0 γ -> a_rigid_only Θ1 γ)).
+  apply a_assign_unify_consis_mutind.
   - (* Assign-UnivGhost-Id *)
     intros Θ0 α γ H; exact H.
   - (* Assign-SolveM : upgrade α̂, deposit fresh β̄s *)
@@ -403,11 +397,7 @@ Lemma a_sub_sub_flex_rigid_only :
      a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
      forall γ, a_rigid_only (Ξ ++ Θ0) γ -> a_rigid_only Θ1 γ).
 Proof.
-  apply (a_sub_sub_flex_tm_mutind
-           (fun NM M P0 Θ0 P Q Θ1 _ =>
-              forall γ, a_rigid_only Θ0 γ -> a_rigid_only Θ1 γ)
-           (fun NM M P0 Θ0 Ξ α Q Θ1 _ =>
-              forall γ, a_rigid_only (Ξ ++ Θ0) γ -> a_rigid_only Θ1 γ)).
+  apply a_sub_sub_flex_tm_mutind.
   - (* Infer *) intros; assumption.
   - (* Check *)
     intros Θ0 Θ1 A B Hgfa Hgfb Hga Hgb [Qc Hc] γ H.
@@ -760,17 +750,7 @@ Lemma a_sub_sub_flex_ty_core :
      core_rigid (Ξ ++ Θ0) C ->
      pskl_ty_core (mode_fn M) Q C).
 Proof.
-  apply (a_sub_sub_flex_tm_mutind
-           (fun NM M P0 Θ0 P Q Θ1 _ =>
-              NM = a_sub_mode_ty ->
-              forall C, pskl_ty_core M P0 C ->
-              core_rigid Θ0 C ->
-              pskl_ty_core M Q C)
-           (fun NM M P0 Θ0 Ξ α Q Θ1 _ =>
-              NM = a_sub_mode_ty ->
-              forall C, pskl_ty_core (mode_fn M) P0 C ->
-              core_rigid (Ξ ++ Θ0) C ->
-              pskl_ty_core (mode_fn M) Q C)).
+  apply a_sub_sub_flex_tm_mutind.
   - (* Infer : TI has no core *)
     intros NM P Θ0 Heq C Hcore Hr; inversion Hcore.
   - (* Check : output = input *)
@@ -1084,11 +1064,7 @@ Lemma a_sub_ty_ghost_free_output_bundle :
      a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
      NM = a_sub_mode_ty -> pskl_ghost_free Q).
 Proof.
-  apply (a_sub_sub_flex_tm_mutind
-           (fun NM M P0 Θ0 P Q Θ1 _ =>
-              NM = a_sub_mode_ty -> pskl_ghost_free P -> pskl_ghost_free Q)
-           (fun NM M P0 Θ0 Ξ α Q Θ1 _ =>
-              NM = a_sub_mode_ty -> pskl_ghost_free Q));
+  apply a_sub_sub_flex_tm_mutind;
     intros;
     (* the SK-only rows *)
     try match goal with

@@ -1269,19 +1269,7 @@ Lemma a_assign_unify_consis_swap : forall a b,
        (swap_pskl a b P) (swap_pskl a b Q) (swap_aenv a b Θ1)).
 Proof.
   intros a b.
-  apply (a_assign_unify_consis_mutind
-           (fun Θ0 Ξ α P Θ1 _ =>
-              {{ (swap_aenv a b Θ0) ⊲[ swap_aenv a b Ξ ]
-                (swap_atom a b α) ≔ (swap_pskl a b P) ⊣ (swap_aenv a b Θ1) }}a)
-           (fun Θ0 α β Θ1 _ =>
-              {{ (swap_aenv a b Θ0) ⊲
-                (swap_atom a b α) ≈ᵘ (swap_atom a b β) ⊣ (swap_aenv a b Θ1) }}a)
-           (fun Δ1 Δ2 Θ0 P0 P Q Θ1 _ =>
-              forall Δ1' Δ2',
-                Δ1' [=] swap_atoms a b Δ1 ->
-                Δ2' [=] swap_atoms a b Δ2 ->
-              a_consis Δ1' Δ2' (swap_aenv a b Θ0) (swap_pskl a b P0)
-                (swap_pskl a b P) (swap_pskl a b Q) (swap_aenv a b Θ1)));
+  apply a_assign_unify_consis_mutind;
     try solve [intros; simpl;
       rewrite ?swap_aenv_app in *;
       econstructor; eauto 3 using swap_atom_neq,

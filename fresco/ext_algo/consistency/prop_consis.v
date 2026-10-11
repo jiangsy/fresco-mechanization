@@ -77,10 +77,7 @@ Lemma e_assign_unify_consis_supply_grows :
   (forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
      {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e -> S0 [<=] S1).
 Proof.
-  apply (e_assign_unify_consis_mutind
-           (fun S0 Θ0 Ξ α P S1 Θ1 _ => S0 [<=] S1)
-           (fun S0 Θ0 α β S1 Θ1 _ => S0 [<=] S1)
-           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ => S0 [<=] S1));
+  apply e_assign_unify_consis_mutind;
     intros;
     (* [Assign-SolveM] is the only row whose growth is not immediate from an
        IH or from reflexivity: its supply moves because [guess^TY] moved it *)
@@ -163,12 +160,7 @@ Lemma e_assign_unify_consis_dom_upper :
      {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
      dom Θ1 [<=] dom Θ0 ∪ (S1 ∖ S0)).
 Proof.
-  apply (e_assign_unify_consis_mutind
-           (fun S0 Θ0 Ξ α P S1 Θ1 _ =>
-              dom Θ1 [<=] dom (Ξ ++ Θ0) ∪ (S1 ∖ S0))
-           (fun S0 Θ0 α β S1 Θ1 _ => dom Θ1 [<=] dom Θ0 ∪ (S1 ∖ S0))
-           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
-              dom Θ1 [<=] dom Θ0 ∪ (S1 ∖ S0)));
+  apply e_assign_unify_consis_mutind;
     intros; supply_grow_facts;
     (* ⭐ 27 of the 28 rows are set arithmetic once the growth facts are in.
        The three ∀ rows are worth checking by hand: their IH is one [add α]
@@ -240,15 +232,7 @@ Lemma e_assign_unify_consis_ctx_ftvar :
      ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P [<=] S0 ->
      ftvar_in_aenv Θ1 [<=] S1).
 Proof.
-  apply (e_assign_unify_consis_mutind
-           (fun S0 Θ0 Ξ α P S1 Θ1 _ =>
-              ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S0 ->
-              ftvar_in_aenv Θ1 [<=] S1)
-           (fun S0 Θ0 α β S1 Θ1 _ =>
-              ftvar_in_aenv Θ0 [<=] S0 -> ftvar_in_aenv Θ1 [<=] S1)
-           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
-              ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P [<=] S0 ->
-              ftvar_in_aenv Θ1 [<=] S1));
+  apply e_assign_unify_consis_mutind;
     intros; sgf_ctx;
     repeat rewrite ftvar_in_aenv_app in *; simpl in *;
     try solve [ clear - H; fsetdec ]; try solve [ fsetdec ].
@@ -425,20 +409,7 @@ Lemma e_assign_unify_consis_sound :
      {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a
      /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1).
 Proof.
-  apply (e_assign_unify_consis_mutind
-    (fun S0 Θ0 Ξ α P S1 Θ1 _ =>
-       uniq (Ξ ++ Θ0) ->
-       ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S0 ->
-       {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1)
-    (fun S0 Θ0 α β S1 Θ1 _ =>
-       uniq Θ0 -> ftvar_in_aenv Θ0 [<=] S0 ->
-       {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1)
-    (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
-       uniq Θ0 ->
-       ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P
-         ∪ Δ1 ∪ Δ2 [<=] S0 ->
-       {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a
-       /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1)).
+  apply e_assign_unify_consis_mutind.
 
   (* ---------------- assign ---------------- *)
   - (* Assign-UnivGhost-Id *)
@@ -930,14 +901,7 @@ Lemma e_assign_unify_consis_out_ftvar :
        ∪ Δ1 ∪ Δ2 [<=] S0 ->
      ftvar_in_pskl Q [<=] S1).
 Proof.
-  apply (e_assign_unify_consis_mutind
-    (fun S0 Θ0 Ξ α P S1 Θ1 _ => True)
-    (fun S0 Θ0 α β S1 Θ1 _ => True)
-    (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
-       uniq Θ0 ->
-       ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P
-         ∪ Δ1 ∪ Δ2 [<=] S0 ->
-       ftvar_in_pskl Q [<=] S1));
+  apply e_assign_unify_consis_mutind;
     (* the fourteen [assign] / [unify] rows have no skeleton output *)
     try (intros; exact I).
 
@@ -1163,28 +1127,7 @@ Lemma e_assign_unify_consis_swap : forall a b,
           ⊣ (swap_aenv a b Θ1) }}e).
 Proof.
   intros a b.
-  apply (e_assign_unify_consis_mutind
-           (fun S0 Θ0 Ξ α P S1 Θ1 _ =>
-              forall S0', S0' [=] swap_atoms a b S0 ->
-              exists S1', S1' [=] swap_atoms a b S1 /\
-                {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲[ swap_aenv a b Ξ ]
-                   (swap_atom a b α) ≔ (swap_pskl a b P)
-                   ⊣ (swap_aenv a b Θ1) }}e)
-           (fun S0 Θ0 α β S1 Θ1 _ =>
-              forall S0', S0' [=] swap_atoms a b S0 ->
-              exists S1', S1' [=] swap_atoms a b S1 /\
-                {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲
-                   (swap_atom a b α) ≈ᵘ (swap_atom a b β)
-                   ⊣ (swap_aenv a b Θ1) }}e)
-           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
-              forall Δ1' Δ2' S0',
-                Δ1' [=] swap_atoms a b Δ1 -> Δ2' [=] swap_atoms a b Δ2 ->
-                S0' [=] swap_atoms a b S0 ->
-              exists S1', S1' [=] swap_atoms a b S1 /\
-                {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0)
-                   ⊢[ Δ1' | Δ2' | (swap_pskl a b P0) ]
-                   (swap_pskl a b P) ∼ (swap_pskl a b Q)
-                   ⊣ (swap_aenv a b Θ1) }}e)).
+  apply e_assign_unify_consis_mutind.
   all: try solve [
     intros; simpl;
     repeat match goal with

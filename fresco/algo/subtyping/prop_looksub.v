@@ -43,9 +43,7 @@ Lemma a_looksub_lookeq_decls :
   (forall Θ α m P P' Ξ 𝒞, {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a -> a_decls Ξ) /\
   (forall Θ α P P' Ξ 𝒞, {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a -> a_decls Ξ).
 Proof.
-  apply (a_looksub_lookeq_mutind
-           (fun Θ α m P P' Ξ 𝒞 _ => a_decls Ξ)
-           (fun Θ α P P' Ξ 𝒞 _ => a_decls Ξ));
+  apply a_looksub_lookeq_mutind;
     intros; try solve [ assumption ]; try solve [ apply a_decls__nil ];
     try solve [ apply a_decls_app; assumption ];
     try solve [ destruct (atom_fresh L) as [β0 Hβ0]; eauto ].
@@ -75,9 +73,7 @@ Lemma a_looksub_lookeq_generated_ftvar :
   (forall Θ α m P P' Ξ 𝒞, {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a -> ftvar_in_aenv Ξ [<=] dom Ξ) /\
   (forall Θ α P P' Ξ 𝒞, {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a -> ftvar_in_aenv Ξ [<=] dom Ξ).
 Proof.
-  apply (a_looksub_lookeq_mutind
-           (fun Θ α m P P' Ξ 𝒞 _ => ftvar_in_aenv Ξ [<=] dom Ξ)
-           (fun Θ α P P' Ξ 𝒞 _ => ftvar_in_aenv Ξ [<=] dom Ξ));
+  apply a_looksub_lookeq_mutind;
     intros; simpl; try solve [ fsetdec ];
     try solve [ destruct (atom_fresh L) as [β0 Hβ0]; eauto ];
     rewrite ftvar_in_aenv_app, dom_app; fsetdec.
@@ -175,15 +171,7 @@ Lemma a_looksub_lookeq_ftv :
        α0 `in` (ftvar_in_pskl P' `union` dom Ξ) \/
        α0 `notin` ftvar_in_aenv Θ).
 Proof.
-  apply (a_looksub_lookeq_mutind
-           (fun Θ α m P P' Ξ 𝒞 _ =>
-              forall α0, α0 `in` ftvar_in_a_cstrs 𝒞 ->
-                α0 `in` (ftvar_in_pskl P' `union` dom Ξ) \/
-                α0 `notin` ftvar_in_aenv Θ)
-           (fun Θ α P P' Ξ 𝒞 _ =>
-              forall α0, α0 `in` ftvar_in_a_cstrs 𝒞 ->
-                α0 `in` (ftvar_in_pskl P' `union` dom Ξ) \/
-                α0 `notin` ftvar_in_aenv Θ));
+  apply a_looksub_lookeq_mutind;
     intros; simpl in *;
     (* the non-binder rows: constraints come from the target or from Ξ *)
     try solve [ left; match goal with Hin : _ `in` _ |- _ =>
@@ -361,11 +349,7 @@ Lemma a_looksub_lookeq_absent_nil :
   (forall Θ α P P' Ξ 𝒞, {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
      α `notin` ftvar_in_pskl P -> Ξ = nil /\ 𝒞 = nil).
 Proof.
-  apply (a_looksub_lookeq_mutind
-           (fun Θ α m P P' Ξ 𝒞 _ =>
-              α `notin` ftvar_in_pskl P -> Ξ = nil /\ 𝒞 = nil)
-           (fun Θ α P P' Ξ 𝒞 _ =>
-              α `notin` ftvar_in_pskl P -> Ξ = nil /\ 𝒞 = nil));
+  apply a_looksub_lookeq_mutind;
     intros; simpl in *;
     try solve [ auto ];
     try solve [ exfalso; fsetdec ];
@@ -913,17 +897,7 @@ Proof.
       split; intro Hfx; exfalso; apply a_flex_tvar_in_dom in Hfx;
         [ clear - Hb HdA Hfx | clear - Hb HdA HdB Hincl Hfx ]; fsetdec.
     - apply Hf. simpl in Hup. clear - Hup Hβ Hne. fsetdec. }
-  apply (a_looksub_lookeq_mutind
-           (fun Θ α m P P' Ξ 𝒞 _ => forall Θ',
-              ftvar_in_aenv Θ' [<=] ftvar_in_aenv Θ ->
-              (forall β, β `in` ftvar_in_pskl P' ->
-                 (a_flex_tvar Θ β <-> a_flex_tvar Θ' β)) ->
-              {{ Θ' ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a)
-           (fun Θ α P P' Ξ 𝒞 _ => forall Θ',
-              ftvar_in_aenv Θ' [<=] ftvar_in_aenv Θ ->
-              (forall β, β `in` ftvar_in_pskl P' ->
-                 (a_flex_tvar Θ β <-> a_flex_tvar Θ' β)) ->
-              {{ Θ' ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a)).
+  apply a_looksub_lookeq_mutind.
   - (* LS-Var *) intros. apply a_looksub__var.
   - (* LS-Absent *) intros Θ α m P P' Hnf Θ' Hm Hf.
     apply a_looksub__absent; exact Hnf.
@@ -1048,11 +1022,7 @@ Proof.
             γ `in` ftvar_in_aenv Θ ->
             γ `in` ftvar_in_aenv ((β ~ abind_tvar) ++ Θ))
     by (intros; rewrite ftvar_in_aenv_cons_tvar; fsetdec).
-  apply (a_looksub_lookeq_mutind
-           (fun Θ α m P P' Ξ 𝒞 _ =>
-              forall γ, γ `in` ftvar_in_aenv Θ -> γ `notin` dom Ξ)
-           (fun Θ α P P' Ξ 𝒞 _ =>
-              forall γ, γ `in` ftvar_in_aenv Θ -> γ `notin` dom Ξ)).
+  apply a_looksub_lookeq_mutind.
   - (* LS-Var *) intros; simpl; fsetdec.
   - (* LS-Absent *) intros; simpl; fsetdec.
   - (* LS-Vacuous *) intros; simpl; fsetdec.
