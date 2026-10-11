@@ -1004,6 +1004,49 @@ Proof.
     apply IHHlc. intros α Hα; apply Hftv; exact Hα.
 Qed.
 
+(** ⭐ A body run under ONE TERM BINDER, read through its own soundness: the
+    identity increase it performs keeps the binder VERBATIM (the algorithm
+    never rewrites a term entry) with a flexible-only suffix [Ξ] above it,
+    and the binder's name avoids both sides.  Every binder row of the
+    completeness proof (AbsCheck, AbsAnnoCheck, Abs, AbsAnno) reads its run
+    this way. *)
+Lemma a_pat_run_under_tm_binder : forall x b Θ0 M P0 e Q Θ1,
+  {{ ((x ~ b) ++ Θ0) ⊢ˢ[ M ; P0 ] e ⦂ Q ⊣ Θ1 }}a ->
+  {{ ⊢ ((x ~ b) ++ Θ0) }}a ->
+  {{ ((x ~ b) ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a ->
+  a_sk_mode_compat M P0 ->
+  {{ ((x ~ b) ++ Θ0) ⊢ᵉ e }}a ->
+  abind_is_tm b ->
+  exists κid Ξ Θ2,
+    Θ1 = Ξ ++ (x ~ b) ++ Θ2 /\
+    is_id_msubst κid /\ (κid ∷ Θ0 ⊑ Θ2) /\ a_suffix Ξ /\
+    {{ ⊢ (Ξ ++ (x ~ b) ++ Θ2) }}a /\
+    x `notin` (dom Ξ `union` ftvar_in_aenv Ξ) /\
+    x `notin` (dom Θ2 `union` ftvar_in_aenv Θ2).
+Proof.
+  intros x b Θ0 M P0 e Q Θ1 Hrun Hwf0x HwfP0 Hmod Hexp Htm.
+  destruct (a_pat_sound Hrun Hwf0x HwfP0 Hmod Hexp) as [Hle [Hwf1 _]].
+  destruct Hle as [[κid [Hid Hinc]] _].
+  assert (Hbx : binds x b Θ1)
+    by (eapply a_pat_tm_le; [ exact Hrun | exact Htm | unfold binds; simpl; auto ]).
+  assert (Hshape : exists Ξ Θ2,
+             Θ1 = Ξ ++ (x ~ b) ++ Θ2 /\ a_suffix Ξ /\ (κid ∷ Θ0 ⊑ Θ2)).
+  { destruct b as [ | A | P | | τ ]; simpl in Htm; try contradiction.
+    - destruct (a_inc_var_inv Hinc) as [Ξ [A' [Θ2 [-> [_ [Hsuf Hinc']]]]]].
+      assert (Heq : abind_var_typ A = abind_var_typ A')
+        by (eapply binds_mid_eq; [ exact Hbx | apply a_wf_aenv_uniq; exact Hwf1 ]).
+      inversion Heq; subst. eauto.
+    - destruct (a_inc_var_skl_inv Hinc) as [Ξ [P' [Θ2 [-> [_ [Hsuf Hinc']]]]]].
+      assert (Heq : abind_var_skl P = abind_var_skl P')
+        by (eapply binds_mid_eq; [ exact Hbx | apply a_wf_aenv_uniq; exact Hwf1 ]).
+      inversion Heq; subst. eauto. }
+  destruct Hshape as [Ξ [Θ2 [-> [Hsuf Hinc']]]].
+  exists κid, Ξ, Θ2.
+  refine (conj eq_refl (conj Hid (conj Hinc' (conj Hsuf (conj Hwf1 (conj _ _)))))).
+  - eapply a_wf_aenv_notin_ftv_tm_prefix; [ exact Hsuf | exact Hwf1 | exact Htm ].
+  - eapply a_wf_aenv_notin_ftv_tm_below. exact Hwf1.
+Qed.
+
 (* ===================================================================== *)
 (*  P-AbsCheck, the step lemma.                                           *)
 (* ===================================================================== *)
@@ -1060,33 +1103,13 @@ Proof.
               (Hbody x ltac:(clear - Hx; solve_notin_auto))
               ltac:(apply ad_refine_syn__ghost; clear; fsetdec))
     as [Q' [Θ1' [Hrun Hopt]]].
-  (* ---- 3. the run's identity increase shapes the output ---- *)
+  (* ---- 3. the run's identity increase shapes the output, x stays fresh ---- *)
   assert (Hexpx : {{ ((x ~ bx) ++ Θ0) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
   { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
-  destruct (a_pat_sound Hrun Hwf0x
-              ltac:(apply a_wf_pskl__ghost)
-              ltac:(apply a_sk_mode_compat__tc)
-              Hexpx)
-    as [Hle [Hwf1' _]].
-  destruct Hle as [[κid [Hidκ Hincid]] _].
-  destruct (a_inc_var_skl_inv Hincid) as [Ξ [P'' [Θ2 [-> [_ [Hsuf Hincid']]]]]].
-  assert (Hu1' : uniq (Ξ ++ (x ~ abind_var_skl P'') ++ Θ2))
-    by (apply a_wf_aenv_uniq; exact Hwf1').
-  (* the algorithm never rewrites a term entry: the walked binder's payload
-     is VERBATIM the input's *)
-  assert (Hbx1 : binds x bx (Ξ ++ (x ~ abind_var_skl P'') ++ Θ2))
-    by (eapply a_pat_tm_le;
-        [ exact Hrun | exact I | unfold binds; simpl; auto ]).
-  assert (HP'' : bx = abind_var_skl P'')
-    by (eapply binds_mid_eq; [ exact Hbx1 | exact Hu1' ]).
-  unfold bx in HP''. inversion HP''; subst P''.
-  (* ---- 4. the freshness pack for the family generation ---- *)
-  assert (HxΞ : x `notin` (dom Ξ `union` ftvar_in_aenv Ξ))
-    by (eapply a_wf_aenv_notin_ftv_tm_prefix;
-        [ exact Hsuf | exact Hwf1' | exact I ]).
-  assert (HxΘ2 : x `notin` (dom Θ2 `union` ftvar_in_aenv Θ2))
-    by (eapply a_wf_aenv_notin_ftv_tm_below; exact Hwf1').
+  destruct (a_pat_run_under_tm_binder Hrun Hwf0x (a_wf_pskl__ghost _ _)
+              a_sk_mode_compat__tc Hexpx I)
+    as [κid [Ξ [Θ2 [-> [Hidκ [Hincid' [Hsuf [Hwf1' [HxΞ HxΘ2]]]]]]]]].
   (* ---- 5. the run ---- *)
   exists (pskl_univ_ghost (pskl_arrow pskl_ghost Q')), (Ξ ++ Θ2).
   split.
@@ -1204,31 +1227,13 @@ Proof.
               (Hbody x ltac:(clear - Hx; solve_notin_auto))
               ltac:(apply ad_refine_syn__ghost; clear; fsetdec))
     as [Q' [Θ1' [Hrun Hopt]]].
-  (* ---- 3. the run's identity increase shapes the output ---- *)
+  (* ---- 3. the run's identity increase shapes the output, x stays fresh ---- *)
   assert (Hexpx : {{ ((x ~ bx) ++ Θ0) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
   { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
-  destruct (a_pat_sound Hrun Hwf0x
-              ltac:(apply a_wf_pskl__ghost)
-              ltac:(apply a_sk_mode_compat__tc)
-              Hexpx)
-    as [Hle [Hwf1' _]].
-  destruct Hle as [[κid [Hidκ Hincid]] _].
-  destruct (a_inc_var_inv Hincid) as [Ξ [A'' [Θ2 [-> [_ [Hsuf Hincid']]]]]].
-  assert (Hu1' : uniq (Ξ ++ (x ~ abind_var_typ A'') ++ Θ2))
-    by (apply a_wf_aenv_uniq; exact Hwf1').
-  assert (Hbx1 : binds x bx (Ξ ++ (x ~ abind_var_typ A'') ++ Θ2))
-    by (eapply a_pat_tm_le;
-        [ exact Hrun | exact I | unfold binds; simpl; auto ]).
-  assert (HA'' : bx = abind_var_typ A'')
-    by (eapply binds_mid_eq; [ exact Hbx1 | exact Hu1' ]).
-  unfold bx in HA''. inversion HA''; subst A''.
-  (* ---- 4. the freshness pack ---- *)
-  assert (HxΞ : x `notin` (dom Ξ `union` ftvar_in_aenv Ξ))
-    by (eapply a_wf_aenv_notin_ftv_tm_prefix;
-        [ exact Hsuf | exact Hwf1' | exact I ]).
-  assert (HxΘ2 : x `notin` (dom Θ2 `union` ftvar_in_aenv Θ2))
-    by (eapply a_wf_aenv_notin_ftv_tm_below; exact Hwf1').
+  destruct (a_pat_run_under_tm_binder Hrun Hwf0x (a_wf_pskl__ghost _ _)
+              a_sk_mode_compat__tc Hexpx I)
+    as [κid [Ξ [Θ2 [-> [Hidκ [Hincid' [Hsuf [Hwf1' [HxΞ HxΘ2]]]]]]]]].
   (* ---- 5. the run ---- *)
   exists (pskl_univ_ghost (pskl_arrow (ptyp_to_pskl A) Q')), (Ξ ++ Θ2).
   split.
@@ -1479,7 +1484,7 @@ Proof.
                     [ exact Href14
                     | intros α c Hty Hc; apply binds_cons_3; exact Hc ]))
     as [Q' [Θ1' [Hrun Hopt]]].
-  (* ---- 6. the run's identity increase shapes the output ---- *)
+  (* ---- 6. the run's identity increase shapes the output, x stays fresh ---- *)
   assert (Hexpx : {{ ((x ~ bq) ++ Θ0) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
   { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
@@ -1487,24 +1492,8 @@ Proof.
     by (eapply a_wf_pskl_mono;
         [ exact HwfQ1
         | intros α c _ Hc; apply binds_cons_3; exact Hc ]).
-  destruct (a_pat_sound Hrun Hwf0x HwfQ1x HmodQ1 Hexpx)
-    as [Hle [Hwf1' _]].
-  destruct Hle as [[κid [Hidκ Hincid]] _].
-  destruct (a_inc_var_skl_inv Hincid) as [Ξ [P'' [Θ2 [-> [_ [Hsuf Hincid']]]]]].
-  assert (Hu1' : uniq (Ξ ++ (x ~ abind_var_skl P'') ++ Θ2))
-    by (apply a_wf_aenv_uniq; exact Hwf1').
-  assert (Hbx1 : binds x bq (Ξ ++ (x ~ abind_var_skl P'') ++ Θ2))
-    by (eapply a_pat_tm_le;
-        [ exact Hrun | exact I | unfold binds; simpl; auto ]).
-  assert (HP'' : bq = abind_var_skl P'')
-    by (eapply binds_mid_eq; [ exact Hbx1 | exact Hu1' ]).
-  unfold bq in HP''. inversion HP''; subst P''.
-  (* ---- 7. the freshness pack ---- *)
-  assert (HxΞ : x `notin` (dom Ξ `union` ftvar_in_aenv Ξ))
-    by (eapply a_wf_aenv_notin_ftv_tm_prefix;
-        [ exact Hsuf | exact Hwf1' | exact I ]).
-  assert (HxΘ2 : x `notin` (dom Θ2 `union` ftvar_in_aenv Θ2))
-    by (eapply a_wf_aenv_notin_ftv_tm_below; exact Hwf1').
+  destruct (a_pat_run_under_tm_binder Hrun Hwf0x HwfQ1x HmodQ1 Hexpx I)
+    as [κid [Ξ [Θ2 [-> [Hidκ [Hincid' [Hsuf [Hwf1' [HxΞ HxΘ2]]]]]]]]].
   (* ---- 8. the run ---- *)
   exists (pskl_arrow P1 Q'), (Ξ ++ Θ2).
   split.
@@ -1802,7 +1791,7 @@ Proof.
                     [ exact Href14σ
                     | intros α c Hty Hc; apply binds_cons_3; exact Hc ]))
     as [Q' [Θ1' [HrunB HoptB]]].
-  (* ---- 7. the body run's identity increase shapes the output ---- *)
+  (* ---- 7. the body run's identity increase shapes the output, x stays fresh ---- *)
   assert (Hexpx : {{ ((x ~ bA) ++ Θmid) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
   { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
     intros α Hα. left. apply Hrigx. exact Hα. }
@@ -1810,24 +1799,8 @@ Proof.
     by (eapply a_wf_pskl_mono;
         [ exact HwfQ1mid
         | intros α c _ Hc; apply binds_cons_3; exact Hc ]).
-  destruct (a_pat_sound HrunB Hwf0x HwfQ1midx HmodQ1 Hexpx)
-    as [HleB [HwfB' _]].
-  destruct HleB as [[κb [Hidb Hincb]] _].
-  destruct (a_inc_var_inv Hincb) as [Ξ [A'' [Θ3 [-> [_ [Hsuf Hincb']]]]]].
-  assert (HuB' : uniq (Ξ ++ (x ~ abind_var_typ A'') ++ Θ3))
-    by (apply a_wf_aenv_uniq; exact HwfB').
-  assert (Hbx1 : binds x bA (Ξ ++ (x ~ abind_var_typ A'') ++ Θ3))
-    by (eapply a_pat_tm_le;
-        [ exact HrunB | exact I | unfold binds; simpl; auto ]).
-  assert (HA'' : bA = abind_var_typ A'')
-    by (eapply binds_mid_eq; [ exact Hbx1 | exact HuB' ]).
-  unfold bA in HA''. inversion HA''; subst A''.
-  (* ---- 8. the freshness pack ---- *)
-  assert (HxΞ : x `notin` (dom Ξ `union` ftvar_in_aenv Ξ))
-    by (eapply a_wf_aenv_notin_ftv_tm_prefix;
-        [ exact Hsuf | exact HwfB' | exact I ]).
-  assert (HxΘ3 : x `notin` (dom Θ3 `union` ftvar_in_aenv Θ3))
-    by (eapply a_wf_aenv_notin_ftv_tm_below; exact HwfB').
+  destruct (a_pat_run_under_tm_binder HrunB Hwf0x HwfQ1midx HmodQ1 Hexpx I)
+    as [κb [Ξ [Θ3 [-> [Hidb [Hincb' [Hsuf [HwfB' [HxΞ HxΘ3]]]]]]]]].
   (* ---- 9. the run ---- *)
   exists (pskl_arrow (ptyp_to_pskl A) Q'), (Ξ ++ Θ3).
   split.
