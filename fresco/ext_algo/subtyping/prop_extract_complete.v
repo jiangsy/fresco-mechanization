@@ -65,7 +65,8 @@ Proof.
       end.
       unfold solve_eq_spec in Hr.
       destruct (e_solve_eq_rel Heq Hr Hcov1) as (ps & Hav & HS & HX & HY).
-      destruct (e_solve_cstr_swaps ps Htail (symmetry HS))
+      pose proof HS as HSr. symmetry in HSr.
+      destruct (e_solve_cstr_swaps ps Htail HSr)
         as (Sf & _ & Htail').
       rewrite swaps_aenv_app_dist, HX, HY, (swaps_aenv_fresh_id ps Θ),
         (swaps_cstrs_fresh_id ps C) in Htail'
@@ -107,7 +108,8 @@ Proof.
   end.
   unfold looksub_spec in Hr.
   destruct (e_looksub_rel Hlook Hr Hcov) as (ps & Hav & HS & HX & HC).
-  destruct (e_solve_cstr_swaps ps Hfold (symmetry HS)) as (Sf & _ & Hfold').
+  pose proof HS as HSr. symmetry in HSr.
+  destruct (e_solve_cstr_swaps ps Hfold HSr) as (Sf & _ & Hfold').
   rewrite swaps_aenv_app_dist, HX, HC, swaps_pskl_ghost,
     (swaps_aenv_fresh_id ps Θ0) in Hfold'
     by (apply (swaps_dodge_sub Hav); clear - Hcov; fsetdec).

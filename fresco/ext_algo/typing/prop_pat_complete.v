@@ -208,10 +208,11 @@ Lemma e_pat_swaps : forall ps S0 m Θ0 P0 e Q S1 Θ1,
 Proof.
   induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
   - exact (e_pat_supply_respect Hd Heq).
-  - destruct (e_pat_swap (a := a) (b := b) Hd (reflexivity _))
-      as [S1a [HS1a Hda]].
+  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
+    destruct (e_pat_swap (a := a) (b := b) Hd Hr) as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
-    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
+    exists S1'. split; [ | exact Hd' ].
+    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
 Qed.
 
 (** Move a term opener to the runner's draw, fixing every scoped input —
@@ -512,9 +513,10 @@ Lemma e_split_flex_realign : forall S0 Θ0 α Qd Sd Θd ad bd,
 Proof.
   intros * Had Hbd Hcov Ds.
   destruct (swaps_two_onto_fresh Had Hbd) as (ps & Hav & Hsad & Hsbd & HSadd).
+  pose proof (swaps_atoms_empty ps) as Hemp. symmetry in Hemp.
   destruct (e_consis_swaps ps Ds (Δ1' := empty) (Δ2' := empty)
-              (symmetry (swaps_atoms_empty ps))
-              (symmetry (swaps_atoms_empty ps)) HSadd)
+              Hemp
+              Hemp HSadd)
     as [Sd' [HSd' Ds']].
   exists ps, Sd'. refine (conj Hav (conj Hsad (conj Hsbd (conj HSd' _)))).
   rewrite !swaps_aenv_app_dist, !swaps_aenv_one_flex, swaps_pskl_arrow,
@@ -635,15 +637,25 @@ Proof.
     destruct (e_split_inv_arrow Hd) as [-> [-> [-> ->]]].
     rewrite e_split_impl_equation_4.
     eexists; exists (@nil (atom * atom)).
-    exact (conj eq_refl (conj (swaps_dodge_nil _)
-      (conj (reflexivity _) (conj eq_refl (conj eq_refl eq_refl))))).
+    repeat apply conj.
+    + reflexivity.
+    + apply swaps_dodge_nil.
+    + reflexivity.
+    + reflexivity.
+    + reflexivity.
+    + reflexivity.
   - exfalso. exact (e_split_inv_all_syn Hd).
   - (* the HOLE row *)
     destruct (e_split_inv_ghost Hd) as [-> [-> [-> ->]]].
     rewrite e_split_impl_equation_6.
     eexists; exists (@nil (atom * atom)).
-    exact (conj eq_refl (conj (swaps_dodge_nil _)
-      (conj (reflexivity _) (conj eq_refl (conj eq_refl eq_refl))))).
+    repeat apply conj.
+    + reflexivity.
+    + apply swaps_dodge_nil.
+    + reflexivity.
+    + reflexivity.
+    + reflexivity.
+    + reflexivity.
   - exfalso. exact (e_split_inv_univ_ghost Hd).
 Qed.
 
@@ -1122,8 +1134,10 @@ Proof.
       assert (HfixA1 : swaps_pskl ps1 (ptyp_to_pskl A) = ptyp_to_pskl A)
         by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
             clear - Hcov HAe; simpl in *; fsetdec);
-      destruct (e_consis_swaps ps1 Dc (symmetry (swaps_atoms_empty ps1))
-                  (symmetry (swaps_atoms_empty ps1)) (symmetry HS1))
+      pose proof (swaps_atoms_empty ps1) as Hemp; symmetry in Hemp;
+      pose proof HS1 as HS1r; symmetry in HS1r;
+      destruct (e_consis_swaps ps1 Dc Hemp
+                  Hemp HS1r)
         as [Sc1 [HSc1 Dc1]];
       rewrite HT1, HP1, HfixA1 in Dc1;
       assert (Hcovc : ftvar_in_aenv (sp_ctx rs) ∪ ftvar_in_pskl (sp_dom rs)
@@ -1148,7 +1162,7 @@ Proof.
       assert (Hx10 : swaps_atom psc (swaps_atom ps1 xd) `notin` S0)
         by (rewrite <- swaps_atom_app;
             apply (@swaps_atom_dodge _ _ _
-                     (swaps_dodge_app Hav1 Havc (reflexivity _) Hgrs));
+                     (swaps_dodge_app_l Hav1 Havc Hgrs));
             pose proof (e_consis_supply_grows Dc) as Hgc0;
             clear - Hxd Hgrd Hgc0; fsetdec);
       assert (Hfixe1 : swaps_exp (ps1 ++ psc) e1 = e1)
@@ -1214,9 +1228,10 @@ Proof.
                 (swaps_aenv psc (swaps_aenv ps1 Ξ)))))
         by (repeat apply a_suffix_swaps; exact Hsuf);
       bool_true_pat;
+      assert (HS0c : S0 [<=] cs_supply rc) by (clear - Hgrs Hgrc; fsetdec);
       pose proof (swaps_dodge_draw
-                    (swaps_dodge_app Hav1 Havc (reflexivity _) Hgrs)
-                    Hx10 (transitivity Hgrs Hgrc) Hav2) as Havall;
+                    (swaps_dodge_app_l Hav1 Havc Hgrs)
+                    Hx10 HS0c Hav2) as Havall;
       eexists;
       exists (((ps1 ++ psc) ++ ((swaps_atom psc (swaps_atom ps1 xd),
                 supply_fresh (cs_supply rc)) :: nil)) ++ ps2);

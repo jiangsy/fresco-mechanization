@@ -117,10 +117,11 @@ Lemma e_typing_swaps : forall ps S0 m Θ0 P0 e B S1 Θ1,
 Proof.
   induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
   - exact (e_typing_supply_respect Hd Heq).
-  - destruct (e_typing_swap (a := a) (b := b) Hd (reflexivity _))
-      as [S1a [HS1a Hda]].
+  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
+    destruct (e_typing_swap (a := a) (b := b) Hd Hr) as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
-    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
+    exists S1'. split; [ | exact Hd' ].
+    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
 Qed.
 
 (* Use the shared embedding's injectivity with the equation explicit. *)
@@ -928,7 +929,7 @@ Proof.
       assert (Hx10 : swaps_atom psg (swaps_atom ps1 xd) `notin` S0)
         by (rewrite <- swaps_atom_app;
             apply (@swaps_atom_dodge _ _ _
-                     (swaps_dodge_app Hav1 Havg (reflexivity _) Hgrs));
+                     (swaps_dodge_app_l Hav1 Havg Hgrs));
             pose proof (e_guess_mono_supply_grows Hg) as Hgg;
             clear - Hxd Hgrd Hgg; fsetdec);
       assert (HfixCtx1 : swaps_aenv psg (sp_ctx rs) = sp_ctx rs)
@@ -1007,14 +1008,15 @@ Proof.
                 (swaps_aenv psg (swaps_aenv ps1 Ξ)))))
         by (repeat apply a_suffix_swaps; exact Hsuf);
       bool_true_ty;
+      assert (HS0g : S0 [<=] gr_supply rg) by (clear - Hgrs Hgrg; fsetdec);
       eexists;
       exists (((ps1 ++ psg) ++ ((swaps_atom psg (swaps_atom ps1 xd),
                 supply_fresh (gr_supply rg)) :: nil)) ++ ps2);
       split; [ cbn [typing_answer proj1_sig]; reflexivity | ];
       repeat apply conj;
       [ exact (swaps_dodge_draw
-          (swaps_dodge_app Hav1 Havg (reflexivity _) Hgrs)
-          Hx10 (transitivity Hgrs Hgrg) Hav2)
+          (swaps_dodge_app_l Hav1 Havg Hgrs)
+          Hx10 HS0g Hav2)
       | exact (swaps_atoms_app_transport
           (swaps_atoms_app_compose HSd2 HSd1) HS2)
       | cbn [ty_ctx]; rewrite swaps_aenv_app_dist, ! swaps_aenv_app;
@@ -1117,8 +1119,10 @@ Proof.
         assert (HfixA1 : swaps_pskl ps1 (ptyp_to_pskl A) = ptyp_to_pskl A)
           by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
               clear - Hcov HAe; simpl in *; fsetdec).
-        destruct (e_consis_swaps ps1 Dc (symmetry (swaps_atoms_empty ps1))
-                    (symmetry (swaps_atoms_empty ps1)) (symmetry HS1))
+        pose proof (swaps_atoms_empty ps1) as Hemp; symmetry in Hemp;
+        pose proof HS1 as HS1r; symmetry in HS1r;
+        destruct (e_consis_swaps ps1 Dc Hemp
+                    Hemp HS1r)
           as [Sc1 [HSc1 Dc1]];
         rewrite HT1, HfixA1, HP1 in Dc1.
         assert (Hcovc : ftvar_in_aenv (sp_ctx rs)
@@ -1145,7 +1149,7 @@ Proof.
         assert (Hx10 : swaps_atom psc (swaps_atom ps1 xd) `notin` S0)
           by (rewrite <- swaps_atom_app;
               apply (@swaps_atom_dodge _ _ _
-                       (swaps_dodge_app Hav1 Havc (reflexivity _) Hgrs));
+                       (swaps_dodge_app_l Hav1 Havc Hgrs));
               pose proof (e_consis_supply_grows Dc) as Hgc0;
               clear - Hxd Hgrd Hgc0; fsetdec).
         assert (Hfixe1 : swaps_exp (ps1 ++ psc) e1 = e1)
@@ -1240,14 +1244,15 @@ Proof.
         { rewrite <- HQ2. apply inter_empty_pointwise.
           repeat apply swaps_block_ftv_filter. exact Hfil. }
         bool_true_ty.
+        assert (HS0c : S0 [<=] cs_supply rc) by (clear - Hgrs Hgrc; fsetdec).
         eexists;
         exists (((ps1 ++ psc) ++ ((swaps_atom psc (swaps_atom ps1 xd),
                   supply_fresh (cs_supply rc)) :: nil)) ++ ps2).
         split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
         repeat apply conj.
         + exact (swaps_dodge_draw
-            (swaps_dodge_app Hav1 Havc (reflexivity _) Hgrs)
-            Hx10 (transitivity Hgrs Hgrc) Hav2).
+            (swaps_dodge_app_l Hav1 Havc Hgrs)
+            Hx10 HS0c Hav2).
         + exact (swaps_atoms_app_transport
             (swaps_atoms_app_compose HSd2 HSd1) HS2).
         + cbn [ty_ctx]. rewrite ! swaps_aenv_app. reflexivity.
@@ -1285,8 +1290,10 @@ Proof.
       assert (HfixA1 : swaps_pskl ps1 (ptyp_to_pskl A) = ptyp_to_pskl A)
         by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
             clear - Hcov HAe; simpl in *; fsetdec);
-      destruct (e_consis_swaps ps1 Dc (symmetry (swaps_atoms_empty ps1))
-                  (symmetry (swaps_atoms_empty ps1)) (symmetry HS1))
+      pose proof (swaps_atoms_empty ps1) as Hemp; symmetry in Hemp;
+      pose proof HS1 as HS1r; symmetry in HS1r;
+      destruct (e_consis_swaps ps1 Dc Hemp
+                  Hemp HS1r)
         as [Sc1 [HSc1 Dc1]];
       rewrite HT1, HP1, HfixA1 in Dc1;
       assert (Hcovc : ftvar_in_aenv (sp_ctx rs) ∪ ftvar_in_pskl (sp_dom rs)
@@ -1310,7 +1317,7 @@ Proof.
       assert (Hx10 : swaps_atom psc (swaps_atom ps1 xd) `notin` S0)
         by (rewrite <- swaps_atom_app;
             apply (@swaps_atom_dodge _ _ _
-                     (swaps_dodge_app Hav1 Havc (reflexivity _) Hgrs));
+                     (swaps_dodge_app_l Hav1 Havc Hgrs));
             pose proof (e_consis_supply_grows Dc) as Hgc0;
             clear - Hxd Hgrd Hgc0; fsetdec);
       assert (Hfixe1 : swaps_exp (ps1 ++ psc) e1 = e1)
@@ -1375,14 +1382,15 @@ Proof.
                 (swaps_aenv psc (swaps_aenv ps1 Ξ)))))
         by (repeat apply a_suffix_swaps; exact Hsuf);
       bool_true_ty;
+      assert (HS0c : S0 [<=] cs_supply rc) by (clear - Hgrs Hgrc; fsetdec);
       eexists;
       exists (((ps1 ++ psc) ++ ((swaps_atom psc (swaps_atom ps1 xd),
                 supply_fresh (cs_supply rc)) :: nil)) ++ ps2);
       split; [ cbn [typing_answer proj1_sig]; reflexivity | ];
       repeat apply conj;
       [ exact (swaps_dodge_draw
-          (swaps_dodge_app Hav1 Havc (reflexivity _) Hgrs)
-          Hx10 (transitivity Hgrs Hgrc) Hav2)
+          (swaps_dodge_app_l Hav1 Havc Hgrs)
+          Hx10 HS0c Hav2)
       | exact (swaps_atoms_app_transport
           (swaps_atoms_app_compose HSd2 HSd1) HS2)
       | cbn [ty_ctx]; rewrite swaps_aenv_app_dist, ! swaps_aenv_app;
@@ -1564,8 +1572,10 @@ Proof.
     pose proof (e_typing_supply_grows Hr1) as Hgr1.
     bool_true_ty.
     destruct Dc as [Qc Dc].
-    destruct (e_consis_swaps ps1 Dc (symmetry (swaps_atoms_empty ps1))
-                (symmetry (swaps_atoms_empty ps1)) (symmetry HS1))
+    pose proof (swaps_atoms_empty ps1) as Hemp; symmetry in Hemp;
+    pose proof HS1 as HS1r; symmetry in HS1r;
+    destruct (e_consis_swaps ps1 Dc Hemp
+                Hemp HS1r)
       as [Sc1 [HSc1 Dc1]];
     rewrite HT1, ! swaps_pskl_ptyp_to_pskl, HQ1 in Dc1.
     assert (HfixBd : swaps_ptyp ps1 Bd = Bd)

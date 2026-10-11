@@ -124,10 +124,11 @@ Proof.
   induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
   - (* the empty chain moves nothing but the supply *)
     exact (e_sub_supply_respect Hd Heq).
-  - destruct (e_sub_swap (a := a) (b := b) Hd (reflexivity _))
-      as [S1a [HS1a Hda]].
+  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
+    destruct (e_sub_swap Hd Hr) as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
-    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
+    exists S1'. split; [ | exact Hd' ].
+    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
 Qed.
 
 (** A one-pair chain dodges whatever both of its names avoid. *)
@@ -151,8 +152,10 @@ Lemma swaps_onto_fresh : forall x (S : atoms),
   add (supply_fresh S) S [=] swaps_atoms ((x, supply_fresh S) :: nil) (add x S).
 Proof.
   intros x S Hx. pose proof (supply_fresh_notin S) as Hf.
-  exact (conj (swaps_dodge_one Hx Hf)
-          (conj (swap_atom_l _ _) (swap_atoms_fresh_add _ _ _ Hx Hf))).
+  repeat apply conj.
+  - apply swaps_dodge_one; assumption.
+  - apply swap_atom_l.
+  - apply swap_atoms_fresh_add; assumption.
 Qed.
 
 (** ⚙ [a_suffix] survives a chain, which is what [SI-ForallR]'s

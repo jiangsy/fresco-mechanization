@@ -180,12 +180,14 @@ Proof.
   - destruct (e_consis_supply_respect Hd HS) as [S1' [HS1 Hd']].
     exists S1'. split; [ exact HS1 | ].
     eapply e_consis_delta_respect; eassumption.
-  - destruct (e_consis_swap (a := a) (b := b) Hd
-                (reflexivity _) (reflexivity _) (reflexivity _))
-      as [S1a [HS1a Hda]].
+  - assert (H1 : swap_atoms a b Δ1 [=] swap_atoms a b Δ1) by reflexivity.
+    assert (H2 : swap_atoms a b Δ2 [=] swap_atoms a b Δ2) by reflexivity.
+    assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
+    destruct (e_consis_swap Hd H1 H2 Hr) as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ _ _ _ _ Hda _ _ _ HD1 HD2 HS)
       as [S1' [HS1' Hd']].
-    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
+    exists S1'. split; [ | exact Hd' ].
+    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
 Qed.
 
 (** [guess^TY] along a chain — the same iteration, on the judgement
@@ -199,10 +201,11 @@ Lemma e_guess_mono_swaps : forall ps S0 P S1 Ξ τ,
 Proof.
   induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
   - exact (e_guess_mono_supply_respect Hd Heq).
-  - destruct (e_guess_mono_swap (a := a) (b := b) Hd (reflexivity _))
-      as [S1a [HS1a Hda]].
+  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
+    destruct (e_guess_mono_swap Hd Hr) as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
-    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
+    exists S1'. split; [ | exact Hd' ].
+    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
 Qed.
 
 (* --------------------------------------------------------------------- *)
@@ -269,7 +272,8 @@ Proof.
     assert (HP2 : swaps_pskl ps1 P2 = P2)
       by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
           clear - Hcov; fsetdec).
-    destruct (e_guess_mono_swaps ps1 D2 (symmetry HS1)) as [S2t [HS2t D2t]].
+    pose proof HS1 as HS1r. symmetry in HS1r.
+    destruct (e_guess_mono_swaps ps1 D2 HS1r) as [S2t [HS2t D2t]].
     rewrite HP2 in D2t.
     pose proof (e_guess_mono_supply_grows D1') as Hgr1'.
     destruct (IH2 S2t (swaps_aenv ps1 Xb) (swaps_ptyp ps1 Ab)
@@ -1172,8 +1176,12 @@ Proof.
            cbv beta iota.
            exists (mk_consis_result S1 ((α ~ abind_flex_mono) ++ Θ0)
                      pskl_unit), (@nil (atom * atom)).
-           exact (conj eq_refl (conj (swaps_dodge_nil _)
-             (conj (reflexivity _) (conj eq_refl I)))).
+           repeat apply conj.
+           ++ reflexivity.
+           ++ apply swaps_dodge_nil.
+           ++ reflexivity.
+           ++ reflexivity.
+           ++ exact I.
         -- (* Assign-SolveM, at every leaf of the runner's Ξ × P dispatch *)
            subst Θd.
            destruct Ξ as [ | e Ξ' ];
@@ -1317,8 +1325,12 @@ Proof.
               [ exact Hfb | exact Hfβ ] ].
         cbv beta iota.
         eexists; exists (@nil (atom * atom)).
-        exact (conj eq_refl (conj (swaps_dodge_nil _)
-          (conj (reflexivity _) (conj eq_refl I)))).
+        repeat apply conj.
+        -- reflexivity.
+        -- apply swaps_dodge_nil.
+        -- reflexivity.
+        -- reflexivity.
+        -- exact I.
       * cbv beta iota. split_eqdec Heq3 Hne3.
         -- (* the head IS β — Flex-Flex-R *)
            subst. cbv beta iota.
@@ -1328,8 +1340,12 @@ Proof.
                  [ exact Hfb | exact Hfα ] ].
            cbv beta iota.
            eexists; exists (@nil (atom * atom)).
-           exact (conj eq_refl (conj (swaps_dodge_nil _)
-             (conj (reflexivity _) (conj eq_refl I)))).
+           repeat apply conj.
+           ++ reflexivity.
+           ++ apply swaps_dodge_nil.
+           ++ reflexivity.
+           ++ reflexivity.
+           ++ exact I.
         -- (* Flex-Flex-Skip *)
            cbv beta iota.
            destruct (e_unify_inv_flex_skip Hne Hne2 Hne3 Hd)
@@ -1389,8 +1405,12 @@ Proof.
       * (* 1 ∼ 1 — U-Unit *)
         destruct (e_consis_inv_unit Hd) as [-> [-> ->]].
         exists (mk_consis_result S1 Θ' pskl_unit), (@nil (atom * atom)).
-        exact (conj eq_refl (conj (swaps_dodge_nil _)
-          (conj (reflexivity _) (conj eq_refl eq_refl)))).
+        repeat apply conj.
+        -- reflexivity.
+        -- apply swaps_dodge_nil.
+        -- reflexivity.
+        -- reflexivity.
+        -- reflexivity.
       * (* a dangling index is no subject *) inversion Hlc1.
       * (* 1 ∼ α̂ — U-FlexL *)
         destruct (e_consis_inv_flex_l Hd ltac:(intros; discriminate)
@@ -1442,14 +1462,22 @@ Proof.
                      | [ [Hnf [-> Da]] | [Hnf [-> Da]] ] ] ].
               ** exists (mk_consis_result S1 Θ' (pskl_var_f α0)),
                         (@nil (atom * atom)).
-                 exact (conj eq_refl (conj (swaps_dodge_nil _)
-                   (conj (reflexivity _) (conj eq_refl eq_refl)))).
+                 repeat apply conj.
+                 --- reflexivity.
+                 --- apply swaps_dodge_nil.
+                 --- reflexivity.
+                 --- reflexivity.
+                 --- reflexivity.
               ** (* U-Flex at α̂ ≈ᵘ α̂ moves nothing (§5) *)
                  destruct (e_unify_refl Du HD) as [-> ->].
                  exists (mk_consis_result S1 Θ' (pskl_var_f α0)),
                         (@nil (atom * atom)).
-                 exact (conj eq_refl (conj (swaps_dodge_nil _)
-                   (conj (reflexivity _) (conj eq_refl eq_refl)))).
+                 repeat apply conj.
+                 --- reflexivity.
+                 --- apply swaps_dodge_nil.
+                 --- reflexivity.
+                 --- reflexivity.
+                 --- reflexivity.
               ** exfalso. destruct Hnf as [_ Hf]. apply Hf.
                  apply a_flex_var_iff_tvar. eapply e_assign_target_flex;
                    eassumption.
@@ -1648,7 +1676,8 @@ Proof.
         assert (HDr : Δ2 [=] swaps_atoms ps1 Δ2)
           by (symmetry; apply swaps_atoms_notin, (swaps_dodge_sub Hav1);
               clear - Hcov; fsetdec).
-        destruct (e_consis_swaps ps1 D2 HDl HDr (symmetry HS1))
+        pose proof HS1 as HS1r. symmetry in HS1r.
+        destruct (e_consis_swaps ps1 D2 HDl HDr HS1r)
           as [S2t [HS2t D2t]].
         rewrite HT1, (swaps_pskl_fresh_id ps1 P0b),
           (swaps_pskl_fresh_id ps1 Pb) in D2t

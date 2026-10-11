@@ -128,7 +128,8 @@ Proof.
     end.
     unfold lookeq_spec in Hr.
     destruct (e_lookeq_rel Hhead Hr Hcov1) as (ps & Hav & HS & HX & HC).
-    destruct (e_lookeq_swaps ps Htail (symmetry HS)) as (Sf & _ & Htail').
+    pose proof HS as HSr. symmetry in HSr.
+    destruct (e_lookeq_swaps ps Htail HSr) as (Sf & _ & Htail').
     rewrite (swaps_atom_dodge_in Hav) in Htail' by (clear - Hcov; fsetdec).
     rewrite (swaps_aenv_fresh_id ps Θ), (swaps_pskl_fresh_id ps P2),
       (swaps_pskl_fresh_id ps Q2) in Htail'
@@ -221,7 +222,8 @@ Proof.
     end.
     unfold lookeq_spec in Hr.
     destruct (e_lookeq_rel Hhead Hr Hcov1) as (ps & Hav & HS & HX & HC).
-    destruct (e_looksub_swaps ps Htail (symmetry HS)) as (Sf & _ & Htail').
+    pose proof HS as HSr. symmetry in HSr.
+    destruct (e_looksub_swaps ps Htail HSr) as (Sf & _ & Htail').
     rewrite (swaps_atom_dodge_in Hav) in Htail' by (clear - Hcov; fsetdec).
     rewrite (swaps_aenv_fresh_id ps Θ), (swaps_pskl_fresh_id ps P2),
       (swaps_pskl_fresh_id ps Q2) in Htail'

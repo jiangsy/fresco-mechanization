@@ -716,6 +716,18 @@ Proof.
   - exact (swaps_dodge_sub Hav2 H2 a b Hin).
 Qed.
 
+(** The common case: the first chain dodges exactly the set at hand. *)
+Lemma swaps_dodge_app_l {ps1 ps2} {S2 T : atoms} :
+  (forall a b, In (a, b) ps1 -> a `notin` T /\ b `notin` T) ->
+  (forall a b, In (a, b) ps2 -> a `notin` S2 /\ b `notin` S2) ->
+  T [<=] S2 ->
+  forall a b, In (a, b) (ps1 ++ ps2) -> a `notin` T /\ b `notin` T.
+Proof.
+  intros Hav1 Hav2 H2. apply (swaps_dodge_app Hav1 Hav2).
+  - reflexivity.
+  - exact H2.
+Qed.
+
 (** A chain dodging [S] fixes every name inside [S]. *)
 Lemma swaps_atom_dodge_in {ps} {S : atoms} {α} :
   (forall a b, In (a, b) ps -> a `notin` S /\ b `notin` S) ->
@@ -731,16 +743,6 @@ Lemma swaps_atoms_cons_transport : forall α β ps S St S',
 Proof.
   intros * HSt HS. cbn [swaps_atoms]. rewrite <- HS.
   apply swaps_atoms_cong. symmetry; exact HSt.
-Qed.
-
-(** The step of every [_swaps] iteration: one transposition, then the
-    rest of the chain, read off the two supply equations. *)
-Lemma swaps_atoms_cons_step {a b ps} {S St S' : atoms} :
-  St [=] swap_atoms a b S -> S' [=] swaps_atoms ps St ->
-  S' [=] swaps_atoms ((a, b) :: ps) S.
-Proof.
-  intros HSt HS. cbn [swaps_atoms]. rewrite HS.
-  apply swaps_atoms_cong. exact HSt.
 Qed.
 
 (** The same transport along a chain that runs [ps1] and then [ps2]: the

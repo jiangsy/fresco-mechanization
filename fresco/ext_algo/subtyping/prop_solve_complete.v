@@ -119,7 +119,8 @@ Proof.
     end.
     unfold solve_eq_spec in Hr.
     destruct (e_solve_eq_rel Hhead Hr Hcov1) as (ps & Hav & HS & HX & HY).
-    destruct (e_solve_eq_swaps ps Htail (symmetry HS)) as (Sf & _ & Htail').
+    pose proof HS as HSr. symmetry in HSr.
+    destruct (e_solve_eq_swaps ps Htail HSr) as (Sf & _ & Htail').
     rewrite swaps_aenv_app_dist, HX, (swaps_aenv_fresh_id ps Θ),
       (swaps_pskl_fresh_id ps P2), (swaps_pskl_fresh_id ps Q2) in Htail'
       by (apply (swaps_dodge_sub Hav); clear - Hcov; simpl in *; fsetdec).
@@ -200,7 +201,8 @@ Proof.
         [cbv beta iota; clear Hne | exact (False_ind _ (Hne eq_refl))];
         unfold solve_eq_spec in Hr;
         destruct (e_solve_eq_rel D1 Hr Hcov1) as (ps & Hav & HS & HX & HY);
-        destruct (e_solve_sub_swaps ps D2 (symmetry HS)) as (Sf & _ & Htail');
+        pose proof HS as HSr; symmetry in HSr;
+        destruct (e_solve_sub_swaps ps D2 HSr) as (Sf & _ & Htail');
         rewrite swaps_aenv_app_dist, HX, (swaps_aenv_fresh_id ps T),
           (swaps_pskl_fresh_id ps p2), (swaps_pskl_fresh_id ps q2) in Htail'
           by (apply (swaps_dodge_sub Hav); clear - Hcov; simpl in *; fsetdec);
