@@ -80,6 +80,103 @@ Proof.
     split; [ exact Hb1 | clear - Hb2 HgrowA; fsetdec ].
 Qed.
 
+(* ===================================================================== *)
+(*  ⭐ THE FIVE LEAKING ∀ ROWS' SHARED HALVES.                             *)
+(*                                                                        *)
+(*  LS-ForallR/L and LE-ForallInh/Syn/UnivGhost1 all open at a rule-fresh  *)
+(*  [β] on side 1 and a supply-fresh [β2] on side 2.  [look_push_opener]   *)
+(*  is what the premise's IH needs at the pushed pair; [look_leak_opener]  *)
+(*  hands the IH's result back at the caller's list, the opener joining    *)
+(*  [ρx] ONLY IF IT SURFACES IN [𝒞] — one that does not is INERT for      *)
+(*  [rel_a_cstrs] and is DROPPED.  That is what lets the conclusion        *)
+(*  promise [cols_l ρx ∩ dom Ξ [=] empty], and through it lets the ARROW   *)
+(*  rows read the CROSS-HALF FRESHNESS GUARD.                              *)
+(* ===================================================================== *)
+
+Lemma look_push_opener : forall {ρ V Θ1 Θ2 α β β2 X Y S0 Z W},
+  flex_agree_rel ρ V Θ1 Θ2 ->
+  β `notin` add α (ftvar_in_aenv Θ1 `union` X `union` Y) ->
+  β2 `notin` S0 ∪ dom Θ2 ->
+  α `in` V -> α `notin` cols_l ρ -> α `notin` cols_r ρ ->
+  V ∪ cols_r ρ ∪ Z ∪ W [<=] S0 ->
+  flex_agree_rel ((β, β2) :: ρ) V
+    ((β ~ abind_tvar) ++ Θ1) ((β2 ~ abind_tvar) ++ Θ2)
+  /\ α `notin` cols_l ((β, β2) :: ρ)
+  /\ α `notin` cols_r ((β, β2) :: ρ).
+Proof.
+  intros ρ V Θ1 Θ2 α β β2 X Y S0 Z W Hag Hβ1 Hβ2 HαV Hαl Hαr Hcov.
+  split.
+  { apply flex_agree_rel_push_look;
+      [ exact Hag
+      | pose proof (dom_subset_ftvar_in_aenv Θ1) as Hdsub;
+        clear - Hβ1 Hdsub; fsetdec
+      | clear - Hβ2; fsetdec ]. }
+  split; [ simpl; clear - Hαl Hβ1; fsetdec | ].
+  assert (HαS0 : α `in` S0) by (clear - HαV Hcov; fsetdec).
+  simpl; clear - Hαr Hβ2 HαS0; fsetdec.
+Qed.
+
+Lemma look_leak_opener :
+  forall {α β β2 Θ1 X Y S0 D S1 ρx ρn ρ V} {Ξ Ξ2 : aenv} {C C2},
+  β `notin` add α (ftvar_in_aenv Θ1 `union` X `union` Y) ->
+  β2 `notin` S0 ∪ D ->
+  add β2 S0 [<=] S1 ->
+  (forall a b, In (a, b) (ρx ++ ρn) ->
+     a `notin` add α (ftvar_in_aenv ((β ~ abind_tvar) ++ Θ1))
+     /\ b `in` S1 /\ b `notin` add β2 S0) ->
+  cols_r ρx ∩ dom Ξ2 [=] empty ->
+  dom Ξ2 ∩ add β2 S0 [=] empty ->
+  (forall a b, In (a, b) ρx -> a `in` ftvar_in_a_cstrs C) ->
+  cols_l ρx ∩ dom Ξ [=] empty ->
+  β `notin` ftvar_in_aenv Ξ ->
+  rel_a_cstrs (ρx ++ ρn ++ (β, β2) :: ρ) V C C2 ->
+  exists ρx',
+    (forall a b, In (a, b) (ρx' ++ ρn) ->
+       a `notin` add α (ftvar_in_aenv Θ1) /\ b `in` S1 /\ b `notin` S0)
+    /\ cols_r ρx' ∩ dom Ξ2 [=] empty
+    /\ (forall a b, In (a, b) ρx' -> a `in` ftvar_in_a_cstrs C)
+    /\ cols_l ρx' ∩ dom Ξ [=] empty
+    /\ rel_a_cstrs (ρx' ++ ρn ++ ρ) V C C2.
+Proof.
+  intros α β β2 Θ1 X Y S0 D S1 ρx ρn ρ V Ξ Ξ2 C C2 Hβ1 Hβ2 Hgrow Hpairs
+    Hxb Hd2 Hoc2 Hcl2 Hbn Hrel'.
+  assert (HβΞ : β `notin` dom Ξ).
+  { pose proof (dom_subset_ftvar_in_aenv Ξ) as Hds.
+    clear - Hbn Hds; fsetdec. }
+  destruct (AtomSetProperties.In_dec β (ftvar_in_a_cstrs C))
+    as [HβC | HβC].
+  - exists ((β, β2) :: ρx).
+    split.
+    { intros a b Hin. destruct Hin as [E | Hin].
+      - inversion E; subst.
+        split; [ clear - Hβ1; fsetdec | ].
+        split; [ clear - Hgrow; fsetdec | clear - Hβ2; fsetdec ].
+      - destruct (Hpairs a b Hin) as [Ha [Hb1 Hb2]].
+        simpl in Ha.
+        split; [ clear - Ha; fsetdec | ].
+        split; [ exact Hb1 | clear - Hb2; fsetdec ]. }
+    split; [ simpl; clear - Hxb Hd2; fsetdec | ].
+    split.
+    { intros a b Hin. destruct Hin as [E | Hin];
+        [ inversion E; subst; exact HβC | exact (Hoc2 a b Hin) ]. }
+    split; [ simpl; clear - Hcl2 HβΞ; fsetdec | ].
+    cstrs_perm Hrel'.
+  - exists ρx.
+    split.
+    { intros a b Hin.
+      assert (Hin' : In (a, b) (ρx ++ ρn))
+        by (apply in_app_or in Hin; apply in_or_app; tauto).
+      destruct (Hpairs a b Hin') as [Ha [Hb1 Hb2]].
+      simpl in Ha.
+      split; [ clear - Ha; fsetdec | ].
+      split; [ exact Hb1 | clear - Hb2; fsetdec ]. }
+    split; [ exact Hxb | ].
+    split; [ exact Hoc2 | ]. split; [ exact Hcl2 | ].
+    assert (Hr2 : rel_a_cstrs ((β, β2) :: (ρx ++ ρn ++ ρ)) V C C2)
+      by (cstrs_perm Hrel').
+    eapply rel_a_cstrs_drop_head; [ exact Hr2 | exact HβC ].
+Qed.
+
 (** ⭐ TRANSPORT 5 — the look layer, targeting the SUPPLY-THREADED
     encoding: an [a_looksub]/[a_lookeq] derivation transports to an
     [e_looksub]/[e_lookeq] derivation on rel-related inputs, over any
@@ -235,24 +332,14 @@ Proof.
     | Hb : rel_pskl ρ V B ?x |- _ => rename Hb into HrB0; rename x into B2
     end.
     destruct (atom_fresh (S0 ∪ dom Θ2)) as [β2 Hβ2].
-    assert (Hag' : flex_agree_rel ((β, β2) :: ρ) V
-                     ((β ~ abind_tvar) ++ Θ1) ((β2 ~ abind_tvar) ++ Θ2))
-      by (apply flex_agree_rel_push_look;
-          [ exact Hag
-          | pose proof (dom_subset_ftvar_in_aenv Θ1) as Hdsub;
-            clear - Hβ1 Hdsub; fsetdec
-          | clear - Hβ2; fsetdec ]).
+    destruct (look_push_opener Hag Hβ1 Hβ2 HαV Hαl Hαr Hcov)
+      as (Hag' & Hαl' & Hαr').
     assert (Hrelo : rel_pskl ((β, β2) :: ρ) V
                       (open_pskl_wrt_pskl B (pskl_var_f β))
                       (open_pskl_wrt_pskl B2 (pskl_var_f β2)))
       by (apply rel_pskl_open_pair; exact HrB0).
     assert (HrelP2 : rel_pskl ((β, β2) :: ρ) V A P2)
       by (apply rel_pskl_extend_pair; exact HrelP).
-    assert (Hαl' : α `notin` cols_l ((β, β2) :: ρ))
-      by (simpl; clear - Hαl Hβ1; fsetdec).
-    assert (Hαr' : α `notin` cols_r ((β, β2) :: ρ))
-      by (simpl; assert (HαS0 : α `in` S0) by (clear - HαV Hcov; fsetdec);
-          clear - Hαr Hβ2 HαS0; fsetdec).
     assert (Hcov' : V ∪ cols_r ((β, β2) :: ρ)
                       ∪ ftvar_in_pskl P2
                       ∪ ftvar_in_pskl (open_pskl_wrt_pskl B2 (pskl_var_f β2))
@@ -267,61 +354,19 @@ Proof.
     pose proof (e_looksub_supply_grows D2) as Hgrow.
     assert (Hd2 : dom Ξ2 ∩ add β2 S0 [=] empty)
       by (apply (proj1 e_looksub_lookeq_block) in D2; tauto).
-    (* ⭐ THE OPENER JOINS ρx ONLY IF IT SURFACES IN [𝒞].  One that does not
-       is INERT for [rel_a_cstrs] and is dropped — which is what lets the
-       conclusion promise [cols_l ρx ∩ dom Ξ [=] empty], and through that
-       lets the ARROW rows read the CROSS-HALF FRESHNESS GUARD. *)
-    assert (HβΞ : β `notin` dom Ξ).
-    { pose proof (a_looksub_binder_not_generated Hprem) as Hbn.
-      pose proof (dom_subset_ftvar_in_aenv Ξ) as Hds.
-      clear - Hbn Hds; fsetdec. }
-    destruct (AtomSetProperties.In_dec β (ftvar_in_a_cstrs C))
-      as [HβC | HβC].
-    + exists S1, ((β, β2) :: ρx), ρn, Ξ2, C2.
-      split.
-      { apply e_looksub__forall_r with (β := β2).
-        - eapply rel_pskl_ghost_free; [ exact HrelP' | assumption ].
-        - clear - Hβ2; fsetdec.
-        - eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ].
-        - eapply rel_pskl_neq_var; [ exact HrelP | exact Hnv | exact Hαr ].
-        - exact D2. }
-      split; [ exact E1 | ]. split; [ exact E2 | ].
-      split.
-      { intros a b Hin. destruct Hin as [E | Hin].
-        - inversion E; subst.
-          split; [ clear - Hβ1; fsetdec | ].
-          split; [ clear - Hgrow; fsetdec | clear - Hβ2; fsetdec ].
-        - destruct (Hpairs a b Hin) as [Ha [Hb1 Hb2]].
-          simpl in Ha.
-          split; [ clear - Ha; fsetdec | ].
-          split; [ exact Hb1 | clear - Hb2; fsetdec ]. }
-      split; [ simpl; clear - Hxb Hd2; fsetdec | ].
-      split.
-      { intros a b Hin. destruct Hin as [E | Hin];
-          [ inversion E; subst; exact HβC | exact (Hoc2 a b Hin) ]. }
-      split; [ simpl; clear - Hcl2 HβΞ; fsetdec | ].
-      cstrs_perm Hrel'.
-    + exists S1, ρx, ρn, Ξ2, C2.
-      split.
-      { apply e_looksub__forall_r with (β := β2).
-        - eapply rel_pskl_ghost_free; [ exact HrelP' | assumption ].
-        - clear - Hβ2; fsetdec.
-        - eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ].
-        - eapply rel_pskl_neq_var; [ exact HrelP | exact Hnv | exact Hαr ].
-        - exact D2. }
-      split; [ exact E1 | ]. split; [ exact E2 | ].
-      split.
-      { intros a b Hin.
-        destruct (Hpairs a b ltac:(apply in_or_app; apply in_app_or in Hin;
-                                   tauto)) as [Ha [Hb1 Hb2]].
-        simpl in Ha.
-        split; [ clear - Ha; fsetdec | ].
-        split; [ exact Hb1 | clear - Hb2; fsetdec ]. }
-      split; [ exact Hxb | ].
-      split; [ exact Hoc2 | ]. split; [ exact Hcl2 | ].
-      assert (Hr2 : rel_a_cstrs ((β, β2) :: (ρx ++ ρn ++ ρ)) V C C2)
-        by (cstrs_perm Hrel').
-      eapply rel_a_cstrs_drop_head; [ exact Hr2 | exact HβC ].
+    destruct (look_leak_opener Hβ1 Hβ2 Hgrow Hpairs Hxb Hd2 Hoc2 Hcl2
+                (a_looksub_binder_not_generated Hprem) Hrel')
+      as (ρx' & Hpairs' & Hxb' & Hoc' & Hcl' & Hrel'').
+    exists S1, ρx', ρn, Ξ2, C2.
+    split.
+    { apply e_looksub__forall_r with (β := β2).
+      - eapply rel_pskl_ghost_free; [ exact HrelP' | assumption ].
+      - clear - Hβ2; fsetdec.
+      - eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ].
+      - eapply rel_pskl_neq_var; [ exact HrelP | exact Hnv | exact Hαr ].
+      - exact D2. }
+    exact (conj E1 (conj E2 (conj Hpairs' (conj Hxb' (conj Hoc' (conj Hcl'
+            Hrel'')))))).
   - (* LS-Arrow *)
     intros Θ1 α m P1 P2q P1' P2q' Ξ1 Ξ2q C1 C2q Hg1 Hg2 Hle IHe Hls IHs
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
@@ -405,24 +450,14 @@ Proof.
     | Hb : rel_pskl ρ V Pb ?x |- _ => rename Hb into HrP0; rename x into P2b
     end.
     destruct (atom_fresh (S0 ∪ dom Θ2)) as [β2 Hβ2].
-    assert (Hag' : flex_agree_rel ((β, β2) :: ρ) V
-                     ((β ~ abind_tvar) ++ Θ1) ((β2 ~ abind_tvar) ++ Θ2))
-      by (apply flex_agree_rel_push_look;
-          [ exact Hag
-          | pose proof (dom_subset_ftvar_in_aenv Θ1) as Hdsub;
-            clear - Hβ1 Hdsub; fsetdec
-          | clear - Hβ2; fsetdec ]).
+    destruct (look_push_opener Hag Hβ1 Hβ2 HαV Hαl Hαr Hcov)
+      as (Hag' & Hαl' & Hαr').
     assert (Hrelo : rel_pskl ((β, β2) :: ρ) V
                       (open_pskl_wrt_pskl Pb (pskl_var_f β))
                       (open_pskl_wrt_pskl P2b (pskl_var_f β2)))
       by (apply rel_pskl_open_pair; exact HrP0).
     assert (HrelP2' : rel_pskl ((β, β2) :: ρ) V Pt P2')
       by (apply rel_pskl_extend_pair; exact HrelP').
-    assert (Hαl' : α `notin` cols_l ((β, β2) :: ρ))
-      by (simpl; clear - Hαl Hβ1; fsetdec).
-    assert (Hαr' : α `notin` cols_r ((β, β2) :: ρ))
-      by (simpl; assert (HαS0 : α `in` S0) by (clear - HαV Hcov; fsetdec);
-          clear - Hαr Hβ2 HαS0; fsetdec).
     assert (Hcov' : V ∪ cols_r ((β, β2) :: ρ)
                       ∪ ftvar_in_pskl (open_pskl_wrt_pskl P2b (pskl_var_f β2))
                       ∪ ftvar_in_pskl P2'
@@ -437,63 +472,19 @@ Proof.
     pose proof (e_looksub_supply_grows D2) as Hgrow.
     assert (Hd2 : dom Ξ2 ∩ add β2 S0 [=] empty)
       by (apply (proj1 e_looksub_lookeq_block) in D2; tauto).
-    (* ⭐ THE OPENER JOINS ρx ONLY IF IT SURFACES IN [𝒞] — one that does not
-       is INERT for [rel_a_cstrs] and is DROPPED.  That is what lets the
-       conclusion promise [cols_l ρx ∩ dom Ξ [=] empty], and through it lets
-       the ARROW rows read the CROSS-HALF FRESHNESS GUARD. *)
-    assert (HβΞ : β `notin` dom Ξ).
-    { assert (Hbn : β `notin` ftvar_in_aenv Ξ)
-        by (first [ eapply a_looksub_binder_not_generated; exact Hprem
-                  | eapply a_lookeq_binder_not_generated; exact Hprem ]).
-      pose proof (dom_subset_ftvar_in_aenv Ξ) as Hds.
-      clear - Hbn Hds; fsetdec. }
-    destruct (AtomSetProperties.In_dec β (ftvar_in_a_cstrs C))
-      as [HβC | HβC].
-    + exists S1, ((β, β2) :: ρx), ρn, Ξ2, C2.
-      split.
-      { apply e_looksub__forall_l with (β := β2);
-          [ clear - Hβ2; fsetdec
-          | eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ]
-          | eapply rel_pskl_neq_ghost; [ exact HrelP' | exact Hnh ]
-          | eapply rel_pskl_forall_r_off; [ exact HrelP' | exact Hfr3 ]
-          | exact D2 ]. }
-      split; [ exact E1 | ]. split; [ exact E2 | ].
-      split.
-      { intros a b Hin. destruct Hin as [E | Hin].
-        - inversion E; subst.
-          split; [ clear - Hβ1; fsetdec | ].
-          split; [ clear - Hgrow; fsetdec | clear - Hβ2; fsetdec ].
-        - destruct (Hpairs a b Hin) as [Ha [Hb1 Hb2]].
-          simpl in Ha.
-          split; [ clear - Ha; fsetdec | ].
-          split; [ exact Hb1 | clear - Hb2; fsetdec ]. }
-      split; [ simpl; clear - Hxb Hd2; fsetdec | ].
-      split.
-      { intros a b Hin. destruct Hin as [E | Hin];
-          [ inversion E; subst; exact HβC | exact (Hoc2 a b Hin) ]. }
-      split; [ simpl; clear - Hcl2 HβΞ; fsetdec | ].
-      cstrs_perm Hrel'.
-    + exists S1, ρx, ρn, Ξ2, C2.
-      split.
-      { apply e_looksub__forall_l with (β := β2);
-          [ clear - Hβ2; fsetdec
-          | eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ]
-          | eapply rel_pskl_neq_ghost; [ exact HrelP' | exact Hnh ]
-          | eapply rel_pskl_forall_r_off; [ exact HrelP' | exact Hfr3 ]
-          | exact D2 ]. }
-      split; [ exact E1 | ]. split; [ exact E2 | ].
-      split.
-      { intros a b Hin.
-        destruct (Hpairs a b ltac:(apply in_or_app; apply in_app_or in Hin;
-                                   tauto)) as [Ha [Hb1 Hb2]].
-        simpl in Ha.
-        split; [ clear - Ha; fsetdec | ].
-        split; [ exact Hb1 | clear - Hb2; fsetdec ]. }
-      split; [ exact Hxb | ].
-      split; [ exact Hoc2 | ]. split; [ exact Hcl2 | ].
-      assert (Hr2 : rel_a_cstrs ((β, β2) :: (ρx ++ ρn ++ ρ)) V C C2)
-        by (cstrs_perm Hrel').
-      eapply rel_a_cstrs_drop_head; [ exact Hr2 | exact HβC ].
+    destruct (look_leak_opener Hβ1 Hβ2 Hgrow Hpairs Hxb Hd2 Hoc2 Hcl2
+                (a_looksub_binder_not_generated Hprem) Hrel')
+      as (ρx' & Hpairs' & Hxb' & Hoc' & Hcl' & Hrel'').
+    exists S1, ρx', ρn, Ξ2, C2.
+    split.
+    { apply e_looksub__forall_l with (β := β2);
+        [ clear - Hβ2; fsetdec
+        | eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ]
+        | eapply rel_pskl_neq_ghost; [ exact HrelP' | exact Hnh ]
+        | eapply rel_pskl_forall_r_off; [ exact HrelP' | exact Hfr3 ]
+        | exact D2 ]. }
+    exact (conj E1 (conj E2 (conj Hpairs' (conj Hxb' (conj Hoc' (conj Hcl'
+            Hrel'')))))).
   - (* LS-UnivGhostL *)
     intros Θ1 α m Pb Pt Ξ C Hnh Hfr3 Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
@@ -685,13 +676,8 @@ Proof.
         rename xa into P2b; rename xb into Q2b
     end.
     destruct (atom_fresh (S0 ∪ dom Θ2)) as [β2 Hβ2].
-    assert (Hag' : flex_agree_rel ((β, β2) :: ρ) V
-                     ((β ~ abind_tvar) ++ Θ1) ((β2 ~ abind_tvar) ++ Θ2))
-      by (apply flex_agree_rel_push_look;
-          [ exact Hag
-          | pose proof (dom_subset_ftvar_in_aenv Θ1) as Hdsub;
-            clear - Hβ1 Hdsub; fsetdec
-          | clear - Hβ2; fsetdec ]).
+    destruct (look_push_opener Hag Hβ1 Hβ2 HαV Hαl Hαr Hcov)
+      as (Hag' & Hαl' & Hαr').
     assert (Hrelo1 : rel_pskl ((β, β2) :: ρ) V
                       (open_pskl_wrt_pskl Pb (pskl_var_f β))
                       (open_pskl_wrt_pskl P2b (pskl_var_f β2)))
@@ -700,11 +686,6 @@ Proof.
                       (open_pskl_wrt_pskl Pb' (pskl_var_f β))
                       (open_pskl_wrt_pskl Q2b (pskl_var_f β2)))
       by (apply rel_pskl_open_pair; exact HrQ0).
-    assert (Hαl' : α `notin` cols_l ((β, β2) :: ρ))
-      by (simpl; clear - Hαl Hβ1; fsetdec).
-    assert (Hαr' : α `notin` cols_r ((β, β2) :: ρ))
-      by (simpl; assert (HαS0 : α `in` S0) by (clear - HαV Hcov; fsetdec);
-          clear - Hαr Hβ2 HαS0; fsetdec).
     assert (Hcov' : V ∪ cols_r ((β, β2) :: ρ)
                       ∪ ftvar_in_pskl (open_pskl_wrt_pskl P2b (pskl_var_f β2))
                       ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
@@ -722,59 +703,17 @@ Proof.
     pose proof (e_lookeq_supply_grows D2) as Hgrow.
     assert (Hd2 : dom Ξ2 ∩ add β2 S0 [=] empty)
       by (apply (proj2 e_looksub_lookeq_block) in D2; tauto).
-    (* ⭐ THE OPENER JOINS ρx ONLY IF IT SURFACES IN [𝒞] — one that does not
-       is INERT for [rel_a_cstrs] and is DROPPED.  That is what lets the
-       conclusion promise [cols_l ρx ∩ dom Ξ [=] empty], and through it lets
-       the ARROW rows read the CROSS-HALF FRESHNESS GUARD. *)
-    assert (HβΞ : β `notin` dom Ξ).
-    { assert (Hbn : β `notin` ftvar_in_aenv Ξ)
-        by (first [ eapply a_looksub_binder_not_generated; exact Hprem
-                  | eapply a_lookeq_binder_not_generated; exact Hprem ]).
-      pose proof (dom_subset_ftvar_in_aenv Ξ) as Hds.
-      clear - Hbn Hds; fsetdec. }
-    destruct (AtomSetProperties.In_dec β (ftvar_in_a_cstrs C))
-      as [HβC | HβC].
-    + exists S1, ((β, β2) :: ρx), ρn, Ξ2, C2.
-      split.
-      { apply e_lookeq__forall_inh with (β := β2);
-          [ clear - Hβ2; fsetdec
+    destruct (look_leak_opener Hβ1 Hβ2 Hgrow Hpairs Hxb Hd2 Hoc2 Hcl2
+                (a_lookeq_binder_not_generated Hprem) Hrel')
+      as (ρx' & Hpairs' & Hxb' & Hoc' & Hcl' & Hrel'').
+    exists S1, ρx', ρn, Ξ2, C2.
+    split.
+    { apply e_lookeq__forall_inh with (β := β2);
+        [ clear - Hβ2; fsetdec
         | eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ]
-          | exact D2 ]. }
-      split; [ exact E1 | ]. split; [ exact E2 | ].
-      split.
-      { intros a b Hin. destruct Hin as [E | Hin].
-        - inversion E; subst.
-          split; [ clear - Hβ1; fsetdec | ].
-          split; [ clear - Hgrow; fsetdec | clear - Hβ2; fsetdec ].
-        - destruct (Hpairs a b Hin) as [Ha [Hb1 Hb2]].
-          simpl in Ha.
-          split; [ clear - Ha; fsetdec | ].
-          split; [ exact Hb1 | clear - Hb2; fsetdec ]. }
-      split; [ simpl; clear - Hxb Hd2; fsetdec | ].
-      split.
-      { intros a b Hin. destruct Hin as [E | Hin];
-          [ inversion E; subst; exact HβC | exact (Hoc2 a b Hin) ]. }
-      split; [ simpl; clear - Hcl2 HβΞ; fsetdec | ].
-      cstrs_perm Hrel'.
-    + exists S1, ρx, ρn, Ξ2, C2.
-      split.
-      { apply e_lookeq__forall_inh with (β := β2);
-          [ clear - Hβ2; fsetdec
-        | eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ]
-          | exact D2 ]. }
-      split; [ exact E1 | ]. split; [ exact E2 | ].
-      split.
-      { intros a b Hin.
-        destruct (Hpairs a b ltac:(apply in_or_app; apply in_app_or in Hin;
-                                   tauto)) as [Ha [Hb1 Hb2]].
-        simpl in Ha.
-        split; [ clear - Ha; fsetdec | ].
-        split; [ exact Hb1 | clear - Hb2; fsetdec ]. }
-      split; [ exact Hxb | ].
-      split; [ exact Hoc2 | ]. split; [ exact Hcl2 | ].
-      assert (Hr2 : rel_a_cstrs ((β, β2) :: (ρx ++ ρn ++ ρ)) V C C2)
-        by (cstrs_perm Hrel').
-      eapply rel_a_cstrs_drop_head; [ exact Hr2 | exact HβC ].
+        | exact D2 ]. }
+    exact (conj E1 (conj E2 (conj Hpairs' (conj Hxb' (conj Hoc' (conj Hcl'
+            Hrel'')))))).
   - (* LE-ForallSyn — leaks; only the SUBJECT opens *)
     intros Θ1 α Pb Pb' Ξ C β Hβ1 Hocc Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
@@ -785,13 +724,8 @@ Proof.
         rename xa into P2b; rename xb into Q2b
     end.
     destruct (atom_fresh (S0 ∪ dom Θ2)) as [β2 Hβ2].
-    assert (Hag' : flex_agree_rel ((β, β2) :: ρ) V
-                     ((β ~ abind_tvar) ++ Θ1) ((β2 ~ abind_tvar) ++ Θ2))
-      by (apply flex_agree_rel_push_look;
-          [ exact Hag
-          | pose proof (dom_subset_ftvar_in_aenv Θ1) as Hdsub;
-            clear - Hβ1 Hdsub; fsetdec
-          | clear - Hβ2; fsetdec ]).
+    destruct (look_push_opener Hag Hβ1 Hβ2 HαV Hαl Hαr Hcov)
+      as (Hag' & Hαl' & Hαr').
     assert (Hrelo1 : rel_pskl ((β, β2) :: ρ) V
                       (open_pskl_wrt_pskl Pb (pskl_var_f β))
                       (open_pskl_wrt_pskl P2b (pskl_var_f β2)))
@@ -799,11 +733,6 @@ Proof.
     assert (Hrelo2 : rel_pskl ((β, β2) :: ρ) V
                       (pskl_univ_ghost Pb') (pskl_univ_ghost Q2b))
       by (apply rel_pskl_extend_pair; constructor; exact HrQ0).
-    assert (Hαl' : α `notin` cols_l ((β, β2) :: ρ))
-      by (simpl; clear - Hαl Hβ1; fsetdec).
-    assert (Hαr' : α `notin` cols_r ((β, β2) :: ρ))
-      by (simpl; assert (HαS0 : α `in` S0) by (clear - HαV Hcov; fsetdec);
-          clear - Hαr Hβ2 HαS0; fsetdec).
     assert (Hcov' : V ∪ cols_r ((β, β2) :: ρ)
                       ∪ ftvar_in_pskl (open_pskl_wrt_pskl P2b (pskl_var_f β2))
                       ∪ ftvar_in_pskl (pskl_univ_ghost Q2b)
@@ -819,59 +748,17 @@ Proof.
     pose proof (e_lookeq_supply_grows D2) as Hgrow.
     assert (Hd2 : dom Ξ2 ∩ add β2 S0 [=] empty)
       by (apply (proj2 e_looksub_lookeq_block) in D2; tauto).
-    (* ⭐ THE OPENER JOINS ρx ONLY IF IT SURFACES IN [𝒞] — one that does not
-       is INERT for [rel_a_cstrs] and is DROPPED.  That is what lets the
-       conclusion promise [cols_l ρx ∩ dom Ξ [=] empty], and through it lets
-       the ARROW rows read the CROSS-HALF FRESHNESS GUARD. *)
-    assert (HβΞ : β `notin` dom Ξ).
-    { assert (Hbn : β `notin` ftvar_in_aenv Ξ)
-        by (first [ eapply a_looksub_binder_not_generated; exact Hprem
-                  | eapply a_lookeq_binder_not_generated; exact Hprem ]).
-      pose proof (dom_subset_ftvar_in_aenv Ξ) as Hds.
-      clear - Hbn Hds; fsetdec. }
-    destruct (AtomSetProperties.In_dec β (ftvar_in_a_cstrs C))
-      as [HβC | HβC].
-    + exists S1, ((β, β2) :: ρx), ρn, Ξ2, C2.
-      split.
-      { apply e_lookeq__forall_syn with (β := β2);
-          [ clear - Hβ2; fsetdec
+    destruct (look_leak_opener Hβ1 Hβ2 Hgrow Hpairs Hxb Hd2 Hoc2 Hcl2
+                (a_lookeq_binder_not_generated Hprem) Hrel')
+      as (ρx' & Hpairs' & Hxb' & Hoc' & Hcl' & Hrel'').
+    exists S1, ρx', ρn, Ξ2, C2.
+    split.
+    { apply e_lookeq__forall_syn with (β := β2);
+        [ clear - Hβ2; fsetdec
         | eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ]
-          | exact D2 ]. }
-      split; [ exact E1 | ]. split; [ exact E2 | ].
-      split.
-      { intros a b Hin. destruct Hin as [E | Hin].
-        - inversion E; subst.
-          split; [ clear - Hβ1; fsetdec | ].
-          split; [ clear - Hgrow; fsetdec | clear - Hβ2; fsetdec ].
-        - destruct (Hpairs a b Hin) as [Ha [Hb1 Hb2]].
-          simpl in Ha.
-          split; [ clear - Ha; fsetdec | ].
-          split; [ exact Hb1 | clear - Hb2; fsetdec ]. }
-      split; [ simpl; clear - Hxb Hd2; fsetdec | ].
-      split.
-      { intros a b Hin. destruct Hin as [E | Hin];
-          [ inversion E; subst; exact HβC | exact (Hoc2 a b Hin) ]. }
-      split; [ simpl; clear - Hcl2 HβΞ; fsetdec | ].
-      cstrs_perm Hrel'.
-    + exists S1, ρx, ρn, Ξ2, C2.
-      split.
-      { apply e_lookeq__forall_syn with (β := β2);
-          [ clear - Hβ2; fsetdec
-        | eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ]
-          | exact D2 ]. }
-      split; [ exact E1 | ]. split; [ exact E2 | ].
-      split.
-      { intros a b Hin.
-        destruct (Hpairs a b ltac:(apply in_or_app; apply in_app_or in Hin;
-                                   tauto)) as [Ha [Hb1 Hb2]].
-        simpl in Ha.
-        split; [ clear - Ha; fsetdec | ].
-        split; [ exact Hb1 | clear - Hb2; fsetdec ]. }
-      split; [ exact Hxb | ].
-      split; [ exact Hoc2 | ]. split; [ exact Hcl2 | ].
-      assert (Hr2 : rel_a_cstrs ((β, β2) :: (ρx ++ ρn ++ ρ)) V C C2)
-        by (cstrs_perm Hrel').
-      eapply rel_a_cstrs_drop_head; [ exact Hr2 | exact HβC ].
+        | exact D2 ]. }
+    exact (conj E1 (conj E2 (conj Hpairs' (conj Hxb' (conj Hoc' (conj Hcl'
+            Hrel'')))))).
   - (* LE-UnivGhost *)
     intros Θ1 α Pb Pb' Ξ C Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
@@ -902,13 +789,8 @@ Proof.
         rename xa into P2b; rename xb into Q2b
     end.
     destruct (atom_fresh (S0 ∪ dom Θ2)) as [β2 Hβ2].
-    assert (Hag' : flex_agree_rel ((β, β2) :: ρ) V
-                     ((β ~ abind_tvar) ++ Θ1) ((β2 ~ abind_tvar) ++ Θ2))
-      by (apply flex_agree_rel_push_look;
-          [ exact Hag
-          | pose proof (dom_subset_ftvar_in_aenv Θ1) as Hdsub;
-            clear - Hβ1 Hdsub; fsetdec
-          | clear - Hβ2; fsetdec ]).
+    destruct (look_push_opener Hag Hβ1 Hβ2 HαV Hαl Hαr Hcov)
+      as (Hag' & Hαl' & Hαr').
     assert (Hrelo1 : rel_pskl ((β, β2) :: ρ) V
                       (pskl_univ_ghost Pb) (pskl_univ_ghost P2b))
       by (apply rel_pskl_extend_pair; constructor; exact HrP0).
@@ -916,11 +798,6 @@ Proof.
                       (open_pskl_wrt_pskl Pb' (pskl_var_f β))
                       (open_pskl_wrt_pskl Q2b (pskl_var_f β2)))
       by (apply rel_pskl_open_pair; exact HrQ0).
-    assert (Hαl' : α `notin` cols_l ((β, β2) :: ρ))
-      by (simpl; clear - Hαl Hβ1; fsetdec).
-    assert (Hαr' : α `notin` cols_r ((β, β2) :: ρ))
-      by (simpl; assert (HαS0 : α `in` S0) by (clear - HαV Hcov; fsetdec);
-          clear - Hαr Hβ2 HαS0; fsetdec).
     assert (Hcov' : V ∪ cols_r ((β, β2) :: ρ)
                       ∪ ftvar_in_pskl (pskl_univ_ghost P2b)
                       ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
@@ -936,59 +813,17 @@ Proof.
     pose proof (e_lookeq_supply_grows D2) as Hgrow.
     assert (Hd2 : dom Ξ2 ∩ add β2 S0 [=] empty)
       by (apply (proj2 e_looksub_lookeq_block) in D2; tauto).
-    (* ⭐ THE OPENER JOINS ρx ONLY IF IT SURFACES IN [𝒞] — one that does not
-       is INERT for [rel_a_cstrs] and is DROPPED.  That is what lets the
-       conclusion promise [cols_l ρx ∩ dom Ξ [=] empty], and through it lets
-       the ARROW rows read the CROSS-HALF FRESHNESS GUARD. *)
-    assert (HβΞ : β `notin` dom Ξ).
-    { assert (Hbn : β `notin` ftvar_in_aenv Ξ)
-        by (first [ eapply a_looksub_binder_not_generated; exact Hprem
-                  | eapply a_lookeq_binder_not_generated; exact Hprem ]).
-      pose proof (dom_subset_ftvar_in_aenv Ξ) as Hds.
-      clear - Hbn Hds; fsetdec. }
-    destruct (AtomSetProperties.In_dec β (ftvar_in_a_cstrs C))
-      as [HβC | HβC].
-    + exists S1, ((β, β2) :: ρx), ρn, Ξ2, C2.
-      split.
-      { apply e_lookeq__univ_ghost1 with (β := β2);
-          [ clear - Hβ2; fsetdec
+    destruct (look_leak_opener Hβ1 Hβ2 Hgrow Hpairs Hxb Hd2 Hoc2 Hcl2
+                (a_lookeq_binder_not_generated Hprem) Hrel')
+      as (ρx' & Hpairs' & Hxb' & Hoc' & Hcl' & Hrel'').
+    exists S1, ρx', ρn, Ξ2, C2.
+    split.
+    { apply e_lookeq__univ_ghost1 with (β := β2);
+        [ clear - Hβ2; fsetdec
         | eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ]
-          | exact D2 ]. }
-      split; [ exact E1 | ]. split; [ exact E2 | ].
-      split.
-      { intros a b Hin. destruct Hin as [E | Hin].
-        - inversion E; subst.
-          split; [ clear - Hβ1; fsetdec | ].
-          split; [ clear - Hgrow; fsetdec | clear - Hβ2; fsetdec ].
-        - destruct (Hpairs a b Hin) as [Ha [Hb1 Hb2]].
-          simpl in Ha.
-          split; [ clear - Ha; fsetdec | ].
-          split; [ exact Hb1 | clear - Hb2; fsetdec ]. }
-      split; [ simpl; clear - Hxb Hd2; fsetdec | ].
-      split.
-      { intros a b Hin. destruct Hin as [E | Hin];
-          [ inversion E; subst; exact HβC | exact (Hoc2 a b Hin) ]. }
-      split; [ simpl; clear - Hcl2 HβΞ; fsetdec | ].
-      cstrs_perm Hrel'.
-    + exists S1, ρx, ρn, Ξ2, C2.
-      split.
-      { apply e_lookeq__univ_ghost1 with (β := β2);
-          [ clear - Hβ2; fsetdec
-        | eapply rel_pskl_in_id; [ exact HrelP | exact Hocc | exact Hαl ]
-          | exact D2 ]. }
-      split; [ exact E1 | ]. split; [ exact E2 | ].
-      split.
-      { intros a b Hin.
-        destruct (Hpairs a b ltac:(apply in_or_app; apply in_app_or in Hin;
-                                   tauto)) as [Ha [Hb1 Hb2]].
-        simpl in Ha.
-        split; [ clear - Ha; fsetdec | ].
-        split; [ exact Hb1 | clear - Hb2; fsetdec ]. }
-      split; [ exact Hxb | ].
-      split; [ exact Hoc2 | ]. split; [ exact Hcl2 | ].
-      assert (Hr2 : rel_a_cstrs ((β, β2) :: (ρx ++ ρn ++ ρ)) V C C2)
-        by (cstrs_perm Hrel').
-      eapply rel_a_cstrs_drop_head; [ exact Hr2 | exact HβC ].
+        | exact D2 ]. }
+    exact (conj E1 (conj E2 (conj Hpairs' (conj Hxb' (conj Hoc' (conj Hcl'
+            Hrel'')))))).
   - (* LE-UnivGhost2 *)
     intros Θ1 α Pb Pt Ξ C Hg Hfx Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
