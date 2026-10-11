@@ -1128,6 +1128,26 @@ Proof.
            (msubst_ptyp κ (ptyp_var_f β)) Bt eq_refl eq_refl).
 Qed.
 
+(** …so at a variable input the guess-completeness conclusion holds with
+    the EMPTY block of fills. *)
+Lemma guess_complete_var_case : forall {Θ Δ κ β} {Bt : btyp} {Θg Ξg A'},
+  {{ ⊢ Θ }}a ->
+  a_guess_mono Θg (pskl_var_f β) Ξg A' ->
+  ad_refine_syn Θ Δ (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f β)))
+    (btyp_to_bskl Bt) ->
+  exists ζg,
+    List.map fst ζg = List.map fst Ξg /\
+    (forall α τ, In (α, τ) ζg -> mono_ptyp τ /\ a_wf_ptyp Θ τ /\
+       (forall γ, γ `in` ftvar_in_ptyp τ -> γ `notin` Δ)) /\
+    {{ Θ ⊢ (msubst_ptyp (ζg ++ κ) A') ≡ᵗ (btyp_to_ptyp Bt) }}a.
+Proof.
+  intros Θ Δ κ β Bt Θg Ξg A' HwfΘ Hg Href.
+  destruct (@guess_complete_var_image Θ Δ κ β Bt Θg Ξg A' Href HwfΘ Hg)
+    as [-> Heqc].
+  exists nil. split; [ reflexivity | ].
+  split; [ intros α2 τ2 Hin; inversion Hin | exact Heqc ].
+Qed.
+
 (** A fresh atom stays out of a κ-image (the entries are Θ-scoped). *)
 Lemma msubst_ptyp_ftv_notin_inc : forall A (κg : metasubst) Θ1 Θ α0,
   κg ∷ Θ1 ⊑ Θ ->
@@ -1192,39 +1212,19 @@ Proof.
       split; [ intros α2 τ2 Hin; inversion Hin | ].
       simpl. apply a_tyequiv__refl. apply lc_ptyp_unit.
     + (* var head : the image *)
-      assert (Href' : ad_refine_syn Θ Δ
-                (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f βv)))
-                (btyp_to_bskl Bt))
-        by (simpl; rewrite <- HeqS, <- HeqT; apply ad_refine_syn__unit).
-      destruct (@guess_complete_var_image Θ Δ κ βv Bt Θg Ξg A' Href' HwfΘ Hg) as [-> Heqc].
-      exists nil; split;
-        [ reflexivity
-        | split; [ intros α2 τ2 Hin; inversion Hin | exact Heqc ] ].
+      apply (guess_complete_var_case HwfΘ Hg).
+      simpl. rewrite <- HeqS, <- HeqT. apply ad_refine_syn__unit.
   - (* var *)
     destruct P0 as [ | nb | βv | Pa Pb | Pw | | Pt ]; simpl in HeqS;
       try discriminate HeqS.
-    assert (Href' : ad_refine_syn Θ Δ
-              (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f βv)))
-              (btyp_to_bskl Bt))
-      by (simpl; rewrite <- HeqS, <- HeqT;
-          apply ad_refine_syn__var; assumption).
-    destruct (@guess_complete_var_image Θ Δ κ βv Bt Θg Ξg A' Href' HwfΘ Hg) as [-> Heqc].
-    exists nil; split;
-      [ reflexivity
-      | split; [ intros α2 τ2 Hin; inversion Hin | exact Heqc ] ].
+    apply (guess_complete_var_case HwfΘ Hg).
+    simpl. rewrite <- HeqS, <- HeqT. apply ad_refine_syn__var; assumption.
   - (* arrow *)
     destruct P0 as [ | nb | βv | Pa Pb | Pw | | Pt ]; simpl in HeqS;
       try discriminate HeqS.
     + (* var head *)
-      assert (Href' : ad_refine_syn Θ Δ
-                (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f βv)))
-                (btyp_to_bskl Bt))
-        by (simpl; rewrite <- HeqS, <- HeqT;
-            apply ad_refine_syn_arrow_intro; assumption).
-      destruct (@guess_complete_var_image Θ Δ κ βv Bt Θg Ξg A' Href' HwfΘ Hg) as [-> Heqc].
-      exists nil; split;
-        [ reflexivity
-        | split; [ intros α2 τ2 Hin; inversion Hin | exact Heqc ] ].
+      apply (guess_complete_var_case HwfΘ Hg).
+      simpl. rewrite <- HeqS, <- HeqT. apply ad_refine_syn_arrow_intro; assumption.
     + (* arrow head *)
       inversion HeqS; subst Q1 Q2.
       destruct Bt as [ | n | γ | B1 B2 | B0 | B0 ]; simpl in HeqT;
@@ -1477,15 +1477,8 @@ Proof.
   - (* flex_l : only a variable input paints to a bare variable *)
     destruct P0 as [ | nb | βv | Pa Pb | Pw | | Pt ]; simpl in HeqS;
       try discriminate HeqS.
-    assert (Href' : ad_refine_syn Θ Δ
-              (pskl_to_bskl_inh (msubst_pskl κ (pskl_var_f βv)))
-              (btyp_to_bskl Bt))
-      by (simpl; rewrite <- HeqS, <- HeqT;
-          eapply ad_refine_syn__flex_l; eassumption).
-    destruct (@guess_complete_var_image Θ Δ κ βv Bt Θg Ξg A' Href' HwfΘ Hg) as [-> Heqc].
-    exists nil; split;
-      [ reflexivity
-      | split; [ intros α2 τ2 Hin; inversion Hin | exact Heqc ] ].
+    apply (guess_complete_var_case HwfΘ Hg).
+    simpl. rewrite <- HeqS, <- HeqT. eapply ad_refine_syn__flex_l; eassumption.
   - (* flex_r : unfold the target's definition and recurse (any input) *)
     destruct Bt as [ | n | γ | B1 B2 | B0 | B0 ]; simpl in HeqT;
       try discriminate HeqT.
