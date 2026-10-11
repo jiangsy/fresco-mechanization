@@ -181,6 +181,29 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share supply transport and automate solver context equivalence
+
+Collection and solver supply transport now reconstruct routine constructors
+with `eauto 2`, leaving fresh binders and generation explicit. The shared
+`transport_supply_witnesses` tactic in the supply interface consumes each
+matching IH once and threads its returned witness to the next sibling. It
+replaces duplicated witness-processing loops in collection, solving, and
+consistency; it adds no constructor hints or global search rules.
+
+Solver context equivalence now uses `eauto 3` with the existing prefix
+congruence lemma. Only the substantive flexibility/non-flexibility argument
+remains explicit. The bespoke `ctx_equiv_ih` tactic is deleted.
+
+**Reduction:** 132 nonblank, noncomment Coq lines, including the new shared
+tactic. Proof bodies shrink: consistency supply transport 44→40, collection
+supply transport 106→55, solver supply transport 86→46, and solver context
+equivalence 55→23. Every retained statement and computational definition is
+unchanged. The new collection/solver transport and context-equivalence proof
+construction times are 0.039s, 0.030s, and 0.013s in the full build.
+
+**Validation:** full `make coq`, all 34 flagship assumption checks closed,
+byte-identical extracted OCaml, and `git diff --check`.
+
 ## 2026-10-11 — Automate routine consistency swap cases
 
 The mutual swap proof now instantiates supply-transport IHs and reconstructs

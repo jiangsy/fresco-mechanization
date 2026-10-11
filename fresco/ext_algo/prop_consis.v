@@ -1144,11 +1144,7 @@ Proof.
                 {{ S0' ↝ S1' ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e)).
   all: try solve [
     intros;
-    repeat match goal with
-    | IH : forall S', S' [=] ?S -> exists _, _ /\ _,
-      Heq : ?S' [=] ?S |- _ =>
-        destruct (IH _ Heq) as [? [? ?]]; clear IH
-    end;
+    transport_supply_witnesses;
     eexists; split; [ eassumption | econstructor; eauto 2 ] ].
   - (* Assign-SolveM — the supply moves through [guess^TY] *)
     intros S0 S1 Θ0 Ξ α P βs τ Hocc Hg Hm S0' Heq.

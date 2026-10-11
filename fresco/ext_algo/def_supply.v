@@ -121,3 +121,13 @@ Proof.
 Qed.
 
 Arguments supply_fresh_notin : clear implicits.   (* see the pin note above *)
+
+(** Instantiate supply-transport IHs in order, including threaded siblings.
+    Removing each consumed IH makes the loop finite. Binder IHs whose input
+    supply needs an [add] equality are left to the caller. *)
+Ltac transport_supply_witnesses :=
+  repeat match goal with
+  | IH : forall S' : supply, S' [=] ?S -> exists _, _ /\ _,
+    Heq : ?S' [=] ?S |- _ =>
+      destruct (IH _ Heq) as [? [? ?]]; clear IH
+  end.

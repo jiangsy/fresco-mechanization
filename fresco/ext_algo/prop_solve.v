@@ -494,85 +494,43 @@ Proof.
          {{ S0' ↝ S1' ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e)).
 
   (* ------------------------ e_solve_sub ------------------------ *)
-  - intros S Θ m α Q S0' Heq.
-    exists S0'. split; [ exact Heq | apply e_solve_sub__var ].
+  all: try solve [
+    intros;
+    transport_supply_witnesses;
+    eexists; split; [ eassumption | econstructor; eauto 2 ] ].
   - intros S0 S1 Θ m P Q Ξ P' β Hβ Hs IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
       as [S1' [HS1 Hd]].
     exists S1'. split; [ exact HS1 | ].
     apply e_solve_sub__forall_l with (β := β);
       [ rewrite Heq; exact Hβ | exact Hd ].
-  - intros S0 S1 Θ m P Q Ξ P' Hs IH S0' Heq.
-    destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_solve_sub__univ_ghost_l; exact Hd ].
-  - intros S Θ m P Hoff S0' Heq.
-    exists S0'. split; [ exact Heq | apply e_solve_sub__vacuous; exact Hoff ].
-  - intros S0 S1 Θ P Q Ξ P' Hgf Hg1 Hg2 He IH S0' Heq.
-    destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_solve_sub__check; assumption ].
   - intros S0 S1 Θ P B Ξ P' β Hgf Hoff Hβ Hs IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
       as [S1' [HS1 Hd]].
     exists S1'. split; [ exact HS1 | ].
     apply e_solve_sub__forall_r with (β := β);
       [ exact Hgf | exact Hoff | rewrite Heq; exact Hβ | exact Hd ].
-  - intros S0 S1 S2 Θ m P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' He IH1 Hs IH2 S0' Heq.
-    destruct (IH1 _ Heq) as [S1' [HS1 Hd1]].
-    destruct (IH2 _ HS1) as [S2' [HS2 Hd2]].
-    exists S2'. split; [ exact HS2 | eapply e_solve_sub__arrow; eassumption ].
-  - intros S0 S1 S2 Θ m Q1 Q2 Ξ1 Ξ2 P1' P2' He IH1 Hs IH2 S0' Heq.
-    destruct (IH1 _ Heq) as [S1' [HS1 Hd1]].
-    destruct (IH2 _ HS1) as [S2' [HS2 Hd2]].
-    exists S2'. split;
-      [ exact HS2 | eapply e_solve_sub__ghost_l_fn; eassumption ].
-  - intros S Θ B Hgf Hg S0' Heq.
-    exists S0'. split; [ exact Heq | apply e_solve_sub__ghost_l; assumption ].
-
-  (* ------------------------ e_solve_eq ------------------------- *)
-  - intros S Θ S0' Heq.
-    exists S0'. split; [ exact Heq | apply e_solve_eq__unit ].
-  - intros S Θ α Q S0' Heq.
-    exists S0'. split; [ exact Heq | apply e_solve_eq__var ].
   - intros S0 S1 Θ α P Ξ A Hft Hnf Hng Hg S0' Heq.
     destruct (e_guess_mono_supply_respect Hg Heq) as [S1' [HS1 Hg']].
     exists S1'. split; [ exact HS1 | apply e_solve_eq__flex_r; assumption ].
-  - intros S Θ Q S0' Heq.
-    exists S0'. split; [ exact Heq | apply e_solve_eq__ghost_l ].
-  - intros S Θ P S0' Heq.
-    exists S0'. split; [ exact Heq | apply e_solve_eq__ghost_r ].
-  - intros S0 S1 S2 Θ P1 P2 Q1 Q2 Ξ1 Ξ2 P1' P2' He1 IH1 He2 IH2 S0' Heq.
-    destruct (IH1 _ Heq) as [S1' [HS1 Hd1]].
-    destruct (IH2 _ HS1) as [S2' [HS2 Hd2]].
-    exists S2'. split; [ exact HS2 | eapply e_solve_eq__arrow; eassumption ].
   - intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
       as [S1' [HS1 Hd]].
     exists S1'. split; [ exact HS1 | ].
     apply e_solve_eq__forall with (β := β);
       [ rewrite Heq; exact Hβ | exact Hd ].
-  - intros S0 S1 Θ P Q Ξ P' He IH S0' Heq.
-    destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_solve_eq__univ_ghost_both; exact Hd ].
   - intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
       as [S1' [HS1 Hd]].
     exists S1'. split; [ exact HS1 | ].
     apply e_solve_eq__univ_ghost_l_all with (β := β);
       [ rewrite Heq; exact Hβ | exact Hd ].
-  - intros S0 S1 Θ P Q Ξ P' Hg He IH S0' Heq.
-    destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split;
-      [ exact HS1 | apply e_solve_eq__univ_ghost_l_guarded; assumption ].
   - intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
       as [S1' [HS1 Hd]].
     exists S1'. split; [ exact HS1 | ].
     apply e_solve_eq__all_l_univ_ghost with (β := β);
       [ rewrite Heq; exact Hβ | exact Hd ].
-  - intros S0 S1 Θ P Q Ξ P' Hg He IH S0' Heq.
-    destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split;
-      [ exact HS1 | apply e_solve_eq__univ_ghost_r_guarded; assumption ].
 Qed.
 
 Corollary e_solve_sub_supply_respect : forall S0 Θ m P Q S1 Ξ P',
@@ -811,18 +769,6 @@ Proof.
 Qed.
 
 (** Solving depends on the context only through flexibility tests. *)
-Local Ltac ctx_equiv_ih :=
-  match goal with
-  | IH : forall _, _ -> e_solve_sub _ _ _ _ _ _ _ _
-    |- e_solve_sub _ _ _ _ _ _ _ _ =>
-      apply IH;
-      first [ assumption | apply a_flex_tvar_app_congr; assumption ]
-  | IH : forall _, _ -> e_solve_eq _ _ _ _ _ _ _
-    |- e_solve_eq _ _ _ _ _ _ _ =>
-      apply IH;
-      first [ assumption | apply a_flex_tvar_app_congr; assumption ]
-  end.
-
 Lemma e_solve_sub_eq_ctx_equiv :
   (forall S0 Θ m P Q S1 Ξ P',
      {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
@@ -840,25 +786,7 @@ Proof.
            (fun S0 Θ P Q S1 Ξ P' _ =>
               forall Θ', (forall α, a_flex_tvar Θ α <-> a_flex_tvar Θ' α) ->
               {{ S0 ↝ S1 ⊨ Θ' ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e));
-    intros;
-    match goal with
-    | |- _ => idtac
-    end.
-  - (* SS-Var *) apply e_solve_sub__var.
-  - (* SS-ForallL *)
-    apply e_solve_sub__forall_l; [ assumption | ctx_equiv_ih ].
-  - (* SS-UnivGhostL *) apply e_solve_sub__univ_ghost_l; ctx_equiv_ih.
-  - (* SS-Vacuous *) apply e_solve_sub__vacuous; assumption.
-  - (* SS-Check *)
-    apply e_solve_sub__check; try assumption; ctx_equiv_ih.
-  - (* SS-ForallR *)
-    eapply e_solve_sub__forall_r;
-      [ assumption | assumption | eassumption | ctx_equiv_ih ].
-  - (* SS-Arrow *) eapply e_solve_sub__arrow; ctx_equiv_ih.
-  - (* SS-GhostLF *) eapply e_solve_sub__ghost_l_fn; ctx_equiv_ih.
-  - (* SS-GhostL *) apply e_solve_sub__ghost_l; assumption.
-  - (* SE-Unit *) apply e_solve_eq__unit.
-  - (* SE-Var *) apply e_solve_eq__var.
+    intros; try solve [econstructor; eauto 3 using a_flex_tvar_app_congr].
   - (* SE-FlexR *)
     match goal with
     | Hft : a_flex_tvar _ ?a, Hnf : a_non_flex _ _,
@@ -874,20 +802,6 @@ Proof.
         | assumption
         | assumption ]
     end.
-  - (* SE-GhostL *) apply e_solve_eq__ghost_l.
-  - (* SE-VacuousR *) apply e_solve_eq__ghost_r.
-  - (* SE-Arrow *) eapply e_solve_eq__arrow; ctx_equiv_ih.
-  - (* SE-Forall *)
-    eapply e_solve_eq__forall; [ eassumption | ctx_equiv_ih ].
-  - (* SE-UnivGhost *) apply e_solve_eq__univ_ghost_both; ctx_equiv_ih.
-  - (* SE-GhostForall *)
-    eapply e_solve_eq__univ_ghost_l_all; [ eassumption | ctx_equiv_ih ].
-  - (* SE-GhostGuarded *)
-    apply e_solve_eq__univ_ghost_l_guarded; [ assumption | ctx_equiv_ih ].
-  - (* SE-ForallGhost *)
-    eapply e_solve_eq__all_l_univ_ghost; [ eassumption | ctx_equiv_ih ].
-  - (* SE-GuardedGhost *)
-    apply e_solve_eq__univ_ghost_r_guarded; [ assumption | ctx_equiv_ih ].
 Qed.
 
 Lemma e_solve_cstr_ctx_equiv : forall S0 Θ C P S1 Ξ P',

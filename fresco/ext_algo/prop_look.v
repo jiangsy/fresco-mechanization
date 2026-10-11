@@ -539,20 +539,10 @@ Proof.
               forall S0', S0' [=] S0 ->
               exists S1', S1' [=] S1 /\
                 {{ S0' ↝ S1' ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e)).
-  - (* LS-Var *)
-    intros * Heq. eexists. split; [ exact Heq | ].
-    apply e_looksub__var.
-  - (* LS-Absent *)
-    intros * Habs * Heq. eexists. split; [ exact Heq | ].
-    apply e_looksub__absent. exact Habs.
-  - (* LS-Vacuous *)
-    intros * Hne * Heq. eexists. split; [ exact Heq | ].
-    apply e_looksub__vacuous. exact Hne.
-  - (* LS-Check *)
-    intros * Hgf Hne HgA HgB Hd IH S0' Heq.
-    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_looksub__check; assumption.
+  all: try solve [
+    intros;
+    transport_supply_witnesses;
+    eexists; split; [ eassumption | econstructor; eauto 2 ] ].
   - (* LS-ForallR *)
     intros * Hgf Hβ Hocc Hnv Hd IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
@@ -561,12 +551,6 @@ Proof.
     apply e_looksub__forall_r with (β := β);
       [ assumption | rewrite Heq; assumption | exact Hocc | exact Hnv
       | exact Hd' ].
-  - (* LS-Arrow *)
-    intros * Hd1 IH1 Hd2 IH2 S0' Heq.
-    destruct (IH1 S0' Heq) as [S1' [Heq1 Hd1']].
-    destruct (IH2 S1' Heq1) as [S2' [Heq2 Hd2']].
-    exists S2'. split; [ exact Heq2 | ].
-    eapply e_looksub__arrow; [ exact Hd1' | exact Hd2' ].
   - (* LS-ForallL *)
     intros * Hβ Hocc Hnh Hfr Hd IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
@@ -575,31 +559,11 @@ Proof.
     apply e_looksub__forall_l with (β := β);
       [ rewrite Heq; assumption | exact Hocc | exact Hnh | exact Hfr
       | exact Hd' ].
-  - (* LS-UnivGhostL *)
-    intros * Hnh Hfr Hd IH S0' Heq.
-    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_looksub__univ_ghost_l; [ exact Hnh | exact Hfr | exact Hd' ].
-  - (* LE-Var *)
-    intros * Heq. eexists. split; [ exact Heq | ].
-    apply e_lookeq__var.
-  - (* LE-Absent *)
-    intros * Habs * Heq. eexists. split; [ exact Heq | ].
-    apply e_lookeq__absent. exact Habs.
-  - (* LE-Vacuous *)
-    intros * Hne * Heq. eexists. split; [ exact Heq | ].
-    apply e_lookeq__vacuous. exact Hne.
   - (* LE-FlexR *)
     intros * Hα1 Hflx Hne Hocc S0' Heq.
     exists (add α1 S0'). split; [ rewrite Heq; reflexivity | ].
     apply e_lookeq__flex_r;
       [ rewrite Heq; assumption | assumption | assumption | assumption ].
-  - (* LE-Arrow *)
-    intros * Hd1 IH1 Hd2 IH2 S0' Heq.
-    destruct (IH1 S0' Heq) as [S1' [Heq1 Hd1']].
-    destruct (IH2 S1' Heq1) as [S2' [Heq2 Hd2']].
-    exists S2'. split; [ exact Heq2 | ].
-    eapply e_lookeq__arrow; [ exact Hd1' | exact Hd2' ].
   - (* LE-ForallInh *)
     intros * Hβ Hocc Hd IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
@@ -614,11 +578,6 @@ Proof.
     exists S1'. split; [ exact Heq1 | ].
     apply e_lookeq__forall_syn with (β := β);
       [ rewrite Heq; assumption | exact Hocc | exact Hd' ].
-  - (* LE-UnivGhost *)
-    intros * Hd IH S0' Heq.
-    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_lookeq__univ_ghost. exact Hd'.
   - (* LE-UnivGhost1 *)
     intros * Hβ Hocc Hd IH S0' Heq.
     destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
@@ -626,16 +585,6 @@ Proof.
     exists S1'. split; [ exact Heq1 | ].
     apply e_lookeq__univ_ghost1 with (β := β);
       [ rewrite Heq; assumption | exact Hocc | exact Hd' ].
-  - (* LE-UnivGhost2 *)
-    intros * Hg Hfx Hd IH S0' Heq.
-    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_lookeq__univ_ghost2; [ assumption | assumption | exact Hd' ].
-  - (* LE-UnivGhostR *)
-    intros * Hne Hg Hd IH S0' Heq.
-    destruct (IH S0' Heq) as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_lookeq__univ_ghost_r; [ assumption | assumption | exact Hd' ].
 Qed.
 
 (* ===================================================================== *)
