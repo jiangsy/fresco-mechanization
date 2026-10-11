@@ -1963,6 +1963,78 @@ Proof.
   - eapply ad_pat_sub_fuel__flex_mono; [ eassumption | apply IHad_pat_sub_fuel; exact Heq ].
 Qed.
 
+(** The two ForallL rows (tagged / untagged) differ only in the ∀ they
+    peel and the declarative constructor that re-attaches it, so the whole
+    argument is stated once over that constructor ([Hrule]): instantiate
+    the family at a fresh decoration [ψg] of [P1], run the IH at [Ξ ++ Θ0],
+    and strip the ⊴ over the declarations prefix [Ξ]. *)
+Lemma subtag_forall_l_sound : forall L NM M P0 Ψ Θ0 Θ1 R Rall Q Ξ P1,
+  (forall α, α `notin` L ->
+     a_extract Θ0 NM α M ⌊ open_uskl_wrt_uskl R (uskl_var_f α) ⌋ˢ P0 Ξ P1) ->
+  uniq (Ξ ++ Θ0) ->
+  {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P1 }}a ->
+  (forall Ψg ψg,
+     Ψg ∩ L [=] empty ->
+     a_tags_sort NM Ψg ψg ->
+     ⌊ ψg ⌋ˢ = P1 ->
+     subtag_sound_concl NM M P0 (Ψ `union` Ψg) (Ξ ++ Θ0)
+       (open_uskl_wrt_uskl R ψg) Q Θ1) ->
+  ⌊ Rall ⌋ˢ = pskl_all_syn ⌊ R ⌋ˢ ->
+  (lc_uskl Rall -> body_uskl_wrt_uskl R) ->
+  (forall n Θ Ψg ψg Qt,
+     Ψg ∩ Ψ [=] empty ->
+     Ψg ∩ ftag_in_uskl Rall [=] empty ->
+     a_tags_sort NM Ψg ψg ->
+     {{ Θ ⨟ empty ⊢ₚₛ ⌊ ψg ⌋ˢ }}a ->
+     ad_pat_sub_fuel n NM M (Ψ `union` Ψg) Θ (open_uskl_wrt_uskl R ψg) Qt ->
+     ad_pat_sub_fuel (S n) NM M Ψ Θ Rall Qt) ->
+  subtag_sound_concl NM M P0 Ψ Θ0 Rall Q Θ1.
+Proof.
+  intros L NM M P0 Ψ Θ0 Θ1 R Rall Q Ξ P1 Hex Huq HwfP1 IHfam HRall Hbody Hrule
+    Hwf Hlc HwfP0 HwfS Hmod Hgf.
+  destruct (atom_fresh L) as [α Hα].
+  assert (Hdecls : a_decls Ξ) by (eapply a_extract_decls; eauto).
+  (* pick a fresh decoration of P1 to instantiate the cofinite family *)
+  assert (HlcP1 : lc_pskl P1) by (eapply a_wf_pskl_lc; eauto).
+  (* ⭐ ONE WIDER AVOID-SET (hand-off §6.1): the decoration is chosen fresh
+     anyway, so [ad_pat_sub_fuel]'s extra ForallL hygiene premise costs nothing
+     but naming the subject's tags in the set we avoid. *)
+  destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1
+              (L `union` Ψ `union` ftag_in_uskl Rall))
+    as [Ψg [ψg [Hint0 [Hsort Herase]]]].
+  assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
+  assert (HwfΞΘ : {{ ⊢ (Ξ ++ Θ0) }}a).
+  { apply a_wf_aenv_prepend_decls; auto.
+    - clear - Huq. solve_uniq.
+    - intros γ Hγ. clear - Huq Hγ. destruct_uniq.
+      unfold disjoint in *. fsetdec. }
+  assert (Hlcψ : lc_uskl ψg)
+    by (apply is_dskl_lc; inversion Hsort; auto).
+  assert (Hmono : forall x (b : abind),
+             binds x b Θ0 -> binds x b (Ξ ++ Θ0))
+    by (intros x b Hb; unfold binds in *; apply in_or_app; auto).
+  assert (HwfSψ : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ ⌊ open_uskl_wrt_uskl R ψg ⌋ˢ }}a).
+  { unfold open_uskl_wrt_uskl. rewrite uskl_to_pskl_open_rec, Herase.
+    rewrite HRall in HwfS.
+    apply (a_wf_pskl_weaken _ Hmono) in HwfS.
+    (* name the ∀-body premise explicitly rather than fishing for it with a
+       `match goal` pattern over its binder — the binder name is Coq's to
+       choose, so the pattern was brittle. *)
+    inversion HwfS as [ | | | Lb Θb Δb Pb Hbody' | | ]; subst.
+    apply a_wf_pskl_open with (L := Lb); assumption. }
+  destruct (IH HwfΞΘ (lc_body_uskl_wrt_uskl _ _ (Hbody Hlc) Hlcψ)
+              (a_wf_pskl_weaken _ Hmono HwfP0) HwfSψ Hmod Hgf)
+    as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
+  split; [ eapply a_isub_strengthen_decls_src; eauto | ].
+  split; [ exact Hwf1 | ].
+  exists Qt. split; [ exact HeQt | ].
+  split; [ | exact Hfill ].
+  exists (S nsub).
+  apply Hrule with (Ψg := Ψg) (ψg := ψg); [ clear - Hint0; fsetdec | clear - Hint0; fsetdec
+                               | exact Hsort | | exact Hsub ].
+  rewrite Herase. eapply a_wf_pskl_isub; eauto.
+Qed.
+
 Theorem a_subtag_sound_bundle :
   (forall NM M P0 Ψ Θ0 R P' Θ1,
      {{ Θ0 ⊢[ NM | M | P0 | Ψ ] R ⩽ P' ⊣ Θ1 }}da ->
@@ -2268,131 +2340,21 @@ Proof.
        ad_pat_sub__forall_l_tagged (its disciplined scope premise now
        comes straight off the rule, ⊴-transported). *)
     intros L NM M P0 Ψ Θ0 Θ1 ε R P' Ξ P1
-      Hneq Hgor Hex Huq HwfP1 Hfam IHfam
-      Hwf Hlc HwfP0 HwfS Hmod Hgf.
-    destruct (atom_fresh L) as [α Hα].
-    assert (Hdecls : a_decls Ξ) by (eapply a_extract_decls; eauto).
-    (* pick a fresh decoration of P1 to instantiate the cofinite family *)
-    assert (HlcP1 : lc_pskl P1) by (eapply a_wf_pskl_lc; eauto).
-    (* ⭐ ONE WIDER AVOID-SET (hand-off §6.1): the decoration is chosen fresh
-       anyway, so [ad_pat_sub_fuel]'s extra ForallL hygiene premise costs nothing but
-       naming the subject's tags in the set we avoid. *)
-    destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1
-                (L `union` Ψ `union` ftag_in_uskl (uskl_all_tag ε R)))
-      as [Ψg [ψg [Hint0 [Hsort Herase]]]].
-    assert (Hint : Ψg ∩ Ψ [=] empty)
-      by (clear - Hint0; fsetdec).
-    assert (Hhyg : Ψg ∩ (ftag_in_uskl (uskl_all_tag ε R)) [=] empty)
-      by (clear - Hint0; fsetdec).
-    assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
-    assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
-    assert (HwfΞΘ : {{ ⊢ (Ξ ++ Θ0) }}a).
-    { apply a_wf_aenv_prepend_decls; auto.
-      - clear - Huq. solve_uniq.
-      - intros γ Hγ. clear - Huq Hγ. destruct_uniq.
-        unfold disjoint in *. fsetdec. }
-    assert (Hlcψ : lc_uskl ψg)
-      by (apply is_dskl_lc; inversion Hsort; auto).
-    assert (HlcSψ : lc_uskl (open_uskl_wrt_uskl R ψg)).
-    { apply lc_body_uskl_wrt_uskl; [ | exact Hlcψ ].
-      eapply lc_body_uskl_all_tag_2. exact Hlc. }
-    assert (Hmono : forall x (b : abind),
-               binds x b Θ0 -> binds x b (Ξ ++ Θ0))
-      by (intros x b Hb; unfold binds in *; apply in_or_app; auto).
-    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
-      by (eapply a_wf_pskl_weaken; [ exact Hmono | exact HwfP0 ]).
-    assert (HwfSψ : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ ⌊ open_uskl_wrt_uskl R ψg ⌋ˢ }}a).
-    { unfold open_uskl_wrt_uskl. rewrite uskl_to_pskl_open_rec.
-      rewrite Herase.
-      change (open_pskl_wrt_pskl_rec 0 P1 ⌊ R ⌋ˢ)
-        with (open_pskl_wrt_pskl ⌊ R ⌋ˢ P1).
-      simpl in HwfS.
-      (* name the ∀-body premise explicitly rather than fishing for it with a
-         `match goal` pattern over its binder — the binder name is Coq's to
-         choose, so the pattern was brittle. *)
-      inversion HwfS as [ | | | Lb Θb Δb Pb Hbody | | ]; subst.
-      apply a_wf_pskl_open with (L := Lb);
-        [ intros α0 Hα0;
-          eapply a_wf_pskl_tvar_mono; [ apply Hbody; auto | ];
-          intros γ Hγ; apply a_binds_tvar_cons_tvar;
-          destruct (a_binds_tvar_cons_tvar_inv Hγ) as [-> | Hγ'];
-          [ left; reflexivity
-          | right; destruct Hγ' as [Hb | [Hb | [τ Hb]]];
-            [ left | right; left | right; right; exists τ ];
-            apply Hmono; exact Hb ]
-        | exact HwfP1 ]. }
-    destruct (IH HwfΞΘ HlcSψ HwfP0' HwfSψ Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
-    split; [ eapply a_isub_strengthen_decls_src; eauto | ].
-    split; [ exact Hwf1 | ].
-    exists Qt. split; [ exact HeQt | ].
-    split; [ | exact Hfill ].
-    exists (S nsub).
-    apply ad_pat_sub_fuel__forall_l_tagged with (Ψ' := Ψg) (ψ := ψg);
-      [ exact Hneq | exact Hint | exact Hhyg | exact Hsort | | exact Hsub ].
-    rewrite Herase. eapply a_wf_pskl_isub; eauto.
+      Hneq Hgor Hex Huq HwfP1 Hfam IHfam.
+    apply (subtag_forall_l_sound Hex Huq HwfP1 IHfam).
+    + reflexivity.
+    + apply lc_body_uskl_all_tag_2.
+    + intros n Θ Ψg ψg Qt Hint Hhyg Hsort Hwfψ Hsub.
+      apply ad_pat_sub_fuel__forall_l_tagged with (Ψ' := Ψg) (ψ := ψg); assumption.
 
   - (* ForallL (untagged) : same as tagged. *)
     intros L NM M P0 Ψ Θ0 Θ1 R P' Ξ P1
-      Hneq Hgor Hex Huq HwfP1 Hfam IHfam
-      Hwf Hlc HwfP0 HwfS Hmod Hgf.
-    destruct (atom_fresh L) as [α Hα].
-    assert (Hdecls : a_decls Ξ) by (eapply a_extract_decls; eauto).
-    (* pick a fresh decoration of P1 to instantiate the cofinite family *)
-    assert (HlcP1 : lc_pskl P1) by (eapply a_wf_pskl_lc; eauto).
-    destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1
-                (L `union` Ψ `union` ftag_in_uskl (uskl_all_syn R)))
-      as [Ψg [ψg [Hint0 [Hsort Herase]]]].
-    assert (Hint : Ψg ∩ Ψ [=] empty)
-      by (clear - Hint0; fsetdec).
-    assert (Hhyg : Ψg ∩ (ftag_in_uskl (uskl_all_syn R)) [=] empty)
-      by (clear - Hint0; fsetdec).
-    assert (Hprem := Hfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
-    assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
-    assert (HwfΞΘ : {{ ⊢ (Ξ ++ Θ0) }}a).
-    { apply a_wf_aenv_prepend_decls; auto.
-      - clear - Huq. solve_uniq.
-      - intros γ Hγ. clear - Huq Hγ. destruct_uniq.
-        unfold disjoint in *. fsetdec. }
-    assert (Hlcψ : lc_uskl ψg)
-      by (apply is_dskl_lc; inversion Hsort; auto).
-    assert (HlcSψ : lc_uskl (open_uskl_wrt_uskl R ψg)).
-    { apply lc_body_uskl_wrt_uskl; [ | exact Hlcψ ].
-      eapply lc_body_uskl_all_syn_1. exact Hlc. }
-    assert (Hmono : forall x (b : abind),
-               binds x b Θ0 -> binds x b (Ξ ++ Θ0))
-      by (intros x b Hb; unfold binds in *; apply in_or_app; auto).
-    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
-      by (eapply a_wf_pskl_weaken; [ exact Hmono | exact HwfP0 ]).
-    assert (HwfSψ : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ ⌊ open_uskl_wrt_uskl R ψg ⌋ˢ }}a).
-    { unfold open_uskl_wrt_uskl. rewrite uskl_to_pskl_open_rec.
-      rewrite Herase.
-      change (open_pskl_wrt_pskl_rec 0 P1 ⌊ R ⌋ˢ)
-        with (open_pskl_wrt_pskl ⌊ R ⌋ˢ P1).
-      simpl in HwfS.
-      (* name the ∀-body premise explicitly rather than fishing for it with a
-         `match goal` pattern over its binder. *)
-      inversion HwfS as [ | | | Lb Θb Δb Pb Hbody | | ]; subst.
-      apply a_wf_pskl_open with (L := Lb);
-        [ intros α0 Hα0;
-          eapply a_wf_pskl_tvar_mono; [ apply Hbody; auto | ];
-          intros γ Hγ; apply a_binds_tvar_cons_tvar;
-          destruct (a_binds_tvar_cons_tvar_inv Hγ) as [-> | Hγ'];
-          [ left; reflexivity
-          | right; destruct Hγ' as [Hb | [Hb | [τ Hb]]];
-            [ left | right; left | right; right; exists τ ];
-            apply Hmono; exact Hb ]
-        | exact HwfP1 ]. }
-    destruct (IH HwfΞΘ HlcSψ HwfP0' HwfSψ Hmod Hgf)
-      as [Hle [Hwf1 [Qt [HeQt [[nsub Hsub] Hfill]]]]].
-    split; [ eapply a_isub_strengthen_decls_src; eauto | ].
-    split; [ exact Hwf1 | ].
-    exists Qt. split; [ exact HeQt | ].
-    split; [ | exact Hfill ].
-    exists (S nsub).
-    apply ad_pat_sub_fuel__forall_l_untagged with (Ψ' := Ψg) (ψ := ψg);
-      [ exact Hneq | exact Hint | exact Hhyg | exact Hsort | | exact Hsub ].
-    rewrite Herase. eapply a_wf_pskl_isub; eauto.
+      Hneq Hgor Hex Huq HwfP1 Hfam IHfam.
+    apply (subtag_forall_l_sound Hex Huq HwfP1 IHfam).
+    + reflexivity.
+    + apply lc_body_uskl_all_syn_1.
+    + intros n Θ Ψg ψg Qt Hint Hhyg Hsort Hwfψ Hsub.
+      apply ad_pat_sub_fuel__forall_l_untagged with (Ψ' := Ψg) (ψ := ψg); assumption.
 
   - (* Ghost (SK) : ◇ below the input P0 *)
     intros M Ψ Θ0 P0 HΨ Hwf HlcS HwfP0 HwfS Hmod Hgf.
