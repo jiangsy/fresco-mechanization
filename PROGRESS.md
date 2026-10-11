@@ -181,6 +181,35 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Automate conservativity translations
+
+Replace routine constructor case lists in `algo_decl/prop_conserv.v` with
+bounded `eauto 4`/`eauto 5`, supplying the target judgement directly. Keep
+context subtraction and SK-sort inversion explicit; discharge impossible
+flexible definitions through the existing embedding exclusion lemma.
+No new helpers, hint databases, imports, or changed statements/definitions.
+
+**Reduction:** 157 nonblank, noncomment Coq lines across 13 proofs. Bodies:
+- `a_wf_ptyp_to_d` 7→2
+- `d_wf_ptyp_to_a` 5→1
+- `d_wf_exp_to_a` 9→1
+- `a_wf_pskl_to_d` 12→3
+- `d_wf_pskl_to_a` 8→4
+- `ad_pat_consis_to_d` 25→3
+- `d_pat_consis_to_ad` 15→2
+- `ad_refine_syn_to_d` 17→3
+- `d_refine_syn_to_ad` 11→1
+- `ad_refine_pskl_to_d` 16→3
+- `d_refine_pskl_to_ad` 10→1
+- `ad_pat_sub_sk_to_d` 33→7
+- `d_pat_sub_to_ad` 23→3
+
+**Validation:** full `make coq` green; all 34 assumption checks closed under
+the global context; extracted OCaml byte-identical; `git diff --check`
+clean. Each changed proof is strictly shorter and its statement unchanged.
+Controlled serial file compilation: 1.52s before, 1.45s after; maximum
+changed-proof construction time 0.067s.
+
 ## 2026-10-11 — Automate context transport and the fuel mirror's structural maps
 
 Seven proofs in `algo_decl/prop_ctx_mono.v` now use bounded constructor

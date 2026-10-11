@@ -196,23 +196,14 @@ Qed.
 Lemma a_wf_ptyp_to_d : forall Θ A,
   a_wf_ptyp Θ A -> forall Γ, Θ = denv_to_aenv Γ -> d_wf_ptyp Γ A.
 Proof.
-  intros Θ A H; induction H; intros Γ0 HΘ; subst.
-  - apply d_wf_ptyp__unit.
-  - apply d_wf_ptyp__var. apply a_binds_tvar_denv_to_aenv; assumption.
-  - apply d_wf_ptyp__arrow;
-      [ exact (IHa_wf_ptyp1 Γ0 eq_refl) | exact (IHa_wf_ptyp2 Γ0 eq_refl) ].
-  - apply d_wf_ptyp__all with (L := L). intros α Hα.
-    exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
+  intros Θ A H; induction H; intros Γ0 HΘ; subst;
+    eauto 4 using d_wf_ptyp, a_binds_tvar_denv_to_aenv.
 Qed.
 
 Lemma d_wf_ptyp_to_a : forall Γ A,
   d_wf_ptyp Γ A -> a_wf_ptyp (denv_to_aenv Γ) A.
 Proof.
-  intros Γ A H; induction H.
-  - apply a_wf_ptyp__unit.
-  - apply a_wf_ptyp__var. apply a_binds_tvar_of_denv; assumption.
-  - apply a_wf_ptyp__arrow; assumption.
-  - apply a_wf_ptyp__all with (L := L). intros α Hα. exact (H0 α Hα).
+  intros Γ A H; induction H; eauto 4 using a_wf_ptyp, a_binds_tvar_of_denv.
 Qed.
 
 (** ⭐ The DECLARATIVE side of the problem definition's "M wf" — the
@@ -256,46 +247,25 @@ where "{{ Γ ⊢ᵉ e }}d" := (d_wf_exp Γ e) : fresco_d_scope.
 Lemma d_wf_exp_to_a : forall Γ e,
   {{ Γ ⊢ᵉ e }}d -> {{ (denv_to_aenv Γ) ⊢ᵉ e }}a.
 Proof.
-  intros Γ e H; induction H.
-  - apply a_wf_exp__unit.
-  - apply a_wf_exp__var.
-  - apply a_wf_exp__anno; [ apply d_wf_ptyp_to_a; assumption | assumption ].
-  - apply a_wf_exp__freeze; assumption.
-  - apply a_wf_exp__abs with (L := L); assumption.
-  - apply a_wf_exp__abs_anno with (L := L);
-      [ apply d_wf_ptyp_to_a; assumption | assumption ].
-  - apply a_wf_exp__app; assumption.
+  intros Γ e H; induction H; eauto 4 using a_wf_exp, d_wf_ptyp_to_a.
 Qed.
 
 Lemma a_wf_pskl_to_d : forall Θ Δ P,
   a_wf_pskl Θ Δ P ->
   forall Γ, Θ = denv_to_aenv Γ -> d_wf_pskl Γ Δ P.
 Proof.
-  intros Θ Δ P H; induction H; intros Γ0 HΘ; subst.
-  - apply d_wf_pskl__unit.
-  - apply d_wf_pskl__var. apply a_binds_tvar_denv_to_aenv; exact H.
-  - apply d_wf_pskl__arrow;
-      [ exact (IHa_wf_pskl1 Γ0 eq_refl) | exact (IHa_wf_pskl2 Γ0 eq_refl) ].
-  - apply d_wf_pskl__all with (L := L). intros α Hα.
-    exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_wf_pskl__ghost.
-  - apply d_wf_pskl__univ_ghost;
-      [ exact H
-      | exact (IHa_wf_pskl (denv_minus Γ0 Δ)
-                 (eq_sym (denv_to_aenv_minus Γ0 Δ))) ].
+  intros Θ Δ P H; induction H; intros Γ0 HΘ; subst;
+    eauto 5 using d_wf_pskl, a_binds_tvar_denv_to_aenv,
+      denv_to_aenv_minus, eq_sym.
 Qed.
 
 Lemma d_wf_pskl_to_a : forall Γ Δ P,
   d_wf_pskl Γ Δ P -> a_wf_pskl (denv_to_aenv Γ) Δ P.
 Proof.
-  intros Γ Δ P H; induction H.
-  - apply a_wf_pskl__ghost.
-  - apply a_wf_pskl__unit.
-  - apply a_wf_pskl__var. apply a_binds_tvar_of_denv; exact H.
-  - apply a_wf_pskl__arrow; auto.
-  - apply a_wf_pskl__all with (L := L). intros α Hα. exact (H0 α Hα).
-  - apply a_wf_pskl__univ_ghost; [ exact H | ].
-    rewrite <- (denv_to_aenv_minus Γ Δ). exact IHd_wf_pskl.
+  intros Γ Δ P H; induction H;
+    try solve [eauto 4 using a_wf_pskl, a_binds_tvar_of_denv].
+  apply a_wf_pskl__univ_ghost; [ exact H | ].
+  rewrite <- (denv_to_aenv_minus Γ Δ). exact IHd_wf_pskl.
 Qed.
 
 (* ===================================================================== *)
@@ -306,31 +276,9 @@ Qed.
 Lemma ad_pat_consis_to_d : forall Ψ Θ R Q,
   ad_pat_consis Ψ Θ R Q -> forall Γ, Θ = denv_to_aenv Γ -> d_pat_consis Ψ Γ R Q.
 Proof.
-  intros Ψ Θ R Q H; induction H; intros Γ0 HΘ; subst.
-  - apply d_pat_consis__unit; assumption.
-  - apply d_pat_consis__var;
-      [ assumption | apply a_binds_tvar_denv_to_aenv; assumption ].
-  - apply d_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-      [ exact (IHad_pat_consis1 Γ0 eq_refl) | exact (IHad_pat_consis2 Γ0 eq_refl)
-      | assumption ].
-  - apply d_pat_consis__forall_inh_tagged with (L := L) (Ψ0 := Ψ0);
-      [ | assumption ].
-    intros α Hα. exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_pat_consis__forall_inh_untagged with (L := L).
-    intros α Hα. exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_pat_consis__forall_syn_tagged with (L := L).
-    intros α Hα. exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_pat_consis__forall_syn with (L := L).
-    intros α Hα. exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_pat_consis__ghostg; assumption.
-  - apply d_pat_consis__dot_univ_ghost. exact (IHad_pat_consis Γ0 eq_refl).
-  - apply d_pat_consis__ghost; assumption.
-  - apply d_pat_consis__univ_ghost. exact (IHad_pat_consis Γ0 eq_refl).
-  - apply d_pat_consis__univ_ghost_inh with (L := L).
-    intros α Hα. exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_pat_consis__univ_ghost_drop. exact (IHad_pat_consis Γ0 eq_refl).
-  - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
-  - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
+  intros Ψ Θ R Q H; induction H; intros Γ0 HΘ; subst;
+    try solve [exfalso; eapply denv_to_aenv_no_flex_def; eassumption];
+    eauto 5 using d_pat_consis, a_binds_tvar_denv_to_aenv.
 Qed.
 
 (** ⭐ No hypothesis: [d_pat_consis__ghost] and [ad_pat_consis__ghost] are
@@ -340,21 +288,8 @@ Qed.
 Lemma d_pat_consis_to_ad : forall Ψ Γ R Q,
   d_pat_consis Ψ Γ R Q -> ad_pat_consis Ψ (denv_to_aenv Γ) R Q.
 Proof.
-  intros Ψ Γ R Q H; induction H.
-  - apply ad_pat_consis__unit; assumption.
-  - apply ad_pat_consis__var;
-      [ assumption | apply a_binds_tvar_of_denv; assumption ].
-  - apply ad_pat_consis__forall_inh_tagged with (L := L) (Ψ0 := Ψ0); assumption.
-  - apply ad_pat_consis__forall_inh_untagged with (L := L); assumption.
-  - apply ad_pat_consis__forall_syn_tagged with (L := L); assumption.
-  - apply ad_pat_consis__forall_syn with (L := L); assumption.
-  - apply ad_pat_consis__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2); assumption.
-  - apply ad_pat_consis__ghost; assumption.
-  - apply ad_pat_consis__ghostg; assumption.
-  - apply ad_pat_consis__dot_univ_ghost; assumption.
-  - apply ad_pat_consis__univ_ghost; assumption.
-  - apply ad_pat_consis__univ_ghost_inh with (L := L); assumption.
-  - apply ad_pat_consis__univ_ghost_drop; assumption.
+  intros Ψ Γ R Q H; induction H;
+    eauto 4 using ad_pat_consis, a_binds_tvar_of_denv.
 Qed.
 
 (* ===================================================================== *)
@@ -471,39 +406,15 @@ Lemma ad_refine_syn_to_d : forall Θ Δ Q Q',
   ad_refine_syn Θ Δ Q Q' ->
   forall Γ, Θ = denv_to_aenv Γ -> d_refine_syn Γ Δ Q Q'.
 Proof.
-  intros Θ Δ Q Q' H; induction H; intros Γ0 HΘ; subst.
-  - apply d_refine_syn__unit.
-  - apply d_refine_syn__var.
-  - apply d_refine_syn__arrow;
-      [ exact H | exact (IHad_refine_syn1 Γ0 eq_refl)
-      | exact (IHad_refine_syn2 Γ0 eq_refl) ].
-  - apply d_refine_syn__all with (L := L); [ exact H | ]. intros α Hα.
-    exact (H1 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_refine_syn__ghost. exact H.
-  - apply d_refine_syn__univ_ghost_remove;
-      [ exact H | exact (IHad_refine_syn Γ0 eq_refl) ].
-  - apply d_refine_syn__univ_ghost_fill with (L := L); [ exact H | ]. intros α Hα.
-    exact (H1 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_refine_syn__univ_ghost_keep;
-      [ exact H | exact (IHad_refine_syn Γ0 eq_refl) ].
-  - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
-  - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
+  intros Θ Δ Q Q' H; induction H; intros Γ0 HΘ; subst;
+    try solve [exfalso; eapply denv_to_aenv_no_flex_def; eassumption];
+    eauto 5 using d_refine_syn.
 Qed.
 
 Lemma d_refine_syn_to_ad : forall Γ Δ Q Q',
   d_refine_syn Γ Δ Q Q' -> ad_refine_syn (denv_to_aenv Γ) Δ Q Q'.
 Proof.
-  intros Γ Δ Q Q' H; induction H.
-  - apply ad_refine_syn__unit.
-  - apply ad_refine_syn__var.
-  - apply ad_refine_syn__arrow; assumption.
-  - apply ad_refine_syn__all with (L := L); [ exact H | ]. intros α Hα.
-    exact (H1 α Hα).
-  - apply ad_refine_syn__ghost. exact H.
-  - apply ad_refine_syn__univ_ghost_remove; assumption.
-  - apply ad_refine_syn__univ_ghost_fill with (L := L); [ exact H | ]. intros α Hα.
-    exact (H1 α Hα).
-  - apply ad_refine_syn__univ_ghost_keep; assumption.
+  intros Γ Δ Q Q' H; induction H; eauto 4 using ad_refine_syn.
 Qed.
 
 (** ⭐ THE UNCOLOURED TWINS.  Same eight rows; needed because the paper's
@@ -514,37 +425,15 @@ Lemma ad_refine_pskl_to_d : forall Θ Δ P P',
   ad_refine_pskl Θ Δ P P' ->
   forall Γ, Θ = denv_to_aenv Γ -> d_refine_pskl Γ Δ P P'.
 Proof.
-  intros Θ Δ P P' H; induction H; intros Γ0 HΘ; subst.
-  - apply d_refine_pskl__unit.
-  - apply d_refine_pskl__var.
-  - apply d_refine_pskl__arrow;
-      [ exact (IHad_refine_pskl1 Γ0 eq_refl)
-      | exact (IHad_refine_pskl2 Γ0 eq_refl) ].
-  - apply d_refine_pskl__all with (L := L). intros α Hα.
-    exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_refine_pskl__ghost. exact H.
-  - apply d_refine_pskl__univ_ghost_remove.
-    exact (IHad_refine_pskl Γ0 eq_refl).
-  - apply d_refine_pskl__univ_ghost_fill with (L := L). intros α Hα.
-    exact (H0 α Hα ((α ~ dbind_tvar) ++ Γ0) eq_refl).
-  - apply d_refine_pskl__univ_ghost_keep. exact (IHad_refine_pskl Γ0 eq_refl).
-  - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
-  - exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
+  intros Θ Δ P P' H; induction H; intros Γ0 HΘ; subst;
+    try solve [exfalso; eapply denv_to_aenv_no_flex_def; eassumption];
+    eauto 5 using d_refine_pskl.
 Qed.
 
 Lemma d_refine_pskl_to_ad : forall Γ Δ P P',
   d_refine_pskl Γ Δ P P' -> ad_refine_pskl (denv_to_aenv Γ) Δ P P'.
 Proof.
-  intros Γ Δ P P' H; induction H.
-  - apply ad_refine_pskl__unit.
-  - apply ad_refine_pskl__var.
-  - apply ad_refine_pskl__arrow; auto.
-  - apply ad_refine_pskl__all with (L := L). intros α Hα. exact (H0 α Hα).
-  - apply ad_refine_pskl__ghost. exact H.
-  - apply ad_refine_pskl__univ_ghost_remove; auto.
-  - apply ad_refine_pskl__univ_ghost_fill with (L := L). intros α Hα.
-    exact (H0 α Hα).
-  - apply ad_refine_pskl__univ_ghost_keep; auto.
+  intros Γ Δ P P' H; induction H; eauto 4 using ad_refine_pskl.
 Qed.
 
 (** the shape the subtyping rows actually use: Δ empty *)
@@ -731,40 +620,12 @@ Lemma ad_pat_sub_sk_to_d : forall NM M Ψ Θ R Q,
   forall Γ, Θ = denv_to_aenv Γ -> d_pat_sub M Ψ Γ R Q.
 Proof.
   intros NM M Ψ Θ R Q H; induction H; intros HNM Γ0 HΘ;
-    try discriminate HNM; subst.
-  - (* Infer *) apply d_pat_sub__infer;
-      [ assumption
-      | eapply ad_consis_join_to_d; [ exact H0 | reflexivity ]
-      | assumption ].
-  - (* UnivGhostR *) apply d_pat_sub__univ_ghost_r;
-      [ assumption | assumption | assumption | assumption
-      | eapply ad_consis_join_to_d; [ exact H3 | reflexivity ] ].
-  - (* Arrow *) apply d_pat_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-      [ eapply ad_consis_join_to_d; [ exact H | reflexivity ]
-      | exact (IHad_pat_sub eq_refl Γ0 eq_refl) | assumption ].
-  - (* ForallL, tagged *) inversion H2; subst.
-    apply d_pat_sub__forall_l_tagged with (Ψ' := Ψ') (psi := ψ);
-      [ assumption | assumption
-      | (* the two judgements now read `fresh Ψ'` the SAME way, so the
-           hygiene premise travels verbatim *) assumption | assumption
-      | exact (d_wf_uskl_of_a_wf_pskl (denv_to_aenv Γ0) empty (uskl_to_pskl ψ)
-                 H3 ψ eq_refl Γ0 eq_refl)
-      | assumption | exact (IHad_pat_sub eq_refl Γ0 eq_refl) ].
-  - (* ForallL, untagged *) inversion H2; subst.
-    apply d_pat_sub__forall_l_untagged with (Ψ' := Ψ') (psi := ψ);
-      [ assumption | assumption
-      | (* the two judgements now read `fresh Ψ'` the SAME way, so the
-           hygiene premise travels verbatim *) assumption | assumption
-      | exact (d_wf_uskl_of_a_wf_pskl (denv_to_aenv Γ0) empty (uskl_to_pskl ψ)
-                 H3 ψ eq_refl Γ0 eq_refl)
-      | assumption | exact (IHad_pat_sub eq_refl Γ0 eq_refl) ].
-  - (* Ghost *) apply d_pat_sub__ghost; assumption.
-  - (* GhostG *) apply d_pat_sub__ghostg; assumption.
-  - (* UnivGhostL *) apply d_pat_sub__univ_ghost_l;
-      [ assumption | exact (IHad_pat_sub eq_refl Γ0 eq_refl) ].
-  - (* UnivGhostLG *) apply d_pat_sub__univ_ghost_lg;
-      [ assumption | exact (IHad_pat_sub eq_refl Γ0 eq_refl) ].
-  - (* FlexMono *) exfalso. eapply denv_to_aenv_no_flex_def; eassumption.
+    try discriminate HNM; subst;
+    try solve [exfalso; eapply denv_to_aenv_no_flex_def; eassumption];
+    try solve [eauto 4 using d_pat_sub, ad_consis_join_to_d].
+  all: match goal with Htag : a_tags_sort a_sub_mode_sk _ _ |- _ =>
+    inversion Htag; subst
+  end; eauto 5 using d_pat_sub, d_wf_uskl_of_a_wf_pskl.
 Qed.
 
 (** ⭐ THE DIRECTION THE COMPLETENESS BRIDGE NEEDS, at the SK sort: a
@@ -777,29 +638,9 @@ Qed.
 Lemma d_pat_sub_to_ad : forall M Ψ Γ R Q,
   d_pat_sub M Ψ Γ R Q -> ad_pat_sub a_sub_mode_sk M Ψ (denv_to_aenv Γ) R Q.
 Proof.
-  intros M Ψ Γ R Q H; induction H.
-  - apply ad_pat_sub__infer;
-      [ assumption | apply d_consis_join_to_ad; assumption | assumption ].
-  - apply ad_pat_sub__univ_ghost_r;
-      [ assumption | assumption | assumption | assumption
-      | apply d_consis_join_to_ad; assumption ].
-  - apply ad_pat_sub__ghost; assumption.
-  - apply ad_pat_sub__ghostg; assumption.
-  - apply ad_pat_sub__arrow with (Ψ1 := Ψ1) (Ψ2 := Ψ2);
-      [ apply d_consis_join_to_ad; assumption
-      | assumption | assumption ].
-  - apply ad_pat_sub__forall_l_tagged with (Ψ' := Ψ') (ψ := psi);
-      [ assumption | assumption | assumption
-      | apply a_tags_sort__sk; assumption
-      | exact (a_wf_pskl_of_d_wf_uskl Γ empty psi H3)
-      | assumption ].
-  - apply ad_pat_sub__forall_l_untagged with (Ψ' := Ψ') (ψ := psi);
-      [ assumption | assumption | assumption
-      | apply a_tags_sort__sk; assumption
-      | exact (a_wf_pskl_of_d_wf_uskl Γ empty psi H3)
-      | assumption ].
-  - apply ad_pat_sub__univ_ghost_l; assumption.
-  - apply ad_pat_sub__univ_ghost_lg; assumption.
+  intros M Ψ Γ R Q H; induction H;
+    eauto 5 using ad_pat_sub, d_consis_join_to_ad,
+      a_tags_sort__sk, a_wf_pskl_of_d_wf_uskl.
 Qed.
 
 (* ===================================================================== *)
