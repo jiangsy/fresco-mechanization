@@ -1238,6 +1238,42 @@ Proof.
   intros Θ m T Pi Ξ Pa H. inversion H; subst. assumption.
 Qed.
 
+(** The α-stack leaf's opener move, on the SOLVE side: the single
+    constraint at the undescended ∀ is re-solved at its opening by a fresh
+    γ, and the block-vs-constraints invariant survives — [Hap] bounds
+    [dom Ξs] away from [B], and the re-derived solve ran at [γ,Θ2]. *)
+Lemma a_solve_cstr_sub_reopen : forall (L : atoms) Θ2 Pi B Ξs Pa,
+  {{ Θ2 ⊩ (a_cstr_sub mode_tc (pskl_all_syn B) :: nil) ⨾ Pi ⤳ Ξs ⨾ Pa }}a ->
+  all_flex_mono Ξs ->
+  ftvar_in_pskl Pa [<=] dom Ξs `union` ftvar_in_aenv Θ2 ->
+  (forall α0, α0 `in` dom Ξs ->
+     α0 `notin` ftvar_in_a_cstrs (a_cstr_sub mode_tc (pskl_all_syn B) :: nil)) ->
+  exists γ,
+    γ `notin` (L `union` ftvar_in_aenv Θ2 `union` ftvar_in_pskl Pi
+                 `union` ftvar_in_pskl B `union` dom Ξs `union` ftvar_in_pskl Pa)
+    /\ {{ Θ2 ⊩ (a_cstr_sub mode_tc (open_pskl_wrt_pskl B (pskl_var_f γ)) :: nil)
+          ⨾ Pi ⤳ Ξs ⨾ Pa }}a
+    /\ (forall α0, α0 `in` dom Ξs ->
+          α0 `notin` ftvar_in_a_cstrs
+                       (a_cstr_sub mode_tc (open_pskl_wrt_pskl B (pskl_var_f γ))
+                          :: nil)).
+Proof.
+  intros L Θ2 Pi B Ξs Pa Hsol Hfm Hbound Hap.
+  pose proof (a_solve_cstr_sub_single_inv Hsol) as Hsolsub.
+  destruct (a_solve_sub_open_target_avoid L Hsolsub Hfm Hbound)
+    as [γ [Hγ Hsol']].
+  exists γ. refine (conj Hγ (conj _ _)).
+  - apply (@a_solve_cstr_strip_tvar_mid nil γ Θ2).
+    apply a_solve_cstr__sub; exact Hsol'.
+  - intros α0 Hα0.
+    pose proof (Hap α0 Hα0) as Hf.
+    pose proof (a_solve_sub_generated_fresh Hsol' Hα0) as Hg.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f γ)) as Hup.
+    cbn [ftvar_in_a_cstrs ftvar_in_a_cstr] in Hf |- *.
+    simpl in Hf, Hg, Hup.
+    clear - Hf Hg Hup. fsetdec.
+Qed.
+
 (** ⭐⭐⭐ THE REORDER.  P6-Ss caps a collection derivation with LS-ForallL;
     under the ForallR-PRIORITY GUARD that row is BLOCKED whenever the
     counterpart is a ghost-free ∀ at check mode, and there the run must peel
@@ -1321,19 +1357,8 @@ Proof.
        be peeled at THE SAME opener. *)
     assert (HQ : Q = pskl_var_f α)
       by (eapply open_var_eq_var_inv; [ exact Hvar | exact Hβα ]). subst Q. subst Ξ. subst 𝒞.
-    pose proof (a_solve_cstr_sub_single_inv Hsol) as Hsolsub.
-    destruct (a_solve_sub_open_target_avoid
-                (add α (ftvar_in_aenv Θ)) Hsolsub Hfm Hbound)
-      as [γ [Hγ Hsol']].
-    assert (Hsolγ : {{ ((γ ~ abind_tvar) ++ Θ2)
-                       ⊩ (a_cstr_sub mode_tc
-                            (open_pskl_wrt_pskl B (pskl_var_f γ)) :: nil)
-                       ⨾ Pi ⤳ Ξs ⨾ Pa }}a)
-      by (apply a_solve_cstr__sub; exact Hsol').
-    assert (Hsol2 : {{ Θ2 ⊩ (a_cstr_sub mode_tc
-                               (open_pskl_wrt_pskl B (pskl_var_f γ)) :: nil)
-                       ⨾ Pi ⤳ Ξs ⨾ Pa }}a)
-      by (exact (@a_solve_cstr_strip_tvar_mid nil γ Θ2 _ _ _ _ Hsolγ)).
+    destruct (a_solve_cstr_sub_reopen (add α (ftvar_in_aenv Θ)) Hsol Hfm
+                Hbound Hap) as (γ & Hγ & Hsol2 & HapG).
     pick fresh β1 for
       (add α (ftvar_in_aenv ((γ ~ abind_tvar) ++ Θ)
                 `union` ftvar_in_pskl (pskl_var_f α)
@@ -1347,21 +1372,6 @@ Proof.
                                   (open_pskl_wrt_pskl B (pskl_var_f γ))
                                 :: nil) }}a).
     { unfold open_pskl_wrt_pskl; simpl. apply a_looksub__var. }
-    (* ⭐ the invariant survives the OPENER MOVE: [Hap] bounds [dom Ξs] away
-       from [B] (the constraint here is the UNDESCENDED ∀), and the re-derived
-       solve runs at [γ,Θ2], so γ misses the block too. *)
-    assert (HapG : forall α0, α0 `in` dom Ξs ->
-              α0 `notin` ftvar_in_a_cstrs
-                           (a_cstr_sub mode_tc
-                              (open_pskl_wrt_pskl B (pskl_var_f γ)) :: nil)).
-    { intros α0 Hα0.
-      pose proof (Hap α0 Hα0) as Hf.
-      pose proof (a_solve_sub_generated_fresh Hsol' Hα0) as Hg.
-      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f γ))
-        as Hup.
-      cbn [ftvar_in_a_cstrs ftvar_in_a_cstr] in Hf |- *.
-      simpl in Hf, Hg, Hup.
-      clear - Hf Hg Hup. fsetdec. }
     destruct (IHn ((γ ~ abind_tvar) ++ Θ) α (pskl_var_f α)
                 (open_pskl_wrt_pskl B (pskl_var_f γ)) nil
                 (a_cstr_sub mode_tc (open_pskl_wrt_pskl B (pskl_var_f γ))
@@ -1473,34 +1483,8 @@ Proof.
     as [ (Hvar & HΞ & H𝒞) | [b [Hb Hpeel]] ].
   - (* ⭐ THE α-STACK LEAF, under a [⫯] this time *)
     subst Q. subst Ξ. subst 𝒞.
-    pose proof (a_solve_cstr_sub_single_inv Hsol) as Hsolsub.
-    destruct (a_solve_sub_open_target_avoid
-                (add α (ftvar_in_aenv Θ)) Hsolsub Hfm Hbound)
-      as [γ [Hγ Hsol']].
-    assert (Hsolγ : {{ ((γ ~ abind_tvar) ++ Θ2)
-                       ⊩ (a_cstr_sub mode_tc
-                            (open_pskl_wrt_pskl B (pskl_var_f γ)) :: nil)
-                       ⨾ Pi ⤳ Ξs ⨾ Pa }}a)
-      by (apply a_solve_cstr__sub; exact Hsol').
-    assert (Hsol2 : {{ Θ2 ⊩ (a_cstr_sub mode_tc
-                               (open_pskl_wrt_pskl B (pskl_var_f γ)) :: nil)
-                       ⨾ Pi ⤳ Ξs ⨾ Pa }}a)
-      by (exact (@a_solve_cstr_strip_tvar_mid nil γ Θ2 _ _ _ _ Hsolγ)).
-    (* ⭐ the invariant survives the OPENER MOVE: [Hap] bounds [dom Ξs] away
-       from [B] (the constraint here is the UNDESCENDED ∀), and the re-derived
-       solve runs at [γ,Θ2], so γ misses the block too. *)
-    assert (HapG : forall α0, α0 `in` dom Ξs ->
-              α0 `notin` ftvar_in_a_cstrs
-                           (a_cstr_sub mode_tc
-                              (open_pskl_wrt_pskl B (pskl_var_f γ)) :: nil)).
-    { intros α0 Hα0.
-      pose proof (Hap α0 Hα0) as Hf.
-      pose proof (a_solve_sub_generated_fresh Hsol' Hα0) as Hg.
-      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B (pskl_var_f γ))
-        as Hup.
-      cbn [ftvar_in_a_cstrs ftvar_in_a_cstr] in Hf |- *.
-      simpl in Hf, Hg, Hup.
-      clear - Hf Hg Hup. fsetdec. }
+    destruct (a_solve_cstr_sub_reopen (add α (ftvar_in_aenv Θ)) Hsol Hfm
+                Hbound Hap) as (γ & Hγ & Hsol2 & HapG).
     destruct (IHn ((γ ~ abind_tvar) ++ Θ) α (pskl_var_f α)
                 (open_pskl_wrt_pskl B (pskl_var_f γ)) nil
                 (a_cstr_sub mode_tc (open_pskl_wrt_pskl B (pskl_var_f γ))
