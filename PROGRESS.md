@@ -181,6 +181,24 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Automate routine consistency swap cases
+
+The mutual swap proof now instantiates supply-transport IHs and reconstructs
+routine constructors with `eauto 3` and an explicit list of swap lemmas.
+Both arrow premises are threaded through their supply witnesses. Guessing,
+substitution, binders, the rigid lookup, and the disjunction over skipped
+binding kinds remain explicit. Every consumed IH is removed, so the witness
+loop terminates without reusing the same hypothesis.
+
+**Reduction:** 81 nonblank, noncomment Coq lines; the proof body shrinks
+211→130. No new helper tactics or hints; every statement and computational
+definition is unchanged. Controlled whole-file compilation takes 15.29s
+versus 15.33s before the change. The swap proof construction itself remains
+under 0.1s (0.094s versus 0.034s).
+
+**Validation:** full `make coq`, all 34 flagship assumption checks closed,
+byte-identical extracted OCaml, and `git diff --check`.
+
 ## 2026-10-11 — Automate constructor-only transport cases
 
 Supply transport now shares the same witness-processing step across the
