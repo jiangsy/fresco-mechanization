@@ -181,6 +181,27 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Derive global rigid-variable survival from scoped survival
+
+Replace the entire induction of `ad_pat_consis_rigid_ftv_rev` with an
+application of `ad_pat_consis_rigid_ftv_rev_scoped`. Instantiate the scope
+with the context domain and target free variables, excluding the distinguished
+rigid atom. Context well-formedness bounds definition images; the existing
+avoidance hypothesis excludes the atom from those images.
+
+Share the four universal cases of the scoped proof with explicit selectors
+and a comment identifying the tagged/untagged inherited/synthesized cases.
+Keep the universal-ghost case separate because only its target opens.
+
+Net reduction: **163 physical Coq lines / 168 nonblank, noncomment lines**.
+All 91 existing theorem statements are unchanged. Inline tactic terms decrease
+from 37 to 24; none were added.
+
+Validation: `make coq` passed with all 34 headline assumption reports closed
+under the global context and no axiom reports or errors. Statement comparison
+and `git diff --check` passed.
+
+
 ## 2026-10-11 — Share consistency binder optimality
 
 Extract `consis_complete_close_optimal` from the ForallInh, ForallSyn and

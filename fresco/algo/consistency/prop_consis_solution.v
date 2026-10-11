@@ -1954,107 +1954,7 @@ Qed.
 
 (** The mirror on the JOIN: a rigid [α] absent from the join target is
     absent from the (painted) subject.  Drives GhostR's side condition. *)
-Lemma ad_pat_consis_rigid_ftv_rev : forall Ψ Θ R' Qt α',
-  {{ ⊢ Θ }}a ->
-  binds α' abind_tvar Θ ->
-  (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
-               α' `notin` ftvar_in_ptyp τ) ->
-  {{ Ψ ⨟ Θ ⊢ˢ R' ∼ Qt }}ad ->
-  α' `notin` ftvar_in_bskl Qt ->
-  α' `notin` ftvar_in_uskl R'.
-Proof.
-  intros Ψ Θ R' Qt α' Hwf HbX Hdefs Hc.
-  induction Hc; intros Hout; simpl in *.
-  - (* unit *) clear; fsetdec.
-  - (* var *) clear - Hout; fsetdec.
-  - (* arrow *)
-    assert (Hn1 : α' `notin` ftvar_in_uskl R1)
-      by (apply IHHc1;
-          [ assumption | assumption | assumption | clear - Hout; fsetdec ]).
-    assert (Hn2 : α' `notin` ftvar_in_uskl R2)
-      by (apply IHHc2;
-          [ assumption | assumption | assumption | clear - Hout; fsetdec ]).
-    clear - Hn1 Hn2; fsetdec.
-  - (* forall_inh_tagged (cofinite; Θ grows) *)
-    pick fresh β for (L `union` dom Θ `union` singleton α'
-                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    ftv_rev_extend α' Fr β Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
-    assert (HnT : α' `notin`
-              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f β))).
-    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup.
-      simpl in Hup. clear - Hout Hup Fr. fsetdec. }
-    pose proof (H0 β ltac:(clear - Fr; solve_notin_auto) HwfY HbXY HdefsY HnT) as HnS.
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
-      as Hlo.
-    clear - HnS Hlo. fsetdec.
-  - (* forall_inh_untagged (cofinite; Θ grows) *)
-    pick fresh β for (L `union` dom Θ `union` singleton α'
-                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    ftv_rev_extend α' Fr β Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
-    assert (HnT : α' `notin`
-              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f β))).
-    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup.
-      simpl in Hup. clear - Hout Hup Fr. fsetdec. }
-    pose proof (H0 β ltac:(clear - Fr; solve_notin_auto) HwfY HbXY HdefsY HnT) as HnS.
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
-      as Hlo.
-    clear - HnS Hlo. fsetdec.
-  - (* forall_syn_tagged (cofinite; Θ grows) *)
-    pick fresh β for (L `union` dom Θ `union` singleton α'
-                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    ftv_rev_extend α' Fr β Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
-    assert (HnT : α' `notin`
-              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f β))).
-    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup.
-      simpl in Hup. clear - Hout Hup Fr. fsetdec. }
-    pose proof (H0 β ltac:(clear - Fr; solve_notin_auto) HwfY HbXY HdefsY HnT) as HnS.
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
-      as Hlo.
-    clear - HnS Hlo. fsetdec.
-  - (* forall_syn (cofinite; Θ grows) *)
-    pick fresh β for (L `union` dom Θ `union` singleton α'
-                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    ftv_rev_extend α' Fr β Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
-    assert (HnT : α' `notin`
-              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f β))).
-    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup.
-      simpl in Hup. clear - Hout Hup Fr. fsetdec. }
-    pose proof (H0 β ltac:(clear - Fr; solve_notin_auto) HwfY HbXY HdefsY HnT) as HnS.
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
-      as Hlo.
-    clear - HnS Hlo. fsetdec.
-  - (* ghostg *) clear; fsetdec.
-  - (* dot_univ_ghost *) exact (IHHc Hwf HbX Hdefs Hout).
-  - (* ghost : the subject is the ghost, no free variables *)
-    clear; fsetdec.
-  - (* univ_ghost *) exact (IHHc Hwf HbX Hdefs Hout).
-  - (* univ_ghost_inh (cofinite target; Θ grows; subject fixed) *)
-    pick fresh β for (L `union` dom Θ `union` singleton α'
-                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    ftv_rev_extend α' Fr β Θ Hwf HbX Hdefs HwfY HbXY HdefsY.
-    assert (HnT : α' `notin`
-              ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f β))).
-    { pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup.
-      simpl in Hup. clear - Hout Hup Fr. fsetdec. }
-    pose proof (H0 β ltac:(clear - Fr; solve_notin_auto) HwfY HbXY HdefsY HnT) as HnS.
-    simpl in HnS. clear - HnS. fsetdec.
-  - (* univ_ghost_drop *) exact (IHHc Hwf HbX Hdefs Hout).
-  - (* flex_l : the subject is a defined flexible, never the rigid α' *)
-    assert (Hne : α' <> α).
-    { intro Heq; subst α.
-      pose proof (binds_unique _ _ _ _ _ HbX H (a_wf_aenv_uniq Hwf)) as Hc';
-        discriminate. }
-    clear - Hne; fsetdec.
-  - (* flex_r : unfold the join definition; its ftv avoids α' *)
-    apply IHHc; [ assumption | assumption | assumption | ].
-    rewrite ftvar_ptyp_to_bskl_syn.
-    apply (Hdefs _ _ H).
-Qed.
+
 
 (** SCOPED variant of the join ftv-survival: the definition side condition
     only holds for definitions REACHABLE from the target's scope [D] (the
@@ -2073,6 +1973,33 @@ Proof.
   intros Ψ Θ R' Qt α' D Hwf HbX HXD Hdefs Hc.
   revert D HXD Hdefs.
   induction Hc; intros D HXD Hdefs Hout; simpl in *.
+  (* Cases 4–7: tagged and untagged inherited/synthesized universals.
+     Extend the scope by the fresh opener, then forget the opening. *)
+  4,5,6,7: pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
+                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
+  4,5,6,7: assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
+      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
+  4,5,6,7: assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
+      by (apply binds_cons_3; exact HbX).
+  4,5,6,7: assert (HdefsY' : forall α1 τ,
+      binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
+      α1 `in` add β D -> ftvar_in_ptyp τ [<=] add β D) by (
+    intros α1 τ Hb HγD;
+    apply binds_cons_1 in Hb as [[_ Heqb] | Hb]; [discriminate Heqb |];
+    assert (Hγne : α1 <> β) by (
+      intro Heq; subst α1; apply binds_In in Hb; clear - Hb Fr; fsetdec);
+    assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec);
+    pose proof (Hdefs _ _ Hb HγD') as Hs; clear - Hs; fsetdec).
+  4,5,6,7: assert (HβL : β `notin` L) by (clear - Fr; solve_notin_auto).
+  4,5,6,7: assert (HαD : α' `notin` add β D) by (clear - HXD Fr; solve_notin_auto).
+  4,5,6,7: assert (HnS : α' `notin`
+      ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β))) by (
+    apply (H0 β HβL HwfY HbXY (add β D) HαD HdefsY');
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β)) as Hup;
+    simpl in Hup; clear - Hout Hup; fsetdec).
+  4,5,6,7: pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
+    as Hlo.
+  4,5,6,7: clear - HnS Hlo; fsetdec.
   - (* unit *) clear; fsetdec.
   - (* var *) clear - Hout HXD; fsetdec.
   - (* arrow *)
@@ -2081,118 +2008,6 @@ Proof.
     assert (Hn2 : α' `notin` ftvar_in_uskl R2)
       by (apply (IHHc2 Hwf HbX D HXD Hdefs); clear - Hout; fsetdec).
     clear - Hn1 Hn2; fsetdec.
-  - (* forall_inh_tagged (cofinite; Θ and D grow by the fresh β) *)
-    pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
-                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
-    assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
-      by (apply binds_cons_3; exact HbX).
-    assert (HdefsY' : forall α1 τ,
-              binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
-              α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
-    { intros α1 τ Hb HγD.
-      apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
-        [ discriminate Heqb | ].
-      assert (Hγne : α1 <> β).
-      { intro Heq; subst α1. apply binds_In in Hb.
-        clear - Hb Fr. fsetdec. }
-      assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
-      pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
-    assert (HnS : α' `notin`
-              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β))).
-    { apply (H0 β ltac:(clear - Fr; solve_notin_auto) HwfY HbXY (add β D)
-               ltac:(clear - HXD Fr; solve_notin_auto) HdefsY').
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup.
-      simpl in Hup. clear - Hout Hup. fsetdec. }
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
-      as Hlo.
-    clear - HnS Hlo. fsetdec.
-  - (* forall_inh_untagged *)
-    pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
-                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
-    assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
-      by (apply binds_cons_3; exact HbX).
-    assert (HdefsY' : forall α1 τ,
-              binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
-              α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
-    { intros α1 τ Hb HγD.
-      apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
-        [ discriminate Heqb | ].
-      assert (Hγne : α1 <> β).
-      { intro Heq; subst α1. apply binds_In in Hb.
-        clear - Hb Fr. fsetdec. }
-      assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
-      pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
-    assert (HnS : α' `notin`
-              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β))).
-    { apply (H0 β ltac:(clear - Fr; solve_notin_auto) HwfY HbXY (add β D)
-               ltac:(clear - HXD Fr; solve_notin_auto) HdefsY').
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup.
-      simpl in Hup. clear - Hout Hup. fsetdec. }
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
-      as Hlo.
-    clear - HnS Hlo. fsetdec.
-  - (* forall_syn_tagged *)
-    pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
-                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
-    assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
-      by (apply binds_cons_3; exact HbX).
-    assert (HdefsY' : forall α1 τ,
-              binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
-              α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
-    { intros α1 τ Hb HγD.
-      apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
-        [ discriminate Heqb | ].
-      assert (Hγne : α1 <> β).
-      { intro Heq; subst α1. apply binds_In in Hb.
-        clear - Hb Fr. fsetdec. }
-      assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
-      pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
-    assert (HnS : α' `notin`
-              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β))).
-    { apply (H0 β ltac:(clear - Fr; solve_notin_auto) HwfY HbXY (add β D)
-               ltac:(clear - HXD Fr; solve_notin_auto) HdefsY').
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup.
-      simpl in Hup. clear - Hout Hup. fsetdec. }
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
-      as Hlo.
-    clear - HnS Hlo. fsetdec.
-  - (* forall_syn *)
-    pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
-                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
-    assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
-      by (apply binds_cons_3; exact HbX).
-    assert (HdefsY' : forall α1 τ,
-              binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
-              α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
-    { intros α1 τ Hb HγD.
-      apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
-        [ discriminate Heqb | ].
-      assert (Hγne : α1 <> β).
-      { intro Heq; subst α1. apply binds_In in Hb.
-        clear - Hb Fr. fsetdec. }
-      assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
-      pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
-    assert (HnS : α' `notin`
-              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β))).
-    { apply (H0 β ltac:(clear - Fr; solve_notin_auto) HwfY HbXY (add β D)
-               ltac:(clear - HXD Fr; solve_notin_auto) HdefsY').
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup.
-      simpl in Hup. clear - Hout Hup. fsetdec. }
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
-      as Hlo.
-    clear - HnS Hlo. fsetdec.
   - (* ghostg *) clear; fsetdec.
   - (* dot_univ_ghost *) apply (IHHc Hwf HbX D HXD Hdefs Hout).
   - (* ghost *) clear; fsetdec.
@@ -2233,6 +2048,28 @@ Proof.
     apply (IHHc Hwf HbX D HXD Hdefs).
     rewrite ftvar_ptyp_to_bskl_syn.
     apply (Hdefs _ _ H). clear - Hout. fsetdec.
+Qed.
+
+(** The global definition-avoidance instance of scoped survival. *)
+Lemma ad_pat_consis_rigid_ftv_rev : forall Ψ Θ R' Qt α',
+  {{ ⊢ Θ }}a ->
+  binds α' abind_tvar Θ ->
+  (forall β τ, binds β (abind_flex_mono_def τ) Θ ->
+               α' `notin` ftvar_in_ptyp τ) ->
+  {{ Ψ ⨟ Θ ⊢ˢ R' ∼ Qt }}ad ->
+  α' `notin` ftvar_in_bskl Qt ->
+  α' `notin` ftvar_in_uskl R'.
+Proof.
+  intros Ψ Θ R' Qt α' Hwf HbX Hdefs Hc Hout.
+  eapply ad_pat_consis_rigid_ftv_rev_scoped
+    with (D := remove α' (dom Θ `union` ftvar_in_bskl Qt));
+    [ exact Hwf | exact HbX | clear; fsetdec | | exact Hc | ].
+  - intros β τ Hb Hβ.
+    assert (Hscope : ftvar_in_ptyp τ [<=] dom Θ)
+      by (eapply a_wf_aenv_def_ftv_dom; eauto).
+    pose proof (Hdefs β τ Hb) as Hfresh.
+    clear - Hscope Hfresh; fsetdec.
+  - clear - Hout; fsetdec.
 Qed.
 
 (** Well-formedness of a metasubstitution image, general form.  [Θ1] is the
