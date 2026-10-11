@@ -181,6 +181,35 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Remove the raw runner-completeness detour
+
+Prove collection and solver implementation completeness directly from the
+supply-threaded `e_*` judgments in `subtyping/prop_look_complete.v` and
+`subtyping/prop_solve_complete.v`. Arrow cases use existing determinism to
+transport the given tail to the runner's head result. Binder cases swap the
+source opener to `supply_fresh`, sharing the argument across syntax cases.
+
+Delete the 2,606-line `prop_run_complete.v`: the raw `a_*` completeness
+route, flexibility-agreement bookkeeping, and binder reordering helpers
+have no remaining consumers. Extraction now calls the direct theorems;
+its synthetic `rigids` context and threaded-to-raw adapters disappear.
+The public extraction and typing completeness statements are unchanged.
+
+Also delete `e_guess_mono_det_n` and `e_guess_mono_det` from typing
+completeness. Their only caller uses the stronger existing
+`e_guess_mono_rel` directly. The attempted assertion-inlining pass was
+reverted; this reduction removes redundant proofs and intermediate layers.
+
+Net reduction: **2,323 physical lines**, including **2,046 nonblank,
+noncomment Coq lines**, relative to the start of this pass. Counts include
+both new direct-proof modules.
+
+Validation: final `make coq` passed; all 34 headline assumption reports
+are closed under the global context, with no axiom reports. Each of the
+four new direct completeness theorems also passes a separate
+`Print Assumptions` check. `git diff --check` passes.
+
+
 ## 2026-10-11 — Reorganize proof modules by subject
 
 - Keep the system directories; use `algo/basic/`, `algo/consistency/`,

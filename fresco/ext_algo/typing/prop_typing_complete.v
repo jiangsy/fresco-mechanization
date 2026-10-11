@@ -19,13 +19,8 @@
     needs a new side condition; the overlap is closed by [e_split]'s own
     shape.
 
-    ⭐⭐ ONE PIECE OF UPSTREAM METATHEORY WAS MISSING AND IS BUILT HERE:
-    [e_guess_mono_det] — [guess^TY] is deterministic UP TO A FRESH-PAIR
-    CHAIN.  [AT-Abs] runs it, the runner runs its own copy, and the two
-    invent different atoms; every other recursive call in this file is a
-    runner whose completeness is already stated in that form.  ⚙ It sits
-    here rather than in prop_guess.v because the [swaps_*] family it is
-    stated over (prop_solve_det.v §2) is downstream of that file. *)
+    Guess determinism is supplied by [e_guess_mono_rel] in
+    consistency/prop_consis_complete.v. *)
 
 Require Import Coq.Lists.List.
 Require Import Coq.micromega.Lia.
@@ -221,182 +216,6 @@ Proof.
   pose proof (e_guess_mono_supply_grows Hg) as Hgr.
   clear - Hftv Hdom Hgr Hcov. fsetdec.
 Qed.
-
-(** ⭐⭐ [guess^TY] IS DETERMINISTIC UP TO A FRESH-PAIR CHAIN.  ⚙ The
-    coverage hypothesis is not decoration: at a VARIABLE subject the row
-    returns [α] itself, so without [ftv P ⊆ S0] the answer could mention a
-    name the chain is free to move.  Every call site has it — [AT-Abs] runs
-    [guess^TY] on a SPLIT's domain, and prop_pat.v §2 bounds that by the
-    split's output supply. *)
-Lemma e_guess_mono_det_n : forall n P, size_pskl P <= n ->
-  forall S0 S1 Ξ1 A1 S2 Ξ2 A2,
-  ftvar_in_pskl P [<=] S0 ->
-  e_guess_mono S0 P S1 Ξ1 A1 -> e_guess_mono S0 P S2 Ξ2 A2 ->
-  exists ps,
-    (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
-    /\ swaps_atoms ps S1 [=] S2
-    /\ swaps_aenv ps Ξ1 = Ξ2
-    /\ swaps_ptyp ps A1 = A2.
-Proof.
-  induction n as [ | n IHn ];
-    intros P Hsz S0 S1 Ξ1 A1 S2 Ξ2 A2 Hcov D1 D2.
-  - (* no skeleton has size 0 *)
-    exfalso. destruct P; simpl in Hsz; lia.
-  - destruct P as [ | k | α | P1 P2 | B0 | | P1 ]; simpl in Hsz.
-    + (* unit *)
-      destruct (e_guess_mono_inv_unit D1) as [-> [-> ->]].
-      destruct (e_guess_mono_inv_unit D2) as [-> [-> ->]].
-      exists nil. split; [ intros ? ? [] | ].
-      split; [ reflexivity | ]. split; reflexivity.
-    + (* a bound index is not a skeleton any run is given *)
-      exfalso. exact (e_guess_mono_inv_var_b D1).
-    + (* var *)
-      destruct (e_guess_mono_inv_var D1) as [-> [-> ->]].
-      destruct (e_guess_mono_inv_var D2) as [-> [-> ->]].
-      exists nil. split; [ intros ? ? [] | ].
-      split; [ reflexivity | ]. split; reflexivity.
-    + (* arrow — THREADED, so the two chains compose *)
-      destruct (e_guess_mono_inv_arrow D1)
-        as [S1a [Ξ1a [Ξ1b [A1a [A1b [-> [-> [D1a D1b]]]]]]]].
-      destruct (e_guess_mono_inv_arrow D2)
-        as [S2a [Ξ2a [Ξ2b [A2a [A2b [-> [-> [D2a D2b]]]]]]]].
-      (* ⚠️⚠️ NEVER an [fsetdec] inside an [ltac:] ARGUMENT: at that point
-         the recursive call's own [S0] is still an EVAR and the search does
-         not return.  Every coverage side condition here is a NAMED
-         hypothesis. *)
-      assert (HcP1 : ftvar_in_pskl P1 [<=] S0)
-        by (clear - Hcov; simpl in *; fsetdec).
-      destruct (IHn P1 ltac:(lia) _ _ _ _ _ _ _ HcP1 D1a D2a)
-        as [psa [Hava [HSa [HTa HAa]]]].
-      (* move the CODOMAIN's run onto the first answer's rails *)
-      destruct (e_guess_mono_swaps psa D1b (S0' := S2a))
-        as [Sm [HSm D1b']]; [ symmetry; exact HSa | ].
-      pose proof (e_guess_mono_supply_grows D2a) as Hgra.
-      assert (HfixP2 : swaps_pskl psa P2 = P2)
-        by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-            destruct (Hava a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb Hcov; simpl in *; fsetdec).
-      rewrite HfixP2 in D1b'.
-      assert (HcP2 : ftvar_in_pskl P2 [<=] S2a)
-        by (clear - Hcov Hgra; simpl in *; fsetdec).
-      destruct (IHn P2 ltac:(lia) _ _ _ _ _ _ _ HcP2 D1b' D2b)
-        as [psb [Havb [HSb [HTb HAb]]]].
-      exists (psa ++ psb).
-      assert (Hav : forall a b, In (a, b) (psa ++ psb) ->
-                    a `notin` S0 /\ b `notin` S0).
-      { intros a0 b0 Hin. apply in_app_or in Hin.
-        destruct Hin as [Hin | Hin]; [ exact (Hava _ _ Hin) | ].
-        destruct (Havb _ _ Hin) as [Hka Hkb].
-        split; clear - Hka Hkb Hgra; fsetdec. }
-      (* the first answer's block and type live inside [S2a], so the second
-         chain fixes them *)
-      pose proof (e_guess_mono_generated_in_supply D2a) as HdomA.
-      pose proof (e_guess_mono_generated_ftvar D2a) as HftA.
-      pose proof (e_guess_mono_ftv D2a) as HftvA.
-      assert (HfixT : swaps_aenv psb Ξ2a = Ξ2a)
-        by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-            destruct (Havb a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb HdomA HftA; fsetdec).
-      (* ⚠️ in TWO steps: one [fsetdec] over all six set variables at once
-         does not return (the ⚠️⚠️ at 6 atoms). *)
-      assert (HcovP1 : ftvar_in_pskl P1 [<=] S2a)
-        by (clear - HcP1 Hgra; fsetdec).
-      assert (HftvA2 : ftvar_in_ptyp A2a [<=] S2a)
-        by (clear - HftvA HdomA HcovP1; fsetdec).
-      assert (HfixA : swaps_ptyp psb A2a = A2a)
-        by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-            destruct (Havb a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb HftvA2; fsetdec).
-      split; [ exact Hav | ].
-      split; [ rewrite swaps_atoms_app; rewrite <- HSb;
-               apply swaps_atoms_cong; symmetry; exact HSm | ].
-      split.
-      * rewrite swaps_aenv_app, ! swaps_aenv_app_dist, HTa, HTb, HfixT.
-        reflexivity.
-      * rewrite swaps_ptyp_app, ! swaps_ptyp_arrow, HAa, HAb, HfixA.
-        reflexivity.
-    + (* ∀ — the witness is drawn from the supply on both sides *)
-      destruct (e_guess_mono_inv_all_syn D1) as [β1 [A1' [Hβ1 [-> D1']]]].
-      destruct (e_guess_mono_inv_all_syn D2) as [β2 [A2' [Hβ2 [-> D2']]]].
-      destruct (e_guess_mono_swaps ((β1, β2) :: nil) D1'
-                  (S0' := add β2 S0)) as [Sm [HSm D1'']].
-      { cbn [swaps_atoms]. rewrite swap_atoms_add.
-        rewrite (swap_atoms_notin β1 β2 S0) by (clear - Hβ1 Hβ2; fsetdec).
-        unfold swap_atom. destruct (β1 == β1); [ reflexivity | congruence ]. }
-      assert (HfixP : swaps_pskl ((β1, β2) :: nil) B0 = B0)
-        by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-            destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            split; clear - Hβ1 Hβ2 Hcov; simpl in *; fsetdec).
-      assert (Hsβ1 : swaps_atom ((β1, β2) :: nil) β1 = β2)
-        by (cbn [swaps_atom]; unfold swap_atom;
-            destruct (β1 == β1); [ reflexivity | congruence ]).
-      rewrite swaps_pskl_open, swaps_pskl_var_f, HfixP, Hsβ1 in D1''.
-      assert (HcovB : ftvar_in_pskl (open_pskl_wrt_pskl B0 (pskl_var_f β2))
-                      [<=] add β2 S0).
-      { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper B0
-                      (pskl_var_f β2)) as Hup.
-        simpl in Hup. clear - Hup Hcov. simpl in *. fsetdec. }
-      assert (Hszb : size_pskl (open_pskl_wrt_pskl B0 (pskl_var_f β2)) <= n)
-        by (rewrite size_pskl_open_pskl_wrt_pskl_var; lia).
-      destruct (IHn (open_pskl_wrt_pskl B0 (pskl_var_f β2)) Hszb
-                  _ _ _ _ _ _ _ HcovB D1'' D2')
-        as [psb [Havb [HSb [HTb HAb]]]].
-      exists (((β1, β2) :: nil) ++ psb).
-      assert (Hav : forall a b, In (a, b) (((β1, β2) :: nil) ++ psb) ->
-                    a `notin` S0 /\ b `notin` S0).
-      { intros a0 b0 Hin. apply in_app_or in Hin.
-        destruct Hin as [ [Heq0 | []] | Hin ];
-          [ inversion Heq0; subst; split; assumption | ].
-        destruct (Havb _ _ Hin) as [Hka Hkb].
-        split; clear - Hka Hkb; fsetdec. }
-      assert (Hsβ : swaps_atom (((β1, β2) :: nil) ++ psb) β1 = β2).
-      { rewrite swaps_atom_app, Hsβ1.
-        apply swaps_atom_notin. intros a0 b0 Hin.
-        destruct (Havb a0 b0 Hin) as [Hka Hkb].
-        split; intro Heq0; [ apply Hka | apply Hkb ];
-          rewrite <- Heq0; clear; fsetdec. }
-      split; [ exact Hav | ].
-      split; [ rewrite swaps_atoms_app; rewrite <- HSb;
-               apply swaps_atoms_cong; symmetry; exact HSm | ].
-      split.
-      * rewrite swaps_aenv_app. exact HTb.
-      * rewrite swaps_ptyp_all, swaps_ptyp_close, Hsβ.
-        rewrite swaps_ptyp_app, HAb. reflexivity.
-    + (* ghost — the row that INVENTS *)
-      destruct (e_guess_mono_inv_ghost D1) as [α1 [Hα1 [-> [-> ->]]]].
-      destruct (e_guess_mono_inv_ghost D2) as [α2 [Hα2 [-> [-> ->]]]].
-      exists ((α1, α2) :: nil).
-      assert (Hsα : swaps_atom ((α1, α2) :: nil) α1 = α2)
-        by (cbn [swaps_atom]; unfold swap_atom;
-            destruct (α1 == α1); [ reflexivity | congruence ]).
-      split; [ intros a0 b0 [Heq0 | []]; inversion Heq0; subst;
-               split; assumption | ].
-      split.
-      * cbn [swaps_atoms]. rewrite swap_atoms_add.
-        rewrite (swap_atoms_notin α1 α2 S0) by (clear - Hα1 Hα2; fsetdec).
-        unfold swap_atom. destruct (α1 == α1); [ reflexivity | congruence ].
-      * split.
-        -- rewrite swaps_aenv_app_dist, swaps_aenv_one_flex, swaps_aenv_nil,
-             Hsα.
-           reflexivity.
-        -- rewrite swaps_ptyp_var_f, Hsα. reflexivity.
-    + (* ⫯ *)
-      pose proof (e_guess_mono_inv_univ_ghost D1) as D1'.
-      pose proof (e_guess_mono_inv_univ_ghost D2) as D2'.
-      assert (HcP1 : ftvar_in_pskl P1 [<=] S0)
-        by (clear - Hcov; simpl in *; fsetdec).
-      exact (IHn P1 ltac:(lia) _ _ _ _ _ _ _ HcP1 D1' D2').
-Qed.
-
-Corollary e_guess_mono_det : forall P S0 S1 Ξ1 A1 S2 Ξ2 A2,
-  ftvar_in_pskl P [<=] S0 ->
-  e_guess_mono S0 P S1 Ξ1 A1 -> e_guess_mono S0 P S2 Ξ2 A2 ->
-  exists ps,
-    (forall a b, In (a, b) ps -> a `notin` S0 /\ b `notin` S0)
-    /\ swaps_atoms ps S1 [=] S2
-    /\ swaps_aenv ps Ξ1 = Ξ2
-    /\ swaps_ptyp ps A1 = A2.
-Proof. intros. eapply e_guess_mono_det_n; [ apply le_n | eassumption .. ]. Qed.
 
 (* ===================================================================== *)
 (*  §2  ROOT INVERSIONS — the case backbone                               *)
@@ -1179,7 +998,7 @@ Proof.
       destruct (e_guess_mono_swaps ps1 Hg (S0' := sp_supply rs))
         as [Sg1 [HSg1 Hg1]]; [ symmetry; exact HS1 | ];
       rewrite HP1 in Hg1;
-      destruct (e_guess_mono_det HcovD Hg1 Hrg)
+      destruct (e_guess_mono_rel Hg1 Hrg HcovD)
         as [psg [Havg [HSg [HTg HAg]]]];
       pose proof (e_guess_mono_supply_grows Hrg) as Hgrg;
       pose proof (e_guess_mono_generated_in_supply Hrg) as HdomG;

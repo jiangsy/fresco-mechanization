@@ -196,8 +196,8 @@ Qed.
 (* ===================================================================== *)
 
 (** ⭐ [flex_agree_rel ρ V Θ1 Θ2] — the context interface for
-    relational lifting: identity agreement on the support [V] (exactly
-    [flex_agree], prop_run_complete.v §3a), extended to ρ's PAIRS —
+    relational lifting: identity agreement on the support [V], extended
+    to ρ's pairs —
     a paired name has the same flex-status on its own side as its partner
     has on the other. *)
 Definition flex_agree_rel (ρ : list (atom * atom)) (V : atoms)
