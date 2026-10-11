@@ -1193,6 +1193,51 @@ Definition sub_flex_scope_concl (NM : a_sub_mode) (M : mode) (P0 : pskl)
        binds m b (Ξ ++ Θ0) -> abind_marker b ->
        core_rigid_above m (Ξ ++ Θ0) C -> core_rigid_above m Θ1 C').
 
+(** The two Flex-SkipTmVar rows (type and skeleton entry): a marker again,
+    but a TERM one — the core cannot name it (its binding is not tvarish),
+    so the strip's side conditions are a binding mismatch. *)
+Lemma sub_flex_scope_skip_tm : forall {NM M P0 Θ0 Θ1 Ξ α x} {bx : abind} {Q},
+  x `notin` dom Θ1 ->
+  a_sub_flex NM M P0 Θ0 Ξ α Q Θ1 ->
+  sub_flex_scope_concl NM M P0 Θ0 Ξ α Q Θ1 ->
+  abind_is_tm bx ->
+  sub_flex_scope_concl NM M P0 ((x ~ bx) ++ Θ0) Ξ α Q ((x ~ bx) ++ Θ1).
+Proof.
+  intros NM M P0 Θ0 Θ1 Ξ α x bx Q Hxout Hs IH Htm Heq Hwf Hdecls HwfP0 Hbα
+         C Hcore.
+  assert (Hxfr : x `notin` ftvar_in_pskl P0)
+    by (eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact Htm | exact HwfP0 ]).
+  assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
+    by (eapply a_wf_aenv_strip_mid; eauto).
+  assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
+    by (eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ]).
+  assert (Hbα' : a_binds_tvar α (Ξ ++ Θ0))
+    by (eapply a_binds_tvar_strip_mid;
+          [ exact Hbα
+          | intros He; inversion He; subst; exact Htm
+          | intros He; inversion He; subst; exact Htm
+          | intros τ1 He; inversion He; subst; exact Htm ]).
+  destruct (IH Heq Hwf' Hdecls HwfP0' Hbα' C Hcore)
+    as [C' [Hcore' Hsc']].
+  exists C'. split; [ exact Hcore' | ].
+  intros m b Hbm Hmk Hcr.
+  destruct (x == m) as [-> | Hxm];
+    [ apply core_rigid_above_head_marker | ].
+  destruct (proj2 a_sub_output_wf_bundle _ _ _ _ _ _ _ _ Hs
+              Hwf' Hdecls HwfP0' Hbα') as [_ [_ HwfQ]].
+  apply core_rigid_above_cons_other;
+    [ eapply Hsc';
+        [ eapply binds_strip_mid;
+            [ exact Hbm | intros Hc; inversion Hc; subst; auto ]
+        | exact Hmk
+        | eapply core_rigid_above_strip_mid;
+            [ exact Hcr | exact Hxm
+            | intros γ0 _ _ Hc; inversion Hc; subst; exact Htm ] ]
+    | exact Hxm
+    | pose proof (core_ftv_dom Hcore' HwfQ) as Hsub;
+      clear - Hxout Hsub; fsetdec ].
+Qed.
+
 Lemma a_sub_sub_flex_scope :
   (forall NM M P0 Θ0 P Q Θ1,
      a_sub NM M P0 Θ0 P Q Θ1 -> sub_scope_concl NM M P0 Θ0 P Q Θ1) /\
@@ -1550,74 +1595,12 @@ Proof.
       | exact Hβm
       | pose proof (core_ftv_dom Hcore' HwfQ) as Hsub;
         clear - Hβ1 Hsub; fsetdec ].
-  - (* Flex-SkipTmVar (type entry) : a marker again, but a TERM one — the
-       core cannot name it (its binding is not tvarish), so the strip's
-       side condition is a constructor mismatch *)
-    intros NM M P0 Θ0 Θ1 Ξ α x Apay Q Hxout Hs IH Heq Hwf Hdecls HwfP0 Hbα
-           C Hcore.
-    assert (Hxfr : x `notin` ftvar_in_pskl P0)
-      by (eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact I | exact HwfP0 ]).
-    assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
-      by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
-      by (eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ]).
-    assert (Hbα' : a_binds_tvar α (Ξ ++ Θ0))
-      by (eapply a_binds_tvar_strip_mid;
-            [ exact Hbα
-            | intro He; discriminate He
-            | intro He; discriminate He
-            | intros τ1 He; discriminate He ]).
-    destruct (IH Heq Hwf' Hdecls HwfP0' Hbα' C Hcore)
-      as [C' [Hcore' Hsc']].
-    exists C'. split; [ exact Hcore' | ].
-    intros m b Hbm Hmk Hcr.
-    destruct (x == m) as [-> | Hxm];
-      [ apply core_rigid_above_head_marker | ].
-    destruct (proj2 a_sub_output_wf_bundle _ _ _ _ _ _ _ _ Hs
-                Hwf' Hdecls HwfP0' Hbα') as [_ [_ HwfQ]].
-    apply core_rigid_above_cons_other;
-      [ eapply Hsc';
-          [ eapply binds_strip_mid;
-              [ exact Hbm | intros Hc; inversion Hc; subst; auto ]
-          | exact Hmk
-          | eapply core_rigid_above_strip_mid;
-              [ exact Hcr | exact Hxm | intros γ0 _ _ Hc; inversion Hc ] ]
-      | exact Hxm
-      | pose proof (core_ftv_dom Hcore' HwfQ) as Hsub;
-        clear - Hxout Hsub; fsetdec ].
-  - (* Flex-SkipTmVar (skeleton entry) : verbatim the previous row *)
-    intros NM M P0 Θ0 Θ1 Ξ α x Qpay Q Hxout Hs IH Heq Hwf Hdecls HwfP0 Hbα
-           C Hcore.
-    assert (Hxfr : x `notin` ftvar_in_pskl P0)
-      by (eapply a_wf_pskl_tm_entry_fresh; [ exact Hwf | exact I | exact HwfP0 ]).
-    assert (Hwf' : {{ ⊢ (Ξ ++ Θ0) }}a)
-      by (eapply a_wf_aenv_strip_mid; eauto).
-    assert (HwfP0' : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a)
-      by (eapply a_wf_pskl_strip_mid; [ exact HwfP0 | exact Hxfr ]).
-    assert (Hbα' : a_binds_tvar α (Ξ ++ Θ0))
-      by (eapply a_binds_tvar_strip_mid;
-            [ exact Hbα
-            | intro He; discriminate He
-            | intro He; discriminate He
-            | intros τ1 He; discriminate He ]).
-    destruct (IH Heq Hwf' Hdecls HwfP0' Hbα' C Hcore)
-      as [C' [Hcore' Hsc']].
-    exists C'. split; [ exact Hcore' | ].
-    intros m b Hbm Hmk Hcr.
-    destruct (x == m) as [-> | Hxm];
-      [ apply core_rigid_above_head_marker | ].
-    destruct (proj2 a_sub_output_wf_bundle _ _ _ _ _ _ _ _ Hs
-                Hwf' Hdecls HwfP0' Hbα') as [_ [_ HwfQ]].
-    apply core_rigid_above_cons_other;
-      [ eapply Hsc';
-          [ eapply binds_strip_mid;
-              [ exact Hbm | intros Hc; inversion Hc; subst; auto ]
-          | exact Hmk
-          | eapply core_rigid_above_strip_mid;
-              [ exact Hcr | exact Hxm | intros γ0 _ _ Hc; inversion Hc ] ]
-      | exact Hxm
-      | pose proof (core_ftv_dom Hcore' HwfQ) as Hsub;
-        clear - Hxout Hsub; fsetdec ].
+  - (* Flex-SkipTmVar (type entry) *)
+    intros NM M P0 Θ0 Θ1 Ξ α x Apay Q Hxout Hs IH.
+    apply (sub_flex_scope_skip_tm Hxout Hs IH). exact I.
+  - (* Flex-SkipTmVar (skeleton entry) *)
+    intros NM M P0 Θ0 Θ1 Ξ α x Qpay Q Hxout Hs IH.
+    apply (sub_flex_scope_skip_tm Hxout Hs IH). exact I.
 Qed.
 
 (* ===================================================================== *)
