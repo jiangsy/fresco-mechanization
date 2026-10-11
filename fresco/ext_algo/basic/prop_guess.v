@@ -503,9 +503,3 @@ Proof. intros * Hd. inversion Hd; subst; eauto 10. Qed.
 Lemma e_guess_mono_inv_univ_ghost : forall S0 P S1 Ξ A,
   e_guess_mono S0 (pskl_univ_ghost P) S1 Ξ A -> e_guess_mono S0 P S1 Ξ A.
 Proof. intros * Hd. inversion Hd; subst; auto. Qed.
-
-(** A dangling index is not a skeleton any run can be given — the same
-    fact [e_guess_mono_order_var_b_absurd] states for the ORDER. *)
-Lemma e_guess_mono_inv_var_b : forall S0 n S1 Ξ A,
-  e_guess_mono S0 (pskl_var_b n) S1 Ξ A -> False.
-Proof. intros * Hd. inversion Hd. Qed.

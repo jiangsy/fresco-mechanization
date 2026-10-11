@@ -272,21 +272,6 @@ Proof.
   - inversion Hwf; subst. apply a_wf_ptyp__arrow; auto.
 Qed.
 
-(** Every definition of a well-formed context is scoped by its domain, so a
-    name outside the domain is fresh for all of them — the side condition
-    [ad_refine_syn_rename] asks for, discharged by freshness alone. *)
-Lemma a_wf_aenv_def_ftv_fresh : forall Θ β,
-  {{ ⊢ Θ }}a -> β `notin` dom Θ ->
-  forall α τ, binds α (abind_flex_mono_def τ) Θ -> β `notin` ftvar_in_ptyp τ.
-Proof.
-  intros Θ β Hwf Hβ α τ Hb.
-  assert (Hwfτ : a_wf_ptyp Θ τ)
-    by (eapply a_wf_aenv_binds_def_wf; eassumption).
-  assert (Hsc : ftvar_in_ptyp τ [<=] dom Θ)
-    by (eapply a_wf_ptyp_ftv_dom; exact Hwfτ).
-  clear - Hβ Hsc; fsetdec.
-Qed.
-
 (** Renaming a Δ-BOUND variable of a refinement derivation, via
     [ad_refine_syn_rename]: the renamed name is in Δ, so every ghost fill
     misses it.  The new name [α0] must avoid the target (a fill could
@@ -306,9 +291,9 @@ Proof.
   eapply ad_refine_syn_delta_mono;
     [ apply ad_refine_syn_rename;
         [ exact H | exact HβΔ | exact Hβ
-        | eapply a_wf_aenv_def_ftv_fresh; eassumption
+        | eapply a_wf_aenv_def_ftv_notin; eassumption
         | exact Hα0Q
-        | eapply a_wf_aenv_def_ftv_fresh; eassumption ]
+        | eapply a_wf_aenv_def_ftv_notin; eassumption ]
     | clear; fsetdec ].
 Qed.
 

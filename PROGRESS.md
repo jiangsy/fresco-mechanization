@@ -181,6 +181,39 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Remove orphaned completeness support and exact duplicates
+
+After deleting raw runner completeness, remove its unused context-equivalence
+chain from `ext_algo/subtyping/prop_solve.v` and the three flexibility lemmas
+that only supported that chain. Also remove the raw constraint-fold append
+inversion section left by the old paired collection proof, including its
+private equality-constraint predicate and head inversions. The bounded-guess
+proof's bound-variable inversion helper has no remaining consumer either.
+All 11 removed declarations have no references in the remaining Coq sources.
+
+Replace three duplicate proofs with direct calls to existing shared lemmas:
+`a_wf_aenv_def_ftv_fresh` with `a_wf_aenv_def_ftv_notin`,
+`mono_paint_is_dtyp` with `mono_ptyp_to_utyp_syn_is_dtyp`, and
+`notin_all_inter_empty` with `inter_empty_pointwise`. No alias wrappers remain.
+
+Net reduction: **205 physical lines**, including **164 nonblank, noncomment
+Coq lines**, relative to `c490ed8`.
+
+The next larger candidate is the pair of term-binding skip proofs in
+`algo/subtyping/prop_completeness_sub_gen.v`: the type-binding and
+skeleton-binding cases occupy 398 and 400 lines, with most of the context,
+substitution, freshness, and optimality argument repeated. They require a
+shared argument that preserves the different payload equivalence relations;
+they are not interchangeable lemmas. The size-bounded solver determinism
+proofs in `prop_extract_det.v` are another candidate, but unlike the removed
+guess proof they currently supply the only proofs of their public results.
+
+Validation: final `make coq` passed, with all 34 headline assumption
+reports closed under the global context and no axiom reports. A
+comment/whitespace-insensitive comparison confirms all surviving theorem
+statements are unchanged. `git diff --check` passes.
+
+
 ## 2026-10-11 — Remove the raw runner-completeness detour
 
 Prove collection and solver implementation completeness directly from the

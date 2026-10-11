@@ -35,13 +35,6 @@ Set Implicit Arguments.
 
 (** ** Paint helper lemmas. *)
 
-(* A monotype's syn-painting is a tag-free [is_dtyp]. *)
-Lemma mono_paint_is_dtyp : forall A,
-    mono_ptyp A -> is_dtyp (ptyp_to_utyp_syn A).
-Proof.
-  intros A Hmono. induction Hmono; simpl; eauto using is_dtyp.
-Qed.
-
 Lemma mono_paint_d_tags : forall A,
     mono_ptyp A -> d_tags empty (ptyp_to_utyp_syn A).
 Proof.
@@ -138,7 +131,7 @@ Proof.
     + clear; fsetdec.
     + apply mono_paint_d_tags. assumption.
     + apply d_wf_utyp_painting_syn. assumption.
-    + apply mono_paint_is_dtyp. assumption.
+    + apply mono_ptyp_to_utyp_syn_is_dtyp. assumption.
     + rewrite <- ptyp_to_utyp_syn_open.
       apply d_sub_equiv with (Ψ := (@empty : atoms)); [ fsetdec | ].
       assumption.

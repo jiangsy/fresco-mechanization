@@ -35,6 +35,7 @@ Require Import src.fresco.def_shapes.
 Require Import src.fresco.prop_coercions.
 Require Import src.fresco.prop_tag.
 Require Import src.fresco.prop_shapes.
+Require Import src.fresco.prop_atom_sets.
 Require Import src.fresco.prop_ln.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
@@ -139,15 +140,6 @@ Lemma swaps_ptyp_open : forall ps A1 A2,
 Proof.
   induction ps as [ | [a b] ps IH ]; intros; simpl; [ reflexivity | ].
   rewrite swap_ptyp_open. apply IH.
-Qed.
-
-(** The KEPT scoping filter, as the intersection the runner tests. *)
-Lemma notin_all_inter_empty : forall S1 S2,
-  (forall γ, γ `in` S1 -> γ `notin` S2) -> S1 ∩ S2 [=] empty.
-Proof.
-  intros S1 S2 Hf γ. split; intros Hγ; [ | clear - Hγ; fsetdec ].
-  assert (Hin1 : γ `in` S1) by (clear - Hγ; fsetdec).
-  pose proof (Hf γ Hin1) as Hout. clear - Hγ Hout. fsetdec.
 Qed.
 
 (** [close] under a ∀ is locally closed — the [ptyp] twin of
@@ -705,7 +697,7 @@ Proof.
                     ((αd, supply_fresh S0) :: nil) Ξ)))
                   ∩ (ftvar_in_ptyp (close_ptyp_wrt_ptyp (supply_fresh S0)
                        (ty_out r))) [=] empty)
-          by (rewrite Hclose; apply notin_all_inter_empty;
+          by (rewrite Hclose; apply inter_empty_pointwise;
               repeat apply swaps_block_ftv_filter; exact Hfil).
         bool_true_ty.
         eexists; exists (((αd, supply_fresh S0) :: nil) ++ ps2).
@@ -935,7 +927,7 @@ Proof.
                       supply_fresh (sp_supply rs)) :: nil)
                     (swaps_aenv ps1 Ξ))))
                   ∩ (ftvar_in_ptyp (ty_out r)) [=] empty).
-        { rewrite <- HQ2. apply notin_all_inter_empty.
+        { rewrite <- HQ2. apply inter_empty_pointwise.
           repeat apply swaps_block_ftv_filter. exact Hfil. }
         bool_true_ty.
         eexists;
@@ -1411,7 +1403,7 @@ Proof.
                     ((αd, supply_fresh S0) :: nil) Ξ)))
                   ∩ (ftvar_in_ptyp (close_ptyp_wrt_ptyp (supply_fresh S0)
                        (ty_out r))) [=] empty)
-          by (rewrite Hclose; apply notin_all_inter_empty;
+          by (rewrite Hclose; apply inter_empty_pointwise;
               repeat apply swaps_block_ftv_filter; exact Hfil).
         bool_true_ty.
         eexists; exists (((αd, supply_fresh S0) :: nil) ++ ps2).
@@ -1722,7 +1714,7 @@ Proof.
                       supply_fresh (cs_supply rc)) :: nil)
                     (swaps_aenv psc (swaps_aenv ps1 Ξ)))))
                   ∩ (ftvar_in_ptyp (ty_out r)) [=] empty).
-        { rewrite <- HQ2. apply notin_all_inter_empty.
+        { rewrite <- HQ2. apply inter_empty_pointwise.
           repeat apply swaps_block_ftv_filter. exact Hfil. }
         bool_true_ty.
         eexists;
