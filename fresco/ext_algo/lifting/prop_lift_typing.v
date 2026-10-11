@@ -1520,9 +1520,6 @@ Proof.
       { assert (Hd : disjoint Ξ Θb) by (clear - Huq; solve_uniq).
         unfold disjoint in Hd. clear - Hd Ha. fsetdec. }
       clear - Ha1 Hax HaΞ. fsetdec. }
-    assert (Hblksp : forall a, a `in` dom Θb -> a `notin` dom Θa ->
-                     a `notin` cols_l ρ)
-      by (intros a Ha Hn; apply Hblk; [ apply Hdmout; exact Ha | exact Hn ]).
     (* ⭐ FIRST restrict at the JUNK SUFFIX's domain (§8c.39) *)
     assert (HΞΘa : dom Ξ ∩ ftvar_in_aenv Θa [=] empty).
     { assert (Hdisj : disjoint Ξ Θb) by (clear - Huq; solve_uniq).
@@ -1543,10 +1540,19 @@ Proof.
     assert (HrEb0 : rel_exp (restrict_l (dom Ξ) ρ) V ea eb2)
       by (apply rel_exp_restrict_l; [ exact HrEb | exact HΞeb ]).
     set (ρ0 := restrict_l (dom Ξ) ρ) in *. clearbody ρ0.
+    assert (Hblk0X : forall a, a `in` dom (Ξ ++ Θc) -> a `notin` dom Θa ->
+                     a `notin` cols_l ρ0).
+    { intros a Ha Hn. rewrite dom_app in Ha.
+      destruct (AtomSetProperties.In_dec a (dom Ξ)) as [HaΞ | HaΞ];
+        [ exact (HΞcols a HaΞ) | ].
+      assert (Hc : a `notin` cols_l ρ)
+        by (apply Hblk; [ clear - Ha HaΞ; fsetdec | exact Hn ]).
+      clear - Hc Hcl00. fsetdec. }
+    assert (HdmbX : dom Θb [<=] dom (Ξ ++ Θc))
+      by (rewrite dom_app; clear - Hdm0 Hdmout; fsetdec).
     assert (Hblksp0 : forall a, a `in` dom Θb -> a `notin` dom Θa ->
                       a `notin` cols_l ρ0)
-      by (intros a Ha Hn; pose proof (Hblksp a Ha Hn) as Hc;
-          clear - Hc Hcl00; fsetdec).
+      by (intros a Ha Hn; apply Hblk0X; [ apply HdmbX; exact Ha | exact Hn ]).
     (* ---- the SPLIT lift ---- *)
     assert (HcovP0 : ftvar_in_pskl (ptyp_to_pskl A0') [<=] S0)
       by (clear - HcovP; fsetdec).
@@ -1571,10 +1577,6 @@ Proof.
     { pose proof (e_split_dom_upper Dsp) as Hup.
       clear - Hup HdΘ Hgrs. fsetdec. }
     (* ---- side 1's packages at Θb ---- *)
-    assert (Hd1s : dom Θb [<=] ftvar_in_aenv Θb)
-      by (apply dom_subset_ftvar_in_aenv).
-    assert (Hscp1 : V [<=] ftvar_in_aenv Θb)
-      by (clear - Hscp Hsc0 Hdm0 Hd1s; fsetdec).
     assert (HwfXb : {{ ⊢ ((x ~ abind_var_typ A) ++ Θb) }}a)
       by (apply a_wf_aenv__var_typ; [ exact HxΘb | exact HwfA | exact HwfΘb ]).
     assert (HbdfA : ftvar_in_abind (abind_var_typ A) [<=] dom Θb)
@@ -1584,14 +1586,9 @@ Proof.
       by (apply a_wf_exp_weaken_cons; eapply a_wf_exp_abs_pick;
           eapply a_wf_exp_isub; [ exact Hwfe | exact Hle0 ]).
     (* ---- the relation, widened by the split's pairs ---- *)
-    assert (Hinj1 : rel_inj (ρs ++ ρ0) V)
-      by (eapply rel_inj_app; [ exact Hinj0 | exact Hexts | exact Hcov0 ]).
-    assert (HVdom0 : V [<=] dom Θa) by (clear - Hscp Hsc0; fsetdec).
-    assert (Hfun1 : rel_fun (ρs ++ ρ0) V (dom Θb)).
-    { eapply rel_fun_app;
-        [ exact Hfun0 | exact Hexts | apply dom_subset_ftvar_in_aenv
-        | intros a Ha Hn; exact (Hblksp0 a Ha Hn)
-        | intros a Ha Hn; clear - HVdom0 Hn; fsetdec ]. }
+    destruct (lift_seq_widen Hinj0 Hfun0 Hexts Hdoms Hwf Hscp Hcov0 Hblk0X Hdm0
+                HdmbX Hgrs HdΘb')
+      as (Hinj1 & Hfun1 & Hscp1 & HcovX & HblkX).
     assert (HrEb1 : rel_exp (ρs ++ ρ0) V ea eb2)
       by (eapply rel_exp_mono;
           [ exact HrEb0 | intros u v Hu; apply in_or_app; right; exact Hu
@@ -1604,27 +1601,6 @@ Proof.
     assert (HcovPX : ftvar_in_pskl (ptyp_to_pskl B0') ∪ ftvar_in_exp eb2
                      ∪ fvar_in_exp eb2 [<=] S1s)
       by (simpl in HcovP; clear - HcovP HftPQ' Hgrs; fsetdec).
-    assert (HblkX : forall a, a `in` dom (Ξ ++ Θc) -> a `notin` dom Θb ->
-                    a `notin` cols_l (ρs ++ ρ0)).
-    { intros a Ha Hn. rewrite cols_l_app.
-      assert (H1 : a `notin` cols_l ρs).
-      { intros Hy. destruct (cols_l_in_inv _ _ Hy) as (y & Hin).
-        destruct (Hdoms _ _ Hin) as [Hd1 _]. contradiction. }
-      assert (H2 : a `notin` cols_l ρ0).
-      { rewrite dom_app in Ha.
-        destruct (AtomSetProperties.In_dec a (dom Ξ)) as [HaΞ | HaΞ];
-          [ exact (HΞcols a HaΞ) | ].
-        assert (HaΘc : a `in` dom Θc) by (clear - Ha HaΞ; fsetdec).
-        assert (Hc : a `notin` cols_l ρ)
-          by (apply Hblk; [ exact HaΘc | clear - Hn Hdm0; fsetdec ]).
-        clear - Hc Hcl00. fsetdec. }
-      clear - H1 H2. fsetdec. }
-    assert (HcovX : V ∪ cols_r (ρs ++ ρ0) [<=] S1s).
-    { rewrite cols_r_app.
-      assert (H1 : cols_r ρs [<=] S1s).
-      { intros y Hy. destruct (cols_r_in_inv _ _ Hy) as (a & Hin).
-        destruct (Hdoms _ _ Hin) as [_ Hd2]. clear - Hd2 HdΘb'. fsetdec. }
-      clear - H1 Hcov0 Hgrs. fsetdec. }
     (* ---- the CORE at Θb ---- *)
     destruct (@lift_typing_abs_core mode_tc Θb (ptyp_to_pskl B0) ea B1 Ξ Θc
                 x (abind_var_typ A)
@@ -1728,10 +1704,6 @@ Proof.
       { assert (Hd : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
         unfold disjoint in Hd. clear - Hd Ha. fsetdec. }
       clear - Ha1 Hax HaΞ. fsetdec. }
-    assert (Hblksp : forall a, a `in` dom Θb -> a `notin` dom Θa ->
-                     a `notin` cols_l ρ)
-      by (intros a Ha Hn; apply Hblk;
-          [ apply Hdmout; apply Hdmc; exact Ha | exact Hn ]).
     (* ⭐ FIRST restrict at the JUNK SUFFIX's domain (§8c.39) *)
     assert (HΞΘa : dom Ξ ∩ ftvar_in_aenv Θa [=] empty).
     { assert (Hdisj : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
@@ -1758,10 +1730,19 @@ Proof.
     assert (HrAan0 : rel_pskl (restrict_l (dom Ξ) ρ) V (ptyp_to_pskl A) (ptyp_to_pskl Aan2))
       by (apply rel_pskl_restrict_l; [ exact HrAan | exact HΞAan ]).
     set (ρ0 := restrict_l (dom Ξ) ρ) in *. clearbody ρ0.
+    assert (Hblk0X : forall a, a `in` dom (Ξ ++ Θd) -> a `notin` dom Θa ->
+                     a `notin` cols_l ρ0).
+    { intros a Ha Hn. rewrite dom_app in Ha.
+      destruct (AtomSetProperties.In_dec a (dom Ξ)) as [HaΞ | HaΞ];
+        [ exact (HΞcols a HaΞ) | ].
+      assert (Hc : a `notin` cols_l ρ)
+        by (apply Hblk; [ clear - Ha HaΞ; fsetdec | exact Hn ]).
+      clear - Hc Hcl00. fsetdec. }
+    assert (HdmbX : dom Θb [<=] dom (Ξ ++ Θd))
+      by (rewrite dom_app; clear - Hdm0 Hdmc Hdmout; fsetdec).
     assert (Hblksp0 : forall a, a `in` dom Θb -> a `notin` dom Θa ->
                       a `notin` cols_l ρ0)
-      by (intros a Ha Hn; pose proof (Hblksp a Ha Hn) as Hc;
-          clear - Hc Hcl00; fsetdec).
+      by (intros a Ha Hn; apply Hblk0X; [ apply HdmbX; exact Ha | exact Hn ]).
     (* ---- the SPLIT lift ---- *)
     assert (HcovP0 : ftvar_in_pskl (ptyp_to_pskl A0') [<=] S0)
       by (clear - HcovP; fsetdec).
@@ -1786,48 +1767,18 @@ Proof.
     { pose proof (e_split_dom_upper Dsp) as Hup.
       clear - Hup HdΘ Hgrs. fsetdec. }
     (* ---- side 1's packages at Θb, and the widened relation ---- *)
-    assert (Hd1s : dom Θb [<=] ftvar_in_aenv Θb)
-      by (apply dom_subset_ftvar_in_aenv).
-    assert (Hscp1 : V [<=] ftvar_in_aenv Θb)
-      by (clear - Hscp Hsc0 Hdm0 Hd1s; fsetdec).
-    assert (Hinj1 : rel_inj (ρs ++ ρ0) V)
-      by (eapply rel_inj_app; [ exact Hinj0 | exact Hexts | exact Hcov0 ]).
-    assert (HVdom0 : V [<=] dom Θa) by (clear - Hscp Hsc0; fsetdec).
-    assert (Hfun1 : rel_fun (ρs ++ ρ0) V (dom Θb)).
-    { eapply rel_fun_app;
-        [ exact Hfun0 | exact Hexts | apply dom_subset_ftvar_in_aenv
-        | intros a Ha Hn; exact (Hblksp0 a Ha Hn)
-        | intros a Ha Hn; clear - HVdom0 Hn; fsetdec ]. }
+    destruct (lift_seq_widen Hinj0 Hfun0 Hexts Hdoms Hwf Hscp Hcov0 Hblk0X Hdm0
+                HdmbX Hgrs HdΘb')
+      as (Hinj1 & Hfun1 & Hscp1 & Hcov1 & HblkX).
     assert (HrAanW : rel_pskl (ρs ++ ρ0) V (ptyp_to_pskl A)
                        (ptyp_to_pskl Aan2))
       by (apply rel_pskl_widen; exact HrAan0).
     (* ---- the CONSIS lift, at the split's output ---- *)
-    assert (HblkX : forall a, a `in` dom (Ξ ++ Θd) -> a `notin` dom Θb ->
-                    a `notin` cols_l (ρs ++ ρ0)).
-    { intros a Ha Hn. rewrite cols_l_app.
-      assert (H1 : a `notin` cols_l ρs).
-      { intros Hy. destruct (cols_l_in_inv _ _ Hy) as (y & Hin).
-        destruct (Hdoms _ _ Hin) as [Hd1 _]. contradiction. }
-      assert (H2 : a `notin` cols_l ρ0).
-      { rewrite dom_app in Ha.
-        destruct (AtomSetProperties.In_dec a (dom Ξ)) as [HaΞ | HaΞ];
-          [ exact (HΞcols a HaΞ) | ].
-        assert (HaΘd : a `in` dom Θd) by (clear - Ha HaΞ; fsetdec).
-        assert (Hc : a `notin` cols_l ρ)
-          by (apply Hblk; [ exact HaΘd | clear - Hn Hdm0; fsetdec ]).
-        clear - Hc Hcl00. fsetdec. }
-      clear - H1 H2. fsetdec. }
     assert (HdmcX : dom Θc [<=] dom (Ξ ++ Θd))
       by (rewrite dom_app; clear - Hdmout; fsetdec).
     assert (Hblkc : forall a, a `in` dom Θc -> a `notin` dom Θb ->
                     a `notin` cols_l (ρs ++ ρ0))
       by (intros a Ha Hn; apply HblkX; [ apply HdmcX; exact Ha | exact Hn ]).
-    assert (Hcov1 : V ∪ cols_r (ρs ++ ρ0) [<=] S1s).
-    { rewrite cols_r_app.
-      assert (H1 : cols_r ρs [<=] S1s).
-      { intros y Hy. destruct (cols_r_in_inv _ _ Hy) as (a & Hin).
-        destruct (Hdoms _ _ Hin) as [_ Hd2]. clear - Hd2 HdΘb'. fsetdec. }
-      clear - H1 Hcov0 Hgrs. fsetdec. }
     assert (HftAan2 : ftvar_in_pskl (ptyp_to_pskl Aan2) [<=] S0).
     { pose proof (ftvar_ptyp_to_pskl Aan2) as He.
       simpl in HcovP. clear - He HcovP. fsetdec. }
