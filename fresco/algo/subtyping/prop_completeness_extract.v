@@ -334,6 +334,26 @@ Qed.
 (*  DERIVATION, which is why these are inductions on it, not on a size.    *)
 (* ===================================================================== *)
 
+(** A defined flexible's monotype, read as the counterpart a [__flex_r] step
+    chases to: inherited painting = synthesised one, ghost-free, locally
+    closed, and scoped by Θ. *)
+Lemma a_flex_def_counterpart : forall Θ Δ α τ,
+  {{ ⊢ Θ }}a -> binds α (abind_flex_mono_def τ) Θ ->
+  ptyp_to_bskl_syn τ = pskl_to_bskl_inh (ptyp_to_pskl τ) /\
+  pskl_ghost_free (ptyp_to_pskl τ) /\ lc_pskl (ptyp_to_pskl τ) /\
+  (forall γ, γ `in` ftvar_in_pskl (ptyp_to_pskl τ) -> γ `notin` Δ ->
+     a_binds_tvar γ Θ).
+Proof.
+  intros Θ Δ α τ HwfΘ Hb.
+  assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eassumption).
+  assert (Hwfτ : a_wf_ptyp Θ τ) by (eapply a_wf_aenv_binds_def_wf; eassumption).
+  refine (conj _ (conj (ptyp_to_pskl_ghost_free _) (conj _ _))).
+  - symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hmτ.
+  - apply ptyp_to_pskl_lc; eapply a_wf_ptyp_lc; exact Hwfτ.
+  - intros γ Hγ _; eapply a_wf_pskl_ftv_binds;
+      [ apply a_wf_ptyp_to_wf_pskl with (Δ := empty); exact Hwfτ | exact Hγ ].
+Qed.
+
 Lemma ad_precise_arrow_l_inv : forall Θ Δ Src Tgt,
   {{ Θ ⨟ Δ ⊢ᵣ Src ⊳ Tgt }}ad ->
   forall S1 S2 X,
@@ -370,18 +390,10 @@ Proof.
     destruct X as [ | n0 | α0 | X1 X2 | X0 | | X0 ]; cbn in HeqT;
       try discriminate HeqT.
     assert (Hαe : α0 = α) by congruence; subst α0.
-    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eassumption).
-    assert (Hwfτ : a_wf_ptyp Θ τ)
-      by (eapply a_wf_aenv_binds_def_wf; eassumption).
-    assert (Hpaint : ptyp_to_bskl_syn τ = pskl_to_bskl_inh (ptyp_to_pskl τ))
-      by (symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hmτ).
+    destruct (@a_flex_def_counterpart Θ Δ α τ HwfΘ H)
+      as (Hpaint & Hgτ & Hlτ & Hsτ).
     destruct (IHad_refine_syn S1 S2 (ptyp_to_pskl τ) HeqS Hpaint HwfΘ
-                ltac:(apply ptyp_to_pskl_ghost_free)
-                ltac:(apply ptyp_to_pskl_lc; eapply a_wf_ptyp_lc; exact Hwfτ)
-                ltac:(intros γ Hγ _; eapply a_wf_pskl_ftv_binds;
-                      [ apply a_wf_ptyp_to_wf_pskl with (Δ := empty);
-                        exact Hwfτ
-                      | exact Hγ ]))
+                Hgτ Hlτ Hsτ)
       as (X1 & X2 & Hg1 & Hg2 & Hl1 & Hl2 & Hs1 & Hs2 & Hp1 & Hp2 & Hreplay).
     exists X1, X2.
     split; [ exact Hg1 | ]. split; [ exact Hg2 | ].
@@ -432,18 +444,10 @@ Proof.
     destruct X as [ | n0 | α0 | X1 X2 | X0 | | X0 ]; cbn in HeqT;
       try discriminate HeqT.
     assert (Hαe : α0 = α) by congruence; subst α0.
-    assert (Hmτ : mono_ptyp τ) by (eapply a_wf_aenv_binds_def_mono; eassumption).
-    assert (Hwfτ : a_wf_ptyp Θ τ)
-      by (eapply a_wf_aenv_binds_def_wf; eassumption).
-    assert (Hpaint : ptyp_to_bskl_syn τ = pskl_to_bskl_inh (ptyp_to_pskl τ))
-      by (symmetry; apply ptyp_to_bskl_inh_syn_eq; exact Hmτ).
+    destruct (@a_flex_def_counterpart Θ Δ α τ HwfΘ H)
+      as (Hpaint & Hgτ & Hlτ & Hsτ).
     destruct (IHad_refine_syn S0 (ptyp_to_pskl τ) HeqS Hpaint HwfΘ
-                ltac:(apply ptyp_to_pskl_ghost_free)
-                ltac:(apply ptyp_to_pskl_lc; eapply a_wf_ptyp_lc; exact Hwfτ)
-                ltac:(intros γ Hγ _; eapply a_wf_pskl_ftv_binds;
-                      [ apply a_wf_ptyp_to_wf_pskl with (Δ := empty);
-                        exact Hwfτ
-                      | exact Hγ ]))
+                Hgτ Hlτ Hsτ)
       as (X' & Hg' & Hl' & Hs' & Hp' & Hreplay).
     exists X'.
     split; [ exact Hg' | ]. split; [ exact Hl' | ]. split; [ exact Hs' | ].
@@ -939,7 +943,6 @@ Proof.
       unfold ad_precise. exact (ad_refine_syn_refl_inh_gen HwfX Θ Δ).
     + (* ------------------------------ ∀◇ -------------------------------- *)
       cbn in Hsz.
-      assert (Hguard : guarded_pskl Ps0) by (inversion HwfPs; subst; assumption).
       assert (HwfPs0 : {{ (aenv_minus Θ0 Δ0) ⨟ empty ⊢ₚₛ Ps0 }}a)
         by (inversion HwfPs; subst; assumption).
       assert (Hpre' : {{ Θ ⨟ Δ ⊢ᵣ
@@ -1085,26 +1088,13 @@ Proof.
                 Hfms Hks Hincc) as [_ HincC].
     destruct (@a_inc_flex_prefix_split Ξc κc Θ0 κ Θ HfmΞc Hkeysc HincC)
       as [Hw _]; exact Hw. }
-  assert (HwmΞs : Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κs)
-    by (destruct (@a_inc_flex_prefix_split Ξs κs (Ξc ++ Θ0) (κc ++ κ) Θ
-                    Hfms Hks Hincc) as [Hw _]; exact Hw).
-  assert (HuqΞc : uniq (Ξc ++ Θ0)) by (apply a_wf_aenv_uniq; exact HwfΞc).
   (* the SOLVE block dodges everything its own context MENTIONS — the Ξ
      scoping kit's master invariant, and what makes [Ξs ++ Ξc ++ Θ0] wf *)
   assert (HfrsC : forall x, x `in` dom Ξs ->
             x `notin` ftvar_in_aenv (Ξc ++ Θ0))
     by (intros x Hx; eapply a_solve_cstr_generated_fresh;
           [ exact Hsolve | exact Hx ]).
-  assert (HwfΞs : {{ ⊢ (Ξs ++ Ξc ++ Θ0) }}a).
-  { apply a_wf_aenv_flex_prefix; [ exact Hfms | | exact HwfΞc ].
-    assert (Hdd : dom Ξs ∩ dom (Ξc ++ Θ0) [<=] empty).
-    { intros x Hx.
-      assert (Hx1 : x `in` dom Ξs) by (clear - Hx; fsetdec).
-      assert (Hx2 : x `in` dom (Ξc ++ Θ0)) by (clear - Hx; fsetdec).
-      pose proof (HfrsC x Hx1) as Hf.
-      pose proof (dom_subset_ftvar_in_aenv (Ξc ++ Θ0)) as Hds.
-      exfalso; clear - Hf Hds Hx2; fsetdec. }
-    apply uniq_app_4; [ exact Hus | exact HuqΞc | exact Hdd ]. }
+  pose proof (a_wf_aenv_solve_block HwfΞc Hsolve Hfms Hus) as HwfΞs.
   assert (HuqΞsc : uniq (Ξs ++ Ξc ++ Θ0)) by (apply a_wf_aenv_uniq; exact HwfΞs).
   assert (Hdcs : forall β0, β0 `in` dom κc -> β0 `notin` dom κs).
   { intros β0 Hβ0 Hc.
@@ -1148,19 +1138,11 @@ Proof.
     assert (Hdc : dom κc [=] dom Ξc) by (apply keys_eq_dom; exact Hkeysc).
     assert (Hds : dom κs [=] dom Ξs) by (apply keys_eq_dom; exact Hks).
     assert (HuqAll : uniq (Ξc ++ Ξs ++ Ξ' ++ Θ0)).
-    { assert (Hd1 : disjoint Ξ' Ξc)
-        by (unfold disjoint; intros α0 Hα0;
+    { assert (Hd : disjoint Ξ' (Ξs ++ Ξc ++ Θ0))
+        by (unfold disjoint; intros α0 Hα0; rewrite !dom_app in Hα0;
             assert (Hin : α0 `in` dom Ξ') by (clear - Hα0; fsetdec);
             specialize (Hfr' α0 Hin); clear - Hα0 Hfr'; fsetdec).
-      assert (Hd1s : disjoint Ξ' Ξs)
-        by (unfold disjoint; intros α0 Hα0;
-            assert (Hin : α0 `in` dom Ξ') by (clear - Hα0; fsetdec);
-            specialize (Hfr' α0 Hin); clear - Hα0 Hfr'; fsetdec).
-      assert (Hd2 : disjoint Ξ' Θ0)
-        by (unfold disjoint; intros α0 Hα0;
-            assert (Hin : α0 `in` dom Ξ') by (clear - Hα0; fsetdec);
-            specialize (Hfr' α0 Hin); clear - Hα0 Hfr'; fsetdec).
-      clear - HuqΞsc HuqΞ' Hd1 Hd1s Hd2; solve_uniq. }
+      clear - HuqΞsc HuqΞ' Hd; solve_uniq. }
     exists (Ξc ++ Ξs ++ Ξ'), (ptyp_to_pskl A), (κc ++ κs ++ κ').
     split.
     { eapply a_extract__solve;
