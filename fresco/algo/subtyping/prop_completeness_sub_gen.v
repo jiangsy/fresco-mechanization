@@ -388,6 +388,45 @@ Qed.
 (*  conclusion needs.                                                       *)
 (* ===================================================================== *)
 
+(** The ◇ and ◈ subject cases share their whole conclusion once the
+    algorithm's input is [□] and the counterpart is an inherited painting:
+    the run returns the input skeleton at the input context, [ζ := κ], and
+    the precision IS the P0-fill. *)
+Lemma a_sub_complete_ghost_input : forall M Θ0 P0 Θ κ Q,
+  {{ ⊢ Θ0 }}a ->
+  a_sk_mode_compat M P0 ->
+  κ ∷ Θ0 ⊑ Θ ->
+  pskl_to_bskl_inh (bskl_to_pskl Q) = Q ->
+  {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0)) ⊳ Q }}ad ->
+  exists P1 Θ1,
+    a_sub a_sub_mode_sk M P0 Θ0 pskl_ghost P1 Θ1 /\
+    (forall κ1, is_id_msubst κ1 -> κ1 ∷ Θ0 ⊑ Θ1 ->
+       exists ζ,
+         ζ ∷ Θ1 ⊑ Θ /\
+         a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ /\
+         {{ Θ ⨟ empty ⊢ₚᵣ
+           (msubst_bskl ζ (pskl_to_bskl_syn P1)) ⊑ (bskl_to_pskl Q) }}ad).
+Proof.
+  intros M Θ0 P0 Θ κ Q Hwf0 Hmc Hinc HQ Hrs.
+  (* ⭐ THE RUN.  Since [SI-Ghost] gained its neighbour's [M <> TI] guard
+     (algo/def_rules.v), the [TI] mode is [SI-Infer]'s — and [skmod[SK]]
+     forces the counterpart to be [◇] there ([a_sk_mode_compat] has only the
+     [__ti] row at [TI]).  So one witness serves both rules; only the RULE
+     NAME depends on the mode. *)
+  exists P0, Θ0. split.
+  - destruct M as [ | | M0 ].
+    + inversion Hmc; subst. apply a_sub__infer.
+    + apply a_sub__ghost; discriminate.
+    + apply a_sub__ghost; discriminate.
+  - intros κ1 Hid Hinc1. exists κ.
+    destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
+    split; [ exact Hout | split; [ exact Hfact | ] ].
+    (* precision IS the P0-fill premise, once both sides are repainted *)
+    unfold ad_precise.
+    rewrite msubst_bskl_pskl_to_bskl_syn, bskl_to_pskl_pskl_to_bskl_syn, HQ.
+    exact Hrs.
+Qed.
+
 Lemma a_sub_complete_ghost : forall n M Θ0 P0 P R R' Ψ Θ κ Q,
   R' = uskl_ghost ->
   sub_complete_concl n a_sub_mode_sk M Θ0 P0 P R R' Ψ Θ κ Q.
@@ -404,29 +443,8 @@ Proof.
   (* the counterpart is an inherited painting — read off the derivation *)
   assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
     by (eapply ad_pat_sub_fuel_ghost_target_inh; exact Hsub).
-  (* the run: [Ghost], which returns the input skeleton unchanged *)
-  (* ⭐ THE RUN.  Since [SI-Ghost] gained its neighbour's [M <> TI] guard
-     (algo/def_rules.v), the [TI] mode is [SI-Infer]'s — and that is exactly
-     the case this lemma's own header already described, because [skmod[SK]]
-     forces the counterpart to be [◇] there ([a_sk_mode_compat] has only the
-     [__ti] row at [TI]).  So one witness still serves both rules; only the
-     RULE NAME now depends on the mode. *)
-  exists P0, Θ0. split;
-    [ destruct M as [ | | M0 ];
-      [ pose proof (HmodSK eq_refl) as Hmc; inversion Hmc; subst;
-        apply a_sub__infer
-      | apply a_sub__ghost; discriminate
-      | apply a_sub__ghost; discriminate ]
-    | ].
-  intros κ1 Hid Hinc1. exists κ.
-  destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
-  split; [ exact Hout | split; [ exact Hfact | ] ].
-  (* precision IS the P0-fill premise, once both sides are repainted *)
-  unfold ad_precise.
-  rewrite msubst_bskl_pskl_to_bskl_syn.
-  rewrite bskl_to_pskl_pskl_to_bskl_syn.
-  rewrite HQ.
-  exact Hrs.
+  (* the run: [Ghost] (or [Infer] at TI), which returns the input skeleton *)
+  apply a_sub_complete_ghost_input; auto.
 Qed.
 
 (* ===================================================================== *)
@@ -475,27 +493,7 @@ Proof.
   cbn in HeqP; subst P.
   assert (HQ : pskl_to_bskl_inh (bskl_to_pskl Q) = Q)
     by (eapply ad_pat_sub_fuel_dot_ghost_target_inh; exact Hsub).
-  (* ⭐ THE RUN.  Since [SI-Ghost] gained its neighbour's [M <> TI] guard
-     (algo/def_rules.v), the [TI] mode is [SI-Infer]'s — and that is exactly
-     the case this lemma's own header already described, because [skmod[SK]]
-     forces the counterpart to be [◇] there ([a_sk_mode_compat] has only the
-     [__ti] row at [TI]).  So one witness still serves both rules; only the
-     RULE NAME now depends on the mode. *)
-  exists P0, Θ0. split;
-    [ destruct M as [ | | M0 ];
-      [ pose proof (HmodSK eq_refl) as Hmc; inversion Hmc; subst;
-        apply a_sub__infer
-      | apply a_sub__ghost; discriminate
-      | apply a_sub__ghost; discriminate ]
-    | ].
-  intros κ1 Hid Hinc1. exists κ.
-  destruct (opt_axiom_factor Hwf0 Hid Hinc1 Hinc) as [Hout Hfact].
-  split; [ exact Hout | split; [ exact Hfact | ] ].
-  unfold ad_precise.
-  rewrite msubst_bskl_pskl_to_bskl_syn.
-  rewrite bskl_to_pskl_pskl_to_bskl_syn.
-  rewrite HQ.
-  exact Hrs.
+  apply a_sub_complete_ghost_input; auto.
 Qed.
 
 (* ===================================================================== *)
