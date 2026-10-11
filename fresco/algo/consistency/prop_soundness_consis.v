@@ -2220,6 +2220,7 @@ Proof.
   - split; [ exact Hnd' | ]. split; [ exact Hfa' | ].
     intros α0 Hα0 HXd. clear - HcovΔ Hα0 HXd; fsetdec.
 Qed.
+Arguments assign_sound_consis_inv {Θ0 Θ1 α Pa P0 P}.
 
 (** FlexL: the output for the assigned input skeleton [P0]. *)
 Lemma consis_sound_flex_l_out : forall Ψ Δ1 Δ2 Θ1 α P0,
@@ -2247,6 +2248,7 @@ Proof.
       { intros α1 τ Hb. eapply (Hnfd1 α1 τ) in Hb. clear - Hb. fsetdec. }
   - apply ad_refine_pskl__var.
 Qed.
+Arguments consis_sound_flex_l_out {Ψ Δ1 Δ2 Θ1 α P0}.
 
 (** FlexR: the output for the assigned subject skeleton [P]. *)
 Lemma consis_sound_flex_r_out : forall Ψ Δ1 Δ2 Θ1 α P,
@@ -2274,6 +2276,7 @@ Proof.
     { simpl. clear - HαnΔ. fsetdec. }
     { intros α1 τ Hb. eapply (Hnfd1 α1 τ) in Hb. clear - Hb. fsetdec. }
 Qed.
+Arguments consis_sound_flex_r_out {Ψ Δ1 Δ2 Θ1 α P}.
 
 Theorem a_assign_unify_consis_sound :
   (forall Θ0 Ξ α P Θ1,
@@ -3659,9 +3662,8 @@ Proof.
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     split; [ exact Hdom | ].
     split.
-    { apply (@assign_sound_consis_inv _ _ _ _ _ _ Hpost). clear. fsetdec. }
-    apply (@consis_sound_flex_l_out _ _ _ _ _ _ Hcons Hwf1 HαnΔ Hbα1 Hnfd1).
-    reflexivity.
+    { apply (assign_sound_consis_inv Hpost). clear. fsetdec. }
+    apply (consis_sound_flex_l_out Hcons Hwf1 HαnΔ Hbα1 Hnfd1). reflexivity.
   - (* C-FlexR : assign α̂ := P (the subject skeleton), output var α̂.
        MUTUAL case: the [a_assign] premise is the bundle's ASSIGN motive. *)
     intros Δ1 Δ2 Θ0 Θ1 α P Hnf Hnhole Hassign IHassign Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
@@ -3672,9 +3674,8 @@ Proof.
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     split; [ exact Hdom | ].
     split.
-    { apply (@assign_sound_consis_inv _ _ _ _ _ _ Hpost). clear. fsetdec. }
-    apply (@consis_sound_flex_r_out _ _ _ _ _ _ Hcons Hwf1 HαnΔ Hnfd1).
-    reflexivity.
+    { apply (assign_sound_consis_inv Hpost). clear. fsetdec. }
+    apply (consis_sound_flex_r_out Hcons Hwf1 HαnΔ Hnfd1). reflexivity.
   - (* C-GhostR *)
     intros Δ1 Δ2 Θ0 P Hint Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
     split; [ apply a_isub_refl; try assumption; auto | ].
@@ -4094,8 +4095,7 @@ Proof.
     destruct Hpost as [Hle [Hwf1 [_ [_ Hcons]]]].
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     split; [ exact Hnfd1 | ]. split; [ exact Hfaf1 | ].
-    exact (@consis_sound_flex_l_out _ _ _ _ _ _
-             Hcons Hwf1 HαnΔ Hbα1 Hnfd1 H2).
+    exact (consis_sound_flex_l_out Hcons Hwf1 HαnΔ Hbα1 Hnfd1 H2).
   - (* FlexR : decorated (subject [pskl_to_uskl P], mirrors ordinary FlexR) *)
     rewrite uskl_to_pskl_pskl_to_uskl in HwfS |- *.
     pose proof (proj1 a_assign_unify_consis_sound _ _ _ _ _ H1
@@ -4105,7 +4105,7 @@ Proof.
     destruct Hpost as [Hle [Hwf1 [_ [_ Hcons]]]].
     split; [ exact Hle | ]. split; [ exact Hwf1 | ].
     split; [ exact Hnfd1 | ]. split; [ exact Hfaf1 | ].
-    exact (@consis_sound_flex_r_out _ _ _ _ _ _ Hcons Hwf1 HαnΔ Hnfd1 H2).
+    exact (consis_sound_flex_r_out Hcons Hwf1 HαnΔ Hnfd1 H2).
   - (* GhostG *)
     split; [ apply a_isub_refl; try assumption; auto | ].
     split; [ exact Hwf | ]. split; [ exact Hnfd | ]. split; [ exact Hfaf | ].

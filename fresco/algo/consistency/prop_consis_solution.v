@@ -1440,6 +1440,56 @@ Proof.
     eapply IH; [ exact Hdec' | exact Hid' | exact Hinc' ].
 Qed.
 
+(** Peel the head flexible of a factored [a_inc_equiv] whose left blocks
+    [κ1] / [σ1] cover the declaration prefix: both blocks start at that
+    flexible, and the remainder is again a factoring of the tail.  The step
+    shared by the mid-insertion lemmas below. *)
+Lemma a_inc_equiv_decls_cons_inv : forall a Ξ' Θ0 Θ' κ1 κ2 σ1 σ2,
+  uniq (((a ~ abind_flex_mono) ++ Ξ') ++ Θ0) ->
+  dom κ1 [=] dom ((a ~ abind_flex_mono) ++ Ξ') ->
+  dom σ1 [=] dom ((a ~ abind_flex_mono) ++ Ξ') ->
+  a_inc_equiv (((a ~ abind_flex_mono) ++ Ξ') ++ Θ0) (κ1 ++ κ2) (σ1 ++ σ2) Θ' ->
+  exists τ1 τ2 κ1' σ1',
+    κ1 = (a, τ1) :: κ1' /\ σ1 = (a, τ2) :: σ1' /\
+    uniq (Ξ' ++ Θ0) /\ dom κ1' [=] dom Ξ' /\ dom σ1' [=] dom Ξ' /\
+    a_inc_equiv (Ξ' ++ Θ0) (κ1' ++ κ2) (σ1' ++ σ2) Θ' /\
+    {{ Θ' ⊢ τ1 ≡ᵗ τ2 }}a.
+Proof.
+  intros a Ξ' Θ0 Θ' κ1 κ2 σ1 σ2 Huq Hdκ Hdσ Hie.
+  assert (Huκ : uniq (κ1 ++ κ2))
+    by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
+  assert (Huσ : uniq (σ1 ++ σ2))
+    by (eapply a_inc_equiv_uniq_r; [ exact Hie | exact Huq ]).
+  assert (HaΞ : a `notin` dom Ξ')
+    by (clear - Huq; simpl_env in Huq; solve_uniq).
+  assert (Huq' : uniq (Ξ' ++ Θ0))
+    by (clear - Huq; simpl_env in Huq; solve_uniq).
+  destruct κ1 as [ | [ar tr] κ1' ];
+    [ exfalso; rewrite dom_nil in Hdκ;
+      assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
+        by (simpl; fsetdec);
+      rewrite <- Hdκ in Hin; clear - Hin; fsetdec | ].
+  destruct σ1 as [ | [asg ts] σ1' ];
+    [ exfalso; rewrite dom_nil in Hdσ;
+      assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
+        by (simpl; fsetdec);
+      rewrite <- Hdσ in Hin; clear - Hin; fsetdec | ].
+  assert (Harκ : ar `notin` dom κ1')
+    by (clear - Huκ; simpl_env in Huκ; solve_uniq).
+  assert (Hasσ : asg `notin` dom σ1')
+    by (clear - Huσ; simpl_env in Huσ; solve_uniq).
+  simpl in Hie.
+  inversion Hie as [ | R q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
+  simpl_env in Hdκ; simpl_env in Hdσ.
+  exists tr, ts, κ1', σ1'.
+  split; [ reflexivity | ]. split; [ reflexivity | ].
+  split; [ exact Huq' | ].
+  split; [ clear - Hdκ Harκ HaΞ; fsetdec | ].
+  split; [ clear - Hdσ Hasσ HaΞ; fsetdec | ].
+  split; [ exact Hie' | exact Hequ ].
+Qed.
+Arguments a_inc_equiv_decls_cons_inv {a Ξ' Θ0 Θ' κ1 κ2 σ1 σ2}.
+
 Lemma a_inc_equiv_mid_insert_var_skl :
   forall Ξ x Θ0 Θ' Ξv κ1 κ2 σ1 σ2 Pm Pm',
   a_decls Ξ ->
@@ -1461,37 +1511,12 @@ Proof.
     simpl in Hie |- *.
     apply a_inc_equiv__var_skl; [ exact Hie | exact Heqm | exact Hsuf ].
   - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
-    assert (Huκ : uniq (κ1 ++ κ2))
-      by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
-    assert (Huσ : uniq (σ1 ++ σ2))
-      by (eapply a_inc_equiv_uniq_r; [ exact Hie | exact Huq ]).
-    assert (HaΞ : a `notin` dom Ξ')
-      by (clear - Huq; simpl_env in Huq; solve_uniq).
-    assert (Huq' : uniq (Ξ' ++ Θ0))
-      by (clear - Huq; simpl_env in Huq; solve_uniq).
-    destruct κ1 as [ | [ar tr] κ1' ];
-      [ exfalso; rewrite dom_nil in Hdκ;
-        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
-          by (simpl; fsetdec);
-        rewrite <- Hdκ in Hin; clear - Hin; fsetdec | ].
-    destruct σ1 as [ | [asg ts] σ1' ];
-      [ exfalso; rewrite dom_nil in Hdσ;
-        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
-          by (simpl; fsetdec);
-        rewrite <- Hdσ in Hin; clear - Hin; fsetdec | ].
-    assert (Harκ : ar `notin` dom κ1')
-      by (clear - Huκ; simpl_env in Huκ; solve_uniq).
-    assert (Hasσ : asg `notin` dom σ1')
-      by (clear - Huσ; simpl_env in Huσ; solve_uniq).
-    simpl in Hie.
-    inversion Hie as [ | R q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
-    simpl_env in Hdκ; simpl_env in Hdσ.
+    destruct (a_inc_equiv_decls_cons_inv Huq Hdκ Hdσ Hie)
+      as (τa & τb & κ1' & σ1' & -> & -> & Huq' & Hdκ' & Hdσ' & Hie' & Hequ).
     simpl. apply a_inc_equiv__flex.
     2:{ apply a_tyequiv_weaken with (Θ := Θ');
         [ intros y b Hb; simpl_env; auto | exact Hequ ]. }
     apply IH; auto.
-    + clear - Hdκ Harκ HaΞ. simpl_env in *. fsetdec.
-    + clear - Hdσ Hasσ HaΞ. simpl_env in *. fsetdec.
 Qed.
 
 Lemma a_inc_equiv_mid_insert_tvar :
@@ -1514,37 +1539,12 @@ Proof.
     simpl in Hie |- *.
     apply a_inc_equiv__tvar; [ exact Hie | exact Hsuf ].
   - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
-    assert (Huκ : uniq (κ1 ++ κ2))
-      by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
-    assert (Huσ : uniq (σ1 ++ σ2))
-      by (eapply a_inc_equiv_uniq_r; [ exact Hie | exact Huq ]).
-    assert (HaΞ : a `notin` dom Ξ')
-      by (clear - Huq; simpl_env in Huq; solve_uniq).
-    assert (Huq' : uniq (Ξ' ++ Θ0))
-      by (clear - Huq; simpl_env in Huq; solve_uniq).
-    destruct κ1 as [ | [ar tr] κ1' ];
-      [ exfalso; rewrite dom_nil in Hdκ;
-        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
-          by (simpl; fsetdec);
-        rewrite <- Hdκ in Hin; clear - Hin; fsetdec | ].
-    destruct σ1 as [ | [asg ts] σ1' ];
-      [ exfalso; rewrite dom_nil in Hdσ;
-        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
-          by (simpl; fsetdec);
-        rewrite <- Hdσ in Hin; clear - Hin; fsetdec | ].
-    assert (Harκ : ar `notin` dom κ1')
-      by (clear - Huκ; simpl_env in Huκ; solve_uniq).
-    assert (Hasσ : asg `notin` dom σ1')
-      by (clear - Huσ; simpl_env in Huσ; solve_uniq).
-    simpl in Hie.
-    inversion Hie as [ | R q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
-    simpl_env in Hdκ; simpl_env in Hdσ.
+    destruct (a_inc_equiv_decls_cons_inv Huq Hdκ Hdσ Hie)
+      as (τa & τb & κ1' & σ1' & -> & -> & Huq' & Hdκ' & Hdσ' & Hie' & Hequ).
     simpl. apply a_inc_equiv__flex.
     2:{ apply a_tyequiv_weaken with (Θ := Θ');
         [ intros y b Hb; simpl_env; auto | exact Hequ ]. }
     apply IH; auto.
-    + clear - Hdκ Harκ HaΞ. simpl_env in *. fsetdec.
-    + clear - Hdσ Hasσ HaΞ. simpl_env in *. fsetdec.
 Qed.
 
 (** Strip a DEFINED flexible mid off a competing increment (the
@@ -1612,35 +1612,10 @@ Proof.
     apply a_inc_equiv__flex_def;
       [ exact Hie | exact Heqτ | exact Heqd ].
   - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
-    assert (Huκ : uniq (κ1 ++ κ2))
-      by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
-    assert (Huσ : uniq (σ1 ++ σ2))
-      by (eapply a_inc_equiv_uniq_r; [ exact Hie | exact Huq ]).
-    assert (HaΞ : a `notin` dom Ξ')
-      by (clear - Huq; simpl_env in Huq; solve_uniq).
-    assert (Huq' : uniq (Ξ' ++ Θ0))
-      by (clear - Huq; simpl_env in Huq; solve_uniq).
-    destruct κ1 as [ | [ar tr] κ1' ];
-      [ exfalso; rewrite dom_nil in Hdκ;
-        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
-          by (simpl; fsetdec);
-        rewrite <- Hdκ in Hin; clear - Hin; fsetdec | ].
-    destruct σ1 as [ | [asg ts] σ1' ];
-      [ exfalso; rewrite dom_nil in Hdσ;
-        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
-          by (simpl; fsetdec);
-        rewrite <- Hdσ in Hin; clear - Hin; fsetdec | ].
-    assert (Harκ : ar `notin` dom κ1')
-      by (clear - Huκ; simpl_env in Huκ; solve_uniq).
-    assert (Hasσ : asg `notin` dom σ1')
-      by (clear - Huσ; simpl_env in Huσ; solve_uniq).
-    simpl in Hie.
-    inversion Hie as [ | R q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
-    simpl_env in Hdκ; simpl_env in Hdσ.
+    destruct (a_inc_equiv_decls_cons_inv Huq Hdκ Hdσ Hie)
+      as (τa & τb & κ1' & σ1' & -> & -> & Huq' & Hdκ' & Hdσ' & Hie' & Hequ).
     simpl. apply a_inc_equiv__flex; [ | exact Hequ ].
     apply IH; auto.
-    + clear - Hdκ Harκ HaΞ. simpl_env in *. fsetdec.
-    + clear - Hdσ Hasσ HaΞ. simpl_env in *. fsetdec.
 Qed.
 
 Lemma a_inc_tvar_mid_strip_id : forall Ξ c Θ0 κ Θ1,
