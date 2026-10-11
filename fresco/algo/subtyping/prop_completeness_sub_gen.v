@@ -861,12 +861,7 @@ Proof.
   pose proof (a_consis_ghost_p0_output Hrun eq_refl) as HP1; subst P1.
   (* 3. the run is an identity increase into a well-formed Θ1 *)
   destruct (a_consis_sound_aux Hrun Hwf0 (a_wf_pskl__ghost Θ0 empty) HwfP
-              ltac:(intros α Hα; clear - Hα; solve_notin_auto)
-              ltac:(intros β τ Hb; apply inter_empty_pointwise;
-                    intros α Hα; clear - Hα; solve_notin_auto)
-              ltac:(intros Θa β b Θb Heq Hne;
-                    apply inter_empty_pointwise;
-                    intros α Hα; clear - Hα; solve_notin_auto))
+              (@rig_empty _) (@no_flex_dep_empty _) (@faf_empty _))
     as [[[κ1 [Hid Hinc1]] _] [Hwf1 _]].
   (* 4. the package, at that identity *)
   destruct (Hopt κ1 Hid Hinc1) as [ζ [Hζ [Hie Hprec]]].
@@ -1155,12 +1150,7 @@ Proof.
   destruct (a_consis_complete Hwf0 HwfP0 HwfP Hinc Hwfth Hc Hrs Hrp HwfQ)
     as [P1 [Θ1 [Hrun Hopt]]].
   destruct (a_consis_sound_aux Hrun Hwf0 HwfP0 HwfP
-              ltac:(intros α Hα; clear - Hα; solve_notin_auto)
-              ltac:(intros β τ Hb; apply inter_empty_pointwise;
-                    intros α Hα; clear - Hα; solve_notin_auto)
-              ltac:(intros Θa β b Θb Heq Hne;
-                    apply inter_empty_pointwise;
-                    intros α Hα; clear - Hα; solve_notin_auto))
+              (@rig_empty _) (@no_flex_dep_empty _) (@faf_empty _))
     as [_ [Hwf1 _]].
   (* the run: algorithmic [Check], whose output IS [P0] *)
   exists P0, Θ1. split;
@@ -1288,12 +1278,7 @@ Proof.
     as [Q1' [Θ1 [Hrun1 Hopt1]]].
   (* the domain run's soundness: id-witness, wf, join at Θ1 *)
   destruct (a_consis_sound_aux Hrun1 Hwf0 HwfP0a HwfPa
-              ltac:(intros α Hα; clear - Hα; solve_notin_auto)
-              ltac:(intros β τ Hb; apply inter_empty_pointwise;
-                    intros α Hα; clear - Hα; solve_notin_auto)
-              ltac:(intros Θa β b Θb Heq Hne;
-                    apply inter_empty_pointwise;
-                    intros α Hα; clear - Hα; solve_notin_auto))
+              (@rig_empty _) (@no_flex_dep_empty _) (@faf_empty _))
     as [[[w1 [Hidw1 Hincw1]] Hdefs1] [Hwf1 [_ [_ [Hsol1 _]]]]].
   destruct (Hopt1 w1 Hidw1 Hincw1) as [ζ1 [Hζ1 [Hie1 Hprec1]]].
   (* ---- CODOMAIN premises at (Θ1, ζ1) ---- *)
