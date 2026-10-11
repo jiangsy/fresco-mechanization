@@ -1943,6 +1943,45 @@ Definition assign_sound_concl (Θ0 Ξ : aenv) (α : atom)
   {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P }}a ->
   assign_sound_post Θ0 Ξ α P Θ1.
 
+(** Invariant preservation descends through a shared rigid binder when
+    opening adds at most that binder to the input free-variable bound. *)
+Lemma sound_invariants_strip_tvar : forall α Θ0 Θ1 F Fopen,
+  Fopen [<=] add α F ->
+  (forall Δ,
+    no_flex_dep Δ ((α ~ abind_tvar) ++ Θ0) ->
+    flex_above_free Δ ((α ~ abind_tvar) ++ Θ0) ->
+    Δ ∩ dom ((α ~ abind_tvar) ++ Θ1) [<=]
+      dom ((α ~ abind_tvar) ++ Θ0) ->
+    (forall β, β `in` Δ -> β `notin` dom ((α ~ abind_tvar) ++ Θ0) ->
+      β `notin` Fopen) ->
+    no_flex_dep Δ ((α ~ abind_tvar) ++ Θ1) /\
+    flex_above_free Δ ((α ~ abind_tvar) ++ Θ1) /\
+    (forall β, β `in` Δ -> β `in` dom ((α ~ abind_tvar) ++ Θ1) ->
+      β `in` dom ((α ~ abind_tvar) ++ Θ0))) ->
+  forall Δ,
+    no_flex_dep Δ Θ0 -> flex_above_free Δ Θ0 ->
+    Δ ∩ dom Θ1 [<=] dom Θ0 ->
+    (forall β, β `in` Δ -> β `notin` dom Θ0 -> β `notin` F) ->
+    no_flex_dep Δ Θ1 /\ flex_above_free Δ Θ1 /\
+    (forall β, β `in` Δ -> β `in` dom Θ1 -> β `in` dom Θ0).
+Proof.
+  intros α Θ0 Θ1 F Fopen Hopen Hinv Δ Hnd Hfa Hcov Hft.
+  destruct (Hinv Δ) as [Hnd' [Hfa' _]].
+  - intros β τ Hb.
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
+      [ discriminate | exact (Hnd β τ Hb') ].
+  - apply faf_cons; [ congruence | exact Hfa ].
+  - simpl; clear - Hcov; fsetdec.
+  - intros β Hβ Hfresh. simpl in Hfresh.
+    assert (Hβ0 : β `notin` dom Θ0) by (clear - Hfresh; fsetdec).
+    pose proof (Hft β Hβ Hβ0) as Havoid.
+    clear - Havoid Hfresh Hopen; fsetdec.
+  - split.
+    + intros β τ Hb. apply (Hnd' β τ). unfold binds; right; exact Hb.
+    + split; [ eapply faf_tail; exact Hfa' | ].
+      intros β Hβ Hd; clear - Hcov Hβ Hd; fsetdec.
+Qed.
+
 (** The ∀-cases' renaming side conditions (see [*_rename_gen]): the
     opened context's definitions avoid both the old and the new opener. *)
 Lemma rename_defs_cons_tvar : forall Θ1 α α0,
@@ -3221,38 +3260,15 @@ Proof.
     split; [ eapply a_isub_strip_tvar; eauto | ].
     split; [ exact Hwf1 | ].
     split.
-    { intros x Hx.
-      assert (Hx1 : x `in` dom ((α ~ abind_tvar) ++ Θ1))
-        by (apply Hdomα; simpl; clear - Hx; fsetdec).
-      simpl in Hx1.
-      assert (Hxα : x <> α) by (intros ->; clear - Fr Hx; fsetdec).
-      clear - Hx1 Hxα. fsetdec. }
+    { eapply dom_sub_strip_tvar;
+        [ clear - Fr; solve_notin_auto | exact Hdomα ]. }
     split.
-    { intros Δ HndΔ HfaΔ HcovΔ Hft.
-      destruct (Hinvα Δ) as [Hnd' [Hfa' _]].
-      { intros β' τ' Hb.
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
-          [ discriminate | exact (HndΔ β' τ' Hb') ]. }
-      { apply faf_cons;
-          [ intros Hne; exfalso; apply Hne; reflexivity | exact HfaΔ ]. }
-      { simpl. clear - HcovΔ. fsetdec. }
-      { intros α0 Hα0 HXd.
-        simpl in HXd.
-        assert (HXd0 : α0 `notin` dom Θ0) by (clear - HXd; fsetdec).
-        assert (Hα0α2 : α0 <> α) by (clear - HXd; fsetdec).
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                      P0 (pskl_var_f α)) as Hup0.
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                      P (pskl_var_f α)) as Hup1.
-        specialize (Hft α0 Hα0 HXd0).
-        simpl in Hup0, Hup1.
-        clear - Hft Hup0 Hup1 Hα0α2. fsetdec. }
-      split.
-      { intros β' τ' Hb'. apply (Hnd' β' τ').
-        unfold binds; right; exact Hb'. }
-      split.
-      { eapply faf_tail. exact Hfa'. }
-      { intros α0 Hα0 HXd. clear - HcovΔ Hα0 HXd; fsetdec. } }
+    { eapply sound_invariants_strip_tvar; [ | exact Hinvα ].
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                    P0 (pskl_var_f α)) as Hopen0.
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                    P (pskl_var_f α)) as Hopen1.
+      simpl in *; clear - Hopen0 Hopen1; fsetdec. }
     split.
     + exists (bskl_all_inh (close_bskl_wrt_bskl α Qtα)). split.
       { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
@@ -3277,36 +3293,13 @@ Proof.
     split; [ eapply a_isub_strip_tvar; eauto | ].
     split; [ exact Hwf1 | ].
     split.
-    { intros x Hx.
-      assert (Hx1 : x `in` dom ((α ~ abind_tvar) ++ Θ1))
-        by (apply Hdomα; simpl; clear - Hx; fsetdec).
-      simpl in Hx1.
-      assert (Hxα : x <> α) by (intros ->; clear - Fr Hx; fsetdec).
-      clear - Hx1 Hxα. fsetdec. }
+    { eapply dom_sub_strip_tvar;
+        [ clear - Fr; solve_notin_auto | exact Hdomα ]. }
     split.
-    { intros Δ HndΔ HfaΔ HcovΔ Hft.
-      destruct (Hinvα Δ) as [Hnd' [Hfa' _]].
-      { intros β' τ' Hb.
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
-          [ discriminate | exact (HndΔ β' τ' Hb') ]. }
-      { apply faf_cons;
-          [ intros Hne; exfalso; apply Hne; reflexivity | exact HfaΔ ]. }
-      { simpl. clear - HcovΔ. fsetdec. }
-      { intros α0 Hα0 HXd.
-        simpl in HXd.
-        assert (HXd0 : α0 `notin` dom Θ0) by (clear - HXd; fsetdec).
-        assert (Hα0α2 : α0 <> α) by (clear - HXd; fsetdec).
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                      P (pskl_var_f α)) as Hup1.
-        specialize (Hft α0 Hα0 HXd0).
-        simpl in Hft, Hup1.
-        clear - Hft Hup1 Hα0α2. fsetdec. }
-      split.
-      { intros β' τ' Hb'. apply (Hnd' β' τ').
-        unfold binds; right; exact Hb'. }
-      split.
-      { eapply faf_tail. exact Hfa'. }
-      { intros α0 Hα0 HXd. clear - HcovΔ Hα0 HXd; fsetdec. } }
+    { eapply sound_invariants_strip_tvar; [ | exact Hinvα ].
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                    P (pskl_var_f α)) as Hopen0.
+      simpl in *; clear - Hopen0; fsetdec. }
     split.
     + exists (bskl_all_syn (close_bskl_wrt_bskl α Qtα)). split.
       { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
@@ -3332,36 +3325,13 @@ Proof.
     split; [ eapply a_isub_strip_tvar; eauto | ].
     split; [ exact Hwf1 | ].
     split.
-    { intros x Hx.
-      assert (Hx1 : x `in` dom ((α ~ abind_tvar) ++ Θ1))
-        by (apply Hdomα; simpl; clear - Hx; fsetdec).
-      simpl in Hx1.
-      assert (Hxα : x <> α) by (intros ->; clear - Fr Hx; fsetdec).
-      clear - Hx1 Hxα. fsetdec. }
+    { eapply dom_sub_strip_tvar;
+        [ clear - Fr; solve_notin_auto | exact Hdomα ]. }
     split.
-    { intros Δ HndΔ HfaΔ HcovΔ Hft.
-      destruct (Hinvα Δ) as [Hnd' [Hfa' _]].
-      { intros β' τ' Hb.
-        destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
-          [ discriminate | exact (HndΔ β' τ' Hb') ]. }
-      { apply faf_cons;
-          [ intros Hne; exfalso; apply Hne; reflexivity | exact HfaΔ ]. }
-      { simpl. clear - HcovΔ. fsetdec. }
-      { intros α0 Hα0 HXd.
-        simpl in HXd.
-        assert (HXd0 : α0 `notin` dom Θ0) by (clear - HXd; fsetdec).
-        assert (Hα0α2 : α0 <> α) by (clear - HXd; fsetdec).
-        pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
-                      P0 (pskl_var_f α)) as Hup0.
-        specialize (Hft α0 Hα0 HXd0).
-        simpl in Hft, Hup0.
-        clear - Hft Hup0 Hα0α2. fsetdec. }
-      split.
-      { intros β' τ' Hb'. apply (Hnd' β' τ').
-        unfold binds; right; exact Hb'. }
-      split.
-      { eapply faf_tail. exact Hfa'. }
-      { intros α0 Hα0 HXd. clear - HcovΔ Hα0 HXd; fsetdec. } }
+    { eapply sound_invariants_strip_tvar; [ | exact Hinvα ].
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper
+                    P0 (pskl_var_f α)) as Hopen0.
+      simpl in *; clear - Hopen0; fsetdec. }
     split.
     + exists (bskl_all_inh (close_bskl_wrt_bskl α Qtα)). split.
       { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.

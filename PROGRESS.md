@@ -181,6 +181,26 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share soundness invariant transport through binders
+
+Add `sound_invariants_strip_tvar`: invariant preservation under a shared
+rigid binder descends to the context tails when opening adds at most the
+binder to the input free-variable bound. Its proof shares the definition
+lookup, flex-above-free transport, and output-domain coverage argument.
+
+Use it in the three forall soundness cases, leaving their skeleton-opening
+bounds explicit. Replace their three manual domain-inclusion arguments
+with the existing `dom_sub_strip_tvar` lemma.
+
+Net reduction: **30 physical Coq lines / 33 nonblank, noncomment lines**.
+All 97 existing theorem statements in the edited file are unchanged;
+inline tactic terms remain at 74, with none added.
+
+Validation: focused compilation and `make coq` passed with all 34 headline
+assumption reports closed under the global context, no axioms and no errors.
+Statement comparison and `git diff --check` passed.
+
+
 ## 2026-10-11 — Share consistency free-variable binder cases
 
 Consolidate the four identical forall cases in `ad_pat_consis_ftv_bound`.
