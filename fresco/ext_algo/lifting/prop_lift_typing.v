@@ -1854,18 +1854,26 @@ Proof.
                        (ptyp_to_pskl Aan2))
       by (apply rel_pskl_widen; exact HrAan0).
     (* ---- the CONSIS lift, at the split's output ---- *)
-    assert (Hblkc : forall a, a `in` dom Θc -> a `notin` dom Θb ->
+    assert (HblkX : forall a, a `in` dom (Ξ ++ Θd) -> a `notin` dom Θb ->
                     a `notin` cols_l (ρs ++ ρ0)).
     { intros a Ha Hn. rewrite cols_l_app.
       assert (H1 : a `notin` cols_l ρs).
       { intros Hy. destruct (cols_l_in_inv _ _ Hy) as (y & Hin).
         destruct (Hdoms _ _ Hin) as [Hd1 _]. contradiction. }
       assert (H2 : a `notin` cols_l ρ0).
-      { assert (Hc : a `notin` cols_l ρ)
-          by (apply Hblk;
-              [ apply Hdmout; exact Ha | clear - Hn Hdm0; fsetdec ]).
+      { rewrite dom_app in Ha.
+        destruct (AtomSetProperties.In_dec a (dom Ξ)) as [HaΞ | HaΞ];
+          [ exact (HΞcols a HaΞ) | ].
+        assert (HaΘd : a `in` dom Θd) by (clear - Ha HaΞ; fsetdec).
+        assert (Hc : a `notin` cols_l ρ)
+          by (apply Hblk; [ exact HaΘd | clear - Hn Hdm0; fsetdec ]).
         clear - Hc Hcl00. fsetdec. }
       clear - H1 H2. fsetdec. }
+    assert (HdmcX : dom Θc [<=] dom (Ξ ++ Θd))
+      by (rewrite dom_app; clear - Hdmout; fsetdec).
+    assert (Hblkc : forall a, a `in` dom Θc -> a `notin` dom Θb ->
+                    a `notin` cols_l (ρs ++ ρ0))
+      by (intros a Ha Hn; apply HblkX; [ apply HdmcX; exact Ha | exact Hn ]).
     assert (Hcov1 : V ∪ cols_r (ρs ++ ρ0) [<=] S1s).
     { rewrite cols_r_app.
       assert (H1 : cols_r ρs [<=] S1s).
@@ -1878,39 +1886,23 @@ Proof.
     assert (HcovCc : ftvar_in_pskl (ptyp_to_pskl Aan2)
                      ∪ ftvar_in_pskl (ptyp_to_pskl Ap') [<=] S1s)
       by (clear - HftAan2 HftPQ' Hgrs; fsetdec).
-    destruct (lift_consis_nil Hcc HrΘb HrAanW HrApw Hagrs Hinj1 Hfun1
+    destruct (lift_consis_nil_out Hcc HrΘb HrAanW HrApw Hagrs Hinj1 Hfun1
                 HwfΘb HuqΘb' HftvΘb' Hscp1 Hblkc HdΘb' Hcov1 HcovCc
                 HwfcAb HwfPs)
       as (S1c & ρc & Θc' & Qc' & Dchk & HrΘc & Hagrc & HrQcU & Hextc
-          & Hdomc).
-    pose proof (e_consis_supply_grows Dchk) as Hgrc.
-    (* ---- side 2's package at the consis's output ---- *)
-    assert (HdΘc' : dom Θc' [<=] S1c).
-    { pose proof ((proj2 (proj2 e_assign_unify_consis_dom_upper))
-                    _ _ _ _ _ _ _ _ _ Dchk) as Hup.
-      clear - Hup HdΘb' Hgrc. fsetdec. }
-    assert (HcovE : ftvar_in_aenv Θb' ∪ ftvar_in_pskl (ptyp_to_pskl Aan2)
-                    ∪ ftvar_in_pskl (ptyp_to_pskl Ap') [<=] S1s)
-      by (clear - HftvΘb' HcovCc; fsetdec).
-    assert (Hftvc : ftvar_in_aenv Θc' [<=] S1c)
-      by (eapply (proj2 (proj2 e_assign_unify_consis_ctx_ftvar));
-          [ exact Dchk | exact HcovE ]).
-    assert (HcovE2 : ftvar_in_aenv Θb' ∪ ftvar_in_pskl (ptyp_to_pskl Aan2)
-                     ∪ ftvar_in_pskl (ptyp_to_pskl Ap') ∪ empty ∪ empty
-                     [<=] S1s)
-      by (clear - HcovE; fsetdec).
-    assert (Huqc' : uniq Θc').
-    { pose proof (e_consis_sound Dchk HuqΘb' HcovE2) as Ha1.
-      exact ((proj2 (proj2 a_assign_unify_consis_uniq)) _ _ _ _ _ _ _ Ha1
-               HuqΘb'). }
+          & Hdomc & Hgrc & HdΘc' & Hftvc & Huqc' & _ & _).
     assert (Hdmc2 : dom Θb' [<=] dom Θc').
-    { pose proof (e_consis_sound Dchk HuqΘb' HcovE2) as Ha2.
-      exact (auc_dom_mono_consis Ha2). }
+    { assert (HcovE2 : ftvar_in_aenv Θb' ∪ ftvar_in_pskl (ptyp_to_pskl Aan2)
+                       ∪ ftvar_in_pskl (ptyp_to_pskl Ap') ∪ empty ∪ empty
+                       [<=] S1s)
+        by (clear - HftvΘb' HcovCc; fsetdec).
+      exact (auc_dom_mono_consis (e_consis_sound Dchk HuqΘb' HcovE2)). }
+    destruct (lift_seq_widen Hinj1 Hfun1 Hextc Hdomc HwfΘb Hscp1 Hcov1 HblkX
+                Hdmc HdmcX Hgrc HdΘc')
+      as (Hinj2 & Hfun2 & Hscp2 & Hcov2 & Hblk2c).
     (* ---- side 1's packages at Θc ---- *)
     assert (Hd1sc : dom Θc [<=] ftvar_in_aenv Θc)
       by (apply dom_subset_ftvar_in_aenv).
-    assert (Hscp2 : V [<=] ftvar_in_aenv Θc)
-      by (clear - Hscp Hsc0 Hdm0 Hdmc Hd1sc; fsetdec).
     assert (HwfAc : a_wf_ptyp Θc A)
       by (eapply a_wf_ptyp_isub; [ exact HwfAanb | exact Hlebc ]).
     assert (HwfXc : {{ ⊢ ((x ~ abind_var_typ A) ++ Θc) }}a)
@@ -1925,13 +1917,6 @@ Proof.
           eapply a_wf_exp_isub;
           [ eapply a_wf_exp_isub; [ exact Hwfe | exact Hle0 ] | exact Hlebc ]).
     (* ---- the relation, widened by the consis's pairs ---- *)
-    assert (Hinj2 : rel_inj (ρc ++ ρs ++ ρ0) V)
-      by (eapply rel_inj_app; [ exact Hinj1 | exact Hextc | exact Hcov1 ]).
-    assert (Hfun2 : rel_fun (ρc ++ ρs ++ ρ0) V (dom Θc)).
-    { eapply rel_fun_app;
-        [ exact Hfun1 | exact Hextc | apply dom_subset_ftvar_in_aenv
-        | intros a Ha Hn; apply Hblkc; [ exact Ha | exact Hn ]
-        | intros a Ha Hn; clear - HVdom0 Hn Hdm0; fsetdec ]. }
     assert (HrEb2 : rel_exp (ρc ++ ρs ++ ρ0) V ea eb2)
       by (eapply rel_exp_mono;
           [ exact HrEb0
@@ -1944,34 +1929,6 @@ Proof.
     assert (HrAanW2 : rel_pskl (ρc ++ ρs ++ ρ0) V (ptyp_to_pskl A)
                         (ptyp_to_pskl Aan2))
       by (apply rel_pskl_widen; exact HrAanW).
-    assert (Hc1r : cols_r ρc [<=] S1c).
-    { intros y Hy. destruct (cols_r_in_inv _ _ Hy) as (a & Hin).
-      destruct (Hdomc _ _ Hin) as [_ Hd2]. clear - Hd2 HdΘc'. fsetdec. }
-    assert (Hcov2 : V ∪ cols_r (ρc ++ ρs ++ ρ0) [<=] S1c)
-      by (rewrite cols_r_app; clear - Hcov1 Hc1r Hgrc; fsetdec).
-    assert (Hblk2c : forall a, a `in` dom (Ξ ++ Θd) -> a `notin` dom Θc ->
-                     a `notin` cols_l (ρc ++ ρs ++ ρ0)).
-    { intros a Ha Hn. rewrite cols_l_app.
-      assert (H1 : a `notin` cols_l ρc).
-      { intros Hy. destruct (cols_l_in_inv _ _ Hy) as (y & Hin).
-        destruct (Hdomc _ _ Hin) as [Hd1 _]. contradiction. }
-      assert (H2 : a `notin` cols_l (ρs ++ ρ0)).
-      { rewrite cols_l_app.
-        assert (H2a : a `notin` cols_l ρs).
-        { intros Hy. destruct (cols_l_in_inv _ _ Hy) as (y & Hin).
-          destruct (Hdoms _ _ Hin) as [Hd1 _].
-          apply Hn. apply Hdmc. exact Hd1. }
-        assert (H2b : a `notin` cols_l ρ0).
-        { rewrite dom_app in Ha.
-          destruct (AtomSetProperties.In_dec a (dom Ξ)) as [HaΞ | HaΞ];
-            [ exact (HΞcols a HaΞ) | ].
-          assert (HaΘd : a `in` dom Θd) by (clear - Ha HaΞ; fsetdec).
-          assert (Hc : a `notin` cols_l ρ)
-            by (apply Hblk;
-                [ exact HaΘd | clear - Hn Hdm0 Hdmc; fsetdec ]).
-          clear - Hc Hcl00. fsetdec. }
-        clear - H2a H2b. fsetdec. }
-      clear - H1 H2. fsetdec. }
     assert (HftAan2c : ftvar_in_abind (abind_var_typ Aan2) [<=] S1c).
     { simpl. pose proof (ftvar_ptyp_to_pskl Aan2) as He.
       clear - He HftAan2 Hgrs Hgrc. fsetdec. }
