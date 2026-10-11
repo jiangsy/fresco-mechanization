@@ -2115,6 +2115,43 @@ Proof.
   apply a_inc_flex_prefix_build; [ exact HfmΞ2 | exact Hmap2 | exact Hwm2 | exact Hκ ].
 Qed.
 
+(** ρ-freshness survives prepending the left run's two blocks: the SOLVE's
+    payloads are well-formed in [Θw], which Δρ misses, and the collection's
+    live in ψa, which is ρ-apart. *)
+Lemma rsubst_fresh_arrow_prefix : forall {Δρ Θ κ Θw ψa κs1 κc1},
+  rsubst_fresh Δρ Θ κ -> Δρ ∩ dom Θw [=] empty ->
+  (ftvar_in_uskl ψa) ∩ Δρ [=] empty ->
+  Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs1 ->
+  Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc1 ->
+  rsubst_fresh Δρ Θ (κs1 ++ κc1 ++ κ).
+Proof.
+  intros Δρ Θ κ Θw ψa κs1 κc1 Hrfr HΔρw Hψaap HFs1 Himg1 α0 Hα0.
+  destruct (Hrfr α0 Hα0) as (Hb & Hκim & Hdef).
+  refine (conj Hb (conj _ Hdef)).
+  intros p Hp. apply in_app_or in Hp; destruct Hp as [Hp | Hp].
+  - pose proof (forall_wf_mono_images_dom HFs1 p Hp) as Hw.
+    clear - Hw HΔρw Hα0; fsetdec.
+  - apply in_app_or in Hp; destruct Hp as [Hp | Hp].
+    + rewrite Forall_forall in Himg1. pose proof (Himg1 p Hp) as Hi.
+      clear - Hi Hψaap Hα0; fsetdec.
+    + exact (Hκim p Hp).
+Qed.
+
+(** …and then a ρ-replaced variable misses the shielded variables of any
+    skeleton it misses, under the metasubstitution. *)
+Lemma rsubst_fresh_shielded : forall {Δρ Θ κ P},
+  rsubst_fresh Δρ Θ κ ->
+  (forall α0, α0 `in` Δρ -> α0 `notin` ftvar_in_pskl P) ->
+  forall α0, α0 `in` Δρ -> α0 `notin` pskl_shielded_ftv (msubst_pskl κ P).
+Proof.
+  intros Δρ Θ κ P Hrfr HP α0 Hα0.
+  pose proof (pskl_shielded_ftv_sub_ftv (msubst_pskl κ P)) as Hsh.
+  enough (Hne : α0 `notin` ftvar_in_pskl (msubst_pskl κ P))
+    by (clear - Hsh Hne; fsetdec).
+  destruct (Hrfr α0 Hα0) as (_ & Hκim & _).
+  apply msubst_pskl_ftv_avoid; [ exact Hκim | exact (HP α0 Hα0) ].
+Qed.
+
 (** The merged metasubstitution is the right run's, reordered: the same
     bindings on pairwise-disjoint domains, so a lookup-level identity — peel
     [κs2], swap [κc2] past [κs1], peel [κs1], swap [κc2] past [κc1]. *)
@@ -3375,11 +3412,8 @@ Proof.
          HαΘ HαΘ0 HeraseR HscopeS HlcS Htags Hdisj Hsub
          Hdfresh Hpre HΨs1 HΨs2 Hconsis HlcQ HwfSub Hrefine
          Hrho HΘs HΨρ Hrfr HΔρΔ HΔρw HΔρftv HΔρPi Hψaap L HL.
-  (* the two ρ-scope facts every row reuses: Θs is a sub-context of Θ, and the
-     ρ-replaced variables are rigid tvars OF Θ *)
-  assert (HΘsdom : dom Θs [<=] dom Θ).
-  { intros α0 Hα0. apply binds_In_inv in Hα0. destruct Hα0 as [b Hb].
-    apply HΘs in Hb. apply binds_In in Hb. exact Hb. }
+  (* the ρ-scope fact every row reuses: the ρ-replaced variables are rigid
+     tvars OF Θ *)
   assert (HΔρΘ : Δρ [<=] dom Θ).
   { intros α0 Hα0. destruct (Hrfr α0 Hα0) as (Hb & _ & _).
     apply binds_In in Hb; exact Hb. }
@@ -3729,10 +3763,6 @@ Proof.
         assert (Himg1F : forall p, In p κc1 ->
                   ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa)
           by (rewrite Forall_forall in Himg1; exact Himg1).
-        assert (HimgΔ1F : forall p, In p κc1 ->
-                  (ftvar_in_ptyp (snd p)) ∩ Δρ [=] empty)
-          by (intros p Hp; pose proof (Himg1F p Hp) as Hi;
-              clear - Hi Hψaap; fsetdec).
         pose proof (forall_wf_mono_images_dom HFs1) as HFs1d.
         (* ⭐ THE RIGHT IH's κ-IMAGE BOUND.  A flexible of [Ξs1 ++ Ξc1 ++ Θ0]
            looks up in [κs1] — bounded by [HFs1], wf at Θw — or in [κc1] —
@@ -3828,34 +3858,9 @@ Proof.
            LE-Var row reads it off P6-Cv — by its payloads being wf at the FIXED
            [Θw] together with the premise [HΔρw] that Δρ misses [dom Θw].  This
            is the only place [HΔρw] is used, and the only reason it exists. *)
-        assert (Hκs1Δρ : forall p, In p κs1 ->
-                  forall α0, α0 `in` Δρ -> α0 `notin` ftvar_in_ptyp (snd p)).
-        { intros p Hp α0 Hα0. pose proof (HFs1d p Hp) as Hb.
-          clear - Hb HΔρw Hα0; fsetdec. }
-        assert (HΔρPa1 : forall α0, α0 `in` Δρ ->
-                  α0 `notin` pskl_shielded_ftv
-                               (msubst_pskl (κs1 ++ κc1 ++ κ) Pa1)).
-        { intros α0 Hα0.
-          pose proof (pskl_shielded_ftv_sub_ftv
-                        (msubst_pskl (κs1 ++ κc1 ++ κ) Pa1)) as Hsh.
-          enough (Hne : α0 `notin`
-                    ftvar_in_pskl (msubst_pskl (κs1 ++ κc1 ++ κ) Pa1))
-            by (clear - Hsh Hne; fsetdec).
-          apply msubst_pskl_ftv_avoid.
-          - intros p Hp. apply in_app_or in Hp; destruct Hp as [Hp | Hp].
-            + exact (Hκs1Δρ p Hp α0 Hα0).
-            + apply in_app_or in Hp; destruct Hp as [Hp | Hp].
-              * pose proof (HimgΔ1F p Hp) as Hi. clear - Hi Hα0; fsetdec.
-              * destruct (Hrfr α0 Hα0) as (_ & Hκim & _). apply Hκim; exact Hp.
-          - exact (HΔρPa1ftv α0 Hα0). }
-        assert (HrfrR : rsubst_fresh Δρ Θ (κs1 ++ κc1 ++ κ)).
-        { intros α0 Hα0. destruct (Hrfr α0 Hα0) as (Hb & Hκim & Hdef).
-          repeat split; [ exact Hb | | exact Hdef ].
-          intros p Hp. apply in_app_or in Hp; destruct Hp as [Hp | Hp].
-          - exact (Hκs1Δρ p Hp α0 Hα0).
-          - apply in_app_or in Hp; destruct Hp as [Hp | Hp].
-            + pose proof (HimgΔ1F p Hp) as Hi. clear - Hi Hα0; fsetdec.
-            + apply Hκim; exact Hp. }
+        pose proof (rsubst_fresh_arrow_prefix Hrfr HΔρw Hψaap HFs1 Himg1)
+          as HrfrR.
+        pose proof (rsubst_fresh_shielded HrfrR HΔρPa1ftv) as HΔρPa1.
         (* P02 is Θ0-scoped and Ξc1's names are fresh for Θ0, so the collected
            block misses it. *)
         assert (HfrP02Ξ : (ftvar_in_pskl P02) ∩ (dom Ξc1) [=] empty).

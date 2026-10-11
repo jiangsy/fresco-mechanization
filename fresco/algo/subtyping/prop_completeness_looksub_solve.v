@@ -1925,10 +1925,6 @@ Proof.
     assert (Himg1F : forall p, In p κc1 ->
               ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa)
       by (rewrite Forall_forall in Himg1; exact Himg1).
-    assert (HimgΔ1F : forall p, In p κc1 ->
-              (ftvar_in_ptyp (snd p)) ∩ Δρ [=] empty)
-      by (intros p Hp; pose proof (Himg1F p Hp) as Hi;
-          clear - Hi Hψaap; fsetdec).
     pose proof (forall_wf_mono_images_dom HFs1) as HFs1d.
     assert (Hαr : α `notin` dom (Ξs1 ++ Ξc1 ++ Θ0))
       by (repeat rewrite dom_app; clear - HαΞs1 HαΞ1 HαΘ0; fsetdec).
@@ -2026,34 +2022,9 @@ Proof.
     { intros α0 Hα0. pose proof (HΔρftv α0 Hα0) as Hd0.
       cbn [ftvar_in_pskl] in Hd0.
       pose proof (HΔρPa1ftv α0 Hα0) as Hp1. clear - Hd0 Hp1; fsetdec. }
-    assert (Hκs1Δρ : forall p, In p κs1 ->
-              forall α0, α0 `in` Δρ -> α0 `notin` ftvar_in_ptyp (snd p)).
-    { intros p Hp α0 Hα0. pose proof (HFs1d p Hp) as Hb.
-      clear - Hb HΔρw Hα0; fsetdec. }
-    assert (HΔρPa1 : forall α0, α0 `in` Δρ ->
-              α0 `notin` pskl_shielded_ftv
-                           (msubst_pskl (κs1 ++ κc1 ++ κ) Pa1)).
-    { intros α0 Hα0.
-      pose proof (pskl_shielded_ftv_sub_ftv
-                    (msubst_pskl (κs1 ++ κc1 ++ κ) Pa1)) as Hsh.
-      enough (Hne : α0 `notin`
-                ftvar_in_pskl (msubst_pskl (κs1 ++ κc1 ++ κ) Pa1))
-        by (clear - Hsh Hne; fsetdec).
-      apply msubst_pskl_ftv_avoid.
-      - intros p Hp. apply in_app_or in Hp; destruct Hp as [Hp | Hp].
-        + exact (Hκs1Δρ p Hp α0 Hα0).
-        + apply in_app_or in Hp; destruct Hp as [Hp | Hp].
-          * pose proof (HimgΔ1F p Hp) as Hi. clear - Hi Hα0; fsetdec.
-          * destruct (Hrfr α0 Hα0) as (_ & Hκim & _). apply Hκim; exact Hp.
-      - exact (HΔρPa1ftv α0 Hα0). }
-    assert (HrfrR : rsubst_fresh Δρ Θ (κs1 ++ κc1 ++ κ)).
-    { intros α0 Hα0. destruct (Hrfr α0 Hα0) as (Hb & Hκim & Hdef).
-      repeat split; [ exact Hb | | exact Hdef ].
-      intros p Hp. apply in_app_or in Hp; destruct Hp as [Hp | Hp].
-      - exact (Hκs1Δρ p Hp α0 Hα0).
-      - apply in_app_or in Hp; destruct Hp as [Hp | Hp].
-        + pose proof (HimgΔ1F p Hp) as Hi. clear - Hi Hα0; fsetdec.
-        + apply Hκim; exact Hp. }
+    pose proof (rsubst_fresh_arrow_prefix Hrfr HΔρw Hψaap HFs1 Himg1)
+      as HrfrR.
+    pose proof (rsubst_fresh_shielded HrfrR HΔρPa1ftv) as HΔρPa1.
     (* ⭐ …AND THE LEFT RUN'S CONSTRAINTS JOIN THE AVOID-SET (2026-08-20):
        [dom Ξs2 ∩ ftv 𝒞1] is one of the four cases of the new
        block-vs-constraints conjunct, and it is the one no invariant
