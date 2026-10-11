@@ -2078,7 +2078,8 @@ Proof.
   destruct (a_tags_sort_decorate_exists (Hex α Hα) HlcP1
               (L `union` Ψ `union` ftag_in_uskl Rall))
     as [Ψg [ψg [Hint0 [Hsort Herase]]]].
-  assert (IH := IHfam Ψg ψg ltac:(clear - Hint0; solve_notin_auto) Hsort Herase).
+  assert (HΨgL : Ψg ∩ L [=] empty) by (clear - Hint0; solve_notin_auto).
+  assert (IH := IHfam Ψg ψg HΨgL Hsort Herase).
   assert (HwfΞΘ : {{ ⊢ (Ξ ++ Θ0) }}a).
   { apply a_wf_aenv_prepend_decls; auto.
     - clear - Huq. solve_uniq.

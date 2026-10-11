@@ -1156,6 +1156,45 @@ Proof.
   exact Hr.
 Qed.
 
+(** MOVE a look run's ∀ binder [b] (the head of its context) to a fresh
+    [β]: the subjects and the constraints are renamed, the generated block
+    [Ξ] survives untouched ([a_look*_binder_not_generated]). *)
+Lemma a_looksub_move_binder : forall Θ α m P P' Ξ 𝒞 b β,
+  {{ ((b ~ abind_tvar) ++ Θ) ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
+  b <> α -> b `notin` ftvar_in_aenv Θ -> β <> α -> β <> b ->
+  β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl P'
+            `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞 ->
+  {{ ((β ~ abind_tvar) ++ Θ) ⊢ (subst_pskl_in_pskl (pskl_var_f β) b P) ≼[ α , m ]
+    (subst_pskl_in_pskl (pskl_var_f β) b P') ⤳ Ξ ⨾ (subst_cstrs β b 𝒞) }}a.
+Proof.
+  intros * Hp Hbα HbΘ Hβα Hβb Hβ.
+  assert (Hfr : β `notin` ftvar_in_aenv ((b ~ abind_tvar) ++ Θ) `union` ftvar_in_pskl P
+                 `union` ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞)
+    by look_fresh.
+  pose proof (a_looksub_rename_tvar Hp Hbα Hβα Hfr) as Hr.
+  rewrite rename_aenv_cons_tvar_eq, (@rename_aenv_fresh_eq Θ β b HbΘ),
+    (@rename_aenv_fresh_eq Ξ β b (a_looksub_binder_not_generated Hp)) in Hr.
+  exact Hr.
+Qed.
+
+Lemma a_lookeq_move_binder : forall Θ α P P' Ξ 𝒞 b β,
+  {{ ((b ~ abind_tvar) ++ Θ) ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
+  b <> α -> b `notin` ftvar_in_aenv Θ -> β <> α -> β <> b ->
+  β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl P'
+            `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞 ->
+  {{ ((β ~ abind_tvar) ++ Θ) ⊢ (subst_pskl_in_pskl (pskl_var_f β) b P) ∼[ α ]
+    (subst_pskl_in_pskl (pskl_var_f β) b P') ⤳ Ξ ⨾ (subst_cstrs β b 𝒞) }}a.
+Proof.
+  intros * Hp Hbα HbΘ Hβα Hβb Hβ.
+  assert (Hfr : β `notin` ftvar_in_aenv ((b ~ abind_tvar) ++ Θ) `union` ftvar_in_pskl P
+                 `union` ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞)
+    by look_fresh.
+  pose proof (a_lookeq_rename_tvar Hp Hbα Hβα Hfr) as Hr.
+  rewrite rename_aenv_cons_tvar_eq, (@rename_aenv_fresh_eq Θ β b HbΘ),
+    (@rename_aenv_fresh_eq Ξ β b (a_lookeq_binder_not_generated Hp)) in Hr.
+  exact Hr.
+Qed.
+
 (** ⭐ MOVE a look run's ∀ binder to a GIVEN opener.  The decl-side judgments
     the decoration lemmas build (a_consistag / a_subtag) are COFINITE, so every
     ∀ row has to serve a whole family of openers from the look run's ONE
@@ -1189,12 +1228,8 @@ Proof.
   destruct (β == b) as [-> | Hβb];
     [ rewrite subst_cstrs_same; exact Hp | ].
   assert (Hbα : b <> α) by (clear - Hb; fsetdec).
-  assert (HbΞ : b `notin` ftvar_in_aenv Ξ)
-    by (eapply a_lookeq_binder_not_generated; exact Hp).
-  pose proof (a_lookeq_rename_tvar Hp Hbα Hβα ltac:(look_fresh)) as Hr.
-  rewrite rename_aenv_cons_tvar_eq in Hr.
-  rewrite (@rename_aenv_fresh_eq Θ β b) in Hr by (clear - Hb; fsetdec).
-  rewrite (@rename_aenv_fresh_eq Ξ β b) in Hr by exact HbΞ.
+  assert (HbΘ : b `notin` ftvar_in_aenv Θ) by (clear - Hb; fsetdec).
+  pose proof (a_lookeq_move_binder Hp Hbα HbΘ Hβα Hβb Hβ) as Hr.
   rewrite <- (subst_pskl_in_pskl_intro b P (pskl_var_f β)) in Hr
     by (clear - Hb; fsetdec).
   rewrite <- (subst_pskl_in_pskl_intro b P' (pskl_var_f β)) in Hr
@@ -1218,12 +1253,8 @@ Proof.
   destruct (β == b) as [-> | Hβb];
     [ rewrite subst_cstrs_same; exact Hp | ].
   assert (Hbα : b <> α) by (clear - Hb; fsetdec).
-  assert (HbΞ : b `notin` ftvar_in_aenv Ξ)
-    by (eapply a_lookeq_binder_not_generated; exact Hp).
-  pose proof (a_lookeq_rename_tvar Hp Hbα Hβα ltac:(look_fresh)) as Hr.
-  rewrite rename_aenv_cons_tvar_eq in Hr.
-  rewrite (@rename_aenv_fresh_eq Θ β b) in Hr by (clear - Hb; fsetdec).
-  rewrite (@rename_aenv_fresh_eq Ξ β b) in Hr by exact HbΞ.
+  assert (HbΘ : b `notin` ftvar_in_aenv Θ) by (clear - Hb; fsetdec).
+  pose proof (a_lookeq_move_binder Hp Hbα HbΘ Hβα Hβb Hβ) as Hr.
   rewrite (subst_pskl_in_pskl_fresh_eq Pt) in Hr by (clear - Hb; fsetdec).
   rewrite <- (subst_pskl_in_pskl_intro b P (pskl_var_f β)) in Hr
     by (clear - Hb; fsetdec).
@@ -1246,12 +1277,8 @@ Proof.
   destruct (β == b) as [-> | Hβb];
     [ rewrite subst_cstrs_same; exact Hp | ].
   assert (Hbα : b <> α) by (clear - Hb; fsetdec).
-  assert (HbΞ : b `notin` ftvar_in_aenv Ξ)
-    by (eapply a_lookeq_binder_not_generated; exact Hp).
-  pose proof (a_lookeq_rename_tvar Hp Hbα Hβα ltac:(look_fresh)) as Hr.
-  rewrite rename_aenv_cons_tvar_eq in Hr.
-  rewrite (@rename_aenv_fresh_eq Θ β b) in Hr by (clear - Hb; fsetdec).
-  rewrite (@rename_aenv_fresh_eq Ξ β b) in Hr by exact HbΞ.
+  assert (HbΘ : b `notin` ftvar_in_aenv Θ) by (clear - Hb; fsetdec).
+  pose proof (a_lookeq_move_binder Hp Hbα HbΘ Hβα Hβb Hβ) as Hr.
   rewrite (subst_pskl_in_pskl_fresh_eq Ps) in Hr by (clear - Hb; fsetdec).
   rewrite <- (subst_pskl_in_pskl_intro b P' (pskl_var_f β)) in Hr
     by (clear - Hb; fsetdec).
@@ -1319,19 +1346,11 @@ Lemma a_looksub_rename_binder : forall L {Θ α m P P' Ξ 𝒞 b},
          ≼[ α , m ] (subst_pskl_in_pskl (pskl_var_f δ) b P') ⤳ Ξ ⨾ 𝒞 }}a.
 Proof.
   intros * Hp Hbα HbΘ HbΞ HbC.
-  assert (HbΞf : b `notin` ftvar_in_aenv Ξ)
-    by (pose proof (a_looksub_generated_ftvar Hp) as HΞ; clear - HbΞ HΞ; fsetdec).
   pick fresh δ for (add α (add b (L `union` ftvar_in_aenv Θ `union` ftvar_in_pskl P
                      `union` ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞))).
-  assert (Hδα : δ <> α) by (clear - Fr; fsetdec).
-  exists δ. split; [ exact Hδα | split; [ clear - Fr; fsetdec | ] ].
-  assert (Hδ : δ `notin` ftvar_in_aenv ((b ~ abind_tvar) ++ Θ) `union` ftvar_in_pskl P
-                 `union` ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞)
-    by (look_fresh; clear - Fr; fsetdec).
-  pose proof (a_looksub_rename_tvar Hp Hbα Hδα Hδ) as H1.
-  rewrite rename_aenv_cons_tvar_eq, (@rename_aenv_fresh_eq Θ δ b HbΘ),
-    (@rename_aenv_fresh_eq Ξ δ b HbΞf), (@subst_cstrs_fresh_eq δ b 𝒞 HbC) in H1.
-  exact H1.
+  exists δ. split; [ clear - Fr; fsetdec | split; [ clear - Fr; fsetdec | ] ].
+  rewrite <- (@subst_cstrs_fresh_eq δ b 𝒞 HbC).
+  apply (a_looksub_move_binder Hp Hbα HbΘ); clear - Fr; fsetdec.
 Qed.
 
 (** The same for an equality look. *)
@@ -1346,19 +1365,11 @@ Lemma a_lookeq_rename_binder : forall L {Θ α P P' Ξ 𝒞 b},
          ∼[ α ] (subst_pskl_in_pskl (pskl_var_f δ) b P') ⤳ Ξ ⨾ 𝒞 }}a.
 Proof.
   intros * Hp Hbα HbΘ HbΞ HbC.
-  assert (HbΞf : b `notin` ftvar_in_aenv Ξ)
-    by (pose proof (a_lookeq_generated_ftvar Hp) as HΞ; clear - HbΞ HΞ; fsetdec).
   pick fresh δ for (add α (add b (L `union` ftvar_in_aenv Θ `union` ftvar_in_pskl P
                      `union` ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞))).
-  assert (Hδα : δ <> α) by (clear - Fr; fsetdec).
-  exists δ. split; [ exact Hδα | split; [ clear - Fr; fsetdec | ] ].
-  assert (Hδ : δ `notin` ftvar_in_aenv ((b ~ abind_tvar) ++ Θ) `union` ftvar_in_pskl P
-                 `union` ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞)
-    by (look_fresh; clear - Fr; fsetdec).
-  pose proof (a_lookeq_rename_tvar Hp Hbα Hδα Hδ) as H1.
-  rewrite rename_aenv_cons_tvar_eq, (@rename_aenv_fresh_eq Θ δ b HbΘ),
-    (@rename_aenv_fresh_eq Ξ δ b HbΞf), (@subst_cstrs_fresh_eq δ b 𝒞 HbC) in H1.
-  exact H1.
+  exists δ. split; [ clear - Fr; fsetdec | split; [ clear - Fr; fsetdec | ] ].
+  rewrite <- (@subst_cstrs_fresh_eq δ b 𝒞 HbC).
+  apply (a_lookeq_move_binder Hp Hbα HbΘ); clear - Fr; fsetdec.
 Qed.
 
 Lemma a_looksub_lookeq_rename_var_size : forall n,
