@@ -181,6 +181,23 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share lookup lifting arrow cases
+
+Consolidate `LS-Arrow` and `LE-Arrow` in `a_looksub_lookeq_rel_e` using
+explicit numbered selectors and comments. Share the recursive setup,
+supply-interval freshness, pair-list assembly, cross-half guards, and
+constraint relation. Keep each judgement's second-run facts and arrow
+constructor explicit. Name pair membership premises instead of inline Ltac.
+
+Net reduction: **79 physical Coq lines / 75 nonblank, noncomment lines**.
+The existing theorem statement is unchanged; inline tactic terms decrease
+from 9 to 5, with none added.
+
+Validation: focused compilation and `make coq` passed with all 34 headline
+assumption reports closed under the global context, no axioms and no errors.
+Statement comparison and `git diff --check` passed.
+
+
 ## 2026-10-11 — Infer mutual-induction motives from theorem conclusions
 
 Remove 71 explicit motive applications across 24 proof files. These repeat
