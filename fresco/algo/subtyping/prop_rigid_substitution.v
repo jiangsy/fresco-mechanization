@@ -2838,8 +2838,9 @@ Proof.
   intros Θ P H.
   destruct (a_wf_pskl_all_inv H) as [L Hb].
   exists L. intros α Hα.
-  eapply a_wf_pskl_delta_mono; [ apply Hb; exact Hα | ].
-  intros β _ Hβ. clear - Hβ; fsetdec.
+  eapply a_wf_pskl_delta_mono.
+  - apply Hb; exact Hα.
+  - intros β _ Hβ. clear - Hβ; fsetdec.
 Qed.
 
 (** Partial precision of a substituted [∀] against an ε-tagged [∀]: the body
