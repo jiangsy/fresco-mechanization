@@ -2661,6 +2661,75 @@ Proof.
     destruct (Hflex abind_tvar Hb) as [Heq | [τ Heq]]; discriminate.
 Qed.
 
+(** Freshen a complete flexible-walk result, including its optimality
+    property. Consumers can then reattach a skipped binding directly. *)
+Lemma a_sub_flex_optimal_fresh : forall NM M P0 Θ0 Ξ α P1 Θ1 Θ κ Q β,
+  a_sub_flex NM M P0 Θ0 Ξ α P1 Θ1 ->
+  a_decls Ξ -> {{ ⊢ (Ξ ++ Θ0) }}a ->
+  {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P0 }}a ->
+  a_binds_tvar α (Ξ ++ Θ0) ->
+  (NM = a_sub_mode_sk -> a_sk_mode_compat (mode_fn M) P0) ->
+  (NM = a_sub_mode_ty -> a_ty_mode_compat (mode_fn M) P0) ->
+  β `notin` dom (Ξ ++ Θ0) -> β `notin` ftvar_in_pskl P0 ->
+  (forall κ1, is_id_msubst κ1 -> κ1 ∷ (Ξ ++ Θ0) ⊑ Θ1 ->
+    exists ζ, ζ ∷ Θ1 ⊑ Θ /\
+      a_inc_equiv (Ξ ++ Θ0) κ (msubst_compose ζ κ1) Θ /\
+      {{ Θ ⨟ empty ⊢ₚᵣ (msubst_bskl ζ (pskl_to_bskl_syn P1))
+         ⊑ (bskl_to_pskl Q) }}ad) ->
+  exists P2 Θ2,
+    a_sub_flex NM M P0 Θ0 Ξ α P2 Θ2 /\
+    {{ ⊢ Θ2 }}a /\ β `notin` dom Θ2 /\ β `notin` ftvar_in_pskl P2 /\
+    (forall κ1, is_id_msubst κ1 -> κ1 ∷ (Ξ ++ Θ0) ⊑ Θ2 ->
+      exists ζ, ζ ∷ Θ2 ⊑ Θ /\
+        a_inc_equiv (Ξ ++ Θ0) κ (msubst_compose ζ κ1) Θ /\
+        {{ Θ ⨟ empty ⊢ₚᵣ (msubst_bskl ζ (pskl_to_bskl_syn P2))
+           ⊑ (bskl_to_pskl Q) }}ad).
+Proof.
+  intros NM M P0 Θ0 Ξ α P1 Θ1 Θ κ Q β
+    Hrun Hdecls Hwf HwfP0 Hα Hsk Hty Hβ HβP0 Hopt.
+  destruct (a_sub_flex_sound Hrun Hdecls Hwf HwfP0 Hα Hsk Hty)
+    as [[[w [Hidw Hincw]] Hdefs] HwfΘ1].
+  assert (HwfP1 : {{ Θ1 ⨟ empty ⊢ₚₛ P1 }}a)
+    by (eapply a_sub_flex_output_wf; eauto).
+  assert (Hflex : forall bd, binds β bd Θ1 ->
+      bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ)
+    by (eapply a_sub_flex_out_flex_only; eauto).
+  assert (Hβinput : β `notin` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+      `union` ftvar_in_pskl P0).
+  { pose proof (a_wf_aenv_ftv_dom Hwf) as Hftv.
+    rewrite ftvar_in_aenv_app in Hftv. clear - Hftv Hβ HβP0; fsetdec. }
+  assert (Hβα : β <> α).
+  { pose proof (a_binds_tvar_in_dom Hα) as Hin. clear - Hin Hβ; fsetdec. }
+  destruct (atom_fresh (dom Θ1 `union` ftvar_in_aenv Θ1
+    `union` ftvar_in_pskl P1 `union` dom (Ξ ++ Θ0)
+    `union` ftvar_in_aenv Θ0 `union` ftvar_in_aenv Ξ
+    `union` ftvar_in_pskl P0 `union` singleton α `union` singleton β)) as [β1 Hfr].
+  assert (Hrun' : a_sub_flex NM M P0 Θ0 Ξ α
+      (swap_pskl β β1 P1) (swap_aenv β β1 Θ1)).
+  { apply a_sub_flex_swap_junk; auto; clear - Hfr; solve_notin_auto. }
+  assert (Hwf' : {{ ⊢ swap_aenv β β1 Θ1 }}a).
+  { destruct (a_sub_flex_sound Hrun' Hdecls Hwf HwfP0 Hα Hsk Hty); tauto. }
+  exists (swap_pskl β β1 P1), (swap_aenv β β1 Θ1).
+  repeat apply conj; auto.
+  - apply swap_junk_dom_out. clear - Hfr; solve_notin_auto.
+  - intros Hin. apply swap_pskl_ftv_in_rev in Hin.
+    rewrite swap_atom_l in Hin. clear - Hin Hfr; fsetdec.
+  - intros κ1 Hid Hinc1.
+    assert (Heq : w = κ1) by (eapply is_id_inc_unique; eauto).
+    subst w. destruct (Hopt κ1 Hid Hincw) as [ζ [Hζ [Hie Hprec]]].
+    exists (kswap_msubst β β1 ζ). split.
+    + apply a_inc_kswap; auto; clear - Hfr; solve_notin_auto.
+    + assert (Hkeys : forall γ, List.In γ (List.map fst κ1) ->
+          γ <> β /\ γ <> β1).
+      { intros γ Hin. pose proof (@a_inc_keys_dom κ1 (Ξ ++ Θ0) _ γ Hinc1 Hin)
+          as Hdom. clear - Hdom Hβ Hfr; split; intro; subst; fsetdec. }
+      rewrite (msubst_compose_kswap_id β β1 ζ κ1 Hid Hkeys).
+      split; [exact Hie |].
+      rewrite (@a_inc_kswap_paint β β1 ζ Θ1 Θ P1 Hζ HwfP1 Hflex)
+        by (clear - Hfr; solve_notin_auto).
+      exact Hprec.
+Qed.
+
 Lemma a_sub_flex_complete_depend : forall n NM M Θ0 Ξ α β P0 R' Ψ Θ κ Q,
   (* ⭐ THE IH IS LENGTH-GUARDED (P7c, 2026-08-03).  The dispatcher proves the
      flex half by a STRUCTURAL induction on [Θ0] with [Ξ] generalized and the
@@ -2760,47 +2829,21 @@ Proof.
               HdeclsΞ HdomΞ Hwf' Hwfth HwfP0'
               Hfα' HmodSK HmodTY Hincih Hslack HD Hrs HwfQ)
     as [P1 [Θ1 [Hrun Hopt]]].
-  destruct (a_sub_flex_sound Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
-    as [[[w [Hidw Hincw]] Hdefs] HwfΘ1].
-  assert (HwfP1o : {{ Θ1 ⨟ empty ⊢ₚₛ P1 }}a)
-    by (eapply a_sub_flex_output_wf;
-        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0' | exact Hαb' ]).
-  assert (HβflexΘ1 : forall bd, binds β bd Θ1 ->
-            bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ)
-    by (eapply a_sub_flex_out_flex_only;
-        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0'
-        | exact Hαb' | exact HmodSK | exact HmodTY | exact HβΞΘ0 ]).
-  (* ---- 3. the junk rename ---- *)
-  assert (HβΞ : β `notin` ftvar_in_aenv Ξ).
-  { pose proof (a_decls_no_ftvar HdeclsΞ) as h.
-    clear - h HβΞΘ0. simpl_env in HβΞΘ0. fsetdec. }
-  assert (HwfΘ0 : {{ ⊢ Θ0 }}a) by (eapply a_wf_aenv_strip_prefix; exact Hwf').
-  assert (HβΘ0 : β `notin` ftvar_in_aenv Θ0).
-  { pose proof (a_wf_aenv_ftv_dom HwfΘ0) as h.
-    clear - h HβΞΘ0. simpl_env in HβΞΘ0. fsetdec. }
-  destruct (atom_fresh (dom Θ1 `union` ftvar_in_aenv Θ1
-                        `union` ftvar_in_pskl P1 `union` dom Ξ
-                        `union` dom Θ0 `union` ftvar_in_aenv Θ0
-                        `union` ftvar_in_aenv Ξ `union` ftvar_in_pskl P0
-                        `union` singleton α `union` singleton β))
-    as [β1 Fr].
-  assert (Hrunsw : a_sub_flex NM M P0 Θ0 Ξ α
-                     (swap_pskl β β1 P1) (swap_aenv β β1 Θ1)).
-  { apply (a_sub_flex_swap_junk β β1 NM M P0 Θ0 Ξ α P1 Θ1 Hrun);
-      [ intro Hc; subst; exact (Hne eq_refl)
-      | clear - Fr; solve_notin_auto
-      | clear - HβΘ0 HβΞ Hnin; fsetdec
-      | clear - Fr; solve_notin_auto ]. }
-  exists (swap_pskl β β1 P1), ((β ~ abind_flex_mono) ++ swap_aenv β β1 Θ1).
+  destruct (@a_sub_flex_optimal_fresh NM M P0 Θ0 Ξ α P1 Θ1 _ _ _ β
+    Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY HβΞΘ0 Hnin Hopt)
+    as [P2 [Θ2 [Hrun2 [HwfΘ1 [Hβout [HβP2 Hopt2]]]]]].
+  clear Hrun Hopt. rename Hrun2 into Hrun. rename Hopt2 into Hopt.
+  clear P1 Θ1. rename P2 into P1. rename Θ2 into Θ1.
+  exists P1, ((β ~ abind_flex_mono) ++ Θ1).
   split.
   { apply a_sub_flex__skip;
       [ exact Hne | exact Hnin
-      | apply swap_junk_dom_out; clear - Fr; solve_notin_auto
-      | exact Hrunsw ]. }
+      | exact Hβout
+      | exact Hrun ]. }
   (* ---- 4. the package ---- *)
   intros κf Hidf Hincf.
   destruct (@a_inc_strip_flex_mid Ξ β Θ0 κf
-              ((β ~ abind_flex_mono) ++ swap_aenv β β1 Θ1) HdeclsΞ Hincf)
+              ((β ~ abind_flex_mono) ++ Θ1) HdeclsΞ Hincf)
     as [κf1 [τf [κf2 [Heqκf [Hlenf [_ [Hincfih [_ [_ _]]]]]]]]].
   assert (Hidfih : is_id_msubst (κf1 ++ κf2)).
   { unfold is_id_msubst in *. rewrite Heqκf in Hidf.
@@ -2811,84 +2854,51 @@ Proof.
     apply Forall_app in Hidf. destruct Hidf as [_ h2].
     inversion h2 as [| e κl he hl]; subst.
     unfold is_id_entry in he; simpl in he. exact he. }
+  destruct (a_sub_flex_sound Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
+    as [[[w [Hidw Hincw]] _] _].
   assert (Heqw : w = κf1 ++ κf2)
-    by (eapply is_id_inc_unique;
-        [ exact Hincw | exact Hidw | exact Hincfih | exact Hidfih ]).
+    by (eapply is_id_inc_unique; eauto).
   subst w.
   destruct (Hopt (κf1 ++ κf2) Hidfih Hincw) as [ζ [Hζ [Hie Hprec]]].
-  (* the keys of ζ and of the identity live in known domains *)
-  assert (Hkeysζ : forall γ, List.In γ (List.map fst ζ) -> γ `in` dom Θ1)
-    by (intros γ hγ; eapply a_inc_keys_dom; [ exact Hζ | exact hγ ]).
   assert (Hkeysf : forall γ, List.In γ (List.map fst (κf1 ++ κf2)) ->
             γ `in` dom (Ξ ++ Θ0))
     by (intros γ hγ; eapply a_inc_keys_dom; [ exact Hincfih | exact hγ ]).
-  exists ((β, τβ) :: kswap_msubst β β1 ζ).
+  exists ((β, τβ) :: ζ).
   split.
   { (* the increase *)
     apply a_inc__flex; [ | exact Hwfτβ | exact Hmonoτβ ].
-    apply (a_inc_kswap β β1 ζ Θ1 Θ Hζ);
-      [ clear - Fr; solve_notin_auto | exact HwfΘ1 | clear - Fr; solve_notin_auto
-      | exact HβflexΘ1 ]. }
+    exact Hζ. }
   split.
   { (* the equivalence *)
     rewrite Heqκ, Heqκf, Heqτf.
-    assert (Hsplit : msubst_compose ((β, τβ) :: kswap_msubst β β1 ζ)
+    assert (Hsplit : msubst_compose ((β, τβ) :: ζ)
                        (κf1 ++ (β, ptyp_var_f β) :: κf2)
-                   = msubst_compose ((β, τβ) :: kswap_msubst β β1 ζ) κf1
+                   = msubst_compose ((β, τβ) :: ζ) κf1
                      ++ (β, τβ)
-                     :: msubst_compose ((β, τβ) :: kswap_msubst β β1 ζ) κf2).
+                     :: msubst_compose ((β, τβ) :: ζ) κf2).
     { unfold msubst_compose. rewrite List.map_app. simpl.
       destruct (β == β) as [_ | n0]; [ reflexivity | exfalso; auto ]. }
     rewrite Hsplit.
     assert (Hid1 : is_id_msubst κf1 /\ is_id_msubst κf2).
     { unfold is_id_msubst in Hidfih. apply Forall_app in Hidfih. exact Hidfih. }
     destruct Hid1 as [Hidf1 Hidf2].
-    assert (Hkey1 : forall γ, List.In γ (List.map fst κf1) ->
-              γ <> β /\ γ <> β1).
-    { intros γ hγ.
-      assert (hd : γ `in` dom (Ξ ++ Θ0))
-        by (apply Hkeysf; rewrite List.map_app; apply in_or_app; left; exact hγ).
-      split; [ intro Hc; subst; clear - hd HβΞΘ0; fsetdec
-             | intro Hc; subst; clear - hd Fr; simpl_env in hd; solve_notin_auto ]. }
-    assert (Hkey2 : forall γ, List.In γ (List.map fst κf2) ->
-              γ <> β /\ γ <> β1).
-    { intros γ hγ.
-      assert (hd : γ `in` dom (Ξ ++ Θ0))
-        by (apply Hkeysf; rewrite List.map_app; apply in_or_app; right; exact hγ).
-      split; [ intro Hc; subst; clear - hd HβΞΘ0; fsetdec
-             | intro Hc; subst; clear - hd Fr; simpl_env in hd; solve_notin_auto ]. }
-    assert (Hk1b : forall γ, List.In γ (List.map fst κf1) -> γ <> β)
-      by (intros γ hγ; exact (proj1 (Hkey1 γ hγ))).
-    assert (Hk2b : forall γ, List.In γ (List.map fst κf2) -> γ <> β)
-      by (intros γ hγ; exact (proj1 (Hkey2 γ hγ))).
-    rewrite (@msubst_compose_cons_l_id β τβ (kswap_msubst β β1 ζ) κf1 Hidf1
+    assert (Hk1b : forall γ, List.In γ (List.map fst κf1) -> γ <> β).
+    { intros γ Hin ->. apply HβΞΘ0, Hkeysf.
+      rewrite List.map_app. apply in_or_app; auto. }
+    assert (Hk2b : forall γ, List.In γ (List.map fst κf2) -> γ <> β).
+    { intros γ Hin ->. apply HβΞΘ0, Hkeysf.
+      rewrite List.map_app. apply in_or_app; auto. }
+    rewrite (@msubst_compose_cons_l_id β τβ ζ κf1 Hidf1
                (@notin_dom_of_keys_neq _ _ Hk1b)).
-    rewrite (@msubst_compose_cons_l_id β τβ (kswap_msubst β β1 ζ) κf2 Hidf2
+    rewrite (@msubst_compose_cons_l_id β τβ ζ κf2 Hidf2
                (@notin_dom_of_keys_neq _ _ Hk2b)).
-    rewrite (msubst_compose_kswap_id β β1 ζ κf1 Hidf1 Hkey1).
-    rewrite (msubst_compose_kswap_id β β1 ζ κf2 Hidf2 Hkey2).
     apply a_inc_equiv_insert_flex_mid;
       [ exact HdeclsΞ | exact Hlen
       | unfold msubst_compose in *; rewrite <- List.map_app; exact Hie
       | unfold msubst_compose; rewrite List.map_length; exact Hlenf
       | apply a_tyequiv__refl; apply mono_ptyp_lc; exact Hmonoτβ ]. }
-  { (* the precision *)
-    assert (Hnbsw : β `notin` ftvar_in_pskl (swap_pskl β β1 P1)).
-    { intro Hc.
-      assert (h : β1 `in` ftvar_in_pskl P1).
-      { pose proof (swap_pskl_ftv_in_rev β β1 P1 β Hc) as h0.
-        rewrite swap_atom_l in h0. exact h0. }
-      clear - h Fr. solve_notin_auto. }
-    assert (Hhead : msubst_bskl ((β, τβ) :: kswap_msubst β β1 ζ)
-                      (pskl_to_bskl_syn (swap_pskl β β1 P1))
-                  = msubst_bskl (kswap_msubst β β1 ζ)
-                      (pskl_to_bskl_syn (swap_pskl β β1 P1))).
-    { apply msubst_bskl_head_notin.
-      rewrite ftvar_in_bskl_syn. exact Hnbsw. }
-    rewrite Hhead.
-    rewrite (@a_inc_kswap_paint β β1 ζ Θ1 _ P1 Hζ HwfP1o HβflexΘ1)
-      by (clear - Fr; solve_notin_auto).
-    exact Hprec. }
+  { rewrite msubst_bskl_head_notin; [exact Hprec |].
+    rewrite ftvar_in_bskl_syn. exact HβP2. }
 Qed.
 
 (* ===================================================================== *)
@@ -3274,48 +3284,14 @@ Proof.
     by (intros γ hγ; eapply a_inc_keys_dom; [ exact Hincfih | exact hγ ]).
   (* ζ agrees with κ1 ++ κ2 on τ's free variables *)
   assert (Hζτ : {{ Θ ⊢ (msubst_ptyp (κ1 ++ κ2) τ) ≡ᵗ (msubst_ptyp ζ τ) }}a).
-  { eapply msubst_ptyp_tyequiv_two_msubst;
-      [ exact Hincih | exact Hζ | apply mono_ptyp_lc; exact Hmτ | ].
-    intros γ Hγ.
-    assert (HγΘ0 : γ `in` dom Θ0) by (clear - Hγ Hftvτ; fsetdec).
-    assert (Hbt : a_binds_tvar γ (Ξ ++ Θ0)).
-    { assert (h : a_binds_tvar γ Θ0)
-        by (eapply a_wf_ptyp_ftv_tvarish; [ exact HwfτΘ0 | exact Hγ ]).
-      destruct h as [hb | [hb | [τ1 hb]]];
-        [ left | right; left | right; right; exists τ1 ];
-        (unfold binds in *; apply in_or_app; right; exact hb). }
-    assert (Heq1 : {{ Θ ⊢ (msubst_lookup (κ1 ++ κ2) γ)
-              ≡ᵗ (msubst_lookup (msubst_compose ζ (κf1 ++ κf2)) γ) }}a)
-      by (eapply src.fresco.algo.basic.prop_context_normalization.a_inc_equiv_lookup_tvar;
-          [ exact Hie | exact Hwf' | exact Hbt ]).
-    assert (Heq2 : msubst_lookup (msubst_compose ζ (κf1 ++ κf2)) γ
-                 = msubst_lookup ζ γ).
-    { destruct (AtomSetProperties.In_dec γ (dom (κf1 ++ κf2)))
-        as [hin | hout].
-      - rewrite (@msubst_lookup_compose ζ (κf1 ++ κf2) γ (or_introl hin)).
-        assert (hid : msubst_lookup (κf1 ++ κf2) γ = ptyp_var_f γ)
-          by (eapply msubst_lookup_id; exact Hidfih).
-        rewrite hid. reflexivity.
-      - (* γ is RIGID in (Ξ ++ Θ0): not a key of the identity, nor of ζ *)
-        assert (hnf : ~ a_flex_tvar (Ξ ++ Θ0) γ)
-          by (intro hc; apply hout;
-              eapply a_inc_flex_dom; [ exact Hincfih | exact Hwf' | exact hc ]).
-        assert (hnζ : γ `notin` dom ζ).
-        { intro hc.
-          assert (hfl : a_flex_tvar Θ1 γ)
-            by (eapply a_inc_dom_flex; [ exact Hζ | exact hc ]).
-          assert (hrig : binds γ abind_tvar (Ξ ++ Θ0)).
-          { destruct Hbt as [hb | [hb | [τ1 hb]]];
-              [ exact hb | exfalso; apply hnf; left; exact hb
-              | exfalso; apply hnf; right; exists τ1; exact hb ]. }
-          assert (hrigΘ1 : binds γ abind_tvar Θ1)
-            by (eapply a_inc_binds_tvar; [ exact Hincw | exact hrig ]).
-          destruct hfl as [hb | [τ1 hb]];
-            (pose proof (binds_unique _ _ _ _ _ hrigΘ1 hb
-                           (a_wf_aenv_uniq HwfΘ1)) as hc2; discriminate hc2). }
-        rewrite (@msubst_lookup_compose ζ (κf1 ++ κf2) γ (or_intror hnζ)).
-        rewrite (msubst_lookup_notin _ hout). simpl. reflexivity. }
-    rewrite <- Heq2. exact Heq1. }
+  { assert (Hwfτ : a_wf_ptyp (Ξ ++ Θ0) τ).
+    { eapply a_wf_ptyp_weaken; [ | exact HwfτΘ0 ].
+      intros α0 bd Hb. apply binds_app_3; exact Hb. }
+    rewrite <- (msubst_compose_id_ptyp Hwf' HwfΘ1 Hidfih Hincw Hζ Hwfτ).
+    eapply a_inc_equiv_msubst_ptyp; eauto using a_inc_msubst_lc.
+    apply msubst_lc_compose; [eapply a_inc_msubst_lc; exact Hζ |].
+    intros α0 A Hin. eapply is_id_msubst_values_lc; eauto. }
+
   exists ((β, τβ) :: kswap_msubst β β1 ζ).
   split.
   { apply a_inc__flex_def;
@@ -5728,72 +5704,31 @@ Proof.
               HdeclsΞ HdomΞ Hwf' HwfΘ' HwfP0' Hfα0 HmodSK HmodTY
               Hinc_sub Hslack' Hjoin' Hrs' HwfQ')
     as [P1 [Θ1 [Hrun Hopt]]].
-  (* ---- the junk rename, and the re-attachment ---- *)
-  destruct (a_sub_flex_sound Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
-    as [[[w [Hidw Hincw]] Hdefs] HwfΘ1].
-  assert (HwfP1o : {{ Θ1 ⨟ empty ⊢ₚₛ P1 }}a)
-    by (eapply a_sub_flex_output_wf;
-        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0' | exact Hαb' ]).
-  assert (HβflexΘ1 : forall bd, binds β bd Θ1 ->
-            bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ)
-    by (eapply a_sub_flex_out_flex_only;
-        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0'
-        | exact Hαb' | exact HmodSK | exact HmodTY | exact HβΞΘ0 ]).
-  assert (HβΞ : β `notin` ftvar_in_aenv Ξ).
-  { pose proof (a_decls_no_ftvar HdeclsΞ) as h.
-    clear - h HβΞΘ0. simpl_env in HβΞΘ0. fsetdec. }
-  assert (HβΘ0 : β `notin` ftvar_in_aenv Θ0).
-  { pose proof (a_wf_aenv_ftv_dom HwfΘ0) as h.
-    clear - h HβΞΘ0. simpl_env in HβΞΘ0. fsetdec. }
-  destruct (atom_fresh (dom Θ1 `union` ftvar_in_aenv Θ1
-                        `union` ftvar_in_pskl P1 `union` dom Ξ
-                        `union` dom Θ0 `union` ftvar_in_aenv Θ0
-                        `union` ftvar_in_aenv Ξ `union` ftvar_in_pskl P0
-                        `union` singleton α `union` singleton β))
-    as [β1 Fr].
-  assert (Hrunsw : a_sub_flex NM M P0 Θ0 Ξ α
-                     (swap_pskl β β1 P1) (swap_aenv β β1 Θ1)).
-  { apply (a_sub_flex_swap_junk β β1 NM M P0 Θ0 Ξ α P1 Θ1 Hrun);
-      [ intro Hc; subst; exact (Hne eq_refl)
-      | clear - Fr; solve_notin_auto
-      | clear - HβΘ0 HβΞ Hnin; fsetdec
-      | clear - Fr; solve_notin_auto ]. }
-  exists (swap_pskl β β1 P1), ((β ~ abind_tvar) ++ swap_aenv β β1 Θ1).
+  destruct (@a_sub_flex_optimal_fresh NM M P0 Θ0 Ξ α P1 Θ1 _ _ _ β
+    Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY HβΞΘ0 Hnin Hopt)
+    as [P2 [Θ2 [Hrun2 [HwfΘ1 [Hβout [HβP2 Hopt2]]]]]].
+  clear Hrun Hopt. rename Hrun2 into Hrun. rename Hopt2 into Hopt.
+  clear P1 Θ1. rename P2 into P1. rename Θ2 into Θ1.
+  exists P1, ((β ~ abind_tvar) ++ Θ1).
   split.
   { apply a_sub_flex__skip_rigid;
       [ exact Hne | exact Hnin
-      | apply swap_junk_dom_out; clear - Fr; solve_notin_auto
-      | exact Hrunsw ]. }
+      | exact Hβout
+      | exact Hrun ]. }
   (* ---- the package ---- *)
   intros κf Hidf Hincf.
-  assert (Hincf' : κf ∷ (Ξ ++ Θ0) ⊑ swap_aenv β β1 Θ1)
+  assert (Hincf' : κf ∷ (Ξ ++ Θ0) ⊑ Θ1)
     by (eapply a_inc_tvar_mid_strip_id;
         [ exact HdeclsΞ | exact Huq | exact Hidf | exact Hincf ]).
-  assert (Heqw : w = κf)
-    by (eapply is_id_inc_unique;
-        [ exact Hincw | exact Hidw | exact Hincf' | exact Hidf ]).
-  subst w.
-  destruct (Hopt κf Hidf Hincw) as [ζ [Hζ [Hie Hprec]]].
-  assert (Hkeysζ : forall γ, List.In γ (List.map fst ζ) -> γ `in` dom Θ1)
-    by (intros γ hγ; eapply a_inc_keys_dom; [ exact Hζ | exact hγ ]).
-  assert (Hkeysf : forall γ, List.In γ (List.map fst κf) ->
-            γ `in` dom (Ξ ++ Θ0))
-    by (intros γ hγ; eapply a_inc_keys_dom; [ exact Hincf' | exact hγ ]).
-  assert (Hkey : forall γ, List.In γ (List.map fst κf) -> γ <> β /\ γ <> β1).
-  { intros γ hγ. pose proof (Hkeysf γ hγ) as hd.
-    split; [ intro Hc; subst; clear - hd HβΞΘ0; fsetdec
-           | intro Hc; subst; clear - hd Fr; simpl_env in hd; solve_notin_auto ]. }
-  exists (kswap_msubst β β1 ζ).
+  destruct (Hopt κf Hidf Hincf') as [ζ [Hζ [Hie Hprec]]].
+  exists ζ.
   split.
-  { (* the increase : [a_inc__tvar] over the swapped sub-output *)
+  { (* the increase : [a_inc__tvar] over the fresh sub-output *)
     rewrite HeqΘ. apply a_inc__tvar; [ | exact HsufΞv ].
-    apply (a_inc_kswap β β1 ζ Θ1 Θ' Hζ);
-      [ clear - Fr; solve_notin_auto | exact HwfΘ1 | clear - Fr; solve_notin_auto
-      | exact HβflexΘ1 ]. }
+    exact Hζ. }
   split.
   { (* the equivalence *)
-    rewrite (msubst_compose_kswap_id β β1 ζ κf Hidf Hkey).
-    destruct (@a_inc_strip_decls_prefix Ξ Θ0 κf (swap_aenv β β1 Θ1)
+    destruct (@a_inc_strip_decls_prefix Ξ Θ0 κf Θ1
                 HdeclsΞ Hincf')
       as [κf1 [κf2 [Heqκf [Hdκf1 _]]]].
     assert (Hmi : a_inc_equiv (Ξ ++ (β ~ abind_tvar) ++ Θ0)
@@ -5817,11 +5752,7 @@ Proof.
     pose proof (a_inc_equiv_self_downarrow Hinc (@nil (atom * abind)))
       as Hself.
     simpl in Hself. apply Hself; [ exact Hwfth | exact HuqΘ | exact Hwf ]. }
-  { (* the precision : the swap erases, then the package comes back from
-       [(Θ', ⇓ᵇQ)] to [(Θ, Q)] — weaken the context, then compose with
-       [⇓ˢ(⌊Q⌋) ⊑ ⌊Q⌋] *)
-    rewrite (@a_inc_kswap_paint β β1 ζ Θ1 _ P1 Hζ HwfP1o HβflexΘ1)
-      by (clear - Fr; solve_notin_auto).
+  { (* Restore precision at the original target. *)
     eapply ad_precise_downarrow_restore; eauto. }
 Qed.
 
@@ -5841,12 +5772,7 @@ Qed.
 (*  ⭐ A term entry has a PAYLOAD, so [a_inc__var] /                        *)
 (*  [a_inc_equiv_mid_insert_var] demand a SEMANTIC MIDDLE                  *)
 (*  [{{ Θ' ⊢ A' ≡ᵗ κQv }}a] that the rigid row has no counterpart for.  The *)
-(*  consistency walk's [Assign-SkipTmVar] proves exactly it                *)
-(*  (prop_completeness_consis.v (PART B):5595-5690).  ONE step beyond that twin:        *)
-(*  subtyping re-attaches through the JUNK SWAP, so the witness is         *)
-(*  [kswap_msubst β β1 ζ] and the middle is read back through              *)
-(*  [msubst_ptyp_kswap] — free, since β and β1 are both fresh for a        *)
-(*  payload scoped in [Θ0].                                               *)
+(*  consistency walk's [Assign-SkipTmVar] proves the same payload fact.   *)
 (* ===================================================================== *)
 
 Lemma a_sub_flex_complete_skip_tm_var :
@@ -5896,8 +5822,6 @@ Proof.
   assert (HlcQv : lc_ptyp Qv) by (eapply a_wf_ptyp_lc; exact HwfQv0).
   assert (HftvQv : ftvar_in_ptyp Qv [<=] dom Θ0)
     by (apply a_wf_ptyp_ftv_dom; exact HwfQv0).
-  assert (HβQv : β `notin` ftvar_in_ptyp Qv).
-  { clear - HftvQv HβΞΘ0. simpl_env in HβΞΘ0. fsetdec. }
   assert (Hαb' : a_binds_tvar α (Ξ ++ Θ0))
     by (destruct (a_flex_tvar_weaken_app Ξ Hfα0) as [h | [τ0 h]];
         [ right; left; exact h | right; right; exists τ0; exact h ]).
@@ -5928,63 +5852,23 @@ Proof.
               HdeclsΞ HdomΞ Hwf' HwfΘ' HwfP0' Hfα0 HmodSK HmodTY
               Hinc_sub Hslack' Hjoin' Hrs' HwfQ')
     as [P1 [Θ1 [Hrun Hopt]]].
-  (* ---- the junk rename, and the re-attachment ---- *)
-  destruct (a_sub_flex_sound Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
-    as [[[w [Hidw Hincw]] Hdefs] HwfΘ1].
-  assert (HwfP1o : {{ Θ1 ⨟ empty ⊢ₚₛ P1 }}a)
-    by (eapply a_sub_flex_output_wf;
-        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0' | exact Hαb' ]).
-  assert (HβflexΘ1 : forall bd, binds β bd Θ1 ->
-            bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ)
-    by (eapply a_sub_flex_out_flex_only;
-        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0'
-        | exact Hαb' | exact HmodSK | exact HmodTY | exact HβΞΘ0 ]).
-  assert (HβΞ : β `notin` ftvar_in_aenv Ξ).
-  { pose proof (a_decls_no_ftvar HdeclsΞ) as h.
-    clear - h HβΞΘ0. simpl_env in HβΞΘ0. fsetdec. }
-  assert (HβΘ0 : β `notin` ftvar_in_aenv Θ0).
-  { pose proof (a_wf_aenv_ftv_dom HwfΘ0) as h.
-    clear - h HβΞΘ0. simpl_env in HβΞΘ0. fsetdec. }
-  destruct (atom_fresh (dom Θ1 `union` ftvar_in_aenv Θ1
-                        `union` ftvar_in_pskl P1 `union` dom Ξ
-                        `union` dom Θ0 `union` ftvar_in_aenv Θ0
-                        `union` ftvar_in_aenv Ξ `union` ftvar_in_pskl P0
-                        `union` singleton α `union` singleton β))
-    as [β1 Fr].
-  assert (Hβ1Qv : β1 `notin` ftvar_in_ptyp Qv)
-    by (clear - HftvQv Fr; fsetdec).
-  assert (Hrunsw : a_sub_flex NM M P0 Θ0 Ξ α
-                     (swap_pskl β β1 P1) (swap_aenv β β1 Θ1)).
-  { apply (a_sub_flex_swap_junk β β1 NM M P0 Θ0 Ξ α P1 Θ1 Hrun);
-      [ intro Hc; subst; exact (Hne eq_refl)
-      | clear - Fr; solve_notin_auto
-      | clear - HβΘ0 HβΞ Hnin; fsetdec
-      | clear - Fr; solve_notin_auto ]. }
-  exists (swap_pskl β β1 P1),
-         ((β ~ abind_var_typ Qv) ++ swap_aenv β β1 Θ1).
+  destruct (@a_sub_flex_optimal_fresh NM M P0 Θ0 Ξ α P1 Θ1 _ _ _ β
+    Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY HβΞΘ0 Hnin Hopt)
+    as [P2 [Θ2 [Hrun2 [HwfΘ1 [Hβout [HβP2 Hopt2]]]]]].
+  clear Hrun Hopt. rename Hrun2 into Hrun. rename Hopt2 into Hopt.
+  clear P1 Θ1. rename P2 into P1. rename Θ2 into Θ1.
+  exists P1,
+         ((β ~ abind_var_typ Qv) ++ Θ1).
   split.
   { apply a_sub_flex__skip_tm_var;
-      [ apply swap_junk_dom_out; clear - Fr; solve_notin_auto
-      | exact Hrunsw ]. }
+      [ exact Hβout
+      | exact Hrun ]. }
   (* ---- the package ---- *)
   intros κf Hidf Hincf.
-  assert (Hincf' : κf ∷ (Ξ ++ Θ0) ⊑ swap_aenv β β1 Θ1)
+  assert (Hincf' : κf ∷ (Ξ ++ Θ0) ⊑ Θ1)
     by (eapply a_inc_var_mid_strip_id;
         [ exact HdeclsΞ | exact Hidf | exact Hincf ]).
-  assert (Heqw : w = κf)
-    by (eapply is_id_inc_unique;
-        [ exact Hincw | exact Hidw | exact Hincf' | exact Hidf ]).
-  subst w.
-  destruct (Hopt κf Hidf Hincw) as [ζ [Hζ [Hie Hprec]]].
-  assert (Hkeysζ : forall γ, List.In γ (List.map fst ζ) -> γ `in` dom Θ1)
-    by (intros γ hγ; eapply a_inc_keys_dom; [ exact Hζ | exact hγ ]).
-  assert (Hkeysf : forall γ, List.In γ (List.map fst κf) ->
-            γ `in` dom (Ξ ++ Θ0))
-    by (intros γ hγ; eapply a_inc_keys_dom; [ exact Hincf' | exact hγ ]).
-  assert (Hkey : forall γ, List.In γ (List.map fst κf) -> γ <> β /\ γ <> β1).
-  { intros γ hγ. pose proof (Hkeysf γ hγ) as hd.
-    split; [ intro Hc; subst; clear - hd HβΞΘ0; fsetdec
-           | intro Hc; subst; clear - hd Fr; simpl_env in hd; solve_notin_auto ]. }
+  destruct (Hopt κf Hidf Hincf') as [ζ [Hζ [Hie Hprec]]].
   (* ⚙ THE SEMANTIC MIDDLE.  Both [a_inc__var] and
      [a_inc_equiv_mid_insert_var] want [{{ Θ' ⊢ A' ≡ᵗ (·)Qv }}a]; this is the
      consistency twin's [Hmiddle] (prop_completeness_consis.v (PART B):5658). *)
@@ -6010,23 +5894,12 @@ Proof.
     rewrite dom_msubst_compose. rewrite Hdκa.
     assert (Hα0Θ0 : α0 `in` dom Θ0) by (clear - HftvQv HXQ; fsetdec).
     clear - Huq Hα0Θ0. simpl_env in Huq. solve_uniq. }
-  exists (kswap_msubst β β1 ζ).
+  exists ζ.
   split.
-  { (* the increase : [a_inc__var] over the swapped sub-output *)
+  { (* the increase : [a_inc__var] over the fresh sub-output *)
     rewrite HeqΘ. apply a_inc__var; [ | | exact HsufΞv ].
-    - apply (a_inc_kswap β β1 ζ Θ1 Θ' Hζ);
-        [ clear - Fr; solve_notin_auto | exact HwfΘ1 | clear - Fr; solve_notin_auto
-        | exact HβflexΘ1 ].
-    - (* the SEMANTIC MIDDLE, read back through the junk swap *)
-      assert (Hkw : msubst_ptyp (kswap_msubst β β1 ζ) Qv
-                  = msubst_ptyp ζ Qv).
-      { pose proof (msubst_ptyp_kswap β β1 ζ Qv
-                      ltac:(clear - Fr; solve_notin_auto)
-                      ltac:(intro hc; pose proof (Hkeysζ β1 hc) as h;
-                            clear - h Fr; solve_notin_auto)
-                      Hβ1Qv (or_introl HβQv)) as h.
-        rewrite (swap_ptyp_fresh_id β β1 Qv HβQv Hβ1Qv) in h. exact h. }
-      rewrite Hkw.
+    - exact Hζ.
+    - (* Transport the payload using the optimal solution. *)
       assert (Hlc1 : msubst_lc (msubst_compose (aenv_msubst Θ) κ))
         by (eapply a_inc_msubst_lc; exact Hinc_sub).
       assert (Hlc2 : msubst_lc (msubst_compose ζ κf)).
@@ -6034,14 +5907,13 @@ Proof.
         intros a t Hin. eapply is_id_msubst_values_lc;
           [ exact Hidf | exact Hin ]. }
       pose proof (a_inc_equiv_msubst_ptyp HwfQv Hie Hwf' Hlc1 Hlc2) as Hmid.
-      rewrite (msubst_compose_id_ptyp Hwf' HwfΘ1 Hidf Hincw Hζ HwfQv)
+      rewrite (msubst_compose_id_ptyp Hwf' HwfΘ1 Hidf Hincf' Hζ HwfQv)
         in Hmid.
       rewrite Hag in Hmid.
       eapply a_tyequiv__trans; [ exact Hmiddle | exact Hmid ]. }
   split.
   { (* the equivalence *)
-    rewrite (msubst_compose_kswap_id β β1 ζ κf Hidf Hkey).
-    destruct (@a_inc_strip_decls_prefix Ξ Θ0 κf (swap_aenv β β1 Θ1)
+    destruct (@a_inc_strip_decls_prefix Ξ Θ0 κf Θ1
                 HdeclsΞ Hincf')
       as [κf1 [κf2 [Heqκf [Hdκf1 _]]]].
     assert (Hmi : a_inc_equiv (Ξ ++ (β ~ abind_var_typ Qv) ++ Θ0)
@@ -6065,10 +5937,7 @@ Proof.
     pose proof (a_inc_equiv_self_downarrow Hinc (@nil (atom * abind)))
       as Hself.
     simpl in Hself. apply Hself; [ exact Hwfth | exact HuqΘ | exact Hwf ]. }
-  { (* the precision — verbatim from §(M): the swap erases, then the package
-       comes back from [(Θ', ⇓ᵇQ)] to [(Θ, Q)] *)
-    rewrite (@a_inc_kswap_paint β β1 ζ Θ1 _ P1 Hζ HwfP1o HβflexΘ1)
-      by (clear - Fr; solve_notin_auto).
+  { (* Restore precision at the original target. *)
     eapply ad_precise_downarrow_restore; eauto. }
 Qed.
 
@@ -6129,8 +5998,6 @@ Proof.
   assert (HlcQv : lc_pskl Qv) by (eapply a_wf_pskl_lc; eauto).
   assert (HftvQv : ftvar_in_pskl Qv [<=] dom Θ0)
     by (apply a_scope_pskl_ftv_dom; exact (a_scope_pskl_of_wf HwfQv0)).
-  assert (HβQv : β `notin` ftvar_in_pskl Qv).
-  { clear - HftvQv HβΞΘ0. simpl_env in HβΞΘ0. fsetdec. }
   assert (Hαb' : a_binds_tvar α (Ξ ++ Θ0))
     by (destruct (a_flex_tvar_weaken_app Ξ Hfα0) as [h | [τ0 h]];
         [ right; left; exact h | right; right; exists τ0; exact h ]).
@@ -6161,63 +6028,23 @@ Proof.
               HdeclsΞ HdomΞ Hwf' HwfΘ' HwfP0' Hfα0 HmodSK HmodTY
               Hinc_sub Hslack' Hjoin' Hrs' HwfQ')
     as [P1 [Θ1 [Hrun Hopt]]].
-  (* ---- the junk rename, and the re-attachment ---- *)
-  destruct (a_sub_flex_sound Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY)
-    as [[[w [Hidw Hincw]] Hdefs] HwfΘ1].
-  assert (HwfP1o : {{ Θ1 ⨟ empty ⊢ₚₛ P1 }}a)
-    by (eapply a_sub_flex_output_wf;
-        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0' | exact Hαb' ]).
-  assert (HβflexΘ1 : forall bd, binds β bd Θ1 ->
-            bd = abind_flex_mono \/ exists τ, bd = abind_flex_mono_def τ)
-    by (eapply a_sub_flex_out_flex_only;
-        [ exact Hrun | exact HdeclsΞ | exact Hwf' | exact HwfP0'
-        | exact Hαb' | exact HmodSK | exact HmodTY | exact HβΞΘ0 ]).
-  assert (HβΞ : β `notin` ftvar_in_aenv Ξ).
-  { pose proof (a_decls_no_ftvar HdeclsΞ) as h.
-    clear - h HβΞΘ0. simpl_env in HβΞΘ0. fsetdec. }
-  assert (HβΘ0 : β `notin` ftvar_in_aenv Θ0).
-  { pose proof (a_wf_aenv_ftv_dom HwfΘ0) as h.
-    clear - h HβΞΘ0. simpl_env in HβΞΘ0. fsetdec. }
-  destruct (atom_fresh (dom Θ1 `union` ftvar_in_aenv Θ1
-                        `union` ftvar_in_pskl P1 `union` dom Ξ
-                        `union` dom Θ0 `union` ftvar_in_aenv Θ0
-                        `union` ftvar_in_aenv Ξ `union` ftvar_in_pskl P0
-                        `union` singleton α `union` singleton β))
-    as [β1 Fr].
-  assert (Hβ1Qv : β1 `notin` ftvar_in_pskl Qv)
-    by (clear - HftvQv Fr; fsetdec).
-  assert (Hrunsw : a_sub_flex NM M P0 Θ0 Ξ α
-                     (swap_pskl β β1 P1) (swap_aenv β β1 Θ1)).
-  { apply (a_sub_flex_swap_junk β β1 NM M P0 Θ0 Ξ α P1 Θ1 Hrun);
-      [ intro Hc; subst; exact (Hne eq_refl)
-      | clear - Fr; solve_notin_auto
-      | clear - HβΘ0 HβΞ Hnin; fsetdec
-      | clear - Fr; solve_notin_auto ]. }
-  exists (swap_pskl β β1 P1),
-         ((β ~ abind_var_skl Qv) ++ swap_aenv β β1 Θ1).
+  destruct (@a_sub_flex_optimal_fresh NM M P0 Θ0 Ξ α P1 Θ1 _ _ _ β
+    Hrun HdeclsΞ Hwf' HwfP0' Hαb' HmodSK HmodTY HβΞΘ0 Hnin Hopt)
+    as [P2 [Θ2 [Hrun2 [HwfΘ1 [Hβout [HβP2 Hopt2]]]]]].
+  clear Hrun Hopt. rename Hrun2 into Hrun. rename Hopt2 into Hopt.
+  clear P1 Θ1. rename P2 into P1. rename Θ2 into Θ1.
+  exists P1,
+         ((β ~ abind_var_skl Qv) ++ Θ1).
   split.
   { apply a_sub_flex__skip_tm_skl;
-      [ apply swap_junk_dom_out; clear - Fr; solve_notin_auto
-      | exact Hrunsw ]. }
+      [ exact Hβout
+      | exact Hrun ]. }
   (* ---- the package ---- *)
   intros κf Hidf Hincf.
-  assert (Hincf' : κf ∷ (Ξ ++ Θ0) ⊑ swap_aenv β β1 Θ1)
+  assert (Hincf' : κf ∷ (Ξ ++ Θ0) ⊑ Θ1)
     by (eapply a_inc_var_skl_mid_strip_id;
         [ exact HdeclsΞ | exact Hidf | exact Hincf ]).
-  assert (Heqw : w = κf)
-    by (eapply is_id_inc_unique;
-        [ exact Hincw | exact Hidw | exact Hincf' | exact Hidf ]).
-  subst w.
-  destruct (Hopt κf Hidf Hincw) as [ζ [Hζ [Hie Hprec]]].
-  assert (Hkeysζ : forall γ, List.In γ (List.map fst ζ) -> γ `in` dom Θ1)
-    by (intros γ hγ; eapply a_inc_keys_dom; [ exact Hζ | exact hγ ]).
-  assert (Hkeysf : forall γ, List.In γ (List.map fst κf) ->
-            γ `in` dom (Ξ ++ Θ0))
-    by (intros γ hγ; eapply a_inc_keys_dom; [ exact Hincf' | exact hγ ]).
-  assert (Hkey : forall γ, List.In γ (List.map fst κf) -> γ <> β /\ γ <> β1).
-  { intros γ hγ. pose proof (Hkeysf γ hγ) as hd.
-    split; [ intro Hc; subst; clear - hd HβΞΘ0; fsetdec
-           | intro Hc; subst; clear - hd Fr; simpl_env in hd; solve_notin_auto ]. }
+  destruct (Hopt κf Hidf Hincf') as [ζ [Hζ [Hie Hprec]]].
   (* ⚙ THE SEMANTIC MIDDLE.  Both [a_inc__var_skl] and
      [a_inc_equiv_mid_insert_var_skl] want [{{ Θ' ⊢ Qv' ≡ˢ (·)Qv }}a]; this is the
      consistency twin's [Hmiddle] (prop_completeness_consis.v (PART B):5990). *)
@@ -6243,23 +6070,12 @@ Proof.
     rewrite dom_msubst_compose. rewrite Hdκa.
     assert (Hα0Θ0 : α0 `in` dom Θ0) by (clear - HftvQv HXQ; fsetdec).
     clear - Huq Hα0Θ0. simpl_env in Huq. solve_uniq. }
-  exists (kswap_msubst β β1 ζ).
+  exists ζ.
   split.
-  { (* the increase : [a_inc__var_skl] over the swapped sub-output *)
+  { (* the increase : [a_inc__var_skl] over the fresh sub-output *)
     rewrite HeqΘ. apply a_inc__var_skl; [ | | exact HsufΞv ].
-    - apply (a_inc_kswap β β1 ζ Θ1 Θ' Hζ);
-        [ clear - Fr; solve_notin_auto | exact HwfΘ1 | clear - Fr; solve_notin_auto
-        | exact HβflexΘ1 ].
-    - (* the SEMANTIC MIDDLE, read back through the junk swap *)
-      assert (Hkw : msubst_pskl (kswap_msubst β β1 ζ) Qv
-                  = msubst_pskl ζ Qv).
-      { pose proof (msubst_pskl_kswap β β1 ζ Qv
-                      ltac:(clear - Fr; solve_notin_auto)
-                      ltac:(intro hc; pose proof (Hkeysζ β1 hc) as h;
-                            clear - h Fr; solve_notin_auto)
-                      Hβ1Qv (or_introl HβQv)) as h.
-        rewrite (swap_pskl_fresh_id β β1 Qv HβQv Hβ1Qv) in h. exact h. }
-      rewrite Hkw.
+    - exact Hζ.
+    - (* Transport the payload using the optimal solution. *)
       assert (Hlc1 : msubst_lc (msubst_compose (aenv_msubst Θ) κ))
         by (eapply a_inc_msubst_lc; exact Hinc_sub).
       assert (Hlc2 : msubst_lc (msubst_compose ζ κf)).
@@ -6268,15 +6084,14 @@ Proof.
           [ exact Hidf | exact Hin ]. }
       pose proof (a_inc_equiv_msubst_pskl (a_scope_pskl_of_wf HwfQv) Hie Hwf'
                    Hlc1 Hlc2) as Hmid.
-      rewrite (msubst_compose_id_pskl Hwf' HwfΘ1 Hidf Hincw Hζ
+      rewrite (msubst_compose_id_pskl Hwf' HwfΘ1 Hidf Hincf' Hζ
                  (a_scope_pskl_of_wf HwfQv))
         in Hmid.
       rewrite Hag in Hmid.
       eapply a_pskl_tyequiv__trans; [ exact Hmiddle | exact Hmid ]. }
   split.
   { (* the equivalence *)
-    rewrite (msubst_compose_kswap_id β β1 ζ κf Hidf Hkey).
-    destruct (@a_inc_strip_decls_prefix Ξ Θ0 κf (swap_aenv β β1 Θ1)
+    destruct (@a_inc_strip_decls_prefix Ξ Θ0 κf Θ1
                 HdeclsΞ Hincf')
       as [κf1 [κf2 [Heqκf [Hdκf1 _]]]].
     assert (Hmi : a_inc_equiv (Ξ ++ (β ~ abind_var_skl Qv) ++ Θ0)
@@ -6300,10 +6115,7 @@ Proof.
     pose proof (a_inc_equiv_self_downarrow Hinc (@nil (atom * abind)))
       as Hself.
     simpl in Hself. apply Hself; [ exact Hwfth | exact HuqΘ | exact Hwf ]. }
-  { (* the precision — verbatim from §(M): the swap erases, then the package
-       comes back from [(Θ', ⇓ᵇQ)] to [(Θ, Q)] *)
-    rewrite (@a_inc_kswap_paint β β1 ζ Θ1 _ P1 Hζ HwfP1o HβflexΘ1)
-      by (clear - Fr; solve_notin_auto).
+  { (* Restore precision at the original target. *)
     eapply ad_precise_downarrow_restore; eauto. }
 Qed.
 

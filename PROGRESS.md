@@ -181,6 +181,29 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Freshen optimal flexible-walk results once
+
+Add `a_sub_flex_optimal_fresh`, which moves a generated name out of the
+output while preserving both the run and its optimal-solution property.
+The flexible, rigid, type-term, and skeleton-term skip cases now reattach
+the skipped binding to that result directly. Their separate swap witnesses,
+key-freshness proofs, solution-substitution transports, and precision swap
+rewrites disappear. Rule-specific context and payload arguments stay explicit.
+
+In the assignment case, replace the per-key reconstruction of payload type
+equivalence with `a_inc_equiv_msubst_ptyp` and `msubst_compose_id_ptyp`.
+Assignment enters the main subtyping judgment, so its separate freshening
+layer remains a candidate for a later common transport lemma.
+
+Net reduction: **188 physical Coq lines / 178 nonblank, noncomment lines**.
+All 114 existing theorem statements in the edited file are unchanged.
+Inline tactic terms decrease from 81 to 77; none were added.
+
+Validation: focused compilation and final `make coq` passed. All 34
+headline assumption reports are closed under the global context, with no
+axiom reports or errors. Statement comparison and `git diff --check` passed.
+
+
 ## 2026-10-11 — Share solution swap erasure and binder closing
 
 Use `a_inc_kswap_paint` in five subtyping completeness cases to derive
