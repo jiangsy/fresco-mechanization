@@ -181,6 +181,25 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share consistency and refinement binder closing
+
+Add named lemmas for closing a source refinement, a skeleton refinement,
+and a universal-ghost filling refinement from a fresh rigid instance.
+They replace 14 repeated closing arguments across ordinary and decorated
+consistency soundness. `ad_pat_consis_close_open` supplies the renamed
+consistency family in six further cases; tagged and untagged constructors
+remain explicit. Remove six definition-freshness facts made unused by
+these replacements.
+
+Net reduction: **124 physical Coq lines / 130 nonblank, noncomment lines**.
+All 93 existing theorem statements are unchanged; no inline tactic terms
+added. The larger initial binder-preparation arguments remain separate.
+
+Validation: focused compilation and final `make coq` passed. All 34
+headline assumption reports are closed under the global context, with no
+axiom reports or errors. Statement comparison and `git diff --check` passed.
+
+
 ## 2026-10-11 — Freshen optimal flexible-walk results once
 
 Add `a_sub_flex_optimal_fresh`, which moves a generated name out of the
