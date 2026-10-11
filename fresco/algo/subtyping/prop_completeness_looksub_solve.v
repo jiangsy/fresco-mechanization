@@ -310,6 +310,54 @@ Proof.
     intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
 Qed.
 
+(** The SINGLE-CONSTRAINT answer of an α-stack: the collection gathers one
+    subtyping constraint and no block, and the solve's own block is the whole
+    of the extension. *)
+Lemma looksub_solve_single :
+  forall Θ0 Θ Θw κ Δ Δρ Ψi Ψa ψa α M P P0 Pi L T Ξs Pa κs,
+  {{ Θ0 ⊢ P ≼[ α , M ] P0 ⤳ nil ⨾ (a_cstr_sub M T :: nil) }}a ->
+  {{ Θ0 ⊩ (a_cstr_sub M T :: nil) ⨾ Pi ⤳ Ξs ⨾ Pa }}a ->
+  all_flex_mono Ξs -> uniq Ξs -> keys κs = keys Ξs ->
+  (forall α0, α0 `in` dom Ξs -> α0 `notin` L) ->
+  Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs ->
+  (forall x b, binds x b Θw -> binds x b Θ) ->
+  {{ (Ξs ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a ->
+  {{ ⊢ Θ0 }}a -> κ ∷ Θ0 ⊑ Θ ->
+  {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κs ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad ->
+  alpha_stack α P ->
+  (forall α0, α0 `in` dom Ξs ->
+     α0 `notin` ftvar_in_a_cstrs (a_cstr_sub M T :: nil)) ->
+  @looksub_solve_result Θ0 Θ Θw κ Δ Δρ Ψi Ψa ψa α M P P0 Pi L.
+Proof.
+  intros Θ0 Θ Θw κ Δ Δρ Ψi Ψa ψa α M P P0 Pi L T Ξs Pa κs
+    HLK HSolve Hfms Hus Hks Hfrs HFs Hmon HwfPa HwfΘ0 Hκ Hprec Hstk Hapart.
+  exists (a_cstr_sub M T :: nil), nil, Ξs, Pa, (@nil (atom * ptyp)), κs.
+  repeat split.
+  - exact HLK.
+  - exact HSolve.
+  - exact Hfms.
+  - exact Hus.
+  - exact Hks.
+  - exact Hfrs.
+  - exact HFs.
+  - exact HwfPa.
+  - exact HwfΘ0.
+  - cbn; clear; fsetdec.
+  - apply Forall_nil.
+  - (* the a_inc: the collection block is empty, so only [κs] is prefixed *)
+    apply a_inc_flex_prefix_build;
+      [ exact Hfms | exact Hks
+      | eapply forall_wf_mono_weaken; [ exact Hmon | exact HFs ]
+      | exact Hκ ].
+  - apply a_inc_equiv_refl; exact Hκ.
+  - intros α0 Hα0; cbn in Hα0; clear - Hα0; fsetdec.
+  - exact Hprec.
+  - (* ftv 𝒞 : the RIGHT disjunct *)
+    intros _; right.
+    exact (conj Hstk (conj eq_refl (conj eq_refl (ex_intro _ T eq_refl)))).
+  - exact Hapart.
+Qed.
+
 (** THE MODE RESTRICTION.  [ad_pat_sub_fuel__forall_r] forces
     [a_sub_mode_ty] + [mode_tc], and NM is invariant along a derivation, so
     under a Sub-ForallR only three rows can fire: [__check], [__forall_r] and
@@ -510,36 +558,26 @@ Proof.
       | exact Hext | exact Hsubty | exact Hrefine | exact HL ]. }
     destruct Hsv as (Ξs & Pa & κs & Hsolve & Hfms & Hus & Hks & Hfrs & HFs
                      & HwfPa & Hprec).
-    exists (a_cstr_sub M P0 :: nil), nil, Ξs, Pa, (@nil (atom * ptyp)), κs.
-    repeat split.
+    eapply (looksub_solve_single Δρ).
     - apply a_looksub__var.
-    - simpl. apply a_solve_cstr__sub; exact Hsolve.
+    - apply a_solve_cstr__sub; exact Hsolve.
     - exact Hfms.
     - exact Hus.
     - exact Hks.
     - exact Hfrs.
     - exact HFs.
+    - exact Hmon.
     - (* the paper's [Θ0,Ξc ⊢ P_a] at Ξc = ·, read straight off P6-Sv, which
          states it (subtyping-proofs.tex:1737) — at [Ξs ++ Θ0] now *)
-      simpl. exact HwfPa.
-    - simpl. exact HwfΘ0.
-    - simpl; clear; fsetdec.
-    - apply Forall_nil.
-    - (* the a_inc: the collection block is empty, so only [κs] is prefixed *)
-      simpl. apply a_inc_flex_prefix_build;
-        [ exact Hfms | exact Hks
-        | eapply forall_wf_mono_weaken; [ exact Hmon | exact HFs ]
-        | exact Hκ ].
-    - simpl. apply a_inc_equiv_refl; exact Hκ.
-    - intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
-    - simpl. exact Hprec.
+      exact HwfPa.
+    - exact HwfΘ0.
+    - exact Hκ.
+    - exact Hprec.
     - (* ftv 𝒞 : the RIGHT disjunct — [P = α] is the trivial α-stack, so this
          run never descends the target and 𝒞 is [a_cstr_sub M P0] whatever P0
          is.  (The LEFT bound genuinely fails here: the derivation's own
          ForallL can guess a variable ψa does not mention.) *)
-      intros _; right;
-        repeat split; try reflexivity;
-        [ apply ast_var | exists P0; reflexivity ].
+      apply ast_var.
     - (* the SOLVE's block vs the ONE constraint [sub M P0]: P0 is Θ0-scoped
          and the block dodges [L ⊇ ftvar_in_aenv Θ0] *)
       intros α0 Hα0. simpl.
@@ -1703,14 +1741,10 @@ Proof.
            intros _; left. cbn [def_ftv] in Hleft. exact Hleft.
         -- (* the SOLVE's block vs the constraints: both pass through *)
            exact HapartR.
-      * (* ---- RIGHT: the lookup subject is an α-STACK.  Such a run never
-             descends the target at a bare variable (split below), so LS-ForallR is
-             not used at all and the binder is never introduced — which is
-             exactly the configuration in which β genuinely CAN occur in the
-             descended 𝒞 (cex/cex_p6ss_sub_target_ftv.v).  The IH still
-             supplies the solve, at the descended target; lifting it over
-             the ∀ is P6-Sv's strengthen-then-rename recipe
-             (sub/look/prop_completeness_solve_sub_var.v:2036). ---- *)
+      * (* ---- RIGHT: the lookup subject is an α-STACK — exactly the
+             configuration in which β genuinely CAN occur in the descended 𝒞
+             (cex/cex_p6ss_sub_target_ftv.v).  The IH still supplies the
+             solve, at the descended target. ---- *)
         cbn [ftvar_in_a_cstrs] in *.
         (* β ∉ ftv Pa comes from PRECISION, not from the solve's ftv bound:
            the target here legitimately mentions β (that is the whole point of
@@ -1732,172 +1766,31 @@ Proof.
         { pose proof (msubst_pskl_ftv_dom_lower (κs ++ κ) Pa) as Hlo.
           repeat rewrite dom_app in Hlo.
           clear - HβPaκ0 Hlo Hβκ HβΞs Hdκs; fsetdec. }
-        (* ⭐⭐ THE ForallR-PRIORITY GUARD SPLITS THIS BRANCH IN TWO, by the
-           STACK'S OWN HEAD — and that is the whole repair here.
-             · at the BARE variable LS-ForallR is barred (its ◇-dispatch guard
-               is [A ≠ α]), so LS-Var still answers at the UNDESCENDED target
-               and the solve is lifted over the ∀ by SS-ForallR — the branch
-               as it always was;
-             · at a ∀- or ⫯-headed stack LS-ForallR is now the ONLY row, and
-               it lifts the IH's collection with 𝒞 KEPT, so the branch becomes
-               the LEFT branch's own moves — β is stripped from the solve and
-               [β ∉ ftv Pa] comes from precision instead of from [β ∉ ftv 𝒞]. *)
-        destruct Hstk as [ | Lst Pst Hstf | Pst Hstt ].
-        -- (* ---- the BARE variable ---- *)
-           (* the IH's collection is LS-Var, which PINS the constraint to the
-              descended target ([a_looksub_var_subject_inv], the ◇-dispatch
-              guard paying again) *)
-           destruct (a_looksub_var_subject_inv HLK) as [_ HCpin].
-           injection HCpin as HTc; subst Tc.
-           assert (Hss : {{ ((β ~ abind_tvar) ++ Θ0) ⊢ₛ Pi
-                     ≼[ mode_tc ] (open_pskl_wrt_pskl (ptyp_to_pskl A0)
-                                     (pskl_var_f β)) ⤳ Ξs ⨾ Pa }}a).
-           { cbn in HSolve. inversion HSolve; subst. assumption. }
-           exists (a_cstr_sub mode_tc (pskl_all_syn (ptyp_to_pskl A0)) :: nil),
-                  nil, Ξs, Pa, (@nil (atom * ptyp)), κs.
-           repeat split.
-           ++ (* a_looksub : LS-Var, at the UNDESCENDED target *)
-              apply a_looksub__var.
-           ++ (* solve : lift the β-instance over the ∀ by SS-ForallR, which is
-                 EXISTS-FRESH and LEAKS its binder (DESIGN §4.3) *)
-              cbn. apply a_solve_cstr__sub.
-              (* ⭐ the DERIVED form — SS-ForallR is guarded now, and
-                 [a_solve_sub_forall_r_gen] peels a var / ∀ / ⫯ pattern the
-                 way the implementation does, with the same answer. *)
-              apply a_solve_sub_forall_r_gen with (β := β);
-                [ exact (ptyp_to_pskl_ghost_free (ptyp_all A0))
-                | clear - Fr; solve_notin | exact Hss ].
-           ++ (* all_flex_mono Ξs *) exact Hfms.
-           ++ (* uniq Ξs *) exact Hus.
-           ++ (* keys κs = keys Ξs *) exact Hks.
-           ++ (* dom Ξs ∩ Lav = ∅ *)
-           intros α0 Hα0; pose proof (Hfrs α0 Hα0) as Hf; clear - Hf; fsetdec.
-           ++ (* the SOLVE block's payloads *) exact HFs.
-           ++ (* wf Pa : PIN the split — with Ξc = nil the [Θ1 ++ Θ2] reading is
-              [Ξs ++ Θ0], and an unpinned [eapply] shelves an evar that
-              reappears later in the bullet list *)
-           cbn [app].
-           eapply (@a_wf_pskl_strip_tvar Ξs β Θ0);
-             [ cbn [app] in HwfPa; exact HwfPa | exact HβPa ].
-           ++ (* a_wf_aenv *) cbn. exact HwfΘ0.
-           ++ (* α ∉ dom nil *) cbn; clear; fsetdec.
-           ++ (* κc images *) apply Forall_nil.
-           ++ (* a_inc : only the SOLVE block is prefixed here (Ξc = ·) *)
-           cbn [app].
-           apply a_inc_flex_prefix_build;
-             [ exact Hfms | exact Hks
-             | eapply forall_wf_mono_weaken; [ exact Hmon | exact HFs ]
-             | exact Hκ ].
-           ++ (* a_inc_equiv *) apply a_inc_equiv_refl; exact Hκ.
-           ++ (* κc fresh *) intros α0 Hα0; cbn in Hα0; clear - Hα0; fsetdec.
-           ++ (* precision *)
-              cbn [app] in Hprec |- *.
-              eapply ad_partial_precise_strengthen_tvar; exact Hprec.
-           ++ (* ftv 𝒞 : the RIGHT disjunct, at the UNDESCENDED target *)
-              intros _; right; repeat split; try reflexivity;
-              [ apply ast_var | eexists; reflexivity ].
-           ++ (* the SOLVE's block vs the UNDESCENDED constraint.  The IH's
-                 bound is at the OPENED target, which mentions STRICTLY MORE
-                 ([ftvar_in_pskl_open_pskl_wrt_pskl_lower]). *)
-              intros α0 Hα0.
-              pose proof (HapartR α0 Hα0) as Hf.
-              pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_lower
-                            (ptyp_to_pskl A0) (pskl_var_f β)) as Hlo.
-              cbn [ftvar_in_a_cstrs ftvar_in_a_cstr ftvar_in_pskl] in Hf |- *.
-              clear - Hf Hlo. fsetdec.
-        -- (* ---- a ∀-headed stack: LS-ForallR is the only row ---- *)
-           exists (a_cstr_sub mode_tc Tc :: nil),
-                  nil, Ξs, Pa, (@nil (atom * ptyp)), κs.
-           repeat split.
-           ++ (* a_looksub : LS-ForallR lifts the IH's collection VERBATIM *)
-              apply a_looksub__forall_r with (β := β);
-                [ exact (ptyp_to_pskl_ghost_free (ptyp_all A0))
-                | clear - Fr; solve_notin
-                | apply alpha_stack_ftv; apply ast_all with (L := Lst);
-                  exact Hstf
-                | discriminate
-                | exact HLK ].
-           ++ (* solve : 𝒞 is unchanged, so β is simply stripped *)
-              cbn [app] in HSolve |- *.
-              exact (@a_solve_cstr_strip_tvar_mid nil β Θ0 _ _ _ _ HSolve).
-           ++ (* all_flex_mono Ξs *) exact Hfms.
-           ++ (* uniq Ξs *) exact Hus.
-           ++ (* keys κs = keys Ξs *) exact Hks.
-           ++ (* dom Ξs ∩ Lav = ∅ *)
-           intros α0 Hα0; pose proof (Hfrs α0 Hα0) as Hf; clear - Hf; fsetdec.
-           ++ (* the SOLVE block's payloads *) exact HFs.
-           ++ (* wf Pa : PIN the split — with Ξc = nil the [Θ1 ++ Θ2] reading is
-              [Ξs ++ Θ0], and an unpinned [eapply] shelves an evar that
-              reappears later in the bullet list *)
-           cbn [app].
-           eapply (@a_wf_pskl_strip_tvar Ξs β Θ0);
-             [ cbn [app] in HwfPa; exact HwfPa | exact HβPa ].
-           ++ (* a_wf_aenv *) cbn. exact HwfΘ0.
-           ++ (* α ∉ dom nil *) cbn; clear; fsetdec.
-           ++ (* κc images *) apply Forall_nil.
-           ++ (* a_inc : only the SOLVE block is prefixed here (Ξc = ·) *)
-           cbn [app].
-           apply a_inc_flex_prefix_build;
-             [ exact Hfms | exact Hks
-             | eapply forall_wf_mono_weaken; [ exact Hmon | exact HFs ]
-             | exact Hκ ].
-           ++ (* a_inc_equiv *) apply a_inc_equiv_refl; exact Hκ.
-           ++ (* κc fresh *) intros α0 Hα0; cbn in Hα0; clear - Hα0; fsetdec.
-           ++ (* precision *)
-              cbn [app] in Hprec |- *.
-              eapply ad_partial_precise_strengthen_tvar; exact Hprec.
-           ++ (* ftv 𝒞 : the RIGHT disjunct, at the PEELED target *)
-              intros _; right; repeat split; try reflexivity;
-              [ apply ast_all with (L := Lst); exact Hstf
-              | eexists; reflexivity ].
-           ++ (* the SOLVE's block vs the constraints: LS-ForallR lifts the
-                 IH's collection VERBATIM *)
-              exact HapartR.
-        -- (* ---- a ⫯-headed stack: identical ---- *)
-           exists (a_cstr_sub mode_tc Tc :: nil),
-                  nil, Ξs, Pa, (@nil (atom * ptyp)), κs.
-           repeat split.
-           ++ (* a_looksub : LS-ForallR *)
-              apply a_looksub__forall_r with (β := β);
-                [ exact (ptyp_to_pskl_ghost_free (ptyp_all A0))
-                | clear - Fr; solve_notin
-                | apply alpha_stack_ftv; apply ast_univ_ghost; exact Hstt
-                | discriminate
-                | exact HLK ].
-           ++ (* solve *)
-              cbn [app] in HSolve |- *.
-              exact (@a_solve_cstr_strip_tvar_mid nil β Θ0 _ _ _ _ HSolve).
-           ++ (* all_flex_mono Ξs *) exact Hfms.
-           ++ (* uniq Ξs *) exact Hus.
-           ++ (* keys κs = keys Ξs *) exact Hks.
-           ++ (* dom Ξs ∩ Lav = ∅ *)
-           intros α0 Hα0; pose proof (Hfrs α0 Hα0) as Hf; clear - Hf; fsetdec.
-           ++ (* the SOLVE block's payloads *) exact HFs.
-           ++ (* wf Pa : PIN the split — with Ξc = nil the [Θ1 ++ Θ2] reading is
-              [Ξs ++ Θ0], and an unpinned [eapply] shelves an evar that
-              reappears later in the bullet list *)
-           cbn [app].
-           eapply (@a_wf_pskl_strip_tvar Ξs β Θ0);
-             [ cbn [app] in HwfPa; exact HwfPa | exact HβPa ].
-           ++ (* a_wf_aenv *) cbn. exact HwfΘ0.
-           ++ (* α ∉ dom nil *) cbn; clear; fsetdec.
-           ++ (* κc images *) apply Forall_nil.
-           ++ (* a_inc : only the SOLVE block is prefixed here (Ξc = ·) *)
-           cbn [app].
-           apply a_inc_flex_prefix_build;
-             [ exact Hfms | exact Hks
-             | eapply forall_wf_mono_weaken; [ exact Hmon | exact HFs ]
-             | exact Hκ ].
-           ++ (* a_inc_equiv *) apply a_inc_equiv_refl; exact Hκ.
-           ++ (* κc fresh *) intros α0 Hα0; cbn in Hα0; clear - Hα0; fsetdec.
-           ++ (* precision *)
-              cbn [app] in Hprec |- *.
-              eapply ad_partial_precise_strengthen_tvar; exact Hprec.
-           ++ (* ftv 𝒞 : the RIGHT disjunct *)
-              intros _; right; repeat split; try reflexivity;
-              [ apply ast_univ_ghost; exact Hstt | eexists; reflexivity ].
-           ++ (* the SOLVE's block vs the constraints: kept VERBATIM *)
-              exact HapartR.
+        (* ⭐⭐ THE ForallR-PRIORITY GUARD.  The stack is not the BARE variable
+           (that is the leaf's [P = α] case, [HPnα]), so it is ∀- or ⫯-headed,
+           and there LS-ForallR is the ONLY row: it lifts the IH's collection
+           with 𝒞 KEPT, so β is stripped from the solve and [β ∉ ftv Pa]
+           comes from precision instead of from [β ∉ ftv 𝒞]. *)
+        eapply (looksub_solve_single Δρ).
+        -- apply a_looksub__forall_r with (β := β);
+             [ exact (ptyp_to_pskl_ghost_free (ptyp_all A0))
+             | clear - Fr; solve_notin
+             | exact (alpha_stack_ftv Hstk)
+             | exact HPnα
+             | exact HLK ].
+        -- exact (@a_solve_cstr_strip_tvar_mid nil β Θ0 _ _ _ _ HSolve).
+        -- exact Hfms.
+        -- exact Hus.
+        -- exact Hks.
+        -- intros α0 Hα0; pose proof (Hfrs α0 Hα0) as Hf; clear - Hf; fsetdec.
+        -- exact HFs.
+        -- exact Hmon.
+        -- cbn [app] in HwfPa; exact (@a_wf_pskl_strip_tvar Ξs β Θ0 _ _ HwfPa HβPa).
+        -- exact HwfΘ0.
+        -- exact Hκ.
+        -- eapply ad_partial_precise_strengthen_tvar; exact Hprec.
+        -- exact Hstk.
+        -- exact HapartR.
   - (* UnivGhostR : NM = SK at M = TC, so [skmod] forces P0 = □ again and
        the case closes exactly like Infer. *)
     assert (HP0 : P0 = pskl_ghost)
