@@ -395,6 +395,158 @@ Qed.
 
 Arguments lift_consis_open_scope {ρ V Θ Θr Θout S α β} _ _ _ _ _ _ _ _ _.
 
+(** ⭐ After an opener-pushing premise whose junk suffix [Ξ] the row
+    DISCARDS (S-ForallR, and the typing level's [_check_step] rows): split
+    the premise's output at [Ξ] and at the opener, and hand the remaining
+    context back at the CALLER's pair list — the junk's pairs and the
+    opener pair cut off. *)
+Lemma lift_opener_strip :
+  forall {ρ ρ0 ρe V Ξ α α2 Θ0 Θ0' Θ1 Θ1out S0},
+  (forall a b, In (a, b) ρ0 -> In (a, b) ρ) ->
+  (forall a, a `in` dom Ξ -> a `notin` cols_l ρ0) ->
+  rel_inj ρ V ->
+  rel_fun ρ V (dom Θ0) ->
+  V ∪ cols_r ρ [<=] S0 ->
+  {{ ⊢ Θ0 }}a ->
+  V [<=] ftvar_in_aenv Θ0 ->
+  (forall a, a `in` dom Θ1 -> a `notin` dom Θ0 -> a `notin` cols_l ρ) ->
+  uniq (Ξ ++ Θ0) ->
+  uniq Θ0' ->
+  dom Θ0' [<=] S0 ->
+  α `notin` V ->
+  α `notin` dom Ξ ->
+  rel_inj ((α, α2) :: restrict_pairs α α2 ρ0) V ->
+  V ∪ cols_r ((α, α2) :: restrict_pairs α α2 ρ0) [<=] add α2 S0 ->
+  {{ ⊢ (Ξ ++ (α ~ abind_tvar) ++ Θ1) }}a ->
+  rel_aenv (ρe ++ (α, α2) :: restrict_pairs α α2 ρ0) V
+    (Ξ ++ (α ~ abind_tvar) ++ Θ1) Θ1out ->
+  rel_ext ρe (ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0)) (add α2 S0) ->
+  (forall a b, In (a, b) ρe ->
+     a `in` dom (Ξ ++ (α ~ abind_tvar) ++ Θ1) /\ b `in` dom Θ1out) ->
+  uniq Θ1out ->
+  exists Ξ2 Θ1',
+    Θ1out = Ξ2 ++ (α2 ~ abind_tvar) ++ Θ1'
+    /\ rel_aenv (ρe ++ (α, α2) :: restrict_pairs α α2 ρ0) V Ξ Ξ2
+    /\ uniq (Ξ2 ++ Θ0')
+    /\ rel_inj (ρe ++ (α, α2) :: restrict_pairs α α2 ρ0) V
+    /\ (forall b, ~ In (α, b) ρe)
+    /\ (forall a, ~ In (a, α2) ρe)
+    /\ rel_aenv (restrict_l (dom Ξ) ρe ++ ρ) V Θ1 Θ1'
+    /\ flex_agree_rel (restrict_l (dom Ξ) ρe ++ ρ) V Θ1 Θ1'
+    /\ rel_ext (restrict_l (dom Ξ) ρe) (ftvar_in_aenv Θ0) S0
+    /\ (forall a b, In (a, b) (restrict_l (dom Ξ) ρe) ->
+          a `in` dom Θ1 /\ b `in` dom Θ1').
+Proof.
+  intros ρ ρ0 ρe V Ξ α α2 Θ0 Θ0' Θ1 Θ1out S0 Hρ0incl HΞcols Hinj Hfun Hcov
+    Hwf Hscp Hblk Huq Huq2p HdΘ HαV HαΞ Hinj' Hcov' HwfOut HrΘout Hext
+    Hdomout HuqOut2.
+  assert (Hsc0 : ftvar_in_aenv Θ0 [<=] dom Θ0)
+    by (apply a_wf_aenv_ftv_dom; exact Hwf).
+  assert (HuqOut : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ1))
+    by (apply a_wf_aenv_uniq; exact HwfOut).
+  assert (HαΘ1 : α `notin` dom Θ1) by (eapply fresh_mid_tail; exact HuqOut).
+  assert (HΞΘ1 : dom Ξ ∩ dom Θ1 [=] empty).
+  { assert (Hd : disjoint Ξ ((α ~ abind_tvar) ++ Θ1))
+      by (clear - HuqOut; solve_uniq).
+    unfold disjoint in Hd. simpl in Hd. clear - Hd. fsetdec. }
+  assert (HwfΘ1 : {{ ⊢ Θ1 }}a).
+  { eapply a_wf_aenv_strip_prefix.
+    eapply a_wf_aenv_strip_prefix with (Ξ := Ξ). simpl_env. exact HwfOut. }
+  assert (Hftv1 : ftvar_in_aenv Θ1 [<=] dom Θ1)
+    by (apply a_wf_aenv_ftv_dom; exact HwfΘ1).
+  assert (HΞf1 : dom Ξ ∩ ftvar_in_aenv Θ1 [=] empty)
+    by (clear - HΞΘ1 Hftv1; fsetdec).
+  (* ---- the pair list the premise ran at, and its injectivity ---- *)
+  assert (Hinjout : rel_inj (ρe ++ (α, α2) :: restrict_pairs α α2 ρ0) V)
+    by (eapply rel_inj_app; [ exact Hinj' | exact Hext | exact Hcov' ]).
+  assert (Hαρe : forall b, ~ In (α, b) ρe).
+  { intros b Hin. destruct Hext as [Hxfr _].
+    destruct (Hxfr _ _ Hin) as [Hna _].
+    apply Hna. simpl. clear; fsetdec. }
+  assert (Hα2ρe : forall a, ~ In (a, α2) ρe).
+  { intros a Hin. destruct Hext as [Hxfr _].
+    destruct (Hxfr _ _ Hin) as [_ Hnb].
+    apply Hnb. clear; fsetdec. }
+  assert (Hαonly : forall y,
+            rel_atom (ρe ++ (α, α2) :: restrict_pairs α α2 ρ0) V α y ->
+            y = α2).
+  { intros y Hat. inversion Hat as [ a0 b0 Hin | a0 HinV ]; subst.
+    - apply in_app_or in Hin. destruct Hin as [Hin | [Ehd | Hin]].
+      + exfalso. exact (Hαρe _ Hin).
+      + inversion Ehd; reflexivity.
+      + exfalso. apply (@restrict_pairs_notin_l α α2 ρ0).
+        eapply cols_l_in; exact Hin.
+    - exfalso. exact (HαV HinV). }
+  (* ---- SPLIT the premise's output at the junk suffix, then the opener *)
+  destruct (@rel_aenv_app_inv_l Ξ
+              (ρe ++ (α, α2) :: restrict_pairs α α2 ρ0) V
+              ((α ~ abind_tvar) ++ Θ1) Θ1out HrΘout)
+    as (Ξ2 & Θrest & Eout & HrΞ2 & HrTail).
+  subst Θ1out.
+  destruct (rel_aenv_cons_inv_l HrTail)
+    as (b & bd2 & Θ1' & E2 & Hab2 & Hbd2 & HrΘ1').
+  subst Θrest. inversion Hbd2; subst.
+  assert (Eb : b = α2) by (apply Hαonly; exact Hab2).
+  subst b.
+  exists Ξ2, Θ1'.
+  split; [ reflexivity | ].
+  split; [ exact HrΞ2 | ].
+  (* ---- side 2's junk is apart from side 2's input ---- *)
+  split.
+  { apply uniq_app_4.
+    - clear - HuqOut2. solve_uniq.
+    - exact Huq2p.
+    - apply disjoint_from_pointwise. intros a Ha.
+      destruct (rel_aenv_dom_r_inv HrΞ2 Ha) as (a' & Ha' & Hat').
+      inversion Hat' as [ z0 y0 Hin | z0 HinV ]; subst.
+      + apply in_app_or in Hin. destruct Hin as [Hin | [Ehd | Hin]].
+        * destruct Hext as [Hxfr _]. destruct (Hxfr _ _ Hin) as [_ Hnb].
+          clear - Hnb HdΘ. fsetdec.
+        * exfalso. injection Ehd as E1 E2x. subst a'.
+          clear - Ha' HαΞ. fsetdec.
+        * exfalso. apply (HΞcols a' Ha'). eapply cols_l_in.
+          eapply restrict_pairs_incl; exact Hin.
+      + exfalso.
+        assert (Had : a `in` dom Θ0)
+          by (apply Hscp in HinV; clear - HinV Hsc0; fsetdec).
+        assert (Hd : disjoint Ξ Θ0) by (clear - Huq; solve_uniq).
+        unfold disjoint in Hd. clear - Hd Ha' Had. fsetdec. }
+  split; [ exact Hinjout | ].
+  split; [ exact Hαρe | ].
+  split; [ exact Hα2ρe | ].
+  (* ---- hand back at the CALLER's pair list ---- *)
+  assert (HαfΘ1 : α `notin` ftvar_in_aenv Θ1)
+    by (clear - HαΘ1 Hftv1; fsetdec).
+  assert (HrΘfin : rel_aenv (restrict_l (dom Ξ) ρe ++ ρ) V Θ1 Θ1').
+  { eapply rel_aenv_mono.
+    - eapply rel_aenv_restrict_l; [ | exact HΞf1 ].
+      eapply rel_aenv_drop_mid; [exact HrΘ1' | exact HαfΘ1].
+    - apply restrict_l_app_restore.
+      intros a b Hin. apply Hρ0incl. eapply restrict_pairs_incl; exact Hin.
+    - intros z Hz; exact Hz. }
+  assert (Hextfin : rel_ext (restrict_l (dom Ξ) ρe) (ftvar_in_aenv Θ0) S0).
+  { eapply rel_ext_mono;
+      [ exact Hext | intros a b0 Hin; eapply restrict_l_incl; exact Hin
+      | simpl; clear; fsetdec | clear; fsetdec ]. }
+  split; [ exact HrΘfin | ].
+  split.
+  { eapply rel_aenv_flex_agree_ext;
+      [ exact HrΘfin | exact Hinj | exact Hfun | exact Hextfin
+      | apply dom_subset_ftvar_in_aenv
+      | clear - Hscp Hsc0; fsetdec | exact Hcov | exact Hblk ]. }
+  split; [ exact Hextfin | ].
+  eapply rel_aenv_restrict_l_dom;
+    [ exact HrΞ2 | exact Hinjout
+    | intros a b Hin; apply in_or_app; auto | ].
+  intros a b Hin. destruct (Hdomout _ _ Hin) as [Hd1 Hd2].
+  destruct Hext as [Hfresh _]. destruct (Hfresh _ _ Hin) as [Hna Hnb].
+  assert (Ha : a <> α) by (intros ->; apply Hna; simpl; clear; fsetdec).
+  assert (Hb : b <> α2) by (intros ->; apply Hnb; clear; fsetdec).
+  simpl_env in Hd1. simpl_env in Hd2. rewrite !dom_app.
+  split; [ clear - Hd1 Ha; fsetdec | clear - Hd2 Hb; fsetdec ].
+Qed.
+
+
 (* ===================================================================== *)
 (*  ⭐⭐ THE THREE ∀ ROWS, ONE PROOF.                                       *)
 (*                                                                        *)

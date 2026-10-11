@@ -461,7 +461,6 @@ Proof.
     destruct (atom_fresh S0) as [α2 Hα2].
     rewrite dom_app in Hfr.
     assert (Hαd : α `notin` dom Θ0) by (clear - Hfr; fsetdec).
-    assert (HαΘ1 : α `notin` dom Θ1) by (clear - Hfr; fsetdec).
     assert (HfrA : α `notin` ftvar_in_pskl A) by (clear - Hfr; fsetdec).
     assert (HfrB : α `notin` ftvar_in_pskl B) by (clear - Hfr; fsetdec).
     assert (Hsc0 : ftvar_in_aenv Θ0 [<=] dom Θ0)
@@ -561,76 +560,21 @@ Proof.
     (* ---- side 1's output, via a_sub's own soundness ---- *)
     destruct ((proj1 a_sub_output_wf_bundle) _ _ _ _ _ _ _ Hprem Hwf' Hwfp0'
                 Hwfp') as [Hle1 [HwfOut HwfQ]].
-    assert (HuqOut : uniq (Ξ ++ (α ~ abind_tvar) ++ Θ1))
-      by (apply a_wf_aenv_uniq; exact HwfOut).
-    assert (HΞΘ1 : dom Ξ ∩ dom Θ1 [=] empty).
-    { assert (Hd : disjoint Ξ ((α ~ abind_tvar) ++ Θ1))
-        by (clear - HuqOut; solve_uniq).
-      unfold disjoint in Hd. simpl in Hd. clear - Hd. fsetdec. }
-    assert (HwfΘ1 : {{ ⊢ Θ1 }}a).
-    { eapply a_wf_aenv_strip_prefix.
-      eapply a_wf_aenv_strip_prefix with (Ξ := Ξ). simpl_env. exact HwfOut. }
-    assert (Hftv1 : ftvar_in_aenv Θ1 [<=] dom Θ1)
-      by (apply a_wf_aenv_ftv_dom; exact HwfΘ1).
-    assert (HΞf1 : dom Ξ ∩ ftvar_in_aenv Θ1 [=] empty)
-      by (clear - HΞΘ1 Hftv1; fsetdec).
-    (* ---- the pair list the premise ran at, and its injectivity ---- *)
-    assert (Hinjout : rel_inj (ρe ++ (α, α2) :: restrict_pairs α α2 ρ0) V)
-      by (eapply rel_inj_app; [ exact Hinj' | exact Hext | exact Hcov' ]).
-    assert (Hαρe : forall b, ~ In (α, b) ρe).
-    { intros b Hin. destruct Hext as [Hxfr _]. destruct (Hxfr _ _ Hin) as [Hna _].
-      apply Hna. simpl. clear; fsetdec. }
-    assert (Hαonly : forall y,
-              rel_atom (ρe ++ (α, α2) :: restrict_pairs α α2 ρ0) V α y ->
-              y = α2).
-    { intros y Hat. inversion Hat as [ a0 b0 Hin | a0 HinV ]; subst.
-      - apply in_app_or in Hin. destruct Hin as [Hin | [Ehd | Hin]].
-        + exfalso. exact (Hαρe _ Hin).
-        + inversion Ehd; reflexivity.
-        + exfalso. apply (@restrict_pairs_notin_l α α2 ρ0).
-          eapply cols_l_in; exact Hin.
-      - exfalso. exact (HαV HinV). }
-    (* ---- SPLIT the premise's output at the junk suffix, then the opener ---- *)
-    destruct (@rel_aenv_app_inv_l Ξ
-                (ρe ++ (α, α2) :: restrict_pairs α α2 ρ0) V
-                ((α ~ abind_tvar) ++ Θ1) Θ1out HrΘout)
-      as (Ξ2 & Θrest & Eout & HrΞ2 & HrTail).
-    subst Θ1out.
-    destruct (rel_aenv_cons_inv_l HrTail)
-      as (b & bd2 & Θ1' & E2 & Hab2 & Hbd2 & HrΘ1').
-    subst Θrest. inversion Hbd2; subst.
-    assert (Eb : b = α2)
-      by (apply Hαonly; exact Hab2).
-    subst b.
-    (* ---- side 2's junk is apart from side 2's input ---- *)
-    assert (HΞ2Θ0 : forall a, a `in` dom Ξ2 -> a `notin` dom Θ0').
-    { intros a Ha.
-      destruct (rel_aenv_dom_r_inv HrΞ2 Ha) as (a' & Ha' & Hat').
-      inversion Hat' as [ x0 y0 Hin | x0 HinV ]; subst.
-      - apply in_app_or in Hin. destruct Hin as [Hin | [Ehd | Hin]].
-        + destruct Hext as [Hxfr _]. destruct (Hxfr _ _ Hin) as [_ Hnb].
-          clear - Hnb HdΘ. fsetdec.
-        + exfalso. injection Ehd as E1 E2x. subst a'.
-          clear - Ha' Hfr. fsetdec.
-        + exfalso. apply (HΞcols a' Ha'). eapply cols_l_in.
-          eapply restrict_pairs_incl; exact Hin.
-      - exfalso.
-        assert (Had : a `in` dom Θ0) by (apply Hscp in HinV; clear - HinV Hsc0; fsetdec).
-        assert (Hd : disjoint Ξ Θ0) by (clear - Huq; solve_uniq).
-        unfold disjoint in Hd. clear - Hd Ha' Had. fsetdec. }
     assert (HcovS : ftvar_in_aenv ((α2 ~ abind_tvar) ++ Θ0')
                     ∪ ftvar_in_pskl (open_pskl_wrt_pskl B2 (pskl_var_f α2))
                     ∪ ftvar_in_pskl P' [<=] add α2 S0).
     { repeat apply AtomSetProperties.union_subset_3;
         [ exact Hftv2' | clear - HcovP'; fsetdec | clear - HcovP'; fsetdec ]. }
     destruct (e_sub_sub_flex_sound) as [HsndS _].
-    destruct (HsndS _ _ _ _ _ _ _ _ _ De Huq2' HcovS)
-      as [HaD [HuqOut2 [Hftv1out HftvQ]]].
-    assert (Huq2Ξ : uniq (Ξ2 ++ Θ0')).
-    { apply uniq_app_4.
-      - clear - HuqOut2. solve_uniq.
-      - exact Huq2p.
-      - apply disjoint_from_pointwise. exact HΞ2Θ0. }
+    destruct (HsndS _ _ _ _ _ _ _ _ _ De Huq2' HcovS) as [_ [HuqOut2 _]].
+    assert (HαΞ : α `notin` dom Ξ) by (clear - Hfr; fsetdec).
+    (* ---- split the output at the junk and the opener, and hand it back
+       at the CALLER's pair list ---- *)
+    destruct (lift_opener_strip Hρ0incl HΞcols Hinj Hfun Hcov Hwf Hscp Hblk
+                Huq Huq2p HdΘ HαV HαΞ Hinj' Hcov' HwfOut HrΘout Hext Hdomout
+                HuqOut2)
+      as (Ξ2 & Θ1' & -> & HrΞ2 & Huq2Ξ & _ & _ & _ & HrΘfin & Hagrfin
+          & Hextfin & Hdomeo).
     (* ⭐ the e-rule PINS the premise's yield; the motive only relates it *)
     assert (EQ' : Q' = open_pskl_wrt_pskl B2 (pskl_var_f α2))
       by (exact ((proj1 e_sub_tc_yield) _ _ _ _ _ _ _ _ _ De eq_refl eq_refl)).
@@ -642,60 +586,16 @@ Proof.
         [ eapply rel_pskl_ghost_free; [ exact HrP0 | exact Hgf ]
         | eapply rel_aenv_suffix; [ exact HrΞ2 | exact Hsuf ]
         | exact Huq2Ξ | exact Hα2 | exact De ]. }
-    (* ---- hand back at the CALLER's pair list ---- *)
-    remember (restrict_l (dom Ξ) ρe) as ρeo eqn:Eρeo.
-    assert (Hρeoincl : forall a b0, In (a, b0) ρeo -> In (a, b0) ρe)
-      by (subst ρeo; intros a b0 Hin; eapply restrict_l_incl; exact Hin).
-    assert (Hdomeo : forall a b0, In (a, b0) ρeo ->
-              a `in` dom Θ1 /\ b0 `in` dom Θ1').
-    { subst ρeo. eapply rel_aenv_restrict_l_dom;
-        [ exact HrΞ2 | exact Hinjout
-        | intros a b Hin; apply in_or_app; auto | ].
-      intros a b Hin. destruct (Hdomout _ _ Hin) as [Hd1 Hd2].
-      destruct Hext as [Hfresh _]. destruct (Hfresh _ _ Hin) as [Hna Hnb].
-      assert (Ha : a <> α) by (intros ->; apply Hna; simpl; clear; fsetdec).
-      assert (Hb : b <> α2) by (intros ->; apply Hnb; clear; fsetdec).
-      simpl_env in Hd1. simpl_env in Hd2. rewrite !dom_app.
-      split; [ clear - Hd1 Ha; fsetdec | clear - Hd2 Hb; fsetdec ]. }
-    exists S1, ρeo, Θ1', (pskl_all_syn B2).
+    exists S1, (restrict_l (dom Ξ) ρe), Θ1', (pskl_all_syn B2).
     split; [ exact Dc | ].
-    (* the CONTEXT relation: drop the JUNK pairs and the OPENER pair, then
-       widen back to the caller's list *)
-    assert (HαfΘ1 : α `notin` ftvar_in_aenv Θ1).
-    { assert (Hd : α `notin` dom Θ1) by (clear - Hfr; fsetdec).
-      clear - Hd Hftv1. fsetdec. }
-    assert (Hincl : forall a b0,
-              In (a, b0) (restrict_l (dom Ξ)
-                            (ρe ++ restrict_pairs α α2 ρ0)) ->
-              In (a, b0) (ρeo ++ ρ)).
-    { subst ρeo. apply restrict_l_app_restore.
-      intros a b Hin. apply Hρ0incl. eapply restrict_pairs_incl; exact Hin. }
-    assert (HrΘfin : rel_aenv (ρeo ++ ρ) V Θ1 Θ1').
-    { eapply rel_aenv_mono.
-      - eapply rel_aenv_restrict_l; [ | exact HΞf1 ].
-        eapply rel_aenv_drop_mid; [exact HrΘ1' | exact HαfΘ1].
-      - exact Hincl.
-      - intros z Hz; exact Hz. }
     split; [ exact HrΘfin | ].
-    assert (Hextfin : rel_ext ρeo (ftvar_in_aenv Θ0) S0).
-    { eapply rel_ext_mono;
-        [ exact Hext | exact Hρeoincl
-        | simpl; clear; fsetdec | clear; fsetdec ]. }
-    assert (Hagrfin : flex_agree_rel (ρeo ++ ρ) V Θ1 Θ1').
-    { eapply rel_aenv_flex_agree_ext;
-        [ exact HrΘfin | exact Hinj | exact Hfun | exact Hextfin
-        | apply dom_subset_ftvar_in_aenv
-        | clear - Hscp Hsc0; fsetdec | exact Hcov | exact Hblk ]. }
-
     split; [ exact Hagrfin | ].
     (* ---- the YIELD is the check-against, so it just widens ---- *)
     split.
     { eapply rel_pskl_mono;
         [ exact HrP0 | intros x y Hx; apply in_or_app; right; exact Hx
         | intros x Hx; exact Hx ]. }
-    (* ---- rel_ext, weakened off the opener ---- *)
-    split; [ exact Hextfin | ].
-    exact Hdomeo.
+    exact (conj Hextfin Hdomeo).
   - (* S-UnivGhostR : output = ⫯subject, context unchanged *)
     intros Θ0 P Hg.
     intros S0 Θ0' P0' P' ρ V HrΘ HrP0 HrP Hagr Hinj Hfun Hwf Huq2p Hftv2
