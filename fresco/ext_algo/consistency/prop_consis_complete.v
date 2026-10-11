@@ -1123,8 +1123,7 @@ Proof.
         r Hr ps Hav HS HT HQ.
       exists (mk_consis_result (cs_supply r)
                 ((β0 ~ abind_tvar) ++ cs_ctx r) pskl_unit), ps.
-      split; [ reflexivity | ].
-      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      refine (conj eq_refl (conj Hav (conj HS (conj _ I)))).
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
     + (* term variable, TYPE payload — Assign-SkipTmVar *)
@@ -1138,8 +1137,7 @@ Proof.
         r Hr ps Hav HS HT HQ.
       exists (mk_consis_result (cs_supply r)
                 ((β0 ~ abind_var_typ A) ++ cs_ctx r) pskl_unit), ps.
-      split; [ reflexivity | ].
-      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      refine (conj eq_refl (conj Hav (conj HS (conj _ I)))).
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
     + (* term variable, SKELETON payload *)
@@ -1153,8 +1151,7 @@ Proof.
         r Hr ps Hav HS HT HQ.
       exists (mk_consis_result (cs_supply r)
                 ((β0 ~ abind_var_skl Q) ++ cs_ctx r) pskl_unit), ps.
-      split; [ reflexivity | ].
-      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      refine (conj eq_refl (conj Hav (conj HS (conj _ I)))).
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
     + (* undefined flexible head *)
@@ -1213,8 +1210,7 @@ Proof.
              r Hr ps Hav HS HT HQ.
            exists (mk_consis_result (cs_supply r)
                      ((β0 ~ abind_flex_mono) ++ cs_ctx r) pskl_unit), ps.
-           split; [ reflexivity | ].
-           repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+           refine (conj eq_refl (conj Hav (conj HS (conj _ I)))).
            cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
            head_fresh Hav Hcov.
     + (* defined flexible head — Assign-Assign *)
@@ -1247,8 +1243,7 @@ Proof.
         r Hr ps Hav HS HT HQ.
       exists (mk_consis_result (cs_supply r)
                 ((β0 ~ abind_flex_mono_def τ) ++ cs_ctx r) pskl_unit), ps.
-      split; [ reflexivity | ].
-      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      refine (conj eq_refl (conj Hav (conj HS (conj _ I)))).
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
   - (* unify *)
@@ -1268,8 +1263,7 @@ Proof.
         r Hr ps Hav HS HT HQ.
       exists (mk_consis_result (cs_supply r)
                 ((γ ~ abind_tvar) ++ cs_ctx r) pskl_unit), ps.
-      split; [ reflexivity | ].
-      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      refine (conj eq_refl (conj Hav (conj HS (conj _ I)))).
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
     + (* term variable, TYPE payload *)
@@ -1286,8 +1280,7 @@ Proof.
         r Hr ps Hav HS HT HQ.
       exists (mk_consis_result (cs_supply r)
                 ((γ ~ abind_var_typ A) ++ cs_ctx r) pskl_unit), ps.
-      split; [ reflexivity | ].
-      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      refine (conj eq_refl (conj Hav (conj HS (conj _ I)))).
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
     + (* term variable, SKELETON payload *)
@@ -1304,8 +1297,7 @@ Proof.
         r Hr ps Hav HS HT HQ.
       exists (mk_consis_result (cs_supply r)
                 ((γ ~ abind_var_skl Q) ++ cs_ctx r) pskl_unit), ps.
-      split; [ reflexivity | ].
-      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      refine (conj eq_refl (conj Hav (conj HS (conj _ I)))).
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
     + (* undefined flexible head — L / R / Skip *)
@@ -1347,8 +1339,7 @@ Proof.
              r Hr ps Hav HS HT HQ.
            exists (mk_consis_result (cs_supply r)
                      ((γ ~ abind_flex_mono) ++ cs_ctx r) pskl_unit), ps.
-           split; [ reflexivity | ].
-           repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+           refine (conj eq_refl (conj Hav (conj HS (conj _ I)))).
            cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
            head_fresh Hav Hcov.
     + (* defined flexible head — Flex-Flex-Assign *)
@@ -1384,8 +1375,7 @@ Proof.
         r Hr ps Hav HS HT HQ.
       exists (mk_consis_result (cs_supply r)
                 ((γ ~ abind_flex_mono_def τ) ++ cs_ctx r) pskl_unit), ps.
-      split; [ reflexivity | ].
-      repeat apply conj; [ exact Hav | cbn [cs_supply proj1_sig]; exact HS | | exact I ].
+      refine (conj eq_refl (conj Hav (conj HS (conj _ I)))).
       cbn [cs_ctx proj1_sig]. rewrite swaps_aenv_app_dist, HT. f_equal.
       head_fresh Hav Hcov.
   - (* consis *)
