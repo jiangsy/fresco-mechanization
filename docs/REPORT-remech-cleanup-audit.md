@@ -1137,7 +1137,8 @@ in its own header:
 
 My scan finds 28 rather than 20, and the header already names the five divergent
 ones (`msubst_pskl_subst_var`, `a_wf_pskl_all_of_one`,
-`pskl_to_bskl_inh_univ_ghost_inv`, `binds_weaken_mid`, `a_non_flex_rename`).
+`pskl_to_bskl_inh_univ_ghost_inv`, `binds_weaken_mid`, `a_non_flex_rename` —
+the last since deleted with the L9 rename it served, replaced by the swap kit).
 
 **Recommendation (B, highest value in this report).**  Work the 28.  For each:
 identical → delete the later copy and import; alpha-variant → keep the stronger
@@ -1156,7 +1157,8 @@ defined ad hoc in **20 different proof files**:
 binds_insert_mid       ×2 (prop_soundness_consis.v, prop_completeness_sub_gen.v)
 binds_weaken_mid       ×2 (prop_inc.v, sub/look/prop_kit.v)  ← different shapes
 binds_strengthen_mid, binds_swap_mid, binds_swap_app, binds_rot_app,
-binds_rot_app_rev, binds_app_perm5, binds_mid_drop, binds_mid_swap,
+binds_rot_app_rev, binds_app_perm5, binds_mid_drop, binds_mid_swap (deleted
+with the L9 rename, replaced by the swap kit),
 binds_permute_mid, binds_split_mid, binds_strip_mid, binds_app_mid,
 binds_def_split, binds_strengthen, binds_sub_cons, uniq_app_of, uniq_mid_eq,
 list_app_assoc, app_inj_tail_length, app_split_by_head_length, app_inj_prefix,

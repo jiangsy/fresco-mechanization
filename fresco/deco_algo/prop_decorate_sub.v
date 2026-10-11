@@ -1662,7 +1662,7 @@ Local Ltac consistag_forall_open IHn n β Hβ α Hcbody HlcSbody Hlcstrip
     SIZE induction since the freshness campaign's cluster 3: the decl-side
     [a_consistag] rules are (rightly) still COFINITE, so a ∀ row must rebuild a
     whole family from the look run's ONE binder — which means MOVING that
-    binder with [a_lookeq_rename_tvar], and the moved premise is no
+    binder with [a_lookeq_move_binder], and the moved premise is no
     sub-derivation.  The move is free of residue on [Ξc] (a generated flexible
     can never BE an enclosing binder — [a_lookeq_binder_not_generated]) and
     carries 𝒞 along, which the solvetag run does not mind
@@ -2241,8 +2241,8 @@ Qed.
     consumers need, since they must meet the binder the SUBTYPING rule chose,
     not one the look run picked.
 
-    The LS-ForallR row RENAMES the run's own binder to β
-    ([a_looksub_rename_tvar]); [Ξ] survives because a generated flexible can
+    The LS-ForallR row MOVES the run's own binder to β
+    ([a_looksub_move_binder], by swap); [Ξ] survives because a generated flexible can
     never BE an enclosing binder (junk-freeness,
     [a_looksub_binder_not_generated]), while 𝒞 genuinely changes — the binder
     leaks into it — which is why the conclusion's constraint list is
@@ -3067,19 +3067,10 @@ Qed.
     binder to miss the run's OUTPUTS, and nothing relates the two: the run's
     generated flexibles and leaked binders come from a different generator
     (same "two independent fresh sources" gap as §14).  One rigid rename
-    settles it, because there is at most ONE offending name: rename [β]
-    itself to a fresh [δ].  The inputs are untouched ([β] misses them by
+    settles it, because there is at most ONE offending name: swap [β]
+    with a fresh [δ].  The inputs are untouched ([β] misses them by
     hypothesis) and the outputs move, so [𝒞] again rides across on
     [a_solvetag_subst_cstrs]. *)
-Lemma dom_rename_aenv_notin : forall Ξ γ β,
-  γ <> β -> β `notin` dom (rename_aenv γ β Ξ).
-Proof.
-  induction Ξ as [ | [x bd] Ξ' IH ]; intros γ β Hne; cbn; [ fsetdec | ].
-  assert (H' := IH γ β Hne).
-  destruct (x == β) as [-> | Hx];
-    [ clear - H' Hne | clear - H' Hne Hx ]; fsetdec.
-Qed.
-
 Lemma a_looksub_avoid_atom : forall Θ α m P P' Ξ 𝒞 ψa Ψa β δ,
   {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
   {{ 𝒞 ⊩ ψa ⤳ Ψa }}da ->
@@ -3093,15 +3084,19 @@ Lemma a_looksub_avoid_atom : forall Θ α m P P' Ξ 𝒞 ψa Ψa β δ,
     β `notin` dom Ξ' `union` ftvar_in_a_cstrs 𝒞'.
 Proof.
   intros Θ α m P P' Ξ 𝒞 ψa Ψa β δ Hlk Hst Hβα Hδα Hδβ Hβ Hδ.
-  pose proof (a_looksub_rename_tvar Hlk Hβα Hδα ltac:(clear - Hδ; solve_notin_auto))
-    as H1.
-  rewrite (@rename_aenv_fresh_eq Θ δ β) in H1 by (clear - Hβ; fsetdec).
-  rewrite (subst_pskl_in_pskl_fresh_eq P) in H1 by (clear - Hβ; fsetdec).
-  rewrite (subst_pskl_in_pskl_fresh_eq P') in H1 by (clear - Hβ; fsetdec).
-  exists (rename_aenv δ β Ξ), (subst_cstrs δ β 𝒞).
-  repeat apply conj;
-    [ exact H1 | apply a_solvetag_subst_cstrs; exact Hst | ].
-  pose proof (dom_rename_aenv_notin Ξ Hδβ) as Hd.
-  pose proof (ftvar_in_a_cstrs_subst_upper δ β 𝒞) as Hc.
-  clear - Hd Hc Hδβ; fsetdec.
+  pose proof (proj1 (a_looksub_lookeq_swap β δ) _ _ _ _ _ _ _ Hlk) as H1.
+  rewrite (swap_atom_other β δ α) in H1 by auto.
+  rewrite (swap_aenv_fresh_id β δ Θ), (swap_pskl_fresh_id β δ P),
+    (swap_pskl_fresh_id β δ P') in H1 by (clear - Hβ Hδ; fsetdec).
+  exists (swap_aenv β δ Ξ), (swap_cstrs β δ 𝒞). split.
+  - exact H1.
+  - split.
+    + rewrite swap_cstrs_as_subst by (clear - Hδ; fsetdec).
+      apply a_solvetag_subst_cstrs. exact Hst.
+    + pose proof (swap_aenv_dom_notin β δ Ξ δ) as Hd.
+      pose proof (swap_cstrs_ftv_notin β δ 𝒞 δ) as Hc.
+      rewrite swap_atom_r in Hd, Hc.
+      apply notin_union_3.
+      * apply Hd. clear - Hδ. fsetdec.
+      * apply Hc. clear - Hδ. fsetdec.
 Qed.

@@ -1093,13 +1093,12 @@ Qed.
     whose ∀ rows each had to split three ways (source = binder / target =
     binder / neither) because a substitution can COLLAPSE two names.  A
     TRANSPOSITION cannot, so [a_looksub_lookeq_swap] (prop_swap.v) proves the
-    same content with no case split at all, and the two rename lemmas below —
-    STATEMENTS UNCHANGED, so every call site is untouched — fall out of it by
-    the three "swap is the rename when the target is fresh" bridges
-    ([swap_aenv_as_rename], [swap_pskl_as_subst], [swap_cstrs_as_subst]).
-    The looked-for variable [α] is fixed by [swap_atom_other] ([β ≠ α],
-    [α1 ≠ α]), and [Ξ]'s payload-freshness comes from
-    [a_look*_generated_ftvar] as before. *)
+    same content with no case split at all, and the binder moves below fall
+    out of it by the "swap is the rename when the target is fresh" bridges
+    ([swap_pskl_as_subst], [swap_cstrs_as_subst]); the context and the
+    generated block are fixed pointwise ([swap_aenv_fresh_id]).  The
+    looked-for variable [α] is fixed by [swap_atom_other], and [Ξ]'s
+    payload-freshness comes from [a_look*_generated_ftvar] as before. *)
 
 (** [swap_cstrs] IS [subst_cstrs] when the target is fresh for the list — the
     constraint-list half of the bridge (the syntactic halves are in
@@ -1114,48 +1113,6 @@ Proof.
   destruct c; simpl in Hγ |- *; f_equal; apply swap_pskl_as_subst; fsetdec.
 Qed.
 
-Lemma a_looksub_rename_tvar : forall Θ α m P P' Ξ 𝒞 β α1,
-  {{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
-  β <> α -> α1 <> α ->
-  α1 `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union`
-             ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞 ->
-  {{ (rename_aenv α1 β Θ) ⊢ (subst_pskl_in_pskl (pskl_var_f α1) β P) ≼[ α , m ]
-    (subst_pskl_in_pskl (pskl_var_f α1) β P')
-    ⤳ (rename_aenv α1 β Ξ) ⨾ (subst_cstrs α1 β 𝒞) }}a.
-Proof.
-  intros Θ α m P P' Ξ 𝒞 β α1 Hlk Hβα Hα1α Hfr.
-  pose proof (a_looksub_generated_ftvar Hlk) as HΞ.
-  pose proof (proj1 (a_looksub_lookeq_swap β α1) _ _ _ _ _ _ _ Hlk) as Hr.
-  rewrite (swap_atom_other β α1 α ltac:(auto) ltac:(auto)) in Hr.
-  rewrite (swap_aenv_as_rename β α1 Θ) in Hr by (clear - Hfr; fsetdec).
-  rewrite (swap_aenv_as_rename β α1 Ξ) in Hr by (clear - Hfr HΞ; fsetdec).
-  rewrite (swap_pskl_as_subst β α1 P) in Hr by (clear - Hfr; fsetdec).
-  rewrite (swap_pskl_as_subst β α1 P') in Hr by (clear - Hfr; fsetdec).
-  rewrite (@swap_cstrs_as_subst β α1 𝒞) in Hr by (clear - Hfr; fsetdec).
-  exact Hr.
-Qed.
-
-Lemma a_lookeq_rename_tvar : forall Θ α P P' Ξ 𝒞 β α1,
-  {{ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ 𝒞 }}a ->
-  β <> α -> α1 <> α ->
-  α1 `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union`
-             ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞 ->
-  {{ (rename_aenv α1 β Θ) ⊢ (subst_pskl_in_pskl (pskl_var_f α1) β P) ∼[ α ]
-    (subst_pskl_in_pskl (pskl_var_f α1) β P')
-    ⤳ (rename_aenv α1 β Ξ) ⨾ (subst_cstrs α1 β 𝒞) }}a.
-Proof.
-  intros Θ α P P' Ξ 𝒞 β α1 Hlk Hβα Hα1α Hfr.
-  pose proof (a_lookeq_generated_ftvar Hlk) as HΞ.
-  pose proof (proj2 (a_looksub_lookeq_swap β α1) _ _ _ _ _ _ Hlk) as Hr.
-  rewrite (swap_atom_other β α1 α ltac:(auto) ltac:(auto)) in Hr.
-  rewrite (swap_aenv_as_rename β α1 Θ) in Hr by (clear - Hfr; fsetdec).
-  rewrite (swap_aenv_as_rename β α1 Ξ) in Hr by (clear - Hfr HΞ; fsetdec).
-  rewrite (swap_pskl_as_subst β α1 P) in Hr by (clear - Hfr; fsetdec).
-  rewrite (swap_pskl_as_subst β α1 P') in Hr by (clear - Hfr; fsetdec).
-  rewrite (@swap_cstrs_as_subst β α1 𝒞) in Hr by (clear - Hfr; fsetdec).
-  exact Hr.
-Qed.
-
 (** MOVE a look run's ∀ binder [b] (the head of its context) to a fresh
     [β]: the subjects and the constraints are renamed, the generated block
     [Ξ] survives untouched ([a_look*_binder_not_generated]). *)
@@ -1168,12 +1125,14 @@ Lemma a_looksub_move_binder : forall Θ α m P P' Ξ 𝒞 b β,
     (subst_pskl_in_pskl (pskl_var_f β) b P') ⤳ Ξ ⨾ (subst_cstrs β b 𝒞) }}a.
 Proof.
   intros * Hp Hbα HbΘ Hβα Hβb Hβ.
-  assert (Hfr : β `notin` ftvar_in_aenv ((b ~ abind_tvar) ++ Θ) `union` ftvar_in_pskl P
-                 `union` ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞)
-    by look_fresh.
-  pose proof (a_looksub_rename_tvar Hp Hbα Hβα Hfr) as Hr.
-  rewrite rename_aenv_cons_tvar_eq, (@rename_aenv_fresh_eq Θ β b HbΘ),
-    (@rename_aenv_fresh_eq Ξ β b (a_looksub_binder_not_generated Hp)) in Hr.
+  pose proof (a_looksub_generated_ftvar Hp) as HΞ.
+  pose proof (a_looksub_binder_not_generated Hp) as HbΞ.
+  pose proof (proj1 (a_looksub_lookeq_swap b β) _ _ _ _ _ _ _ Hp) as Hr.
+  rewrite swap_aenv_app, swap_aenv_one_tvar, (swap_atom_other b β α) in Hr
+    by auto.
+  rewrite (swap_aenv_fresh_id b β Θ), (swap_aenv_fresh_id b β Ξ),
+    (swap_pskl_as_subst b β P), (swap_pskl_as_subst b β P'),
+    (@swap_cstrs_as_subst b β 𝒞) in Hr by (clear - HbΘ HbΞ HΞ Hβ; fsetdec).
   exact Hr.
 Qed.
 
@@ -1186,12 +1145,14 @@ Lemma a_lookeq_move_binder : forall Θ α P P' Ξ 𝒞 b β,
     (subst_pskl_in_pskl (pskl_var_f β) b P') ⤳ Ξ ⨾ (subst_cstrs β b 𝒞) }}a.
 Proof.
   intros * Hp Hbα HbΘ Hβα Hβb Hβ.
-  assert (Hfr : β `notin` ftvar_in_aenv ((b ~ abind_tvar) ++ Θ) `union` ftvar_in_pskl P
-                 `union` ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞)
-    by look_fresh.
-  pose proof (a_lookeq_rename_tvar Hp Hbα Hβα Hfr) as Hr.
-  rewrite rename_aenv_cons_tvar_eq, (@rename_aenv_fresh_eq Θ β b HbΘ),
-    (@rename_aenv_fresh_eq Ξ β b (a_lookeq_binder_not_generated Hp)) in Hr.
+  pose proof (a_lookeq_generated_ftvar Hp) as HΞ.
+  pose proof (a_lookeq_binder_not_generated Hp) as HbΞ.
+  pose proof (proj2 (a_looksub_lookeq_swap b β) _ _ _ _ _ _ Hp) as Hr.
+  rewrite swap_aenv_app, swap_aenv_one_tvar, (swap_atom_other b β α) in Hr
+    by auto.
+  rewrite (swap_aenv_fresh_id b β Θ), (swap_aenv_fresh_id b β Ξ),
+    (swap_pskl_as_subst b β P), (swap_pskl_as_subst b β P'),
+    (@swap_cstrs_as_subst b β 𝒞) in Hr by (clear - HbΘ HbΞ HΞ Hβ; fsetdec).
   exact Hr.
 Qed.
 
