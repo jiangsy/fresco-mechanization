@@ -17,7 +17,7 @@
     sound only when ε2 is fresh for the WHOLE derivation, and "the tags of a
     derivation" is not something a [Prop] lets us collect.  A transposition is
     a bijection, so it is an automorphism of every judgment with NO freshness
-    side condition — the same reason algo/prop_swap.v takes equivariance as the
+    side condition — the same reason algo/basic/prop_swap.v takes equivariance as the
     renaming primitive for TYPE variables.  §1-§2 prove it for tag counting,
     well-scopedness and consistency; fresco/prop_tag.v has the syntactic layer.
 
@@ -52,7 +52,7 @@
     [ [=] ]; the four re-derivations that needs are in fresco/prop_tag.v §3.
 
     ⚙ NO [Set Implicit Arguments], for the same reason as
-    algo_decl/prop_conserv.v: the statements thread equations, and under the
+    algo_decl/prop_conservativity.v: the statements thread equations, and under the
     flag their set arguments would become strictly implicit. *)
 
 Require Import Coq.Lists.List.
@@ -67,7 +67,7 @@ Require Import src.fresco.prop_tag.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.decl.prop_basic.
 Require Import src.fresco.decl.prop_wellformed.
-Require Import src.fresco.decl.prop_weakening.
+Require Import src.fresco.decl.prop_ctx_mono.
 Require Import src.fresco.decl.prop_renaming.
 
 (* ===================================================================== *)

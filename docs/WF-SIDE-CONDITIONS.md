@@ -87,7 +87,7 @@ removes a context rigid `α`, and a ∀◇-ghost body inside the output may
 legitimately mention `α` justified by that very context binding.
 
 **(B) is what we do.** What the development actually uses now
-(`algo/prop_precise.v` unless noted; all Qed, axiom-free):
+(`algo_decl/prop_precision.v` unless noted; all Qed, axiom-free):
 
 | lemma | content |
 |---|---|
@@ -123,13 +123,13 @@ paintings, so §1's presupposition applies to it: the precision target `Q` is
 well-formed.
 
 `ad_precise_extends_pat_sub` (`lemma:precision-sub`,
-`algo/sub/prop_completeness_sub_precise.v`, `Check`ed in `README.v`) now carries
+`algo/subtyping/prop_completeness_sub_precise.v`, `Check`ed in `README.v`) now carries
 it as `{{ Θ ⨟ Δ ⊢ₚₛ P }}a` for its precision target `P` (in `P' ⊑ P`). This is
 the ONE `README.v` statement that changed in the 2026-10-08 rewrite. Why: the
 lemma converts the precision to `⊑ᵤ` (`uskl_precise_of_ad_precise`), whose
 `upre__ghost` row needs its fill well-formed — which the refinement used to
 supply through the old Ghost rule's wf check and no longer does. Its one caller
-(`ad_ctx_precise_pat`'s Var row, `algo/prop_precise_sub.v`) supplies it from the
+(`ad_ctx_precise_pat`'s Var row, `algo_decl/prop_ctx_precision.v`) supplies it from the
 context entry's stored wf (`a_wf_aenv_binds_var_{typ,skl}_wf`), so nothing
 propagates.
 
@@ -163,7 +163,7 @@ occurs. `d_pat_sub`'s three consistency-bearing rows (`Infer`, `UnivGhostR`, the
 `d` and `ad` skeleton-inference judgements therefore agree row for row, which is
 what made `d_pat_to_ad` / `d_sd_typing_to_ad` hypothesis-free. Kit: three
 structural lemmas mirroring `d_refine_syn`'s (`_tvar_mono`, `_subst_unit`)
-plus the ⇄ bridge in `prop_conserv.v` §5. Full statement, in the
+plus the ⇄ bridge in `prop_conservativity.v` §5. Full statement, in the
 paper's notation: [`ghost-capture.tex`](ghost-capture.tex).
 
 ⭐ **THE TWO ARE NOW ONE RELATION (2026-08-22).** Carrying the presupposition
@@ -188,7 +188,7 @@ coupled with a consistency, as hoped. At the TYPE sort there is nothing to
 couple: `d_consis` (utyp ∼ btyp) carries **no** refinement datum, because there
 are no ghosts at the type sort and refinement there is reflexivity. The single
 place a join is *manufactured* out of a bare consistency is therefore the
-type-sort bridge `d_consis_join_ty` (`algo_decl/prop_conserv.v` §13), whose
+type-sort bridge `d_consis_join_ty` (`algo_decl/prop_conservativity.v` §13), whose
 refinement half is `d_consis_refine_ty` — reflexivity, given scope.
 
 ⚙ Transport kit for the join (each is its two halves' transports, plus the two
@@ -216,7 +216,7 @@ The mech's Ghost rows used to check the fill (`Θ ⨟ ∅ ⊢ₚₛ P`) — the 
 `d_pat_consis__ghost`, `d_pat_sub__ghost`, `ad_pat_consis__ghost`,
 `ad_pat_sub__ghost` and `ad_pat_sub_fuel__ghost` are all the paper's Ghost.
 The `d → ad` bridges (`d_pat_consis_to_ad`, `d_consis_join_to_ad`,
-`d_pat_sub_to_ad`, `algo_decl/prop_conserv.v`) are hypothesis-free again.
+`d_pat_sub_to_ad`, `algo_decl/prop_conservativity.v`) are hypothesis-free again.
 
 **Where the presupposition is paid** — as a statement HYPOTHESIS, in the
 disciplined form `{{ Θ ⨟ ∅ ⊢ₚₛ ⌊Qb⌋ }}a`, on exactly the statements whose
@@ -232,7 +232,7 @@ proofs read a join TARGET with a plain-`◇` subject:
 - P6-Cs / P6-Ss / P6-L — the README corollaries `a_lookeq_solve_complete`,
   `a_looksub_solve_complete`, `a_extract_complete` take the disciplined form;
   their `_gen` inductions carry only what they read, `lc_bskl Q` (the four
-  consistency-unify lemmas of prop_eq_cstr.v now thread it through the
+  consistency-unify lemmas of prop_completeness_lookeq_solve.v now thread it through the
   defined-flexible chain).  P6-Cs's subject `(κR')[ψa/α]` may hold a plain
   `◇` from `R'`, so its target is genuinely unconstrained there.
 
@@ -680,7 +680,7 @@ forall y Ps, binds y (abind_var_skl Ps) Θ -> Θ ⨟ empty ⊢ₚₛᵃ Ps
 ```
 
 is a THEOREM of `a_wf_aenv Θ` — `a_wf_aenv_binds_var_skl_wf`
-(algo/prop_inc_strengthen.v: the entry's stored wf, weakened past the entry).
+(algo/basic/prop_inc_strengthen.v: the entry's stored wf, weakened past the entry).
 It is no longer stated anywhere: not on `a_pat_sound` / `a_typing_sound` /
 `a_pat_complete` / `a_typing_complete`, not on their `_gen` lemmas, not on
 the step rows, and not inside the rows' induction hypotheses.  A row that

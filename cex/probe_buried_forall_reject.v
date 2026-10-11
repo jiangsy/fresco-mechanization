@@ -59,7 +59,7 @@ Require Import Metalib.Metatheory.
 Require Import src.fresco.notations.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.prop_basic.
+Require Import src.fresco.algo.basic.prop_context.
 
 Open Scope fresco_a_scope.
 

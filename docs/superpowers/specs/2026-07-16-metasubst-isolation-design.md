@@ -24,12 +24,12 @@ normalization exist for. So the deep metasubst theory is *completeness-side only
 ## Goal
 
 Extract the completeness-side metasubst theory into a single new module
-`fresco/algo/prop_metasubst.v`, sibling to `prop_consis_sound` and directly below
+`fresco/algo/basic/prop_metasubst.v`, sibling to `prop_consis_sound` and directly below
 `prop_consis_complete`, so:
 
 ```
 def_meta ─┬─ prop_inc (a_inc, ≡ᵗ) ──────────────────────────── prop_consis_sound
-          └─ prop_compose ─ prop_normal ─ prop_metasubst (NEW) ─ prop_consis_complete
+          └─ prop_metasubst_composition ─ prop_normal ─ prop_metasubst (NEW) ─ prop_consis_complete
                        (a_inc_equiv, ⇓ downarrow, msubst compose)
 ```
 
@@ -39,7 +39,7 @@ or `def_decorated` (the consistency definitions).
 
 ## Non-goals
 
-- Not merging the existing base files `prop_inc` / `prop_compose` / `prop_normal`
+- Not merging the existing base files `prop_inc` / `prop_metasubst_composition` / `prop_normal`
   into `prop_metasubst.v` — they are already correctly isolated below consistency
   and are not the source of the bloat.
 - Not the invasive `_ptyp`/`_pskl`/`_btyp`/`_bskl` unification via a shared
@@ -144,5 +144,5 @@ Every commit is green with the admit count on `prop_consis_complete` unchanged
 
 - The `_ptyp`/`_pskl`/`_btyp`/`_bskl` unification via a `MSubstable`/section
   abstraction, once the layer is isolated and visible whole.
-- Folding `prop_inc`/`prop_compose`/`prop_normal` into `prop_metasubst` for a
+- Folding `prop_inc`/`prop_metasubst_composition`/`prop_normal` into `prop_metasubst` for a
   single metasubst module, if desired.

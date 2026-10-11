@@ -35,9 +35,9 @@ From src Require Import fresco.notations.
 From src Require Import fresco.def_shapes.
 From src Require Import fresco.algo.def_rules.
 From src Require Import fresco.ext_algo.notations.
-From src Require Import fresco.ext_algo.def_supply.
-From src Require Import fresco.ext_algo.def_guess.
-From src Require Import fresco.ext_algo.def_consis.
+From src Require Import fresco.ext_algo.basic.def_supply.
+From src Require Import fresco.ext_algo.basic.def_guess.
+From src Require Import fresco.ext_algo.consistency.def_consis.
 
 Open Scope fresco_e_scope.
 

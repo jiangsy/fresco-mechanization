@@ -2,7 +2,7 @@
 
 Scope: the campaign's DISPLAYED SURFACE (README §VI, the extraction
 exports, the headline statement shapes) and the PROOF PATH behind it
-(`ext_algo/prop_lift.v` §13, `ext_algo/prop_run_corollaries.v`, the
+(`ext_algo/lifting/prop_lift.v` §13, `ext_algo/prop_run_corollaries.v`, the
 conservativity bridge).  Method: consumer-count greps over `fresco/` +
 `README.v`, per-copy duplicate scan, row-size measurement (`awk` over
 §13's case markers), `.aux` proof timings.  Every claim below was
@@ -56,7 +56,7 @@ uniform.  Cost: statement churn on two landed corollaries; no ripple
   README.  It is the check-mode RECORD of §5; fine as tree-level.
 - `fresco_infer_complete`: prose-cited; the left-completeness guarantee
   is reader-facing (McTT keeps its analogue undisplayed too).
-- ⚠️ `a_wf_exp_to_d` (prop_conserv.v): ZERO consumers anywhere.  It is
+- ⚠️ `a_wf_exp_to_d` (prop_conservativity.v): ZERO consumers anywhere.  It is
   the conservativity CONVERSE, there because §2 of that file proves
   both directions for every sort — an encoding-justification lemma in
   the `*_no_loss` sense (its consumer is the reader).  Add the
@@ -90,7 +90,7 @@ false shrink.
 
 ### P1. **DO** — the `ptyp_to_pskl_close{,_rec}` duplicate (pre-existing)
 
-One fact, TWO files: `ext_algo/prop_solve_det.v` AND
+One fact, TWO files: `ext_algo/subtyping/prop_solve_det.v` AND
 `algo/typing/prop_completeness_typing.v` — the tree's own comment at
 prop_solve_det.v:1006 already says it belongs in
 `fresco/prop_coercions.v` (the designated home, beside
@@ -212,16 +212,16 @@ nothing; only shortening or lightening the CHAIN does.
 
 The heavy links (proof-time, in path order): `prop_ln.v` 62 s
 (lngen-GENERATED — not ours to optimise) → `prop_soundness_consis.v`
-35 s → `prop_completeness_consis.v` 30 s → `prop_eq_var.v` 31 s →
-`prop_eq_cstr.v` 21 s → `prop_look_pair.v` 34 s → `prop_lift.v` 52 s →
+35 s → `prop_completeness_consis.v` 30 s → `prop_completeness_solve_eq_var.v` 31 s →
+`prop_completeness_lookeq_solve.v` 21 s → `prop_look_pair.v` 34 s → `prop_lift.v` 52 s →
 `README.v` (~39 s WALL, almost all of it 34 × `Print Assumptions`
 walking each constant's closure — and it is the LAST file, so it is
 pure serial tail).
 
 ### B3. ⛔ REFUTED: cutting a single dependency edge
 
-`algo/pat/prop_soundness_pat.v` requires
-`algo/sub/prop_completeness_sub_gen.v` (78 s, the tree's heaviest
+`algo/typing/prop_soundness_pat.v` requires
+`algo/subtyping/prop_completeness_sub_gen.v` (78 s, the tree's heaviest
 proof file) and uses NOTHING from it by name — a soundness file
 depending on a completeness file, which looks like the classic spurious
 edge.  **Simulated removal: 0 s saved.**  The graph is WIDE: a parallel
@@ -277,9 +277,9 @@ path drops by**):
 | file | proof time | path gain if free |
 |---|---|---|
 | `fresco/prop_ln.v` | 59.6 s | **59.6 s** — but lngen-GENERATED |
-| `ext_algo/prop_lift.v` | 42.4 s | 31.2 s |
+| `ext_algo/lifting/prop_lift.v` | 42.4 s | 31.2 s |
 | `consis/prop_soundness_consis.v` | 33.1 s | **33.1 s** |
-| `sub/look/prop_eq_var.v` | 28.5 s | **28.5 s** |
+| `sub/look/prop_completeness_solve_eq_var.v` | 28.5 s | **28.5 s** |
 | `consis/prop_completeness_consis.v` | 27.7 s | **27.7 s** |
 | `sub/prop_completeness_sub_gen.v` | 75.6 s | only 23.3 s (a parallel chain caps it) |
 
@@ -289,7 +289,7 @@ say the same thing: `fsetdec` is 97–98% of the proof, spread over 124
 with exactly ONE ~5 s outlier each.**  62% of fsetdec's own time is
 Coq's `Tauto.simplif` preprocessing, not the set reasoning.
 
-⚠️ **And the outlier is not a scoping mistake.**  `prop_eq_var.v`'s
+⚠️ **And the outlier is not a scoping mistake.**  `prop_completeness_solve_eq_var.v`'s
 (`Hsubeq1b`, measured at **4.75 s** with `time` — the Ltac profiler
 inflates it to 13.8 s, ~3×, so profile numbers are for RANKING only,
 never for costing) survived three attempts:
@@ -325,7 +325,7 @@ the remaining per-proof work is genuinely distributed.
 ### B7. ⛔⛔ CORRECTION — §B1's absolute numbers are UNSOUND (same day)
 
 ⚠️⚠️ **`.aux` `proof_build_time` is WALL-CLOCK, so it inflates under
-`-j` contention.**  Measured: `ext_algo/prop_lift.v` records **42–64 s
+`-j` contention.**  Measured: `ext_algo/lifting/prop_lift.v` records **42–64 s
 compiled alone** and **916 s** for the same file inside
 `make NJOBS=10` next to the other heavy-tail files; tree-wide the same
 `.aux` scan read 944 s before such a run and **3902 s** after one.
@@ -370,12 +370,12 @@ ALONE with `-time` produced a completely different picture.
 
 | file | before | after | cut |
 |---|---|---|---|
-| `algo/prop_wf_preservation.v` | **117.8 s** | **13.9 s** | **−88%** |
-| `algo/sub/prop_completeness_sub_gen.v` | **108.6 s** | **40.8 s** | **−62%** |
-| `ext_algo/prop_lift.v` | 64 s | — | (next) |
+| `algo/basic/prop_wf_preservation.v` | **117.8 s** | **13.9 s** | **−88%** |
+| `algo/subtyping/prop_completeness_sub_gen.v` | **108.6 s** | **40.8 s** | **−62%** |
+| `ext_algo/lifting/prop_lift.v` | 64 s | — | (next) |
 | `fresco/prop_ln.v` | 60 s | — | lngen-GENERATED |
-| `algo/consis/prop_soundness_consis.v` | 47.1 s | 44.7 s | −5% |
-| `algo/consis/prop_completeness_consis.v` | 35.8 s | 33.1 s | −8% |
+| `algo/consistency/prop_soundness_consis.v` | 47.1 s | 44.7 s | −5% |
+| `algo/consistency/prop_completeness_consis.v` | 35.8 s | 33.1 s | −8% |
 | `algo/typing/prop_completeness_typing.v` | 23.0 s | — | |
 
 **Measured total across the four: 309.3 s → 132.5 s (−177 s, −57%).**

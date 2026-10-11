@@ -235,7 +235,7 @@ is needed.
 
 ### 4.1 The obstacle to fix first: `≡ᵗ` is not size-preserving
 
-`a_tyequiv` (`algo/def_meta.v:105-133`) is refl/sym/trans/congruence **plus**
+`a_tyequiv` (`algo/basic/def_meta.v:105-133`) is refl/sym/trans/congruence **plus**
 
 ```coq
 | a_tyequiv__flex_def : forall Θ α τ,
@@ -503,8 +503,8 @@ found no context-unfolding substitution anywhere.
 | # | statement | notes |
 |---|---|---|
 | L1 | `aenv_msubst : aenv -> metasubst` (§4.1) | plain `Fixpoint`; needs `a_wf_aenv`'s "definitions are wf in the tail" only for the *proofs*, not the definition |
-| L2 | `aenv_msubst_agree_tail : uniq Θ -> Θ = Θp ++ Θs -> forall X ∈ dom Θs, msubst_lookup (aenv_msubst Θ) X = msubst_lookup (aenv_msubst Θs) X` | the workhorse; uses `msubst_ptyp_agree` (`prop_compose.v:445`) |
-| L3 | **`a_tyequiv_downarrow : a_wf_aenv Θ -> Θ ⊢ A ≡ᵗ B -> ⇓[Θ]A = ⇓[Θ]B`** | the crux.  Induction on `a_tyequiv`; `flex_def` case = L2; `all` case needs `msubst_ptyp_open` (`prop_compose.v:307`) |
+| L2 | `aenv_msubst_agree_tail : uniq Θ -> Θ = Θp ++ Θs -> forall X ∈ dom Θs, msubst_lookup (aenv_msubst Θ) X = msubst_lookup (aenv_msubst Θs) X` | the workhorse; uses `msubst_ptyp_agree` (`prop_metasubst_composition.v:445`) |
+| L3 | **`a_tyequiv_downarrow : a_wf_aenv Θ -> Θ ⊢ A ≡ᵗ B -> ⇓[Θ]A = ⇓[Θ]B`** | the crux.  Induction on `a_tyequiv`; `flex_def` case = L2; `all` case needs `msubst_ptyp_open` (`prop_metasubst_composition.v:307`) |
 | L4 | `aenv_msubst_tvar : aenv_msubst ((α~abind_tvar) :: Θ) = aenv_msubst Θ` (and `var_typ`/`var_skl`) | one line; makes `Θ → Θ,α` invisible |
 | L5 | `downarrow_msubst_subst : ⇓[Θ](msubst κ' (P[τ/γ̂])) = ⇓[Θ](msubst κ P)` given `((γ̂≔τ)::Θ₀') ≤[κ] Θ` and `κ' = tail κ` | (M2); L3 + a subst-commutation |
 | L6 | `a_inc_equiv_downarrow : a_inc_equiv Θ₀ κ κ₁ Θ -> a_wf_pskl Θ₀ P -> ⇓[Θ](msubst κ P) = ⇓[Θ](msubst κ₁ P)` | (M1) |
@@ -520,10 +520,10 @@ found no context-unfolding substitution anywhere.
 
 **(L-bridge) — the missing content of C14/C15/C16.**  See §9.1.
 
-**Already green and reusable:** `a_inc_compose` (`prop_compose.v:695`),
+**Already green and reusable:** `a_inc_compose` (`prop_metasubst_composition.v:695`),
 `msubst_pskl_compose` (`:594`), `a_tyequiv_msubst` (`:547`),
 `a_inc_peel_suffix` (`:629`), `ad_precise` + `ad_precise_preserves_refine`
-(`prop_precise.v:47, 585`), `ad_refine_syn_trans` (`prop_precise.v:423`).
+(`prop_precision.v:47, 585`), `ad_refine_syn_trans` (`prop_precision.v:423`).
 
 ---
 
@@ -631,7 +631,7 @@ names.  Worth reporting: the proof is *correct*, its stated induction is not.
    augmented `*_post` motives.
 3. **(OPT)** `a_assign_unify_consis_optimal` by
    `a_assign_unify_consis_mutind` — 28 cases, same shape as the green soundness
-   bundle.  Needs L10, the bridge, `prop_compose` + `prop_precise` (both green).
+   bundle.  Needs L10, the bridge, `prop_metasubst_composition` + `prop_precise` (both green).
 4. **(EX)** `a_assign_unify_consis_complete` by nested strong induction on
    `(V, n, t, k)`, calling (OPT) at `Arrow`.  Needs L8, L9, and §9.2's three
    not-stuck lemmas.

@@ -25,13 +25,13 @@ Require Import Metalib.Metatheory.
 Require Import src.fresco.notations.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.coercions.
-Require Import src.fresco.prop_basic.
+Require Import src.fresco.prop_shapes.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.prop_tag.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.decl.prop_basic.
 Require Import src.fresco.decl.prop_wellformed.
-Require Import src.fresco.decl.prop_weakening.
+Require Import src.fresco.decl.prop_ctx_mono.
 Require Import src.fresco.decl.prop_renaming.
 Require Import src.fresco.decl.prop_skeleton.
 Require Import src.fresco.decl.prop_general_subsumption.
@@ -351,7 +351,7 @@ Definition tvar_clean (α0 : atom) (Γ : list (atom * dbind)) : Prop :=
 (*  [d_pat_subst_unit] / [d_sd_typing_subst_unit] must place every        *)
 (*  binding over the MAPPED context [map (subst_unit) Γ1 ++ Γ2].  Those   *)
 (*  premises read [Γ] only through its type variables, which the map      *)
-(*  fixes, so [*_tvar_mono] (decl/prop_weakening.v) carries them across.  *)
+(*  fixes, so [*_tvar_mono] (decl/prop_ctx_mono.v) carries them across.  *)
 (* ===================================================================== *)
 
 (* ===================================================================== *)

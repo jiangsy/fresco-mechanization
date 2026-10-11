@@ -2,7 +2,7 @@
     — the landing file for theorem 4 and its kit.  ✅ CLOSED:
     [a_typing_complete] is Qed and axiom-free, [Check]ed in README.v.  Its
     CLOSED-PROGRAM corollaries, which are what README.v shows a reader, live
-    next door in [prop_closed.v].
+    next door in [prop_typing_closed.v].
 
     ⚙ NO TERM-BINDER RENAMING KIT IS NEEDED HERE, and that is the point of the
     EXISTS-FRESH conversion (2026-08-08, `7061d31`).  While [a_typing]'s six
@@ -13,7 +13,7 @@
     obligation disappears.  ⭐ [a_pat] made the same move 2026-08-13, so
     prop_completeness_pat.v no longer carries its renaming kit either — and
     the lemma it was built around is gone (see the ⛔ note at the end of
-    algo/prop_swap.v §6).
+    algo/basic/prop_swap.v §6).
 
     ⭐ MEASURE SETTLED (2026-08-07 scouting): plain STRUCTURAL induction on
     [ad_sd_typing] suffices — NO height mirror [ad_sd_typing_n].  Every IH
@@ -29,20 +29,21 @@
     The statement is [typ_complete_concl] below, factored like
     [pat_complete_concl]; the base rows feed [a_sub_complete] at TY,
     with the run's output packaged as a painted [ptyp] by
-    [a_sub_ty_ghost_free_output] (typing/prop_rigidity.v) and the optimality
+    [a_sub_ty_ghost_free_output] (typing/prop_typing_rigidity.v) and the optimality
     conclusion converted by [ad_precise_painting_tyequiv]'s idiom (a
     precision between two type paintings IS a type equivalence, via
     [ad_refine_syn_inh_tyequiv]).
 
     THE ELEVEN ROWS, all closed: Unit/Var (direct), Anno (consumes
-    prop_rigidity's [a_typing_tc_rigid_output]), Freeze, Abs / AbsAnno, the four
+    prop_typing_rigidity's [a_typing_tc_rigid_output]), Freeze, Abs / AbsAnno, the four
     check rows [abs{,_anno}_check_{step,base}] — whose [_base] halves needed
     the MISSING prerequisite [a_split_complete_tc], completeness of splitting
     at check mode, i.e. the paper's AbsCheck subcase 2 — and App (invokes
     THEOREM 3).  Glue: lexicographic [(size_exp, size_btyp)] in
     [a_typing_complete_gen].  The suffix-discarding rows' scoping
-    premise is discharged from algo/typing/prop_scope.v. *)
+    premise is discharged from algo/typing/prop_typing_scope.v. *)
 
+Require Import src.fresco.prop_atom_sets.
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 
@@ -50,44 +51,44 @@ Require Import src.fresco.notations.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.ltac_utils.
-Require Import src.fresco.prop_basic.
+Require Import src.fresco.prop_shapes.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo.basic.def_meta.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.algo_decl.def_subtyping.
 Require Import src.fresco.algo_decl.def_typing.
 Require Import src.fresco.algo_decl.prop_ctx_mono.
-Require Import src.fresco.algo.prop_inc.
-Require Import src.fresco.algo.prop_metasubst.
-Require Import src.fresco.algo.prop_inc_strengthen.
-Require Import src.fresco.algo.prop_compose.
-Require Import src.fresco.algo.sub.prop_sub_msubst_equiv.
-Require Import src.fresco.algo.prop_swap.
-Require Import src.fresco.algo.sub.prop_completeness_sub_gen.
-Require Import src.fresco.algo.sub.look.prop_extract.   (* a_inc_lookup_ftv *)
-Require Import src.fresco.algo.sub.prop_completeness_sub.
-Require Import src.fresco.algo.prop_stability.
-Require Import src.fresco.algo.prop_basic.
-Require Import src.fresco.algo.prop_refine.
-Require Import src.fresco.algo.consis.prop_completeness_consis.
-Require Import src.fresco.algo.prop_precise.
-Require Import src.fresco.algo.consis.prop_consis_rename.
-Require Import src.fresco.algo.consis.prop_soundness_consis.
-Require Import src.fresco.algo.prop_wf_preservation.
-Require Import src.fresco.algo.prop_normal.
-Require Import src.fresco.algo.sub.prop_solve_sub.
+Require Import src.fresco.algo.basic.prop_inc.
+Require Import src.fresco.algo.basic.prop_metasubst.
+Require Import src.fresco.algo.basic.prop_inc_strengthen.
+Require Import src.fresco.algo.basic.prop_metasubst_composition.
+Require Import src.fresco.algo.subtyping.prop_sub_msubst_equiv.
+Require Import src.fresco.algo.basic.prop_swap.
+Require Import src.fresco.algo.subtyping.prop_completeness_sub_gen.
+Require Import src.fresco.algo.subtyping.prop_completeness_extract.   (* a_inc_lookup_ftv *)
+Require Import src.fresco.algo.subtyping.prop_completeness_sub.
+Require Import src.fresco.algo_decl.prop_stability.
+Require Import src.fresco.algo.basic.prop_context.
+Require Import src.fresco.algo_decl.prop_refinement.
+Require Import src.fresco.algo.consistency.prop_completeness_consis.
+Require Import src.fresco.algo_decl.prop_precision.
+Require Import src.fresco.algo.consistency.prop_consis_rename.
+Require Import src.fresco.algo.consistency.prop_soundness_consis.
+Require Import src.fresco.algo.basic.prop_wf_preservation.
+Require Import src.fresco.algo.basic.prop_context_normalization.
+Require Import src.fresco.algo.subtyping.prop_solve_sub.
 Require Import Coq.micromega.Lia.
-Require Import src.fresco.algo.sub.prop_soundness_subtag.
-Require Import src.fresco.algo.pat.prop_soundness_pat.
-Require Import src.fresco.algo.prop_suffix_erase.
+Require Import src.fresco.algo.subtyping.prop_soundness_subtag.
+Require Import src.fresco.algo.typing.prop_soundness_pat.
+Require Import src.fresco.algo.basic.prop_suffix_erase.
 Require Import src.fresco.algo.typing.prop_soundness_typing.
-Require Import src.fresco.algo.prop_precise_sub.
-Require Import src.fresco.algo.pat.prop_completeness_pat.
-Require Import src.fresco.algo.typing.prop_rigidity.
-Require Import src.fresco.algo.typing.prop_shape.
-Require Import src.fresco.algo.typing.prop_scope.
+Require Import src.fresco.algo_decl.prop_ctx_precision.
+Require Import src.fresco.algo.typing.prop_completeness_pat.
+Require Import src.fresco.algo.typing.prop_typing_rigidity.
+Require Import src.fresco.algo.typing.prop_typing_shape.
+Require Import src.fresco.algo.typing.prop_typing_scope.
 
 Set Implicit Arguments.
 
@@ -279,7 +280,7 @@ Qed.
 (*  The Anno base row — TWO stages: the body at [(TC, ⌈A⌉)] (the IH),     *)
 (*  then the fused subtyping ([a_sub_complete]).  ⭐ The body run      *)
 (*  returns the annotation ITSELF ([a_typing_tc_rigid_output],            *)
-(*  typing/prop_rigidity.v) — the fact [AT-Anno]'s premise demands and the        *)
+(*  typing/prop_typing_rigidity.v) — the fact [AT-Anno]'s premise demands and the        *)
 (*  paper's Anno case asserts by metavariable pun.  The optimality glues  *)
 (*  the two factorings by [a_inc_equiv_glue]; the dom side condition is   *)
 (*  [a_inc_id_flex_preserve] at the body run's own identity increase.     *)
@@ -337,7 +338,7 @@ Proof.
                     apply ad_refine_syn_refl_inh;
                     apply a_wf_ptyp_to_wf_pskl; exact HwfAΘ))
     as [A1' [Θmid [HrunB HoptB]]].
-  (* ⭐ the run returned the ANNOTATION ITSELF (typing/prop_rigidity.v) *)
+  (* ⭐ the run returned the ANNOTATION ITSELF (typing/prop_typing_rigidity.v) *)
   assert (HA1' : A1' = A).
   { eapply a_typing_tc_rigid_output; [ exact HrunB | ].
     intros α Hα.
@@ -2240,7 +2241,7 @@ Qed.
 (* ===================================================================== *)
 (*  The two rows, discharging premise (2) with the §6.3#2 scoping         *)
 (*  invariant — [a_typing_scope_tvar_nil], the TVAR-marker corollary at   *)
-(*  [Ξ0 = nil] (algo/typing/prop_scope.v).                                    *)
+(*  [Ξ0 = nil] (algo/typing/prop_typing_scope.v).                                    *)
 (* ===================================================================== *)
 
 (* --- the ∀ step, generic in the subject --------------------------------- *)
@@ -2665,7 +2666,7 @@ Proof.
     assert (Hmτ : mono_ptyp τ)
       by (eapply a_wf_aenv_binds_def_mono; [ exact Hwf | exact H ]).
     assert (Hwfτ' : a_wf_ptyp Θ τ)
-      by (eapply prop_basic.a_wf_aenv_binds_def_wf; [ exact Hwf | exact H ]).
+      by (eapply prop_context.a_wf_aenv_binds_def_wf; [ exact Hwf | exact H ]).
     destruct (IHad_refine_syn τ R1 R2 Hwf Hwfτ' Hmτ eq_refl eq_refl)
       as [τ1 [τ2 [Hm1 [Hm2 [Hw1 [Hw2 [Heqv [Hr1 Hr2]]]]]]]].
     exists τ1, τ2.

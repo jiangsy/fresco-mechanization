@@ -23,7 +23,7 @@
 >
 > ⛔ Two prerequisites that this hand-off did NOT anticipate, both closed
 > along the way and worth knowing about: the run-result SCOPING invariant
-> (`algo/typing/prop_scope.v`, which discharges the suffix-discarding check
+> (`algo/typing/prop_typing_scope.v`, which discharges the suffix-discarding check
 > rows' premise (2)) and **`a_split_complete_tc`**, completeness of
 > SPLITTING at check mode — the paper's AbsCheck subcase 2, where the
 > split's flexible row has to be built out of a full consistency run.
@@ -152,7 +152,7 @@ induction".
    surfaces in the types — the FlexL/FlexR lookups and the rigid rows all
    put the variable in the subject or the target.
    ⚙ **The tree already knew this, one layer down.**
-   `ad_pat_sub_strip_suffix` (algo/prop_pat_sub.v) IS this lemma for
+   `ad_pat_sub_strip_suffix` (algo_decl/prop_subtyping.v) IS this lemma for
    `ad_pat_sub`, and `ad_pat_sub_subst_flex`'s header says why in one line:
    "the ForallL witnesses are rewritten too, which is exactly why this is
    provable where naive strengthening is not".  ⭐ **REUSE IT**, and reuse
@@ -161,7 +161,7 @@ induction".
    `mod_comp_sk_subst_mono`, `guarded_*_subst_mono`, `is_sskl_subst_mono`,
    `uskl_to_pskl_subst_mono`, `pskl_to_bskl_inh_subst_mono`).
 2. **The route that works: erase by SOLVING, not by dropping** — 🟡 BUILT,
-   `algo/prop_suffix_erase.v` (§1–§7, Qed, axiom-free).  A flexible suffix
+   `algo/basic/prop_suffix_erase.v` (§1–§7, Qed, axiom-free).  A flexible suffix
    always admits a monotype per entry (undefined `α̂ ↦ 1`, defined `α̂ ↦`
    its own definition, which is tail-scoped by wf), so each judgement gets
 
@@ -191,12 +191,12 @@ induction".
    | `a_tyequiv` | ✅ §4 | ✅ §7 |
    | `ad_refine_syn` | ✅ §5 | ✅ §7 |
    | `ad_pat_consis` | ✅ §6 | (via `ad_pat_sub`'s) |
-   | `ad_pat_sub` | ✅ prop_pat_sub.v | ✅ prop_pat_sub.v |
+   | `ad_pat_sub` | ✅ prop_subtyping.v | ✅ prop_subtyping.v |
    | `ad_pat` | ⛔ | ⛔ |
    | `ad_sd_typing` | ⛔ | ⛔ |
 
    ⚠️ The two remaining ones need `ad_pat_sub_subst_mid` in the
-   SUBSTITUTED-CONTEXT style: prop_pat_sub.v's `ad_pat_sub_subst_flex_def`
+   SUBSTITUTED-CONTEXT style: prop_subtyping.v's `ad_pat_sub_subst_flex_def`
    concludes at the UN-substituted `Θ1 ++ Θ2` (with an extra "no definition
    in the tail mentions β" hypothesis), and that shape does not compose
    with `ad_pat`/`ad_sd_typing`, whose binder rows push TERM entries whose
@@ -216,7 +216,7 @@ induction".
 Two of the three rows are easy; the third is a genuine proof.
 
 - `a_split__arrow` (`P0 = P → Q`, `Θ1 = Θ0`) — `ad_refine_pskl_refl`
-  (prop_refine.v:177), whose premise `Θ ⨟ Δ ⊢ₚₛᵃ P` is why the statement needs
+  (prop_refinement.v:177), whose premise `Θ ⨟ Δ ⊢ₚₛᵃ P` is why the statement needs
   the EXTERNAL wf side condition above.  That is the documented pattern, see
   `docs/WF-SIDE-CONDITIONS.md`; the paper supplies it in prose.
 - `a_split__ghost` (`□ ▹ □ ⇢ □`) — `ad_refine_pskl__ghost` + `a_wf_pskl__arrow`
@@ -259,7 +259,7 @@ Two of the three rows are easy; the third is a genuine proof.
   sides there are MONOTYPE-level (τ is a monotype by construction; `β̂ → α1̂` is
   an arrow of flexibles, hence ghost-free), so this is the mono bridge's
   territory — `consis_refine_mono_tyequiv` / `tyequiv_mono_consis` /
-  `consis_mono_trans` (prop_mono_bridge.v) plus a
+  `consis_mono_trans` (prop_consis_monotype_equiv.v) plus a
   `≡ˢ ⟹ ⊳` step.  That last step is the one genuinely new fact; check whether
   `a_pskl_tyequiv` already has a refinement corollary before proving it.
 
@@ -280,7 +280,7 @@ not propagate past `ad_pat__app`'s existential P) — the WF-SIDE-CONDITIONS
 route is to put `Θ ⨟ empty ⊢ₚₛᵃ P` ON `ad_pat__app`; take that rule change
 deliberately, §6.2-style.  History below.
 
-✅ **The transitivity engine landed** (`1a31643`, prop_precise.v tail, Qed +
+✅ **The transitivity engine landed** (`1a31643`, prop_precision.v tail, Qed +
 axiom-free): `ad_refine_pskl_trans_gen` / `_trans`, `ad_refine_pskl_ghost_l`,
 `ad_refine_pskl_ftv_delta_free`, `ad_refine_pskl_of_inh_paintings`, and the
 composition `ad_precise_preserves_refine_pskl` — the uncoloured
@@ -299,7 +299,7 @@ image — the motive "subject is `⌈P⌉ᵘ`, precision `P' ⊑ P`" has no IH t
 (prop_consis_precise.v:568) — consistency's version of the same transport —
 and note its precision corollary `ad_pat_consis_subject_precise` (:692)
 discharges the consis premises of `__infer`/`__check`/`__univ_ghost_r`/
-`__arrow` directly.  Landing spot: NEW `algo/prop_precise_sub.v`
+`__arrow` directly.  Landing spot: NEW `algo_decl/prop_ctx_precision.v`
 (needs prop_consis_precise + def_decl_algo_sub_hyg, which
 prop_consis_precise does not import).  Full ingredient list:
 memory `remech-pskl-trans-kit`.
@@ -344,7 +344,7 @@ guarded, so that row covers flexible subjects outside function mode
 
 ## 4. `lemma:precision-preserves-refinement` — ✅ ALREADY DONE
 
-`ad_precise_preserves_refine` (prop_precise.v:585), Qed and audited in
+`ad_precise_preserves_refine` (prop_precision.v:585), Qed and audited in
 `README.v`.  It carries three external wf side conditions beyond the paper
 (`a_wf_aenv Θ`, Δ-disjointness from `dom Θ`, wf of the target) — the
 WF-SIDE-CONDITIONS pattern again.  Nothing to do.
@@ -354,7 +354,7 @@ WF-SIDE-CONDITIONS pattern again.  Nothing to do.
 ## 5. Context precision — ✅ CLOSED 2026-08-07, on a NEW FOUNDATION
 
 **DONE**: `ad_ctx_precise` (the paper's `⪯ctx`) + `ad_ctx_precise_pat`, NEW
-`algo/prop_precise_sub.v`, Qed + axiom-free, audited in README.v.  The
+`algo_decl/prop_ctx_precision.v`, Qed + axiom-free, audited in README.v.  The
 "context-change lemma" the paper's sketch names turned out to ALREADY exist
 as prop_ctx_mono.v's `aenv_tbinds_le` `_mono` family; `ad_ctx_precise_tbinds_le`
 /`_ge` connect `⪯ctx` to it (same type-level entries, both directions), and
@@ -378,7 +378,7 @@ propagate.  `ad_sd_typing`'s base rows are NOT changed: at TY, scope +
 ghost-freeness already give wf (`a_wf_ptyp_of_scope_pskl`).
 
 ⭐⭐⭐ **The soundness supply is a NEW FOUNDATION — the algorithm's outputs are
-well-formed** (`algo/prop_wf_preservation.v`, both Qed + axiom-free):
+well-formed** (`algo/basic/prop_wf_preservation.v`, both Qed + axiom-free):
 `a_consis_output_wf` (14-row induction over `a_consis`; motive = wf-at-∅ +
 shielded-set avoidance of Δ1∪Δ2 + ftv provenance + guardedness propagation —
 the run's Δ-trackers and the Ghost/GhostR `Δ ∩ ftv` side conditions exist
@@ -533,10 +533,10 @@ context*.  The table below is the record of what each row needed.
 | row | change |
 |---|---|
 | `subtag_sound_concl` / `subtag_flex_sound_concl` | ✅ conclusion is now `exists n, ad_pat_sub_gv n NM M Ψ Θ1 R Qt` |
-| `Infer`, `UnivGhostR` | leaf refinement = `ad_refine_pskl_refl` (prop_refine.v:177) at the wf subject — both rows already build their target as the subject's own erasure |
+| `Infer`, `UnivGhostR` | leaf refinement = `ad_refine_pskl_refl` (prop_refinement.v:177) at the wf subject — both rows already build their target as the subject's own erasure |
 | `Arrow` (domain) | ⚙ DIRECT: `a_consistag_sound_aux`'s dropped conjunct IS `⌊R1⌋ˢ ⊳ P'1` and the row's `Q1` satisfies `bskl_to_pskl Q1 = P'1`.  `ad_refine_pskl_f_forget` then `ad_refine_pskl_f_isub` to reach Θ2 |
 | `Check` | ✅ **its missing lemma is BUILT** (2026-08-06, prop_soundness_subtag.v §1a–§1d, Qed and axiom-free).  §6.1 had under-estimated this row: the dropped conjunct gives `⌊T⌋ˢ ⊳ ⌊Qt⌋` for the CONSISTENCY's output `Qt`, but the row re-targets its conclusion to `inh B` (audit-F2: the output is not literally `B`), so the leaf needs `⌊T⌋ˢ ⊳ B`.  `ad_refine_pskl_refine_inh_target` supplies exactly that.  See below |
-| `ForallR` | ⛔ **NEWLY FOUND (2026-08-06): needs `ad_pat_sub_gv_rename_tvar`, which does not exist.**  The algorithmic rule is exists-fresh (ONE α) while `_gv__forall_r` is cofinite, so the row must rename — exactly as the plain proof does with `ad_pat_sub_rename_tvar` (prop_pat_sub.v:1217, ~110 lines).  The `_gv` version must be FUEL-PRESERVING.  See the ingredient list below |
+| `ForallR` | ⛔ **NEWLY FOUND (2026-08-06): needs `ad_pat_sub_gv_rename_tvar`, which does not exist.**  The algorithmic rule is exists-fresh (ONE α) while `_gv__forall_r` is cofinite, so the row must rename — exactly as the plain proof does with `ad_pat_sub_rename_tvar` (prop_subtyping.v:1217, ~110 lines).  The `_gv` version must be FUEL-PRESERVING.  See the ingredient list below |
 | `ForallL` ×2 | widen the avoid-set (above); the hygiene premise is then `Hint0` |
 | `ForallR`, `UnivGhostL/LG`, `FlexMono`, ghosts | pass through |
 | fuel | leaves take any `n` (use `0`); `ForallR`/`Arrow`/`ForallL` conclude at `S n`.  Each rule has ≤ 1 recursive `_gv` premise, so no `max` is needed |
@@ -620,11 +620,11 @@ matching `ad_refine_pskl` lemma:
 |---|---|---|
 | `FlexMono` | `ad_pat_sub_gv_psi_cong` | ✅ §1f (leaf carries no Ψ) |
 | `Flex-Skip` | `ad_pat_sub_gv_isub` | ✅ §1f (`ad_refine_pskl_isub`, prop_stability.v:121) |
-| `Flex-Assign` | `ad_pat_sub_gv_weaken` | ✅ §1f (`ad_refine_pskl_weaken`, prop_refine.v:98) |
+| `Flex-Assign` | `ad_pat_sub_gv_weaken` | ✅ §1f (`ad_refine_pskl_weaken`, prop_refinement.v:98) |
 | `ForallR` | `ad_pat_sub_gv_strip_suffix` | ⛔ **NEXT — a two-lemma chain with a missing ingredient** |
 
 ⛔ **The `strip_suffix` chain — HALF BUILT (§1g).**  The plain
-`ad_pat_sub_strip_suffix` (prop_pat_sub.v:1158) does not induct on the
+`ad_pat_sub_strip_suffix` (prop_subtyping.v:1158) does not induct on the
 judgement: it iterates a SUBSTITUTION strip head-first over Ξ, and its head
 splits on whether the flexible is DEFINED.  So the mirror needs FIVE lemmas,
 two per head plus the driver:
@@ -632,16 +632,16 @@ two per head plus the driver:
 | # | lemma | status |
 |---|---|---|
 | 1 | `ad_refine_pskl_subst_flex` (undefined head, `β ↦ 1`) | ✅ §1g |
-| 2 | `ad_pat_sub_gv_subst_flex` (mirrors prop_pat_sub.v:749) | ✅ §1g |
+| 2 | `ad_pat_sub_gv_subst_flex` (mirrors prop_subtyping.v:749) | ✅ §1g |
 | 3 | `ad_refine_pskl_subst_flex_def` (DEFINED head, `β ↦ τ`) | ✅ §1h |
-| 4 | `ad_pat_sub_gv_subst_flex_def` (mirrors prop_pat_sub.v:1031) | ✅ §1h |
-| 5 | `ad_pat_sub_gv_strip_suffix` (mirrors prop_pat_sub.v:1158) | ✅ §1h |
+| 4 | `ad_pat_sub_gv_subst_flex_def` (mirrors prop_subtyping.v:1031) | ✅ §1h |
+| 5 | `ad_pat_sub_gv_strip_suffix` (mirrors prop_subtyping.v:1158) | ✅ §1h |
 
 ✅ **ALL of §6.1's structural prerequisites are now in the tree.**  §1h also
 adds `bskl_to_pskl_subst_mono` and ⭐ `ftag_in_uskl_subst_mono` (a MONOTYPE's
 painting is tag-free, so substituting it cannot add tags — the `ForallL`
 hygiene premise for the third time).  ⚠️ `guarded_pskl_subst` had to be
-written FULLY QUALIFIED (`src.fresco.algo.prop_pat_sub.guarded_pskl_subst`):
+written FULLY QUALIFIED (`src.fresco.algo_decl.prop_subtyping.guarded_pskl_subst`):
 the bare name resolves to prop_looksub.v's homonym here.
 
 ⚙ Also landed in §1g: `bskl_to_pskl_subst_unit` and ⭐
@@ -704,7 +704,7 @@ Qed and axiom-free, with the two bridges it needed:
 `ad_refine_pskl_f_of_plain`, `ftag_in_uskl_subst_var` (⭐ renaming a TYPE
 variable cannot change TAGS), `ad_refine_pskl_rename_ctx`, and the
 fuel-preserving renaming itself.  The statement is the plain one
-(`ad_pat_sub_rename_tvar`, prop_pat_sub.v:1217–1330) plus a fuel index
+(`ad_pat_sub_rename_tvar`, prop_subtyping.v:1217–1330) plus a fuel index
 carried UNCHANGED:
 
     Lemma ad_pat_sub_gv_rename_tvar : forall n NM M Ψ Θ1 α Θ0 R Q β',
@@ -720,8 +720,8 @@ carried UNCHANGED:
 
 | need | status |
 |---|---|
-| `ad_pat_consis_rename_tvar` | ✅ prop_pat_sub.v |
-| `⌊subst R⌋ˢ = subst ⌊R⌋ˢ` | ✅ `uskl_to_pskl_subst_mono` (prop_pat_sub.v:1019), at `τ := ptyp_var_f β'` |
+| `ad_pat_consis_rename_tvar` | ✅ prop_subtyping.v |
+| `⌊subst R⌋ˢ = subst ⌊R⌋ˢ` | ✅ `uskl_to_pskl_subst_mono` (prop_subtyping.v:1019), at `τ := ptyp_var_f β'` |
 | `bskl_to_pskl` vs subst | ✅ `bskl_to_pskl_subst_var` (prop_completeness_consis.v:1590) |
 | the LEAF refinement renamed | ✅ NEW `ad_refine_pskl_f_of_plain` + `ad_refine_pskl_rename_ctx` (§1e-i/ii), on top of `ad_refine_pskl_f_rename_ctx` at `F = Δ = ∅` |
 | the ForallL hygiene premise under the rename | ✅ NEW `ftag_in_uskl_subst_var`: `ftag_in_uskl (subst_uskl_in_uskl (uskl_var_f β) α R) [=] ftag_in_uskl R`.  ⭐ Renaming a TYPE variable cannot change TAGS — an EQUALITY, so the local copy is 6 lines and the downstream `ftag_in_uskl_subst_uskl_in_uskl` was not needed |
@@ -805,7 +805,7 @@ existence lemma, one needs a real invariant:
 |---|---|---|---|
 | 1 | `uniq (Ξ ++ Θ)` | 4 CHECK rows | ✅ derivable: `a_typing_sound` on the body's run gives `a_wf_aenv (Ξ ++ …)` hence `uniq`; `Θ0 ⊴ Θ1` moves it down to the rule's own input |
 | 2 | `dom Ξ` ∉ `ftvar_in_ptyp` (result) | 4 CHECK rows | ⚠️ **the one to watch.**  At the two `_base` rows it is easy — the result's `A`/`B` are the SPLIT's halves, scoped in the pre-body context, so #1 plus `a_wf_ptyp` closes it.  At the two `_step` rows the result is the body run's own output type and the argument has to be an INVARIANT ("a TC run's result type is scoped BELOW any suffix the run deposits"), which no lemma states yet |
-| 3 | `uniq (αs ++ Θ1)` | `AT-Abs` | ✅ satisfiable, but needs a lemma the tree does not have: `a_guess_mono` EXISTENCE with an avoid set (`algo/prop_basic.v` has only `_decls` / `_generated_fresh` / `_ftv` / `_open_at`).  Completeness CHOOSES this block, so an avoid-set-indexed generator settles it |
+| 3 | `uniq (αs ++ Θ1)` | `AT-Abs` | ✅ satisfiable, but needs a lemma the tree does not have: `a_guess_mono` EXISTENCE with an avoid set (`algo/basic/prop_context.v` has only `_decls` / `_generated_fresh` / `_ftv` / `_open_at`).  Completeness CHOOSES this block, so an avoid-set-indexed generator settles it |
 | 4 | `AT-AbsAnnoCheck`'s result domain is the split's `A'` | — | ✅ free: it is what `sd-AbsAnnoCheck`'s `≡ᵗ` premise is for, and the completeness side reads the domain off the split it performs |
 
 ⚙ Item 2's probe order when the induction reaches rows 7–10: build #3's
@@ -1107,7 +1107,7 @@ its goal from its own premises, and `App` recurses at the SAME context.
 
 Filling a ghost with a fresh flexible IS a refinement step; a universal
 ghost is DROPPED, so `⫯.P` is `__univ_ghost_remove`, not `__univ_ghost_keep`.
-⚙ SIZE induction, exactly like `a_guess_mono_consis_size` (algo/prop_basic.v):
+⚙ SIZE induction, exactly like `a_guess_mono_consis_size` (algo/basic/prop_context.v):
 the source is exists-fresh, the target cofinite, so the ∀ row turns ONE
 guess instance into a family via `a_guess_mono_open_at`.  ⭐ The ∀ row puts
 its witness in **Δ**, not Θ — the §7.3 decoupling — and that is sound here
@@ -1171,7 +1171,7 @@ species as thm:sound-skeleton-inference's AbsAnno step):
    good evidence the lemma is the right shape.
 2. `AT-Abs`, "By ⑯ and definition of `guess^TY`, we have
    `Θ1,ᾱ ⊢ inh{P} ⊳ inh{A}`": a refinement property of `a_guess_mono` that
-   the mech has no lemma for (algo/prop_basic.v has only its freshness / decls /
+   the mech has no lemma for (algo/basic/prop_context.v has only its freshness / decls /
    ftv facts).
 
 #### ⭐ THE ELEVEN-ROW INDUCTION — row-by-row plan (2026-08-06)
@@ -1209,7 +1209,7 @@ the ⊴-peel kit (`uniq_mid_eq`, `a_inc_weaken_suffix_target`,
 
 1. ✅ **DONE** — `ad_sd_typing_mod_comp_ty` (§8 above).
 2. ✅ **DONE** — §1's suffix ERASURE, all six judgements
-   (`algo/prop_suffix_erase.v`, Qed and axiom-free).  The two the theorem
+   (`algo/basic/prop_suffix_erase.v`, Qed and axiom-free).  The two the theorem
    quotes are `ad_pat_strip_suffix` and `ad_sd_typing_strip_suffix`.
 3. ✅ **DONE** — §2's `lemma:split-refine`, COLOURED (`a_split_refines`,
    prop_soundness_typing.v §11).  ⭐ Its enabler is NOT the `≡ᵗ ⟹ ⊳`
@@ -1221,7 +1221,7 @@ the ⊴-peel kit (`uniq_mid_eq`, `a_inc_weaken_suffix_target`,
    `cex/cex_refine_not_transitive.v`) [⚠️ RETRACTED 2026-10-08: refinement
    is not shown non-transitive; the file now proves
    `ad_refine_syn_output_not_wf`]; `consis_mono_sym`
-   (prop_mono_bridge.v) supplies the direction change that was the only
+   (prop_consis_monotype_equiv.v) supplies the direction change that was the only
    reason the `≡ᵗ` route wanted symmetry.
    ⚠️ It carries a FRESHNESS side condition: `a_split__flex` invents two
    flexibles and the mech's rule records no freshness for them.

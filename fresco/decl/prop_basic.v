@@ -9,7 +9,7 @@ Require Import src.fresco.prop_tag.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
-Require Import src.fresco.prop_basic.
+Require Import src.fresco.prop_shapes.
 Require Import src.fresco.decl.def_rules.
 
 Set Implicit Arguments.
@@ -34,7 +34,7 @@ Proof.
   intros Γ Δ P P' H; induction H; intros Γ'; eauto 4 with refinement.
 Qed.
 
-(** * Local closure for shape predicates. *)
+(** * Check-mode subtyping produces an inherited type. *)
 
 (** At [mode_tc] the RHS of [⩽] is always inherited.  This is why
     [d_sub__forall_r] needs no [is_ityp] premise (the paper's ForallR has
@@ -47,22 +47,7 @@ Proof.
   apply is_ityp__all with (L := L). intros α Hα. auto.
 Qed.
 
-Lemma is_ityp_lc : forall B, is_ityp B -> lc_btyp B.
-Proof.
-  intros B H. induction H; eauto.
-Qed.
-
-Lemma is_styp_lc : forall B, is_styp B -> lc_btyp B.
-Proof.
-  intros B H. induction H; eauto.
-Qed.
-
-Lemma is_dtyp_lc : forall C, is_dtyp C -> lc_utyp C.
-Proof.
-  intros C H. induction H; eauto.
-Qed.
-
-(** * Coercion local-closure preservation. *)
+(** * Tag readings and their atom sets. *)
 
 (** [d_tags_skl] respects set-equality of the tag context. *)
 Lemma d_tags_skl_psi_cong : forall Ψ Ψ' ψ,
@@ -79,7 +64,7 @@ Proof.
   - apply d_tags_skl__dot_univ_ghost; apply IHd_tags_skl; exact Heq.
 Qed.
 
-(* ⚙ Moved here 2026-10-10 from algo/consis/prop_consis_precise.v: it is a
+(* ⚙ Moved here 2026-10-10 from algo/consistency/prop_consis_precise.v: it is a
    fact about the declarative [d_tags_skl] alone. *)
 (** A decorated skeleton's tag reading is exactly its syntactic tags. *)
 Lemma d_tags_skl_ftag : forall Ψ ψ,

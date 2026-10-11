@@ -4,7 +4,7 @@
     §16 MAIN (decorating an algorithmic subtyping run), §17 the assembled
     theorem: [a_sub_sound] = L-A ∘ L-B, where L-A is the decoration built in
     §14–§16 and L-B is [a_subtag_sound_bundle]
-    (algo/sub/prop_soundness_subtag.v).
+    (algo/subtyping/prop_soundness_subtag.v).
 
     ⚙ Second half of a pair with [prop_decorate_sub.v], which holds the
     bottom-up auxiliaries; the split is for BUILD TIME (the heavy earlier
@@ -19,30 +19,30 @@ Require Import src.fresco.ltac_utils.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.prop_ln.
-Require Import src.fresco.prop_basic.
+Require Import src.fresco.prop_shapes.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.decl.prop_basic.
 Require Import src.fresco.decl.prop_skeleton.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.prop_mod_compat.
-Require Import src.fresco.algo.prop_swap.
-Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo.basic.prop_mod_compat.
+Require Import src.fresco.algo.basic.prop_swap.
+Require Import src.fresco.algo.basic.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_subtyping.
 Require Import src.fresco.algo_decl.prop_ctx_mono.   (* ad_pat_sub_of_fuel, _fuel_le *)
-Require Import src.fresco.algo.prop_inc.
-Require Import src.fresco.algo.prop_metasubst.
-Require Import src.fresco.algo.prop_precise.
-Require Import src.fresco.algo.consis.prop_soundness_consis.
-Require Import src.fresco.algo.consis.prop_consis_rename.
-Require Import src.fresco.algo.prop_refine.
-Require Import src.fresco.algo.prop_stability.
-Require Import src.fresco.algo.prop_pat_sub.
-Require Import src.fresco.algo.prop_basic.
-Require Import src.fresco.algo.sub.prop_solve_sub.
-Require Import src.fresco.algo.sub.prop_looksub.
-Require Import src.fresco.algo.sub.prop_soundness_subtag.
+Require Import src.fresco.algo.basic.prop_inc.
+Require Import src.fresco.algo.basic.prop_metasubst.
+Require Import src.fresco.algo_decl.prop_precision.
+Require Import src.fresco.algo.consistency.prop_soundness_consis.
+Require Import src.fresco.algo.consistency.prop_consis_rename.
+Require Import src.fresco.algo_decl.prop_refinement.
+Require Import src.fresco.algo_decl.prop_stability.
+Require Import src.fresco.algo_decl.prop_subtyping.
+Require Import src.fresco.algo.basic.prop_context.
+Require Import src.fresco.algo.subtyping.prop_solve_sub.
+Require Import src.fresco.algo.subtyping.prop_looksub.
+Require Import src.fresco.algo.subtyping.prop_soundness_subtag.
 Require Import src.fresco.deco_algo.prop_decorate_sub.
 
 Set Implicit Arguments.
@@ -80,7 +80,7 @@ Qed.
 
 (* ---- The two ForallL rows differ only in the subject's ∀ head (∀^ε or ∀).
    [uskl_all_hd] names that head, so ONE proof serves both — here and in
-   subtyping completeness (algo/sub/prop_completeness_sub_gen.v). ---- *)
+   subtyping completeness (algo/subtyping/prop_completeness_sub_gen.v). ---- *)
 Definition uskl_all_hd (o : option atom) (R : uskl) : uskl :=
   match o with Some ε => uskl_all_tag ε R | None => uskl_all_syn R end.
 
@@ -1163,8 +1163,8 @@ Proof.
 Qed.
 
 (** Guardedness / ghost-freeness survive a skeleton-variable rename: the
-    variable instances of the [*_subst_mono] lemmas (fresco/prop_basic.v,
-    algo/prop_pat_sub.v). *)
+    variable instances of the [*_subst_mono] lemmas (fresco/prop_shapes.v,
+    algo_decl/prop_subtyping.v). *)
 Lemma guarded_uskl_subst_var : forall ψ α β,
   guarded_uskl ψ -> guarded_uskl (subst_uskl_in_uskl (uskl_var_f β) α ψ).
 Proof.
@@ -1525,7 +1525,7 @@ Qed.
    while the target [dec_ext] is still cofinite, so the ∀ case must turn ONE
    guess instance into a family via [a_guess_mono_open_at] — whose output
    is no sub-derivation, hence no derivation-IH.  See
-   [a_guess_mono_rename_tvar_size] (algo/prop_basic.v) for the recipe. *)
+   [a_guess_mono_rename_tvar_size] (algo/basic/prop_context.v) for the recipe. *)
 Lemma dec_ext_guess_mono_anchor_size : forall n Θ P' Ξ' A ψa,
   size_pskl P' <= n ->
   a_guess_mono Θ P' Ξ' A ->
@@ -1632,7 +1632,7 @@ Proof.
 Qed.
 
 (** Skeleton-variable rename lemma (for the ∀ case's cofinite reconstruction):
-    the variable instance of prop_pat_sub.v's [d_tags_skl_subst_mono]. *)
+    the variable instance of prop_subtyping.v's [d_tags_skl_subst_mono]. *)
 Lemma d_tags_skl_rename_var : forall Ψ ψ α β,
   d_tags_skl Ψ ψ -> d_tags_skl Ψ (subst_uskl_in_uskl (uskl_var_f β) α ψ).
 Proof.
@@ -1841,7 +1841,7 @@ Qed.
 (*  SIZE induction, not derivation induction: the ∀ case must read the      *)
 (*  cofinite [dec_ext__all] family at an α0 fresh for the DECORATION ψ0 as  *)
 (*  well, and [a_guess_mono] is exists-fresh — so the guess instance is     *)
-(*  moved to that α0 by [a_guess_mono_open_at] (algo/prop_basic.v, THE decl/algo   *)
+(*  moved to that α0 by [a_guess_mono_open_at] (algo/basic/prop_context.v, THE decl/algo   *)
 (*  boundary bridge), whose output is no sub-derivation.                    *)
 (* ===================================================================== *)
 

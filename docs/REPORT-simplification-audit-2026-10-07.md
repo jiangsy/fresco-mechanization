@@ -27,16 +27,16 @@ registrations included) finds 208 top-level declarations referenced nowhere,
 The 81 are concentrated in a few files; the ten largest alone are 1.2k lines:
 
 ```
- 281  a_looksub_lookeq_subst_stable_rev     algo/sub/prop_looksub.v
- 208  a_looksub_lookeq_subst_stable         algo/sub/prop_looksub.v
- 125  a_typing_swap                         algo/prop_swap.v
- 106  a_solve_cstr_rel                      ext_algo/prop_solve_rel.v
-  96  e_solve_sub_block_in_supply           ext_algo/prop_solve.v
-  88  e_solve_sub_block_ftvar               ext_algo/prop_solve.v
-  80  e_solve_sub_uniq                      ext_algo/prop_solve.v
-  69  swap_aenv_one                         algo/prop_swap.v
-  55  rel_pskl_size                         ext_algo/prop_solve_det.v
-  52  e_lookeq_uniq                         ext_algo/prop_look.v
+ 281  a_looksub_lookeq_subst_stable_rev     algo/subtyping/prop_looksub.v
+ 208  a_looksub_lookeq_subst_stable         algo/subtyping/prop_looksub.v
+ 125  a_typing_swap                         algo/basic/prop_swap.v
+ 106  a_solve_cstr_rel                      ext_algo/subtyping/prop_solve_rel.v
+  96  e_solve_sub_block_in_supply           ext_algo/subtyping/prop_solve.v
+  88  e_solve_sub_block_ftvar               ext_algo/subtyping/prop_solve.v
+  80  e_solve_sub_uniq                      ext_algo/subtyping/prop_solve.v
+  69  swap_aenv_one                         algo/basic/prop_swap.v
+  55  rel_pskl_size                         ext_algo/subtyping/prop_solve_det.v
+  52  e_lookeq_uniq                         ext_algo/subtyping/prop_look.v
 ```
 
 Three of them are `Check`ed nowhere yet are the kind of fact `README.v` exists
@@ -74,8 +74,8 @@ the `def_*_impl.v` quartet (`select_shape_premises` / `saturate_lc` /
   `.v` glob or be tracked.
 - Full build: 895 s of proof-checking CPU (sum of `.aux` timings); about 15
   minutes wall at `-j6`.  The three slowest files are
-  `ext_algo/prop_lift.v`, `algo/consis/prop_completeness_consis.v` and
-  `algo/sub/prop_completeness_sub_gen.v`.
+  `ext_algo/lifting/prop_lift.v`, `algo/consistency/prop_completeness_consis.v` and
+  `algo/subtyping/prop_completeness_sub_gen.v`.
 
 ## 4. `cex/` — 17 refutations and 17 probes
 
@@ -94,8 +94,8 @@ narration rather than documentation: 2 396 editorial emoji, 405 dates, and a
 heuristic count of 2 255 comment blocks (11.7k lines) that mention campaign
 levels, hand-off section numbers (`§8c.24`), `docs/*.md`, "do not …"
 maintainer instructions, user decisions, or superseded designs.  The heaviest
-files are `algo/def_rules.v` (689 such lines), `algo/sub/look/prop_sub_cstr.v`
-(614), `algo/sub/look/prop_eq_cstr.v` (569), `README.v` (245 of 649).
+files are `algo/def_rules.v` (689 such lines), `algo/subtyping/prop_completeness_looksub_solve.v`
+(614), `algo/subtyping/prop_completeness_lookeq_solve.v` (569), `README.v` (245 of 649).
 
 `docs/` holds 42 files / 45k lines, `PROGRESS.md` is 8 951 lines, and
 `CLAUDE.md` 807.  The HANDOFF-* and REPORT-* files are dated records; the

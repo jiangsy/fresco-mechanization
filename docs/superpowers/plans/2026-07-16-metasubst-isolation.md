@@ -4,7 +4,7 @@
 
 **Goal:** Extract the ~54 completeness-side metasubstitution / `a_inc_equiv` / downarrow lemmas out of `prop_consis_complete.v` into a new pure-metasubst module `prop_metasubst.v`, and collapse the obvious duplication families.
 
-**Architecture:** New file `fresco/algo/prop_metasubst.v`, sibling to `prop_consis_sound`, directly below `prop_consis_complete`. It imports only the base metasubst/wf files (no `def_decl_algo`/`def_decorated`), so the module graph enforces isolation from consistency. The `prop_inc_strengthen → prop_consis_sound` cycle is broken first so the metasubst layer has no transitive consistency dependency.
+**Architecture:** New file `fresco/algo/basic/prop_metasubst.v`, sibling to `prop_consis_sound`, directly below `prop_consis_complete`. It imports only the base metasubst/wf files (no `def_decl_algo`/`def_decorated`), so the module graph enforces isolation from consistency. The `prop_inc_strengthen → prop_consis_sound` cycle is broken first so the metasubst layer has no transitive consistency dependency.
 
 **Tech Stack:** Coq (Rocq) + Metalib, built with `coqc`. No unit tests — the "test" for every task is that `coqc` compiles the changed file **and its downstream consumers** green, with the `prop_consis_complete.v` admit count unchanged at **12** and `skip_tm_var_case` still `Closed under the global context`.
 
@@ -21,9 +21,9 @@
 
 ## File structure
 
-- **Create** `fresco/algo/prop_metasubst.v` — the completeness-side metasubst theory (§A `a_inc_equiv`, §B downarrow ⇓, §C msubst/is_id basics). One responsibility: pure metasubstitution reasoning used by optimality.
-- **Modify** `fresco/algo/prop_consis_complete.v` — remove the ~54 moved lemmas; add `Require Import src.fresco.algo.prop_metasubst.`; keep optimality defs, the ~5 bridge lemmas, `skip_tm_var_case`, the theorem + corollary.
-- **Modify** `fresco/algo/prop_inc_strengthen.v` — drop the `prop_consis_sound` import (cycle fix).
+- **Create** `fresco/algo/basic/prop_metasubst.v` — the completeness-side metasubst theory (§A `a_inc_equiv`, §B downarrow ⇓, §C msubst/is_id basics). One responsibility: pure metasubstitution reasoning used by optimality.
+- **Modify** `fresco/algo/prop_consis_complete.v` — remove the ~54 moved lemmas; add `Require Import src.fresco.algo.basic.prop_metasubst.`; keep optimality defs, the ~5 bridge lemmas, `skip_tm_var_case`, the theorem + corollary.
+- **Modify** `fresco/algo/basic/prop_inc_strengthen.v` — drop the `prop_consis_sound` import (cycle fix).
 - **Modify** `_CoqProject` / build file if it enumerates files explicitly (check in Task 1).
 - **Modify** memory `remech-*`/dir-notes if a path map exists (final task).
 
@@ -32,7 +32,7 @@
 ### Task 1: Break the `prop_inc_strengthen → prop_consis_sound` cycle
 
 **Files:**
-- Modify: `fresco/algo/prop_inc_strengthen.v` (its `Require Import` block + possibly relocate one lemma)
+- Modify: `fresco/algo/basic/prop_inc_strengthen.v` (its `Require Import` block + possibly relocate one lemma)
 - Inspect: `fresco/algo/prop_consis_sound.v`
 
 **Interfaces:**
@@ -45,27 +45,27 @@ Run:
 cd /Users/jiangsy/Documents/HKU/Research/impredicative/mechanization
 # names referenced in prop_inc_strengthen that are DEFINED in prop_consis_sound
 comm -12 \
-  <(grep -oE '\b[a-zA-Z_][a-zA-Z0-9_]*\b' fresco/algo/prop_inc_strengthen.v | sort -u) \
+  <(grep -oE '\b[a-zA-Z_][a-zA-Z0-9_]*\b' fresco/algo/basic/prop_inc_strengthen.v | sort -u) \
   <(grep -oE '^(Lemma|Theorem|Definition|Corollary|Fixpoint|Inductive) [a-zA-Z_][a-zA-Z0-9_]*' fresco/algo/prop_consis_sound.v | awk '{print $2}' | sort -u)
 ```
 Expected: a short list (0–3 names). If **empty**, the import is dead — go to Step 2a. If non-empty, note each name and whether it is metasubst-level (its statement mentions only `a_inc`/`a_tyequiv`/`a_isub`/`msubst`/wf, not `ad_pat_consis`) — go to Step 2b.
 
 - [ ] **Step 2a (import is dead): remove it.**
 
-Edit `fresco/algo/prop_inc_strengthen.v`: delete the line
+Edit `fresco/algo/basic/prop_inc_strengthen.v`: delete the line
 ```coq
 Require Import src.fresco.algo.prop_consis_sound.
 ```
 
 - [ ] **Step 2b (import is used): relocate the needed lemma(s) down.**
 
-For each metasubst-level lemma `L` the list reported: cut `L` (statement + proof) out of `prop_consis_sound.v` and paste it into the lowest base file that already has its dependencies — `prop_inc.v` if `L` only needs `a_inc`/`def_meta`, else `prop_flex.v`/`prop_compose.v`. Then delete the `prop_consis_sound` import from `prop_inc_strengthen.v`. If any reported name is genuinely consistency-level (mentions `ad_pat_consis`/`ad_wf_pskl`), STOP and report — the cycle is real and needs its own design; do not force it.
+For each metasubst-level lemma `L` the list reported: cut `L` (statement + proof) out of `prop_consis_sound.v` and paste it into the lowest base file that already has its dependencies — `prop_inc.v` if `L` only needs `a_inc`/`def_meta`, else `prop_flex.v`/`prop_metasubst_composition.v`. Then delete the `prop_consis_sound` import from `prop_inc_strengthen.v`. If any reported name is genuinely consistency-level (mentions `ad_pat_consis`/`ad_wf_pskl`), STOP and report — the cycle is real and needs its own design; do not force it.
 
 - [ ] **Step 3: Verify `prop_inc_strengthen` compiles without the import.**
 
 Run:
 ```bash
-coqc -R . src -w -deprecated-hint-without-locality,-omega-is-deprecated fresco/algo/prop_inc_strengthen.v; echo rc=$?
+coqc -R . src -w -deprecated-hint-without-locality,-omega-is-deprecated fresco/algo/basic/prop_inc_strengthen.v; echo rc=$?
 ```
 Expected: `rc=0`.
 
@@ -83,7 +83,7 @@ Expected: all `rc=0`; admit count `12`.
 - [ ] **Step 5: Commit.**
 
 ```bash
-git add fresco/algo/prop_inc_strengthen.v fresco/algo/prop_consis_sound.v fresco/algo/prop_inc.v fresco/algo/prop_flex.v fresco/algo/prop_compose.v 2>/dev/null
+git add fresco/algo/basic/prop_inc_strengthen.v fresco/algo/prop_consis_sound.v fresco/algo/basic/prop_inc.v fresco/algo/prop_flex.v fresco/algo/basic/prop_metasubst_composition.v 2>/dev/null
 git commit -m "$(printf '%s\n' '[mech] break prop_inc_strengthen -> prop_consis_sound import cycle' '' 'Metasubst-layer strengthening no longer transitively depends on consistency,' 'unblocking a clean prop_metasubst.v import set.' '' 'Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>')"
 ```
 
@@ -92,34 +92,34 @@ git commit -m "$(printf '%s\n' '[mech] break prop_inc_strengthen -> prop_consis_
 ### Task 2: Create `prop_metasubst.v` and move §C (msubst / is_id basics)
 
 **Files:**
-- Create: `fresco/algo/prop_metasubst.v`
+- Create: `fresco/algo/basic/prop_metasubst.v`
 - Modify: `fresco/algo/prop_consis_complete.v` (remove §C lemmas; add import)
 
 **Interfaces:**
 - Produces: `prop_metasubst.v` exporting the §C basics (`msubst_compose_app`, `msubst_lc_compose`, `is_id_msubst_values_lc`, `msubst_compose_id_ptyp`, `msubst_compose_id_pskl`, `metasubst_dom_empty`, `msubst_lookup_mid_drop`, `msubst_pskl_ftv_lower`, `msubst_lookup_app_in`, `msubst_pskl_open_rec_lc_local`, `msubst_pskl_open_lc_local`, `a_inc_msubst_lc`, `a_tyequiv_strengthen_tvar_cons`, `a_pskl_tyequiv_strengthen_tvar_cons`, `binds_strengthen`, `binds_sub_cons`, `aenv_mid_split`, `a_assign_subject_flex_local`) with unchanged signatures.
-- Consumes: base files (`def_meta`, `prop_inc`, `prop_compose`, `prop_normal`, `prop_flex`, `prop_inc_strengthen`, `def_extra`).
+- Consumes: base files (`def_meta`, `prop_inc`, `prop_metasubst_composition`, `prop_normal`, `prop_flex`, `prop_inc_strengthen`, `def_extra`).
 
 - [ ] **Step 1: Create the module skeleton with the isolated import set.**
 
-Create `fresco/algo/prop_metasubst.v` with exactly:
+Create `fresco/algo/basic/prop_metasubst.v` with exactly:
 ```coq
 Require Import Coq.Lists.List.
 Require Import Metalib.Metatheory.
 Require Import src.fresco.notations.
 Require Import src.fresco.coercions.
 Require Import src.fresco.predicates.
-Require Import src.fresco.prop_basic.
+Require Import src.fresco.prop_shapes.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.decl.prop_basic.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.def_meta.
-Require Import src.fresco.algo.prop_inc.
-Require Import src.fresco.algo.prop_stability.
+Require Import src.fresco.algo.basic.def_meta.
+Require Import src.fresco.algo.basic.prop_inc.
+Require Import src.fresco.algo_decl.prop_stability.
 Require Import src.fresco.algo.prop_decorate.
 Require Import src.fresco.algo.prop_flex.
-Require Import src.fresco.algo.prop_compose.
-Require Import src.fresco.algo.prop_normal.
-Require Import src.fresco.algo.prop_inc_strengthen.
+Require Import src.fresco.algo.basic.prop_metasubst_composition.
+Require Import src.fresco.algo.basic.prop_context_normalization.
+Require Import src.fresco.algo.basic.prop_inc_strengthen.
 Set Implicit Arguments.
 
 (* ==================== §C  msubst / is_id basics ==================== *)
@@ -133,7 +133,7 @@ Run:
 ```bash
 grep -rl "prop_consis_complete" _CoqProject Makefile* 2>/dev/null
 ```
-If a file lists `.v` files explicitly, add `fresco/algo/prop_metasubst.v` on the line **before** `fresco/algo/prop_consis_complete.v`. If the build globs `fresco/**/*.v`, no change needed.
+If a file lists `.v` files explicitly, add `fresco/algo/basic/prop_metasubst.v` on the line **before** `fresco/algo/prop_consis_complete.v`. If the build globs `fresco/**/*.v`, no change needed.
 
 - [ ] **Step 3: Move the §C lemmas.**
 
@@ -141,16 +141,16 @@ For each §C lemma listed in the Interfaces block: locate it in `fresco/algo/pro
 
 - [ ] **Step 4: Add the import to `prop_consis_complete.v`.**
 
-In `fresco/algo/prop_consis_complete.v`, add after the existing `Require Import src.fresco.algo.prop_inc_strengthen.` line:
+In `fresco/algo/prop_consis_complete.v`, add after the existing `Require Import src.fresco.algo.basic.prop_inc_strengthen.` line:
 ```coq
-Require Import src.fresco.algo.prop_metasubst.
+Require Import src.fresco.algo.basic.prop_metasubst.
 ```
 
 - [ ] **Step 5: Compile the new module, then the downstream chain.**
 
 Run:
 ```bash
-coqc -R . src -w -deprecated-hint-without-locality,-omega-is-deprecated fresco/algo/prop_metasubst.v; echo "meta rc=$?"
+coqc -R . src -w -deprecated-hint-without-locality,-omega-is-deprecated fresco/algo/basic/prop_metasubst.v; echo "meta rc=$?"
 for f in prop_consis_complete prop_consis_exist; do
   coqc -R . src -w -deprecated-hint-without-locality,-omega-is-deprecated fresco/algo/$f.v; echo "$f rc=$?"
 done
@@ -161,7 +161,7 @@ Expected: all `rc=0`; admit count `12`. If a moved lemma fails in `prop_metasubs
 - [ ] **Step 6: Commit.**
 
 ```bash
-git add fresco/algo/prop_metasubst.v fresco/algo/prop_consis_complete.v _CoqProject Makefile 2>/dev/null
+git add fresco/algo/basic/prop_metasubst.v fresco/algo/prop_consis_complete.v _CoqProject Makefile 2>/dev/null
 git commit -m "$(printf '%s\n' '[mech] prop_metasubst.v: extract metasubst/is_id basics (section C)' '' 'Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>')"
 ```
 
@@ -170,7 +170,7 @@ git commit -m "$(printf '%s\n' '[mech] prop_metasubst.v: extract metasubst/is_id
 ### Task 3: Move §B (downarrow ⇓ theory)
 
 **Files:**
-- Modify: `fresco/algo/prop_metasubst.v` (add §B section)
+- Modify: `fresco/algo/basic/prop_metasubst.v` (add §B section)
 - Modify: `fresco/algo/prop_consis_complete.v` (remove §B lemmas)
 
 **Interfaces:**
@@ -186,7 +186,7 @@ git commit -m "$(printf '%s\n' '[mech] prop_metasubst.v: extract metasubst/is_id
 
 - [ ] **Step 3: Compile module + chain + invariant.**
 ```bash
-coqc -R . src -w -deprecated-hint-without-locality,-omega-is-deprecated fresco/algo/prop_metasubst.v; echo "meta rc=$?"
+coqc -R . src -w -deprecated-hint-without-locality,-omega-is-deprecated fresco/algo/basic/prop_metasubst.v; echo "meta rc=$?"
 for f in prop_consis_complete prop_consis_exist; do
   coqc -R . src -w -deprecated-hint-without-locality,-omega-is-deprecated fresco/algo/$f.v; echo "$f rc=$?"
 done
@@ -196,7 +196,7 @@ Expected: all `rc=0`; admit count `12`. NOTE: `join_pskl_downarrow_mono_scoped` 
 
 - [ ] **Step 4: Commit.**
 ```bash
-git add fresco/algo/prop_metasubst.v fresco/algo/prop_consis_complete.v
+git add fresco/algo/basic/prop_metasubst.v fresco/algo/prop_consis_complete.v
 git commit -m "$(printf '%s\n' '[mech] prop_metasubst.v: extract downarrow (⇓) theory (section B)' '' 'Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>')"
 ```
 
@@ -205,7 +205,7 @@ git commit -m "$(printf '%s\n' '[mech] prop_metasubst.v: extract downarrow (⇓)
 ### Task 4: Move §A (`a_inc_equiv` theory)
 
 **Files:**
-- Modify: `fresco/algo/prop_metasubst.v` (add §A section)
+- Modify: `fresco/algo/basic/prop_metasubst.v` (add §A section)
 - Modify: `fresco/algo/prop_consis_complete.v` (remove §A lemmas)
 
 **Interfaces:**
@@ -230,7 +230,7 @@ Expected: total lemma count dropped by ~54; the metasubst-named count is now onl
 
 - [ ] **Step 5: Commit.**
 ```bash
-git add fresco/algo/prop_metasubst.v fresco/algo/prop_consis_complete.v
+git add fresco/algo/basic/prop_metasubst.v fresco/algo/prop_consis_complete.v
 git commit -m "$(printf '%s\n' '[mech] prop_metasubst.v: extract a_inc_equiv theory (section A); consis_complete is now consis-only' '' 'Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>')"
 ```
 
@@ -239,7 +239,7 @@ git commit -m "$(printf '%s\n' '[mech] prop_metasubst.v: extract a_inc_equiv the
 ### Task 5: Generalize the inert-binder mid-insert
 
 **Files:**
-- Modify: `fresco/algo/prop_metasubst.v`
+- Modify: `fresco/algo/basic/prop_metasubst.v`
 
 **Interfaces:**
 - Consumes: `a_inc_equiv_mid_insert_var` (Task 4), `a_inc_equiv__var/var_skl/tvar` constructors (`def_meta`).
@@ -271,7 +271,7 @@ Because the three constructors differ in the *middle premise* (`≡ᵗ` for var_
 
 - [ ] **Step 5: Commit.**
 ```bash
-git add fresco/algo/prop_metasubst.v fresco/algo/prop_consis_complete.v
+git add fresco/algo/basic/prop_metasubst.v fresco/algo/prop_consis_complete.v
 git commit -m "$(printf '%s\n' '[mech] prop_metasubst: unify inert-binder mid-insert (var_typ/var_skl/tvar)' '' 'Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>')"
 ```
 
@@ -280,7 +280,7 @@ git commit -m "$(printf '%s\n' '[mech] prop_metasubst: unify inert-binder mid-in
 ### Task 6: Make `msubst_downarrow_tyequiv` the single downarrow-tyequiv primitive
 
 **Files:**
-- Modify: `fresco/algo/prop_metasubst.v`
+- Modify: `fresco/algo/basic/prop_metasubst.v`
 
 **Interfaces:**
 - Consumes: `msubst_downarrow_tyequiv` (`Θt ⊢ B ≡ᵗ ⇓ᵗ[Θ]B`), `a_tyequiv_to_downarrow`, `a_tyequiv_pskl`, `msubst_ptyp_compose`, `downarrow_app_agree_ptyp`.
@@ -294,7 +294,7 @@ git commit -m "$(printf '%s\n' '[mech] prop_metasubst: unify inert-binder mid-in
 
 - [ ] **Step 4: Commit.**
 ```bash
-git add fresco/algo/prop_metasubst.v
+git add fresco/algo/basic/prop_metasubst.v
 git commit -m "$(printf '%s\n' '[mech] prop_metasubst: derive compose/pskl downarrow-tyequiv from one primitive' '' 'Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>')"
 ```
 
@@ -303,7 +303,7 @@ git commit -m "$(printf '%s\n' '[mech] prop_metasubst: derive compose/pskl downa
 ### Task 7: Factor the shared self-downarrow induction (only if clean)
 
 **Files:**
-- Modify: `fresco/algo/prop_metasubst.v`
+- Modify: `fresco/algo/basic/prop_metasubst.v`
 
 **Interfaces:**
 - Consumes: `a_inc_self_downarrow`, `a_inc_equiv_self_downarrow`.
@@ -317,7 +317,7 @@ git commit -m "$(printf '%s\n' '[mech] prop_metasubst: derive compose/pskl downa
 
 - [ ] **Step 4: Commit.**
 ```bash
-git add fresco/algo/prop_metasubst.v
+git add fresco/algo/basic/prop_metasubst.v
 git commit -m "$(printf '%s\n' '[mech] prop_metasubst: share the self-downarrow induction skeleton' '' 'Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>')"
 ```
 

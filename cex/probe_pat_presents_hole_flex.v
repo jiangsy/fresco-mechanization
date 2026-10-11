@@ -59,17 +59,17 @@ Require Import src.fresco.notations.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.prop_swap.
+Require Import src.fresco.algo.basic.prop_swap.
 Require Import src.fresco.ext_algo.notations.
-Require Import src.fresco.ext_algo.def_supply.
-Require Import src.fresco.ext_algo.def_guess.
-Require Import src.fresco.ext_algo.def_consis.
-Require Import src.fresco.ext_algo.def_look.
-Require Import src.fresco.ext_algo.def_solve.
-Require Import src.fresco.ext_algo.def_extract.
-Require Import src.fresco.ext_algo.def_sub.
-Require Import src.fresco.ext_algo.def_pat.
-Require Import src.fresco.ext_algo.prop_solve_det.
+Require Import src.fresco.ext_algo.basic.def_supply.
+Require Import src.fresco.ext_algo.basic.def_guess.
+Require Import src.fresco.ext_algo.consistency.def_consis.
+Require Import src.fresco.ext_algo.subtyping.def_look.
+Require Import src.fresco.ext_algo.subtyping.def_solve.
+Require Import src.fresco.ext_algo.subtyping.def_extract.
+Require Import src.fresco.ext_algo.subtyping.def_sub.
+Require Import src.fresco.ext_algo.typing.def_pat.
+Require Import src.fresco.ext_algo.subtyping.prop_solve_det.
 
 Open Scope fresco_a_scope.
 Open Scope fresco_e_scope.

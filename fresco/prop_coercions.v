@@ -20,7 +20,7 @@
     left to follow at the use site — a Leibniz [=] gives both [ [=] ] and
     [ [<=] ] by [rewrite].
 
-    ⚙ [prop_basic.v] re-exports this file, so the ~99 consumers that already
+    ⚙ [prop_shapes.v] re-exports this file, so the ~99 consumers that already
     import it need no change.  A file that imports [coercions.v] alone must
     [Require Import src.fresco.prop_coercions] — [Require Import] is NOT
     transitive for name visibility. *)
@@ -496,7 +496,7 @@ Qed.
 
 (** Substitution commutes with every coercion — each is structural, so it
     commutes with substitution when the substituted term is coerced too.
-    ⚙ Moved here 2026-10-10 from algo/prop_suffix_erase.v §2;
+    ⚙ Moved here 2026-10-10 from algo/basic/prop_suffix_erase.v §2;
     [ptyp_to_pskl_subst] also replaces this file's own reversed copy,
     [subst_ptyp_to_pskl_comm]. *)
 
@@ -636,8 +636,8 @@ Proof. intros Q α. rewrite bskl_to_pskl_subst. reflexivity. Qed.
     ⚠️ [Set Implicit Arguments] is SCOPED TO THIS SECTION, and it is
     load-bearing.  Each lemma here has the shape [forall x, Pred x -> Pred' (f
     x)], whose subject is STRICTLY implicit — and most of these lemmas came
-    from files that do set the flag ([algo/prop_basic.v],
-    [algo/prop_solve_sub.v], [algo/prop_pat_sub.v]).  Without the flag the
+    from files that do set the flag ([algo/basic/prop_context.v],
+    [algo/prop_solve_sub.v], [algo_decl/prop_subtyping.v]).  Without the flag the
     subject becomes explicit here and every call site that applies the lemma to
     its hypothesis directly breaks: [mono_ptyp_to_pskl_lc Hm] reads [Hm] as the
     [ptyp].  §1, §2 and §4 must stay OUTSIDE the region — their arguments occur
@@ -645,7 +645,7 @@ Proof. intros Q α. rewrite bskl_to_pskl_subst. reflexivity. Qed.
     are passed explicitly at call sites ([ftvar_ptyp_to_btyp_syn (btyp_to_ptyp
     B)]).
 
-    ⚙ Same hazard as [algo/prop_swap.v] §6, which sets the flag the other way:
+    ⚙ Same hazard as [algo/basic/prop_swap.v] §6, which sets the flag the other way:
     moving a lemma between an SIA and a non-SIA file silently re-elaborates its
     signature.  Neither `make quick` nor a name-visibility scan catches it —
     only [make coq]. *)
@@ -799,7 +799,7 @@ Proof. intros τ Hm; induction Hm; simpl; congruence. Qed.
 Unset Implicit Arguments.
 
 (* ⚙ OUTSIDE the implicit-args region on purpose: its source file
-   (algo_decl/prop_conserv.v) sets no such flag, so its call sites pass the
+   (algo_decl/prop_conservativity.v) sets no such flag, so its call sites pass the
    subject explicitly. *)
 Lemma is_styp_of_btyp_to_bskl : forall Q,
   is_sskl Q -> forall B, Q = btyp_to_bskl B -> is_styp B.
@@ -1150,7 +1150,7 @@ Qed.
 (*  everything painted out of them is tag-free.  ⚙ Proved here and only   *)
 (*  here.  ⚙ [ptyp_to_uskl_syn] is NOT one of these — it is defined only   *)
 (*  in algo_decl/def_consis_refine.v, so its tag-freeness lives with the  *)
-(*  rest of its shape facts in algo/prop_pat_sub.v.                        *)
+(*  rest of its shape facts in algo_decl/prop_subtyping.v.                        *)
 (* ===================================================================== *)
 
 Lemma ftag_btyp_to_utyp_syn : forall B,
@@ -1176,7 +1176,7 @@ Qed.
 
 (** [ptyp_to_pskl] preserves size (it never adds a node).  ⚙ The ONE copy:
     it was proved twice, in consis/prop_completeness_consis.v and in
-    ext_algo/def_typing_impl.v, until 2026-10-10. *)
+    ext_algo/typing/def_typing_impl.v, until 2026-10-10. *)
 Lemma size_pskl_ptyp_to_pskl : forall A,
   size_pskl (ptyp_to_pskl A) = size_ptyp A.
 Proof. induction A; simpl; auto. Qed.
@@ -1186,8 +1186,8 @@ Proof. induction A; simpl; auto. Qed.
 (*                                                                        *)
 (*  Facts about [ptyp_to_bskl_syn] / [ptyp_to_uskl_syn] (coercions.v) and *)
 (*  a few more conversion / local-closure facts.  ⚙ Gathered here         *)
-(*  2026-10-10 from algo/prop_basic.v, algo/prop_suffix_erase.v,          *)
-(*  algo/prop_mono_bridge.v, algo/prop_pat_sub.v and deco_algo/ — the      *)
+(*  2026-10-10 from algo/basic/prop_context.v, algo/basic/prop_suffix_erase.v,          *)
+(*  algo/consistency/prop_consis_monotype_equiv.v, algo_decl/prop_subtyping.v and deco_algo/ — the      *)
 (*  embeddings used to be defined in algo_decl/, which is what kept these *)
 (*  out.  [Set Implicit Arguments] is scoped to this section, as in the    *)
 (*  files they came from.                                                 *)
@@ -1269,7 +1269,7 @@ Qed.
 
 (** ⚙ [pskl_to_bskl_inh_subst_mono] — substituting a MONOTYPE into an
     inherited painting is the same substitution as into a synthesised one —
-    is already in prop_pat_sub.v, oriented [subst (inh P) = inh (subst P)].
+    is already in prop_subtyping.v, oriented [subst (inh P) = inh (subst P)].
     Used below in that direction.
 
 Note also: *)

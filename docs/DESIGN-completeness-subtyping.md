@@ -127,7 +127,7 @@ Notes on shape (verify each against `a_consis_complete` when writing):
 - `κ` is the mech's `ρ ∷ Θ0 ⊑ Θ` (an `a_inc` metasubstitution).
 - `bid Q` target: `ad_pat_sub`'s target sort is **`bskl`** (`Q : bskl`),
   matching `a_consis`'s `Qb`.  Precision conclusion compares `pskl` to
-  `pskl` via `ad_precise` (`⊑ₚᵣᵃ`, `prop_precise.v:47`
+  `pskl` via `ad_precise` (`⊑ₚᵣᵃ`, `prop_precision.v:47`
   = `⊢ᵣᵃᵈ inh{·} ⊳ inh{·}`); erase `Q` with `bskl_to_pskl`.
 - The **third premise** `ad_refine_pskl_f ∅ Θ ∅ (msubst ρ ⌊S⌋ˢ) (bskl_to_pskl Q)`
   is the repair.  It is exactly what `a_consis_sound`'s `⊢ᵣₚᵃᵈ` conjunct
@@ -281,7 +281,7 @@ cleanest self-contained first Qed — start there to validate the
   of `a_sub_flex_complete`.
 - msubst / a_inc / a_inc_equiv / mono-bridge / refinement-transport kits
   — `DESIGN-subtyping.md §3.2`.
-- Existing subtyping infra (all Qed, `prop_pat_sub.v`):
+- Existing subtyping infra (all Qed, `prop_subtyping.v`):
   `ad_pat_sub_{isub,weaken,strip_suffix,rename_tvar,subst_flex,subst_flex_def}`,
   `ad_partial_precise_{isub,weaken}`.
 
@@ -342,7 +342,7 @@ Painting facts: `pskl_to_bskl_inh (pskl_all_syn P) = bskl_all_inh (inh P)`;
   `pskl_no_forall → pskl_to_bskl_inh = pskl_to_bskl_syn`; cf.
   `no_forall_bskl` (was predicates.v:97; DELETED 2026-08-06 as an unused
   duplicate — re-add if this route is taken), `ptyp_to_bskl_inh_syn_eq`
-  prop_mono_bridge.v:78 — build the pskl analog).  Then `__ghost` needs
+  prop_consis_monotype_equiv.v:78 — build the pskl analog).  Then `__ghost` needs
   `Θ ⨟ ∅ ⊢ᵃᵈₚₛᵃ ⌊ψ⌋`: strip Δ from the wf premise via `Δ ∩ ftv ⌊ψ⌋ = ∅`
   (the ppre__ghost side condition) + a wf Δ-strip lemma.
 - **univ_ghost_remove** `pskl_univ_ghost P ⊑ᵖ[Ψ] ψ` → `__univ_ghost_remove` + IH
@@ -2319,7 +2319,7 @@ pskl` and no separate `S` currently exist.  Two candidate encodings:
   statement DRAFTED + type-checks in `fresco/algo/cex/p6cs_dev_tmp.v`; the THREE
   special cases (P0=□, P=α via the P6-Cv corollary, α∉ftv P) are PROVEN, plus
   the reusable helpers `ad_partial_precise_psi_cong` (Qed, migrate to
-  prop_precise.v) and `pskl_ghost_dec`/`pskl_var_dec`; `a_solve_eq_wf` (existing)
+  prop_precision.v) and `pskl_ghost_dec`/`pskl_var_dec`; `a_solve_eq_wf` (existing)
   discharges the solve-output wf.  ONE admit left = the MAIN INDUCTION (P0≠□,
   P≠α, α∈ftv P).  Reused: `a_solve_eq_complete_var` (P6-Cv corollary) at the
   P=α leaf with `urho__refl`/Δρ:=∅/`fa_clean`; `ad_pat_consis_sskl_tags` +
@@ -3342,7 +3342,7 @@ reflexive `a_inc_equiv Θ0 κ κ Θ`: the mech's `a_inc_equiv` is POSITIONAL, so
 θa as the EXTENSION `κa ++ κ`.
 
 **Housekeeping.**  §1's locally-declared `pskl_ghost_free` Inductive duplicated
-`prop_pat_sub.v`'s Fixpoint of the same name and is gone; the file uses the
+`prop_subtyping.v`'s Fixpoint of the same name and is gone; the file uses the
 existing one (which also supplies `ptyp_to_pskl_ghost_free` and
 `pskl_ghost_free_open_rec`).
 
@@ -3789,7 +3789,7 @@ preserves); a Δ-bound or RIGID variable is missed by both metasubstitutions
 (`msubst_lookup_notin`), so both sides are the same variable; and a FLEXIBLE
 variable is the only real case — `a_inc_equiv_lookup` gives `Θ ⊢ κα ≡ᵗ σα`,
 `a_inc_lookup_mono` gives both monotypes, and **`tyequiv_mono_refine_syn`
-(prop_precise_recover.v:90) IS that case, already Qed**.
+(prop_precision_recovery.v:90) IS that case, already Qed**.
 
 Side conditions, both standard and both available at the call site: `Δ0 ⊆ Δ`, and
 Δ-binders fresh for the context (the same condition `ad_refine_syn_trans` itself
@@ -3912,7 +3912,7 @@ that UnivGhostR / UnivGhostL insert.
   (mid-strip / mid-insert) from `remech-complete-mu-bundle`; `a_inc__flex_def`'s
   `≡ᵗ` middle is what absorbs `α̂0 := α̂→β̂`.
 - **Flex-Assign** substitutes `τ/β̂` in BOTH the subject and `P0`, so it needs
-  `ad_pat_sub_{subst_flex,subst_flex_def}` (already Qed, `prop_pat_sub.v`) plus
+  `ad_pat_sub_{subst_flex,subst_flex_def}` (already Qed, `prop_subtyping.v`) plus
   `a_inc`'s "extend the source with `β̂ := τ`" step, which is `a_inc__flex_def`
   read backwards — check `a_inc_mid_strip_flex_def` /
   `a_inc_equiv_mid_insert_flex_def` (`prop_consis_complete.v:2059`, :2100) cover

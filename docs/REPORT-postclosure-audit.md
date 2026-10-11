@@ -27,7 +27,7 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
   out to exist **three** times: `a_wf_aenv_strip_prefix` (a `_local` copy, an
   `a_decls`-restricted one and a general one) and `a_wf_pskl_univ_ghost_inv` (a
   strong form, a wf-only weak form, and an `_x` copy that existed only to escape
-  the shadow).  Both now live once, in `algo/prop_basic.v`, which every user
+  the shadow).  Both now live once, in `algo/basic/prop_context.v`, which every user
   imports.
 - **§2.1 (the clear orphans)** — `a_split_refines` (superseded by `_gen`), the
   four consumer-facing renaming corollaries in `prop_swap.v` §6, and five
@@ -52,20 +52,20 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
 
 - **§1.9** — `lc_exp e` is gone from `a_typing_complete` (statement and
   `README.v` entry): it follows from the theorem's own `ad_sd_typing` premise
-  via `ad_sd_typing_wf_exp` + `a_wf_exp_lc`, which `prop_closed.v` was already
+  via `ad_sd_typing_wf_exp` + `a_wf_exp_lc`, which `prop_typing_closed.v` was already
   computing by hand at the call site.
 
 - **§1.1 PHASE 0** — the ingredients `a_typing_sound` consumes no longer travel
   with it.  ⚠️ NOT by adding a `_aux` file (that names a role, not a topic, and
   is the `prop_kit.v` mistake again): each lemma went to the file whose subject
   it is.
-  - `fresco/algo/prop_flex.v` → **`fresco/algo/prop_basic.v`**, the per-layer
-    sibling of `fresco/prop_basic.v` and `decl/prop_basic.v`.  Its header
+  - `fresco/algo/prop_flex.v` → **`fresco/algo/basic/prop_context.v`**, the per-layer
+    sibling of `fresco/prop_shapes.v` and `decl/prop_basic.v`.  Its header
     described "soundness of the flexible-variable machinery"; the file holds 77
     lemmas — `a_wf_*`, binds/ftvar plumbing, `a_decls`, `a_isub` reflexivity,
     `rename_aenv`, `a_guess_mono`.  It had become the algo basics file without
     saying so, which is why wf lemmas kept landing in it.
-  - new **`fresco/algo/prop_mod_compat.v`** — mode compatibility at BOTH sorts:
+  - new **`fresco/algo/basic/prop_mod_compat.v`** — mode compatibility at BOTH sorts:
     14 lemmas that were spread over FIVE files (the `skmod{SK}` inversions in
     `pat/prop_soundness_pat.v`, the `skmod{TY}` ones in
     `typing/prop_soundness_typing.v`, the monotype-substitution halves in
@@ -73,22 +73,22 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
     `mod_comp_sk` bridge in `deco_algo/prop_soundness_sub.v`), so half the
     answers came with a theorem attached and the TY question was answered in a
     different file from its SK twin.  ⚙ `mod_comp_ty_tc_inv` stays in
-    `fresco/prop_basic.v` (the declarative layer uses it) and the
+    `fresco/prop_shapes.v` (the declarative layer uses it) and the
     `mod_comp_*_subst_mono` pair stays with the `is_*_subst_mono` shape lemmas
     it is built from.
   - ⚠️ **An eleventh duplicate, which the name-based scan could not see**:
     `pskl_ghost_free_ptyp` (`sub/prop_soundness_subtag.v`) and
-    `pskl_ghost_free_to_ptyp` (`fresco/prop_basic.v`) are the same statement
+    `pskl_ghost_free_to_ptyp` (`fresco/prop_shapes.v`) are the same statement
     under two names.  Deleted the former.  §2.3's "one fact, one name" check has
     to be run on STATEMENTS, not names — this one was found only by reading the
     mode-compat cluster.  Also relocated: `subst_ptyp_to_pskl_comm` →
     `fresco/prop_coercions.v`, which is the file that owns conversion identities.
-  - `a_split_wf` → `algo/prop_wf_preservation.v` (it *is* an output-wf lemma);
+  - `a_split_wf` → `algo/basic/prop_wf_preservation.v` (it *is* an output-wf lemma);
     `a_split_ty_shape` → beside its SK twin `a_split_sk_shape`;
     `a_isub_strip_var_typ_mid` → beside `uniq_mid_eq`.
 
   Result: `prop_soundness_typing.v` goes 2681 → 2406 lines and 57 → 44 names,
-  and **`prop_scope.v` now uses exactly ONE name from it — `a_typing_sound`**,
+  and **`prop_typing_scope.v` now uses exactly ONE name from it — `a_typing_sound`**,
   the one Phase 1 removes.
 
 - **§2.3 REDONE AT THE STATEMENT LEVEL** (`bc676bd`, `0c4c410`) — see §2.3b.
@@ -114,9 +114,9 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
     so the infix carried nothing and read like "covariant".
   - `p6cv_*` / `p6cs_*` → `solve_eq_complete_var_*`, `a_solve_eq_complete_rsubst_var`,
     `subst_msubst_uskl_syn_open`.  The FILE already says which P6 lemma
-    (`prop_eq_var.v` is Cv), so the prefix was redundant as well as opaque.
+    (`prop_completeness_solve_eq_var.v` is Cv), so the prefix was redundant as well as opaque.
   - `rho` → **`rsubst`** in lemma names and file names — `prop_rho_relation.v`
-    → `prop_rsubst.v`, `uskl_rho` → `uskl_rsubst`, `rho_fresh`/`rho_lc`/
+    → `prop_rigid_substitution.v`, `uskl_rho` → `uskl_rsubst`, `rho_fresh`/`rho_lc`/
     `rho_leaf` → `rsubst_*`, 39 declarations.  ⚠️ Deliberately NOT renamed: the
     METAVARIABLES `ρ`, `Δρ`, `Ψρ`, the hypothesis names `Hrho*`, and every
     prose comment.  `ρ` is the paper's own symbol
@@ -129,7 +129,7 @@ Steps 2 and 3 of the suggested order below, plus the README indexing:
   `algo_decl/prop_ctx_mono.v`.  Retiring `ad_pat_sub_g` / `_gv` / `_v` had left
   it holding exactly `ad_pat_sub_fuel_le` and `ad_pat_sub_of_fuel` — not worth
   an import line in nine consumers.  ⚙ The destination is NOT arbitrary: the
-  maps must sit upstream of `algo/sub/prop_soundness_subtag.v`, and
+  maps must sit upstream of `algo/subtyping/prop_soundness_subtag.v`, and
   `prop_ctx_mono.v` is the only `prop_*.v` in `algo_decl/` that qualifies —
   it already owned `ad_pat_sub_mono`, the same kind of structural fact about
   the same relation.  Its header now says so.
@@ -155,7 +155,7 @@ of `a_typing` carry
 
 When it was added (2026-08-06) the note read *"no scoping theorem local to the
 rule supplies it, so it stays a premise"*.  **That is no longer true.**
-`algo/typing/prop_scope.v` (2548 lines, closed 2026-08-08) proves
+`algo/typing/prop_typing_scope.v` (2548 lines, closed 2026-08-08) proves
 `a_typing_scope`, and its two corollaries `a_typing_scope_tvar_nil` /
 `a_typing_scope_tm_nil` (`:2488`, `:2518`) derive *exactly premise (2)* from the
 **run alone** plus wf of its input and output.  The premise has become a
@@ -163,24 +163,24 @@ restatement of a theorem the tree already has.
 
 What blocks deleting it today is a **layering cycle**, not the mathematics:
 
-- `prop_scope.v`'s own check-row cases still take the shortcut and consume the
-  premise (`prop_scope.v:2262`, `exact (H2 γ Hc0 Hγ)`);
+- `prop_typing_scope.v`'s own check-row cases still take the shortcut and consume the
+  premise (`prop_typing_scope.v:2262`, `exact (H2 γ Hc0 Hγ)`);
 - `prop_soundness_typing.v` consumes it directly (`:2365`, `:2377`);
 - the corollaries need the body run's **output well-formedness**, and for
   `a_typing` that is currently only available *inside* `a_typing_sound`.
 
 ⚠️ **RE-SCOPED 2026-08-12, after reading both proofs.**  The paragraph that
 stood here proposed factoring `a_typing_output_wf` out of `a_typing_sound` into
-`algo/prop_wf_preservation.v`, and called the cycle a layering accident.  Two
+`algo/basic/prop_wf_preservation.v`, and called the cycle a layering accident.  Two
 things are wrong with it.
 
-**(a) `prop_scope.v` already imports `prop_soundness_typing.v`** (`:65`) and
+**(a) `prop_typing_scope.v` already imports `prop_soundness_typing.v`** (`:65`) and
 calls `a_typing_sound` at seven sites.  The dependency runs
 soundness → scope, not the other way, so soundness cannot reach the corollaries
 without first removing that import.  ⚙ All seven sites destruct only the FIRST
 THREE conjuncts (`Θ₀ ⊴ Θ₁`, `⊢ Θ₁`, `a_wf_ptyp Θ₁ A`) and never the declarative
 existential — so the split is exactly along the line proposed, but it has to
-happen *before* prop_scope, not after.
+happen *before* prop_typing_scope, not after.
 
 **(b) The wf conjunct itself needs the scope invariant.**  This is the real
 obstruction.  In the check rows, `a_typing_sound` derives `a_wf_ptyp Θ₁ A` by
@@ -195,10 +195,10 @@ be proved before `a_typing_scope`; and `a_typing_scope` needs output-wf.
 Θ0 ⊴ Θ1  /\  {{ ⊢ Θ1 }}a  /\  a_wf_ptyp Θ1 A  /\  <typing_scope_concl …>
 ```
 
-in `prop_scope.v`, whose check rows feed their own scope conjunct (at the nil
-marker, exactly as the corollaries do) into the wf conjunct.  `prop_scope.v`
+in `prop_typing_scope.v`, whose check rows feed their own scope conjunct (at the nil
+marker, exactly as the corollaries do) into the wf conjunct.  `prop_typing_scope.v`
 then drops its `prop_soundness_typing` import, and `a_typing_sound` imports
-`prop_scope.v` and reads all four facts off it.
+`prop_typing_scope.v` and reads all four facts off it.
 
 **Cost, honestly.**  It merges `a_typing_scope` (≈550 lines) with the wf third of
 `a_typing_sound` (≈400), and every one of the twelve rows changes.  It is NOT
@@ -241,7 +241,7 @@ threading `a_guess_mono` the same way
 
 would make `uniq` derivable and is *closer* to the implementation's global
 counter, not further.  **But**: `a_guess_mono` has 316 occurrences across 19
-files (`algo/prop_basic.v` 42, `prop_completeness_typing.v` 37, `prop_solve_sub.v` 36,
+files (`algo/basic/prop_context.v` 42, `prop_completeness_typing.v` 37, `prop_solve_sub.v` 36,
 …).  The premise costs one line; the faithful generator costs a tree-wide
 re-proof.  **Keep the premise**; record the reason at the rule (it currently
 says only that `uniq` is "NOT derivable", which is true of *this* `a_guess_mono`
@@ -291,7 +291,7 @@ only overlap is the 13 rule-constructor names.  The two layers prove genuinely
 different things (`decl/` the paper's declarative metatheory, `algo_decl/` the
 precision/monotonicity machinery soundness and completeness need).  Collapsing
 them — e.g. defining `d_X Γ := ad_X (denv_to_aenv Γ)` — would save the ~890
-lines of `algo_decl/def_*.v` and much of `prop_conserv.v`, at the price of the
+lines of `algo_decl/def_*.v` and much of `prop_conservativity.v`, at the price of the
 paper's declarative figure no longer being an `Inductive` a reader can match
 line for line.  **Not recommended.**
 
@@ -319,10 +319,10 @@ own declaration, and none is `Hint`-registered.  Full triaged list:
 
 | lines | file |
 |---:|---|
-| 392 | `algo/prop_swap.v` |
-| 376 | `algo/consis/prop_consis_precise.v` |
-| 307 | `algo/consis/prop_soundness_consis.v` |
-| 219 | `algo/prop_suffix_erase.v` |
+| 392 | `algo/basic/prop_swap.v` |
+| 376 | `algo/consistency/prop_consis_precise.v` |
+| 307 | `algo/consistency/prop_soundness_consis.v` |
+| 219 | `algo/basic/prop_suffix_erase.v` |
 | 185 | `algo/sub/look/prop_rho_relation.v` |
 | 180 | `algo/sub/look/prop_flex_apart.v` |
 | 167 | `decl/prop_syntax_directed.v` |
@@ -354,7 +354,7 @@ The rest is genuinely orphan.  The clearest cases:
 - generic list/set utilities re-derived locally: `map_fst_combine` /
   `map_snd_combine` (`decl/prop_stability.v:328,336`), `app_mid_inv`
   (`consis/prop_consis_rename.v:718`), `eq_subset`
-  (`decl/prop_syntax_directed.v:1164`), `lc_aenv_app` (`algo/prop_inc.v:110`).
+  (`decl/prop_syntax_directed.v:1164`), `lc_aenv_app` (`algo/basic/prop_inc.v:110`).
 - `decl/prop_annotation.v`'s `erase_lam_mono` kit (`:45`–`:95`) — orphan support
   for the `erase_lam_mono_typing` theorem that was aborted at `:97`.  Either
   re-prove the headline or drop the kit and keep `freeze_no_infer`.
@@ -510,7 +510,7 @@ want the `Print Assumptions` line for:
 | `mono_lambda_anno_redundant` | `decl/prop_shallow.v:236` |
 | `d_consis_sub_trans` (CST, paper B.3) | `decl/prop_general_subsumption.v` |
 | `a_assign_sound` / `a_unify_sound` / `complete_mu` | `algo/consis/…` |
-| `a_sub_complete_bundle_holds` | `algo/sub/prop_completeness_sub.v` |
+| `a_sub_complete_bundle_holds` | `algo/subtyping/prop_completeness_sub.v` |
 
 The last is the sharpest: `CLAUDE.md:57` and `:139` both say it is "`Check`ed and
 audited in `README.v`".  It is not in the file.
@@ -569,7 +569,7 @@ locations*:
 
 - `fresco/prop_etag.v` → `fresco/prop_tag.v`  (PAPER-GAPS `:75`, `:99`)
 - `fresco/decl/prop_etag_swap.v` → `fresco/decl/prop_tag_swap.v`  (`:99`, `:106`, `:112`)
-- `fresco/algo/prop_soundness_pat.v` → `fresco/algo/pat/prop_soundness_pat.v`
+- `fresco/algo/prop_soundness_pat.v` → `fresco/algo/typing/prop_soundness_pat.v`
 - `fresco/algo/prop_soundness_typing.v` → `fresco/algo/typing/prop_soundness_typing.v`
 
 Also: `CLAUDE.md`'s doc-index table links `AGENTS.md`, which the same file's

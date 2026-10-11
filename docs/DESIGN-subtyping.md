@@ -285,7 +285,7 @@ threading at Check.
 
 ### 3.2 Kits (used pervasively; all Qed)
 
-- **msubst algebra** (prop_metasubst/prop_compose):
+- **msubst algebra** (prop_metasubst/prop_metasubst_composition):
   `msubst_{ptyp,pskl,bskl}_*`, `msubst_lookup_{app_in,app_notin,mid_drop,notin}`,
   `msubst_ptyp_agree(_inv)`, `msubst_compose_{app,cons_l_id,is_id_r,is_id_r_ext}`,
   `msubst_compose_agree_id`, `dom_msubst_compose`.

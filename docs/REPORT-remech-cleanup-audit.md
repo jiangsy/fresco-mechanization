@@ -29,7 +29,7 @@ removed developments).
 > **(a) §5.5 understated the find.**  `guarded_ptyp`'s three apparent uses were
 > a name collision with `guarded_ptyp_to_uskl_syn` — and *that* lemma is a
 > verbatim duplicate of `mono_ptyp_to_uskl_syn_guarded`
-> (`algo/prop_pat_sub.v:845`), which both of its consumers already import.  So
+> (`algo_decl/prop_subtyping.v:845`), which both of its consumers already import.  So
 > this was a duplicate-lemma find, not just a dead predicate: the copy is
 > deleted and its call sites repointed.  ⚠️ **The §8.1 duplicate scan cannot see
 > this class** — it keys on identical names, and these two differ.  The real
@@ -48,11 +48,11 @@ removed developments).
 > ```text
 > algo/typing/
 >   prop_typing.v      the theorem      (was algo/prop_completeness_typing.v)
->   prop_rigidity.v    rigid data survives a run          (was prop_ty_core.v)
->   prop_scope.v       a run's result never mentions the
+>   prop_typing_rigidity.v    rigid data survives a run          (was prop_ty_core.v)
+>   prop_typing_scope.v       a run's result never mentions the
 >                      suffix it dropped                 (was prop_ty_scope.v)
->   prop_shape.v       an FN-mode run returns an arrow chain
-> algo/prop_wf_preservation.v   (was prop_wf_output.v — NOT moved: it has five
+>   prop_typing_shape.v       an FN-mode run returns an arrow chain
+> algo/basic/prop_wf_preservation.v   (was prop_wf_output.v — NOT moved: it has five
 >                                consumers, incl. soundness and README.v)
 > ```
 >
@@ -77,8 +77,8 @@ removed developments).
 >
 > | | |
 > |---|---|
-> | deleted | **17** duplicate declarations — 6 exact, 9 alpha-variants, 2 (`a_inc_dom_flex`, `a_inc_lookup_mono`) after adding an explicit `prop_compose` import |
-> | moved | `is_sskl_pskl_to_bskl_syn` → `fresco/prop_basic.v` (it was proved in two files that don't import each other, so it could not be deduped in place) |
+> | deleted | **17** duplicate declarations — 6 exact, 9 alpha-variants, 2 (`a_inc_dom_flex`, `a_inc_lookup_mono`) after adding an explicit `prop_metasubst_composition` import |
+> | moved | `is_sskl_pskl_to_bskl_syn` → `fresco/prop_shapes.v` (it was proved in two files that don't import each other, so it could not be deduped in place) |
 > | renamed | **11** — the 10 where the two lemmas genuinely differ, plus `a_wf_aenv_def_ftv_dom` → `a_wf_aenv_def_ftv_dom_in` (below) |
 > | result | `algo/prop_completeness_look.v`'s ⚠️⚠️ blocker is cleared; its header now records that flipping consumers onto the facade is safe. **The flip itself (§8.1d) is NOT done** — see Remaining. |
 >
@@ -86,7 +86,7 @@ removed developments).
 >
 > §8.1 argued the duplicates were a *maintenance* smell.  They are worse than
 > that, and the cleanup itself proved it.  Adding one line —
-> `Require Import prop_compose` to `prop_kit.v` — silently changed which copy
+> `Require Import prop_metasubst_composition` to `prop_kit.v` — silently changed which copy
 > of `a_wf_aenv_def_ftv_dom` four call sites resolved to, and broke the build.
 > The two copies state the same fact in `[<=]` form and in pointwise form: they
 > are logically equal but **not `apply`-compatible**, so the flip is invisible
@@ -107,7 +107,7 @@ removed developments).
 > ### ⚙ Traps, all of which cost a build cycle
 >
 > 1. **`Require Import` is not transitive for name visibility.**  Bit me three
->    times: `README.v`, `prop_eq_var.v`, and a `cex/` probe.  Reachability in
+>    times: `README.v`, `prop_completeness_solve_eq_var.v`, and a `cex/` probe.  Reachability in
 >    the import graph is *not* the test — only a DIRECT import makes a name
 >    visible, and my first over-rename check used reachability and passed
 >    files it should have flagged.
@@ -367,7 +367,7 @@ removed developments).
 > | file | lines | owns |
 > |---|---|---|
 > | `sub/look/prop_rho_relation.v` | 3286 | the ρ relation `uskl_rho`, its inversions by subject and by target, shielded ftv / `rho_fresh`, the solve-context transports |
-> | `sub/look/prop_solve_ext.v` | 1692 | the flex-block extension algebra and the three packages P6 is stated over — `solve_ext`, `solve_sub_ext`, `cv_mono_concl` |
+> | `sub/look/prop_solve_extension.v` | 1692 | the flex-block extension algebra and the three packages P6 is stated over — `solve_ext`, `solve_sub_ext`, `cv_mono_concl` |
 > | `sub/look/prop_flex_apart.v` | 2103 | `flex_apart` and the Arrow-case repair |
 >
 > ⚙ Cuts in a linear Coq file are always dependency-clean (nothing can use what
@@ -424,14 +424,14 @@ removed developments).
 >
 > ### ⛔ The three "small files that should be merged" must NOT be merged
 >
-> §5.3/§8.3 read `prop_inc_strengthen.v` (444), `prop_precise_sub.v` (269) and
-> `prop_precise_recover.v` (313) as merge candidates — same topic as their
+> §5.3/§8.3 read `prop_inc_strengthen.v` (444), `prop_ctx_precision.v` (269) and
+> `prop_precision_recovery.v` (313) as merge candidates — same topic as their
 > base, small enough to fold in.  Measured against the import graph, all three
 > are wrong:
 >
 > | merge | verdict |
 > |---|---|
-> | `prop_inc_strengthen` → `prop_inc` | **CYCLE** — needs `prop_flex`, `prop_compose`, `prop_normal`, all of which import `prop_inc` |
+> | `prop_inc_strengthen` → `prop_inc` | **CYCLE** — needs `prop_flex`, `prop_metasubst_composition`, `prop_normal`, all of which import `prop_inc` |
 > | `prop_precise_sub` → `prop_precise` | **CYCLE** — context precision is stated over the SUBTYPING and PATTERN judgements, which reach back to `prop_precise` |
 > | `prop_precise_recover` → `prop_precise` | no cycle, but it imports `consis/prop_soundness_consis.v` (5610 lines) and `prop_precise` has **24** consumers |
 >
@@ -486,7 +486,7 @@ removed developments).
 >
 > | fact | resolution |
 > |---|---|
-> | `mod_comp_ty_tc_inv` | lifted to `fresco/prop_basic.v` (its predicate is declared in `fresco/def_shapes.v`) |
+> | `mod_comp_ty_tc_inv` | lifted to `fresco/prop_shapes.v` (its predicate is declared in `fresco/def_shapes.v`) |
 > | `a_wf_ptyp_ftv_dom`, `a_binds_tvar_in_dom`, `a_scope_pskl_ftv_dom` | lifted to `algo/prop_flex.v`, joining `a_wf_ptyp_ftv_tvarish` — they are ONE "wf/scope ⟹ ftvar ⊆ dom" family that had been split across four mutually-invisible files |
 > | `ad_pat_sub_gv_psi_cong` | **could not be lifted** — see below; deduped by IMPORT instead |
 > | `a_wf_aenv_uniq_local` ×2 | a THIRD copy of `prop_flex.v`'s `a_wf_aenv_uniq`, byte-identical, under a different name.  Deleted; 11 files repointed |
@@ -500,7 +500,7 @@ removed developments).
 > > **(c) the host must see every prerequisite of the PROOF.**
 >
 > That lemma needs `ad_pat_sub_gv` (`algo_decl/def_decl_algo_sub_hyg.v`)
-> AND `ad_pat_consis_psi_cong` (`algo/consis/prop_soundness_consis.v`) — from
+> AND `ad_pat_consis_psi_cong` (`algo/consistency/prop_soundness_consis.v`) — from
 > opposite sides of the tree.  Measured: **no** shared ancestor of the two
 > declaring files sees both, so the pair is unliftable.  The dedupe is by
 > IMPORT: keep it in `sub/prop_soundness_subtag.v`, the earliest file that sees
@@ -647,9 +647,9 @@ the **eight mode-spine inductives**, the **82 duplicated names**, and the
 
 | operator | where | shape | uses |
 |---|---|---|---|
-| `swap_aenv γ β Θ` | `algo/prop_swap.v:135` | transposition (bijection) | 143 |
+| `swap_aenv γ β Θ` | `algo/basic/prop_swap.v:135` | transposition (bijection) | 143 |
 | `rename_aenv γ β Θ` | `algo/def_rules.v:119` | directed rename, key + payload | 21 |
-| `subst_aenv` | `algo/def_meta.v` | payload-only substitution | 34 |
+| `subst_aenv` | `algo/basic/def_meta.v` | payload-only substitution | 34 |
 
 `swap_aenv_as_rename` (`prop_swap.v:635`) bridges the first two, so this is
 not a soundness issue — it is that a reader must learn three.  `rename_aenv`
@@ -692,7 +692,7 @@ Equivariance lemmas exist for `a_guess_mono`, `a_guess`, `a_looksub`/
 
 Missing: **`a_pat`** and **`a_typing`**.  Their renaming is done by the
 substitution-shaped `a_pat_rename_tm` (term vars only) and, on the
-declarative-in-algo side, by `prop_rename_decl.v` (712 lines, tvar).  So the
+declarative-in-algo side, by `prop_renaming.v` (712 lines, tvar).  So the
 top of the tower is the one place the standing directive is not in force.
 
 **Recommendation (C, low risk).**  Add `a_pat_swap` / `a_typing_swap`.  The
@@ -786,7 +786,7 @@ Rule: **decl stays cofinite, algo goes full existential.**  Audit against it:
 | `algo_decl/def_typing.v` | decl-in-algo | 10 | ✅ correct |
 | `algo_decl/def_consis_refine.v` | decl-in-algo | 9 | ✅ correct |
 | `algo_decl/def_decl_algo_sub{,_hyg}.v` | decl-in-algo | 4 + 2 | ✅ correct |
-| `algo/def_meta.v` | algo (meta) | 2 | see below |
+| `algo/basic/def_meta.v` | algo (meta) | 2 | see below |
 | **`algo/def_rules.v`** | **algo** | **7** | **3 wf + 4 `a_pat` — see below** |
 
 The seven in `algo/def_rules.v` split into two groups:
@@ -811,7 +811,7 @@ records a ⛔ block explaining that the four rows "need a kit piece that does no
 exist yet" — the K6 rename kit (§1.2) exists *only* to rebuild the cofinite
 family from an instance.  Going exists-fresh deletes that need on the
 completeness side and moves it to soundness (which must then rebuild the family
-— exactly what `prop_rename_decl.v` already does for `ad_pat`).
+— exactly what `prop_renaming.v` already does for `ad_pat`).
 
 **Recommendation (C, expensive).**  Convert the four rows.  **Risk: puts
 `a_pat_sound` (theorem 1) and `a_pat_complete` (theorem 3) both in play**, and
@@ -842,7 +842,7 @@ theorems 1–4 all survived.  Three corrections to the estimate above:
   `a_pat_rename_tm` — the whole reason K6's last piece existed — is **gone**.
   ⚠️ It could not merely be left unreferenced: over exists-fresh rows it is
   not provable (its binder rows need `b <> x` for an `x` the statement cannot
-  constrain).  The ⛔ note where it used to be, in `algo/prop_swap.v`, records
+  constrain).  The ⛔ note where it used to be, in `algo/basic/prop_swap.v`, records
   that argument.
 - ⚙ **The soundness side cost four `atom_fresh` blocks**, replaced by opening
   the `a_wf_exp` families at the row's own binder.  The two lemmas that does
@@ -974,7 +974,7 @@ equal, and the tree proves it — but the `syn` case lives at
 `algo/prop_soundness_pat.v:900` and the `inh` case at
 `algo/prop_soundness_typing.v:72`, two files that have no reason to own a
 commuting square.  The retractions (`bskl_to_pskl_pskl_to_bskl_{syn,inh}`,
-`btyp_to_ptyp_ptyp_to_btyp_{syn,inh}`) are in `fresco/prop_basic.v`; the
+`btyp_to_ptyp_ptyp_to_btyp_{syn,inh}`) are in `fresco/prop_shapes.v`; the
 `_open`/`_open_rec` squares are split between `coercions.v` and `prop_basic.v`;
 `uskl_to_pskl_pskl_to_uskl` is in `deco_algo/prop_decorate.v:50`.
 
@@ -1122,7 +1122,7 @@ because lemmas proved about one copy do not `apply` to the other:
   (`ptyp_to_pskl_no_ghost` is duplicated too).  `prop_kit.v` **imports**
   `prop_completeness_consis.v`, so the second shadows the first.
 - **`msubst_lc`** — `deco_algo/prop_decorate_sub.v:173` and
-  `algo/prop_normal.v:143`.
+  `algo/basic/prop_context_normalization.v:143`.
 
 **28 of the 82 involve the `completeness_look/` cluster**, and this is exactly
 what blocks the facade that is already written.

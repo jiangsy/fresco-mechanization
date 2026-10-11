@@ -22,7 +22,7 @@ survey.  Part I is where the structural saving is.
         │          consis 18,256 · typing 11,109 · pat 5,178
         ↑  decoration — deco_algo/  8,010   (carries a_sub_sound)
         │
-        ↑  ⭐ THE LIFT — ext_algo/prop_lift{,_typing}.v  12,898
+        ↑  ⭐ THE LIFT — ext_algo/lifting/prop_lift{,_typing}.v  12,898
    ext_algo/     59,197    THE EXTRACTABLE ENCODING (e_) — 48 files
         │          implementations ~5,000 · runners + BC orders
         │          ρ-pairing machinery 12,322 · termination 1,950
@@ -78,7 +78,7 @@ A representative rung shows what ρ costs in the *statement* alone
 `ρx` with two side conditions.  **Nine of its ~12 premises are ρ bookkeeping.**
 
 ⚙ Note `rel_pskl` is barely used outside the lift — only
-`algo/prop_wf_preservation.v` and `algo/consis/prop_consis_rename.v` mention it.
+`algo/basic/prop_wf_preservation.v` and `algo/consistency/prop_consis_rename.v` mention it.
 It is lift infrastructure, not shared metatheory.
 
 ## 4  ⭐⭐⭐ The cheap route: HALF the obstruction is gone, half is live
@@ -87,7 +87,7 @@ It is lift infrastructure, not shared metatheory.
 refutation of the functional currency was simply stale.  That was too strong.
 The truth is sharper and more useful.
 
-Both encodings carry a **complete equivariance kit**: `algo/prop_swap.v` is
+Both encodings carry a **complete equivariance kit**: `algo/basic/prop_swap.v` is
 3,050 lines and there are **43 `*_swap` lemmas** (21 `a_`, 22 `e_`) — one per
 judgement on both sides.  The lift barely uses it:
 
@@ -286,7 +286,7 @@ reason is on the record, in `def_rules.v`'s header for the collection:
    whole family of `β`, which silently forces the binder to be vacuous.
 4. ⇒ the rules become **exists-fresh**, one named witness each.
 5. ⇒ equivariance stops being free and must be *proved*:
-   `algo/prop_swap.v`, **3,050 lines**, 43 `*_swap` lemmas.
+   `algo/basic/prop_swap.v`, **3,050 lines**, 43 `*_swap` lemmas.
 6. ⇒ two derivations that chose different witnesses can be related only by a
    **correspondence, not a function** — a leaked opener is bound *nowhere*, so
    one left atom can need two right images: **ρ, 12,322 lines**.
@@ -715,8 +715,8 @@ before anything in Part II.
 
 ## 7  ✅ Landed 2026-08-23 — the binder-opening fact, named
 
-`solve_context_open_tvar` (`prop_solve_ext.v`; originally
-`looksub_gen_open_tvar` in `prop_sub_cstr.v`): *the
+`solve_context_open_tvar` (`prop_solve_extension.v`; originally
+`looksub_gen_open_tvar` in `prop_completeness_looksub_solve.v`): *the
 context-relative half of the invariant survives opening a fresh rigid binder.*
 Nine facts — the two `binds` weakenings, `⊢ Θ` and `⊢ Θ0`, `α ∉ dom` on both,
 `κ ∷ Θ0 ⊑ Θ`, and `a_wf_pskl` on `P0` and `Pi` — all at `(β ~ abind_tvar) ++ ·`.
@@ -770,12 +770,12 @@ Worst offenders, by recoverable lines:
 | recoverable | file | share of file |
 |---|---|---|
 | 1658 | `ext_algo/prop_look_pair.v` | 59% duplicated |
-| 1346 | `ext_algo/prop_lift.v` | 38% |
-| 1138 | `algo/consis/prop_completeness_consis.v` | 28% |
-| 988 | `algo/sub/look/prop_sub_cstr.v` | 56% |
-| 868 | `ext_algo/prop_lift_typing.v` | 52% |
-| 753 | `algo/sub/prop_completeness_sub_gen.v` | 27% |
-| 703 | `algo/sub/look/prop_eq_cstr.v` | 31% |
+| 1346 | `ext_algo/lifting/prop_lift.v` | 38% |
+| 1138 | `algo/consistency/prop_completeness_consis.v` | 28% |
+| 988 | `algo/subtyping/prop_completeness_looksub_solve.v` | 56% |
+| 868 | `ext_algo/lifting/prop_lift_typing.v` | 52% |
+| 753 | `algo/subtyping/prop_completeness_sub_gen.v` | 27% |
+| 703 | `algo/subtyping/prop_completeness_lookeq_solve.v` | 31% |
 
 ## A2  ⭐⭐⭐ Root cause A — `uskl`'s three constructor pairs
 
@@ -792,7 +792,7 @@ The erasure `⌊·⌋ˢ : uskl → pskl` collapses all three pairs — so **ever
 case and every ghost case of every induction over `uskl` is written twice**,
 and the mechanization says so out loud:
 
-> `prop_sub_cstr.v:2932` — *"ForallL, untagged : **identical to the tagged
+> `prop_completeness_looksub_solve.v:2932` — *"ForallL, untagged : **identical to the tagged
 > row**; the mech splits the paper's single rule by the subject's POTENTIAL
 > tag.  The only textual difference is the ρ-inversion and the absence of a
 > binder tag from the subject's tags."*
@@ -807,7 +807,7 @@ Machine-checked cost in `a_looksub_solve_complete_gen` alone:
 - `Ghost` / `GhostG`: both discharged as impossible, twice.
 
 The same pairing accounts for the 196-line and 100-line twins in
-`prop_eq_cstr.v` and the 175-line twin in `prop_look_pair.v`.
+`prop_completeness_lookeq_solve.v` and the 175-line twin in `prop_look_pair.v`.
 
 **Blast radius of the real fix**: 1,372 hand-written occurrences of the six
 constructors, plus regeneration of `def_ott.v` and `prop_ln.v` from
@@ -825,7 +825,7 @@ re-derives the whole of it by hand under `(β ~ abind_tvar) ++ Θ` — which is
 precisely what the 453-line duplicate in §A2 *is*.
 
 **The codebase already contains the fix, applied in exactly one file.**
-`prop_eq_var.v` names its pack and proves the pass-through once:
+`prop_completeness_solve_eq_var.v` names its pack and proves the pass-through once:
 
 ```coq
 Definition solve_eq_complete_var_concl (Θ0 Θ Θw Θr : aenv) … : Prop :=
@@ -836,8 +836,8 @@ Lemma solve_eq_complete_var_step          : …   (* 4-line proof *)
 ```
 
 Each pass-through row then costs ~5 lines instead of ~100.  The measured
-effect: `prop_eq_var.v` is **22% duplicated**, against 56% for
-`prop_sub_cstr.v`, which imports `solve_ext` but never packs its *outer*
+effect: `prop_completeness_solve_eq_var.v` is **22% duplicated**, against 56% for
+`prop_completeness_looksub_solve.v`, which imports `solve_ext` but never packs its *outer*
 induction hypotheses.
 
 **Recommendation (highest value / risk ratio).**  Give the outer pack of
@@ -849,7 +849,7 @@ pack Θ0 Θ … -> β ∉ L -> pack ((β ~ abind_tvar) ++ Θ0) ((β ~ abind_tvar
 ```
 
 Both ForallL rows and both UnivGhost rows then open with one `apply`.
-Estimated saving 900–1,200 lines across `prop_sub_cstr.v` + `prop_eq_cstr.v`,
+Estimated saving 900–1,200 lines across `prop_completeness_looksub_solve.v` + `prop_completeness_lookeq_solve.v`,
 file-local, verifiable one file at a time.  This is the item to do first.
 
 ## A4  ⛔ Root cause C — and the hard constraint on fixing it by tactic
@@ -907,7 +907,7 @@ registered in a hint database.  201 proofs, ~2,746 lines.
   campaign deliverables that simply have no internal consumer;
 - **cited-but-unused** — `a_looksub_lookeq_subst_stable_rev` (280 L) and
   `a_looksub_lookeq_subst_stable` (206 L) are named as prerequisites in
-  `prop_sub_cstr.v`'s ForallL header comment.
+  `prop_completeness_looksub_solve.v`'s ForallL header comment.
 
 Needs a human pass; the first group alone is ~400 lines of free saving.
 

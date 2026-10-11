@@ -8,7 +8,7 @@ Require Import src.fresco.notations.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
-Require Import src.fresco.prop_basic.
+Require Import src.fresco.prop_shapes.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.decl.prop_basic.
 
@@ -497,7 +497,7 @@ Qed.
 (** …and hence a ∀ body, opened at an arbitrary well-formed [ph], is
     well-formed: the cofinite premise supplies it at ONE fresh variable and the
     substitution above moves it.  Every ForallL row wants this — [d_sub_wf]'s
-    two below, and the TY-sort bridge's two (algo_decl/prop_conserv.v). *)
+    two below, and the TY-sort bridge's two (algo_decl/prop_conservativity.v). *)
 Lemma d_wf_utyp_open : forall L Γ C ph,
     (forall α, α `notin` L ->
        d_wf_utyp ((α ~ dbind_tvar) ++ Γ) (open_utyp_wrt_utyp C (utyp_var_f α))) ->

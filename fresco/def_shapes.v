@@ -243,7 +243,7 @@ Fixpoint pskl_no_ghost (P : pskl) : Prop :=
     type painting.  It is exactly the condition under which a consistency
     derivation's TARGET is determined by the subject and the context: the
     paper's [Ghost] rule, which fills an arbitrary counterpart, needs a plain
-    [◇] subject (algo/consis/prop_soundness_consis.v, [ad_pat_consis_target_scope]). *)
+    [◇] subject (algo/consistency/prop_soundness_consis.v, [ad_pat_consis_target_scope]). *)
 Fixpoint uskl_no_ghost (R : uskl) : Prop :=
   match R with
   | uskl_ghost => False
@@ -295,7 +295,7 @@ Inductive mod_comp_ty : btyp -> mode -> Prop :=
     also requires a SYNTHESISED skeleton [is_sskl] (ghosts [□]/[⫯] count as
     synthesised), rather than an inherited one.  (Its [ad] twin's invariance
     under skeleton inference is [ad_pat_mod_comp_sk],
-    algo/pat/prop_soundness_pat.v.) *)
+    algo/typing/prop_soundness_pat.v.) *)
 Inductive mod_comp_sk : bskl -> mode -> Prop :=
 | mod_comp_sk__ti : forall Q, is_sskl Q -> mod_comp_sk Q mode_ti
 | mod_comp_sk__tc : forall Q, is_sskl Q -> mod_comp_sk Q mode_tc
@@ -316,7 +316,7 @@ Inductive mod_comp_sk : bskl -> mode -> Prop :=
     a [pskl] is a type exactly when it mentions no ghost — no [◇] and no [∀◇].
 
     Equivalently [pskl_ghost_free P ↔ exists A, P = ⌈A⌉] for locally-closed [P]
-    ([ptyp_to_pskl_ghost_free] / [pskl_ghost_free_to_ptyp], prop_basic.v).
+    ([ptyp_to_pskl_ghost_free] / [pskl_ghost_free_to_ptyp], prop_shapes.v).
     Kept as a [Fixpoint] rather than an [Inductive] so that [simpl] discharges
     it on concrete skeletons and so that it is trivially decidable; note it
     holds of [pskl_var_b], i.e. it says nothing about local closure. *)
@@ -351,7 +351,7 @@ Fixpoint bskl_ghost_free (Q : bskl) : Prop :=
     implementation reaches LS-ForallL / LS-UnivGhostL only after that test
     has FAILED — [constr_collect_sub] commits ForallR at type.ml:663, before
     ForallL (:680) and UnivGhostL (:690), and this tree's runner renders the
-    same order (fresco/ext_algo/def_look_impl.v:415, :456).  A relational
+    same order (fresco/ext_algo/subtyping/def_look_impl.v:415, :456).  A relational
     encoding has no match order, so the exclusion must be a PREMISE.
 
     ⚠️ Unlike the ABSENCE-FIRST guard this one is NOT admissible: the two

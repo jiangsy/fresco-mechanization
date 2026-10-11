@@ -5,7 +5,7 @@
 > (`def_ott.v:7`), and the ε-tagged constructors `uskl_all_etag` /
 > `utyp_all_etag` bind no LN variable.  What actually closed the
 > obstruction that motivated this note was a different route — the
-> **swap kit** (`algo/prop_swap.v`), which makes equivariance the single
+> **swap kit** (`algo/basic/prop_swap.v`), which makes equivariance the single
 > renaming primitive and so needs no LN-idiomatic tag encoding at all.
 >
 > Kept for its §1 analysis of the current encoding, which is still accurate.

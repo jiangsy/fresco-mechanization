@@ -54,21 +54,21 @@ Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
 Require Import src.fresco.prop_ln.
 Require Import src.fresco.prop_coercions.               (* mono_ptyp_lc *)
-Require Import src.fresco.algo.prop_inc.                (* lc_aenv *)
-Require Import src.fresco.algo.prop_metasubst.          (* all_flex_mono *)
-Require Import src.fresco.algo.sub.prop_solve_sub.      (* lc_pskl_*_inv *)
+Require Import src.fresco.algo.basic.prop_inc.                (* lc_aenv *)
+Require Import src.fresco.algo.basic.prop_metasubst.          (* all_flex_mono *)
+Require Import src.fresco.algo.subtyping.prop_solve_sub.      (* lc_pskl_*_inv *)
 Require Import src.fresco.ext_algo.notations.
-Require Import src.fresco.ext_algo.def_supply.
-Require Import src.fresco.ext_algo.def_guess.
-Require Import src.fresco.ext_algo.def_consis.
-Require Import src.fresco.ext_algo.def_look.
-Require Import src.fresco.ext_algo.def_solve.
-Require Import src.fresco.ext_algo.def_extract.
-Require Import src.fresco.ext_algo.def_sub.
-Require Import src.fresco.ext_algo.def_pat.
-Require Import src.fresco.ext_algo.def_typing.
-Require Import src.fresco.ext_algo.def_dec.             (* lc_pskl_open_graft *)
-Require Import src.fresco.ext_algo.prop_termination.
+Require Import src.fresco.ext_algo.basic.def_supply.
+Require Import src.fresco.ext_algo.basic.def_guess.
+Require Import src.fresco.ext_algo.consistency.def_consis.
+Require Import src.fresco.ext_algo.subtyping.def_look.
+Require Import src.fresco.ext_algo.subtyping.def_solve.
+Require Import src.fresco.ext_algo.subtyping.def_extract.
+Require Import src.fresco.ext_algo.subtyping.def_sub.
+Require Import src.fresco.ext_algo.typing.def_pat.
+Require Import src.fresco.ext_algo.typing.def_typing.
+Require Import src.fresco.ext_algo.basic.def_dec.             (* lc_pskl_open_graft *)
+Require Import src.fresco.ext_algo.basic.prop_termination.
 
 Set Implicit Arguments.
 
@@ -415,12 +415,12 @@ Qed.
 (*  [{{ Θ0 ⊢ᵉ e }}a]) into every completeness motive above, and each has   *)
 (*  to be re-established at every recursive call.  A direct invariant      *)
 (*  costs ONE context hypothesis instead, and it costs almost nothing to   *)
-(*  prove: [lc_abind] (algo/prop_inc.v) sends [tvar], [flex_mono] AND      *)
+(*  prove: [lc_abind] (algo/basic/prop_inc.v) sends [tvar], [flex_mono] AND      *)
 (*  [flex_mono_def] to [True], so every block the algorithm generates is   *)
 (*  [lc_aenv] for free, and only the four rows that push a TERM VARIABLE   *)
 (*  have anything to discharge.                                           *)
 (*                                                                        *)
-(*  ⚙ The predicate is not new — [lc_aenv] is algo/prop_inc.v's, and it is *)
+(*  ⚙ The predicate is not new — [lc_aenv] is algo/basic/prop_inc.v's, and it is *)
 (*  what [a_wf_aenv_lc_aenv] projects a well-formed context to.  What is   *)
 (*  new is that the RUN preserves it.                                     *)
 (* ===================================================================== *)

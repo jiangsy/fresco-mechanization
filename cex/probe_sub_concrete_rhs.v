@@ -44,14 +44,14 @@ Require Import src.fresco.notations.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.coercions.
 Require Import src.fresco.ltac_utils.      (* destruct_if *)
-Require Import src.fresco.prop_basic.        (* bskl_to_pskl_pskl_to_bskl_{syn,inh} *)
+Require Import src.fresco.prop_shapes.        (* bskl_to_pskl_pskl_to_bskl_{syn,inh} *)
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.def_meta.     (* ≡ˢ *)
+Require Import src.fresco.algo.basic.def_meta.     (* ≡ˢ *)
 Require Import src.fresco.algo_decl.def_consis_refine.
-Require Import src.fresco.algo.prop_precise.   (* bskl_to_pskl_open *)
-Require Import src.fresco.algo.prop_pat_sub.   (* {pskl,bskl}_ghost_free *)
-Require Import src.fresco.algo.consis.prop_soundness_consis.  (* a_consis_sound *)
+Require Import src.fresco.algo_decl.prop_precision.   (* bskl_to_pskl_open *)
+Require Import src.fresco.algo_decl.prop_subtyping.   (* {pskl,bskl}_ghost_free *)
+Require Import src.fresco.algo.consistency.prop_soundness_consis.  (* a_consis_sound *)
 Require Import src.fresco.deco_algo.prop_soundness_sub.   (* a_sub_sound *)
 
 Set Implicit Arguments.
@@ -61,8 +61,8 @@ Set Implicit Arguments.
 (* ===================================================================== *)
 
 (** A TYPE has no ghosts, whatever it is — no monotype side condition, unlike
-    [mono_ptyp_to_bskl_syn_ghost_free] (prop_pat_sub.v).  The [pskl] form,
-    [pskl_to_bskl_syn_ghost_free], is in fresco/prop_basic.v. *)
+    [mono_ptyp_to_bskl_syn_ghost_free] (prop_subtyping.v).  The [pskl] form,
+    [pskl_to_bskl_syn_ghost_free], is in fresco/prop_shapes.v. *)
 Lemma ptyp_to_bskl_syn_ghost_free : forall A,
   bskl_ghost_free (ptyp_to_bskl_syn A).
 Proof.

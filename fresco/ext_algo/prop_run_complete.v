@@ -43,29 +43,29 @@ Require Import src.fresco.def_shapes.
 Require Import src.fresco.prop_tag.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.prop_basic.
-Require Import src.fresco.algo.prop_swap.
-Require Import src.fresco.algo.sub.prop_looksub.
+Require Import src.fresco.algo.basic.prop_context.
+Require Import src.fresco.algo.basic.prop_swap.
+Require Import src.fresco.algo.subtyping.prop_looksub.
 Require Import src.fresco.ext_algo.notations.
-Require Import src.fresco.ext_algo.def_supply.
-Require Import src.fresco.ext_algo.def_dec.
-Require Import src.fresco.ext_algo.prop_dec.
-Require Import src.fresco.ext_algo.def_look.
-Require Import src.fresco.ext_algo.def_sub.
-Require Import src.fresco.ext_algo.def_order.
-Require Import src.fresco.ext_algo.prop_termination.
-Require Import src.fresco.ext_algo.def_look_impl.
-Require Import src.fresco.ext_algo.prop_look.
-Require Import src.fresco.algo.sub.prop_solve_sub.
-Require Import src.fresco.algo.sub.look.prop_rsubst.
-Require Import src.fresco.ext_algo.def_guess.
-Require Import src.fresco.ext_algo.def_guess_impl.
-Require Import src.fresco.ext_algo.def_solve.
-Require Import src.fresco.ext_algo.def_solve_impl.
-Require Import src.fresco.ext_algo.prop_solve.
-Require Import src.fresco.ext_algo.prop_guess.
-Require Import src.fresco.ext_algo.prop_solve_det.
-Require Import src.fresco.ext_algo.prop_solve_rel.
+Require Import src.fresco.ext_algo.basic.def_supply.
+Require Import src.fresco.ext_algo.basic.def_dec.
+Require Import src.fresco.ext_algo.basic.prop_dec.
+Require Import src.fresco.ext_algo.subtyping.def_look.
+Require Import src.fresco.ext_algo.subtyping.def_sub.
+Require Import src.fresco.ext_algo.basic.def_order.
+Require Import src.fresco.ext_algo.basic.prop_termination.
+Require Import src.fresco.ext_algo.subtyping.def_look_impl.
+Require Import src.fresco.ext_algo.subtyping.prop_look.
+Require Import src.fresco.algo.subtyping.prop_solve_sub.
+Require Import src.fresco.algo.subtyping.prop_rigid_substitution.
+Require Import src.fresco.ext_algo.basic.def_guess.
+Require Import src.fresco.ext_algo.basic.def_guess_impl.
+Require Import src.fresco.ext_algo.subtyping.def_solve.
+Require Import src.fresco.ext_algo.subtyping.def_solve_impl.
+Require Import src.fresco.ext_algo.subtyping.prop_solve.
+Require Import src.fresco.ext_algo.basic.prop_guess.
+Require Import src.fresco.ext_algo.subtyping.prop_solve_det.
+Require Import src.fresco.ext_algo.subtyping.prop_solve_rel.
 
 Open Scope fresco_e_scope.
 
@@ -90,7 +90,7 @@ Open Scope fresco_e_scope.
 (*  ⚙ The [a_*]-side §2b facts live here, not in fresco/, only because     *)
 (*  this campaign leaves fresco/ alone (the [ftvar_in_a_cstrs] precedent,   *)
 (*  def_look.v); if a fresco-side consumer appears, move them to            *)
-(*  algo/sub/prop_looksub.v beside the [_move] family.                     *)
+(*  algo/subtyping/prop_looksub.v beside the [_move] family.                     *)
 (* ===================================================================== *)
 
 Set Implicit Arguments.

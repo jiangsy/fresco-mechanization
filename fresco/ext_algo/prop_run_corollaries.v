@@ -16,7 +16,7 @@
                                                    over the SAME contexts
       a_typing_sound       (algo/typing/…)         thm:sound-type-inference
       a_typing_sound_infer / _check                the conservativity
-                           (algo/typing/prop_closed.v)  corollaries: at a
+                           (algo/typing/prop_typing_closed.v)  corollaries: at a
                                                    flexible-free context the
                                                    decl-in-algo layer IS the
                                                    plain declarative system
@@ -60,32 +60,32 @@ Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo.basic.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.algo_decl.def_typing.
 (* [a_wf_exp] and its [{{ Θ ⊢ᵉ e }}a] notation live here, not in def_rules.v. *)
-Require Import src.fresco.algo.pat.prop_soundness_pat.
-Require Import src.fresco.algo.typing.prop_closed.
-Require Import src.fresco.algo_decl.prop_conserv.  (* [d_wf_exp] + the nil bridges *)
+Require Import src.fresco.algo.typing.prop_soundness_pat.
+Require Import src.fresco.algo.typing.prop_typing_closed.
+Require Import src.fresco.algo_decl.prop_conservativity.  (* [d_wf_exp] + the nil bridges *)
 Require Import src.fresco.ext_algo.notations.
-Require Import src.fresco.ext_algo.def_supply.
-Require Import src.fresco.ext_algo.def_typing.
-Require Import src.fresco.ext_algo.prop_typing.
-Require Import src.fresco.ext_algo.def_consis_impl.
-Require Import src.fresco.ext_algo.def_sub_impl.
-Require Import src.fresco.ext_algo.def_typing_impl.
-Require Import src.fresco.algo.prop_inc.            (* [lc_aenv] *)
-Require Import src.fresco.ext_algo.prop_termination. (* [aenv_defs_mono] *)
-Require Import src.fresco.ext_algo.prop_solve_det.   (* the [swaps_*] family *)
-Require Import src.fresco.ext_algo.prop_typing_complete.
-Require Import src.fresco.prop_basic.
-Require Import src.fresco.algo.prop_basic.
+Require Import src.fresco.ext_algo.basic.def_supply.
+Require Import src.fresco.ext_algo.typing.def_typing.
+Require Import src.fresco.ext_algo.typing.prop_typing.
+Require Import src.fresco.ext_algo.consistency.def_consis_impl.
+Require Import src.fresco.ext_algo.subtyping.def_sub_impl.
+Require Import src.fresco.ext_algo.typing.def_typing_impl.
+Require Import src.fresco.algo.basic.prop_inc.            (* [lc_aenv] *)
+Require Import src.fresco.ext_algo.basic.prop_termination. (* [aenv_defs_mono] *)
+Require Import src.fresco.ext_algo.subtyping.prop_solve_det.   (* the [swaps_*] family *)
+Require Import src.fresco.ext_algo.typing.prop_typing_complete.
+Require Import src.fresco.prop_shapes.
+Require Import src.fresco.algo.basic.prop_context.
 Require Import src.fresco.algo.typing.prop_soundness_typing.
-Require Import src.fresco.ext_algo.prop_solve_rel.
-Require Import src.fresco.ext_algo.prop_lift_kit.
-Require Import src.fresco.ext_algo.prop_lift.
-Require Import src.fresco.ext_algo.prop_lift_typing.  (* §13, [a_typing_rel_e] *)
-Require Import src.fresco.algo.prop_precise.   (* [a_wf_ptyp_to_wf_pskl] *)
+Require Import src.fresco.ext_algo.subtyping.prop_solve_rel.
+Require Import src.fresco.ext_algo.lifting.prop_lift_context.
+Require Import src.fresco.ext_algo.lifting.prop_lift.
+Require Import src.fresco.ext_algo.lifting.prop_lift_typing.  (* §13, [a_typing_rel_e] *)
+Require Import src.fresco.algo_decl.prop_precision.   (* [a_wf_ptyp_to_wf_pskl] *)
 
 Open Scope fresco_e_scope.
 

@@ -79,7 +79,7 @@ Require Import src.fresco.algo.def_rules.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_subtyping.
-Require Import src.fresco.algo.sub.look.prop_eq_cstr.   (* def_ftv *)
+Require Import src.fresco.algo.subtyping.prop_completeness_lookeq_solve.   (* def_ftv *)
 
 Set Implicit Arguments.
 

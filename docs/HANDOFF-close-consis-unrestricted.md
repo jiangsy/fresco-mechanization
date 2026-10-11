@@ -43,7 +43,7 @@ self-contained.
 
 ## 1. The goal, exactly
 
-`fresco/ext_algo/prop_consis_complete.v` proves
+`fresco/ext_algo/consistency/prop_consis_complete.v` proves
 
 ```coq
 Lemma e_consis_call_impl_complete : forall S0 Θ c, consis_call_complete S0 Θ c.
@@ -303,7 +303,7 @@ C5 + C6) rather than by the collapse function:
     is RIGID and its walk skips it verbatim, while the alias entry is
     where the action is.
   - The transport will need wf-strength hypotheses (γ-below-freshness is
-    a wf fact); `algo/prop_wf_preservation.v` supplies preservation.
+    a wf fact); `algo/basic/prop_wf_preservation.v` supplies preservation.
   - ⚙ **Scouted (session 2): the statement TYPECHECKS and the scheme
     runs** — all 28 rows enumerated (scratch, not in tree; re-create from
     the statement in this section).  Two corrections the rows forced

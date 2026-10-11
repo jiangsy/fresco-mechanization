@@ -34,7 +34,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-01 Optimality of unification/assignment is false with syntactic binder entries in ⊑
 - **Kind**: False as stated · **Status**: LIVE
 - **Paper**: information increase `Θ,x:P ⊑ Θ',x:θP,Ξ` (paper:algorithmic.tex:111-115). Parts 2 and 3 of thm:complete-consistency (paper:full-algo-spec.tex:1556-1572). The paper's own source comment at :1574-1586 admits the problem, and `\input{optimality-cex}` is commented out.
-- **Mechanization**: `a_inc__var` / `a_inc__var_skl` accept the payload up to ≡ (fresco/algo/def_meta.v:238-249), in the style of Gundry–McBride–McKinna. `complete_mu` is Qed (fresco/algo/consis/prop_completeness_consis.v:8060).
+- **Mechanization**: `a_inc__var` / `a_inc__var_skl` accept the payload up to ≡ (fresco/algo/basic/def_meta.v:238-249), in the style of Gundry–McBride–McKinna. `complete_mu` is Qed (fresco/algo/consistency/prop_completeness_consis.v:8060).
 - **Evidence**: cex/cex_assign_optimal_syn_middle.v `cex_syn_middle_optimality_false` (:360). The same instance factors under the semantic rule (`cex_zeta_semantic`, :320). Both are Qed.
 - **Ask for the authors**: Adopt the semantic premise `Θ' ⊢ P' ≡ θP` in the term-binder rule of ⊑ (a draft is in appendices/optimality-cex.tex). The same gap is in Gundry's thesis.
 - **Source**: PG:1971
@@ -42,7 +42,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-02 The two-condition solution notions are too weak, so thm:complete-consistency is false as stated
 - **Kind**: False as stated · **Status**: LIVE
 - **Paper**: the solution definition and thm:complete-consistency use two conditions (paper:full-algo-spec.tex:1491-1500, :1556-1574). The proof uses an augmented three-condition version (paper:consistency-proofs.tex:2253-2263). thm:complete-subtyping's generalisation also uses two conditions (paper:subtyping-proofs.tex:3072-3083), and it invokes the consistency theorem at :3157, :3189, :3304 and :3356.
-- **Mechanization**: `a_consis_complete` takes the third condition, subject refinement (fresco/algo/consis/prop_completeness_consis.v:8115-8124). Subtyping takes it only at the consistency leaves, via `sub_complete_concl` (fresco/algo/sub/prop_completeness_sub_gen.v:166) and `ad_pat_sub_fuel`. Taking it at the root makes UnivGhostR, ForallL and ForallR vacuous.
+- **Mechanization**: `a_consis_complete` takes the third condition, subject refinement (fresco/algo/consistency/prop_completeness_consis.v:8115-8124). Subtyping takes it only at the consistency leaves, via `sub_complete_concl` (fresco/algo/subtyping/prop_completeness_sub_gen.v:166) and `ad_pat_sub_fuel`. Taking it at the root makes UnivGhostR, ForallL and ForallR vacuous.
 - **Evidence**: cex/cex_ad_pat_join_not_leaf_valid.v (`cap_consis`, `cap_no_join`). Root-level vacuity: cex/cex_p7_univ_ghost_r_vacuous.v and cex/cex_p7_third_premise_forall.v. All are Qed.
 - **Ask for the authors**: State the solution notions with the subject refinement: at the root for consistency, and at the consistency leaves for subtyping. Alternatively, restrict the two-condition form to hole-free subjects.
 - **Note**: The fragments disagree. Triage of PG:2164 called it MOOT, on the grounds that the consistency prose (paper:declarative.tex:2071-2073) already implies the third condition. Triage of PG:3197 called it LIVE, because the theorem's statement does not carry it. LIVE is kept here. It is the same root cause as G-36.
@@ -77,7 +77,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-06 Ξ-strengthening is proved by solving Ξ away, not by direct induction
 - **Kind**: Proof-step gap · **Status**: LIVE (both statements are true)
 - **Paper**: lemma:suffix-erasure (paper:proofs.tex:38-46, "Straightforward induction"). The "context strengthening" step in the ForallR case of lemma:sound-decorated-subtyping (paper:subtyping-proofs.tex:1310). In both places ForallL may instantiate with Ξ-variables that never reach the conclusion.
-- **Mechanization**: fresco/algo/prop_suffix_erase.v covers all six judgements (e.g. `ad_sd_typing_strip_suffix` :1525). For subtyping: `ad_pat_sub_fuel_strip_suffix` and `ad_pat_sub_fuel_subst_flex` (fresco/algo/sub/prop_soundness_subtag.v:1758, :1306).
+- **Mechanization**: fresco/algo/basic/prop_suffix_erase.v covers all six judgements (e.g. `ad_sd_typing_strip_suffix` :1525). For subtyping: `ad_pat_sub_fuel_strip_suffix` and `ad_pat_sub_fuel_subst_flex` (fresco/algo/subtyping/prop_soundness_subtag.v:1758, :1306).
 - **Evidence**: the lemmas above (Qed).
 - **Ask for the authors**: Replace both one-line proofs with the generalisation `Θ,Ξ ⊢ J ⟹ Θ ⊢ θJ`, which also rewrites the ForallL witnesses. Say why it is needed.
 - **Source**: PG:1164, PG:2203
@@ -85,7 +85,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-07 lemma:precision-preserves-refinement needs a nested induction plus wf
 - **Kind**: Proof-step gap · **Status**: LIVE
 - **Paper**: paper:proofs.tex:80-89 ("Straightforward induction on the refinement derivation")
-- **Mechanization**: `ad_refine_syn_trans` and `ad_precise_preserves_refine` (fresco/algo/prop_precise.v:545, :570) are Qed and assume the result is well-formed (`⊢ₚₛ ⌊Q⌋`). The proof is an outer induction on the second derivation and an inner induction that peels UnivGhost/Flex steps.
+- **Mechanization**: `ad_refine_syn_trans` and `ad_precise_preserves_refine` (fresco/algo_decl/prop_precision.v:545, :570) are Qed and assume the result is well-formed (`⊢ₚₛ ⌊Q⌋`). The proof is an outer induction on the second derivation and an inner induction that peels UnivGhost/Flex steps.
 - **Evidence**: Qed. The earlier claim that the lemma is false without wf is RETRACTED, because its counterexample died with the faithful Ghost rule (51122ada). Whether it holds without wf is open.
 - **Ask for the authors**: Sketch the real induction, and say that it uses the wf presupposition (paper:declarative.tex:1424).
 - **Source**: PG:1749
@@ -93,7 +93,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-08 thm:complete-consistency: three induction subjects that do not combine
 - **Kind**: Proof-step gap · **Status**: LIVE
 - **Paper**: the proof inducts on the declarative derivation in §1 (paper:consistency-proofs.tex:2588), on Θ₀ in §2 (:2300), and on Θ₀|Ξ in §3 (:2443). Each has a witness where its measure does not decrease. UnivGhostR in §1 recurses on the identical derivation.
-- **Mechanization**: one lexicographic measure μ = (V, n, t, k), where V is skeleton size as the solution sees it (fresco/algo/consis/prop_completeness_consis.v:21, :146-154). `complete_mu` is Qed.
+- **Mechanization**: one lexicographic measure μ = (V, n, t, k), where V is skeleton size as the solution sees it (fresco/algo/consistency/prop_completeness_consis.v:21, :146-154). `complete_mu` is Qed.
 - **Evidence**: `complete_mu`. The witnesses are in docs/DESIGN-completeness-measure.md (argument).
 - **Ask for the authors**: State one well-founded measure, e.g. solution-normalised skeleton size, then |Θ₀|.
 - **Source**: PG:2074
@@ -101,7 +101,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-09 thm:complete-consistency §1: the flexible cases are one sentence
 - **Kind**: Proof-step gap · **Status**: LIVE
 - **Paper**: paper:consistency-proofs.tex:2591-2592 ("handled by the other two parts"). The sentence hides two obligations. First, a bridge from a consistency solution to a unification/assignment solution. Second, recovering the precision `θ₁α̂ ⊑ Q`, which §2 and §3 do not conclude.
-- **Mechanization**: `consis_complete_step` (fresco/algo/consis/prop_completeness_consis.v:7664), using `consis_refine_mono_tyequiv` and `tyequiv_mono_consis` (fresco/algo/prop_mono_bridge.v:204, :487).
+- **Mechanization**: `consis_complete_step` (fresco/algo/consistency/prop_completeness_consis.v:7664), using `consis_refine_mono_tyequiv` and `tyequiv_mono_consis` (fresco/algo/consistency/prop_consis_monotype_equiv.v:204, :487).
 - **Evidence**: `complete_mu` (Qed).
 - **Ask for the authors**: Spell out the Flex, FlexL and FlexR cases, including the bridge and the precision step.
 - **Source**: PG:2122
@@ -109,7 +109,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-10 thm:complete-consistency §3: no proof that the assignment walk never gets stuck
 - **Kind**: Proof-step gap · **Status**: LIVE
 - **Paper**: paper:consistency-proofs.tex:2443-2585. The skip cases are dismissed with "follows from IH and context weakening" (:2581). No rule covers a rigid head β ∈ ftv P. Assign-SolveM's occurs check, and the fact that guess^TY returns a monotype, are assumed.
-- **Mechanization**: `assign_complete_step` (fresco/algo/consis/prop_completeness_consis.v:4528) uses `ad_pat_consis_rigid_ftv_rev_scoped` (:2211). The unscoped version of that lemma is false.
+- **Mechanization**: `assign_complete_step` (fresco/algo/consistency/prop_completeness_consis.v:4528) uses `ad_pat_consis_rigid_ftv_rev_scoped` (:2211). The unscoped version of that lemma is false.
 - **Evidence**: `complete_mu` (Qed).
 - **Ask for the authors**: Add the escape/scope argument for the rigid-head case, and discharge Assign-SolveM's premises.
 - **Source**: PG:2139
@@ -117,7 +117,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-11 lemma:precision-substitution's motive must be generalised
 - **Kind**: Proof-step gap · **Status**: LIVE
 - **Paper**: paper:subtyping-proofs.tex:1666-1694 ("a straightforward induction … would not result in any type mismatch"). Three things go wrong. ForallL on ψa's own quantifier escapes the motive `S[ψa/α]`. Height preservation needs fuel at rule granularity. The tag-context residual must be pinned.
-- **Mechanization**: decorated subject precision ⊑ᵤ (`uskl_precise`, fresco/algo/consis/prop_consis_precise.v:470). The result is `ad_pat_sub_precise_upre_fuel` (fresco/algo/sub/prop_completeness_sub_precise.v:1537).
+- **Mechanization**: decorated subject precision ⊑ᵤ (`uskl_precise`, fresco/algo/consistency/prop_consis_precise.v:470). The result is `ad_pat_sub_precise_upre_fuel` (fresco/algo/subtyping/prop_completeness_sub_precise.v:1537).
 - **Evidence**: Qed.
 - **Ask for the authors**: Use the generalised motive, or at least name the ForallL-on-ψa case.
 - **Source**: PG:2280
@@ -125,7 +125,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-12 The -var lemma's ForallInh/ForallSyn subcases (P_i = □, ∀◇) break Δ bookkeeping
 - **Kind**: Proof-step gap · **Status**: LIVE (the statement is true)
 - **Paper**: lemma:complete-consistency-constraint-collection-solving-var (paper:consistency-proofs.tex:1187), at :1328-1347 and :1392-1411. The IH can only run at Δ, but the ∀-precision rule needs the result at Δ,β. Getting there would need Δ-weakening, which is not admissible.
-- **Mechanization**: `a_solve_eq_complete_var_gen` (fresco/algo/sub/look/prop_eq_var.v:514) puts the refinement at Δr, the descent binders. The silent "removing β as necessary" becomes `ad_partial_precise_rename_tvar` (:111).
+- **Mechanization**: `a_solve_eq_complete_var_gen` (fresco/algo/subtyping/prop_completeness_solve_eq_var.v:514) puts the refinement at Δr, the descent binders. The silent "removing β as necessary" becomes `ad_partial_precise_rename_tvar` (:111).
 - **Evidence**: `a_solve_eq_complete_var` (:3401, Qed).
 - **Ask for the authors**: Generalise the refinement premise to Δ_r ⊇ the descent binders, or supply the transport argument.
 - **Source**: PG:2449
@@ -133,15 +133,15 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-13 P6-Sv's UnivGhostLG case omits the P_i = □ subcase
 - **Kind**: Proof-step gap · **Status**: LIVE (the statement is true)
 - **Paper**: paper:subtyping-proofs.tex:2190-2207 ("P_i must have a top-level ∀◇"). P-Ghost ignores the target's shape, so P_i = □ is possible. The consistency twin does list □.
-- **Mechanization**: the □ row is in fresco/algo/sub/look/prop_sub_var.v (lemmas at :85-:164). The flexible P_i case is vacuous (`ad_ppre_mono_paint_dot_univ_ghost_absurd`, prop_solve_ext.v:1536).
-- **Evidence**: `a_solve_sub_complete_var` (prop_sub_var.v:1336, Qed).
+- **Mechanization**: the □ row is in fresco/algo/subtyping/prop_completeness_solve_sub_var.v (lemmas at :85-:164). The flexible P_i case is vacuous (`ad_ppre_mono_paint_dot_univ_ghost_absurd`, prop_solve_extension.v:1536).
+- **Evidence**: `a_solve_sub_complete_var` (prop_completeness_solve_sub_var.v:1336, Qed).
 - **Ask for the authors**: Write "P_i is □ or ∀◇P_i′" and add the □ subcase.
 - **Source**: PG:2769
 
 ### G-14 P6-Ss's ForallL step needs θψ_b = ψ_b, which fails for legitimate θ
 - **Kind**: Proof-step gap · **Status**: LIVE (the theorem is true)
 - **Paper**: lemma:complete-constraint-collection-solving (paper:subtyping-proofs.tex:2213), ForallL case at :2590-2660. The step at :2617-2626 needs `θ(S′[ψ_b/β]) = (θS′)[ψ_b/β]`.
-- **Mechanization**: the induction is generalised over an accumulated rigid substitution ρ: `a_looksub_solve_complete_gen` (fresco/algo/sub/look/prop_sub_cstr.v:827). P6-Cs is generalised the same way.
+- **Mechanization**: the induction is generalised over an accumulated rigid substitution ρ: `a_looksub_solve_complete_gen` (fresco/algo/subtyping/prop_completeness_looksub_solve.v:827). P6-Cs is generalised the same way.
 - **Evidence**: cex/cex_p6ss_inc_compat.v (`id_inc_dom_overlap`, `def_subst_theta_is_legit`; Qed). It shows that no side condition on θ repairs the step.
 - **Ask for the authors**: Redo ForallL with a ρ-generalised IH (absorb `[ψ_b/β]` into ρ at a fresh rigid β), or restrict the lemma to ι-like θ.
 - **Source**: PG:2929
@@ -149,7 +149,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-15 AbsCheck proof: the shape enumeration misses rigid variables and flex chains
 - **Kind**: Proof-step gap · **Status**: LIVE
 - **Paper**: paper:proofs.tex:839-840 and :1075-1076 ("the only possible shapes are ∀ᾱ.A′→B′ and ∀ᾱ.α̂").
-- **Mechanization**: the rigid case is refuted by `refine_var_arrow_flex_def` (fresco/algo/typing/prop_completeness_typing.v:2945) and `a_split_rigid_var_absurd` (fresco/algo/typing/prop_rigidity.v:703). For flex chains, `mono_refine_arrow_inv` (prop_completeness_typing.v:2900) gives `θα̂ ≡ τ1→τ2`.
+- **Mechanization**: the rigid case is refuted by `refine_var_arrow_flex_def` (fresco/algo/typing/prop_completeness_typing.v:2945) and `a_split_rigid_var_absurd` (fresco/algo/typing/prop_typing_rigidity.v:703). For flex chains, `mono_refine_arrow_inv` (prop_completeness_typing.v:2900) gives `θα̂ ≡ τ1→τ2`.
 - **Evidence**: Qed.
 - **Ask for the authors**: Add the rigid-variable exclusion. Say that θα̂ is an arrow only up to ≡.
 - **Source**: PG:4154 (:4170)
@@ -165,7 +165,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-17 Skeleton-inference completeness uses three unstated facts
 - **Kind**: Missing lemma · **Status**: LIVE
 - **Paper**: paper:proofs.tex:2006 ("consistency of syn{A} with bid{A}"), :1915 ("reflexivity of context precision"), and ⟨27⟩ ≈:1927 (θ′ extends to binder-extended contexts).
-- **Mechanization**: `ad_pat_consis_syn_bid`, `ad_ctx_precise_refl` and `a_inc_id_msubst_unique` (fresco/algo/pat/prop_completeness_pat.v:1601, :1330, :920).
+- **Mechanization**: `ad_pat_consis_syn_bid`, `ad_ctx_precise_refl` and `a_inc_id_msubst_unique` (fresco/algo/typing/prop_completeness_pat.v:1601, :1330, :920).
 - **Evidence**: Qed.
 - **Ask for the authors**: State the three facts as lemmas. Precision reflexivity needs context payloads that are fully well-formed skeletons, not just in scope.
 - **Source**: PG:969 (items 2–3)
@@ -181,7 +181,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-19 "Preservation of refinement under type equivalence" is asserted but never stated
 - **Kind**: Missing lemma · **Status**: LIVE
 - **Paper**: thm:sound-skeleton-inference, AbsAnno case (paper:proofs.tex:1578). The Freeze case of thm:sound-type-inference also uses it.
-- **Mechanization**: `a_consis_chk_annot_refine` (fresco/algo/pat/prop_soundness_pat.v:1727, Qed). It decouples the consistency context from the refinement Δ.
+- **Mechanization**: `a_consis_chk_annot_refine` (fresco/algo/typing/prop_soundness_pat.v:1727, Qed). It decouples the consistency context from the refinement Δ.
 - **Evidence**: Qed (`a_pat_sound`).
 - **Ask for the authors**: State the lemma (in the refinement-target or the ≡ form) and derive the other form from it.
 - **Source**: PG:1288
@@ -189,7 +189,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-20 AbsCheck subcase 2: split completeness and scope preservation are unstated lemmas
 - **Kind**: Missing lemma · **Status**: LIVE
 - **Paper**: paper:proofs.tex:902-913 and :1155-1166 ("Assuming fresh β̂, γ̂, we have ⑬"; "well-scoped at the positions").
-- **Mechanization**: `a_split_complete_tc` (fresco/algo/typing/prop_completeness_typing.v:2977). Scope: fresco/algo/typing/prop_scope.v (`a_typing_scope_tvar_nil` :2296, `_tm_nil` :2308).
+- **Mechanization**: `a_split_complete_tc` (fresco/algo/typing/prop_completeness_typing.v:2977). Scope: fresco/algo/typing/prop_typing_scope.v (`a_typing_scope_tvar_nil` :2296, `_tm_nil` :2308).
 - **Evidence**: Qed.
 - **Ask for the authors**: State split completeness at TC and the scope invariant as lemmas.
 - **Source**: PG:4154 (:4219)
@@ -197,7 +197,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-21 Decidability is implied by the paper's motivation but never proved
 - **Kind**: Missing lemma · **Status**: LIVE
 - **Paper**: there is no termination or decidability statement. The motivation is set against undecidability results (paper:overview.tex:80, introduction.tex:463, declarative.tex:852).
-- **Mechanization**: termination lemmas `e_sub_order_total` and `e_consis_order_total` (fresco/ext_algo/prop_termination.v:1708, :1430). Deciders `e_typing_dec` and `d_typing_infer_dec` (fresco/ext_algo/prop_run_corollaries.v:226, :515). `fresco_infer` is in README.v. The old caveat "negative branch stops at e_typing" is outdated, closed by `a_typing_rel_e`.
+- **Mechanization**: termination lemmas `e_sub_order_total` and `e_consis_order_total` (fresco/ext_algo/basic/prop_termination.v:1708, :1430). Deciders `e_typing_dec` and `d_typing_infer_dec` (fresco/ext_algo/prop_run_corollaries.v:226, :515). `fresco_infer` is in README.v. The old caveat "negative branch stops at e_typing" is outdated, closed by `a_typing_rel_e`.
 - **Evidence**: README.v `Print Assumptions` closed.
 - **Ask for the authors**: State termination/decidability as a theorem with a measure sketch:
   - instantiations are bounded by the inherited skeleton;
@@ -212,7 +212,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-22 Collection: a leaked ∀-opener may collide with a flexible variable invented elsewhere
 - **Kind**: Missing side condition · **Status**: LIVE (f484dde3 did not touch these rows)
 - **Paper**: LS-Arrow and LE-Arrow run both halves at one context (paper:full-algo-spec.tex:1065-1071, :1127-1133). The Look/extract step has the same problem (:1001-1008). LS-ForallR, LE-ForallInh and LE-UnivGhost* leak openers into 𝒞, while LE-FlexR, SolE-FlexR and the final guess draw names fresh only for their own context.
-- **Mechanization**: `ftv 𝒞₁ ∩ dom Ξ₂ = ∅` plus its mirror on `a_looksub__arrow` and `a_lookeq__arrow` (fresco/algo/def_rules.v:659-692, :744-747). Two guards on `a_extract__solve` (:1098-1140). All are theorems in ext_algo (`e_looksub_lookeq_cstr_old`, fresco/ext_algo/prop_look.v:199; `e_guess_block_fresh`, prop_guess.v:195).
+- **Mechanization**: `ftv 𝒞₁ ∩ dom Ξ₂ = ∅` plus its mirror on `a_looksub__arrow` and `a_lookeq__arrow` (fresco/algo/def_rules.v:659-692, :744-747). Two guards on `a_extract__solve` (:1098-1140). All are theorems in ext_algo (`e_looksub_lookeq_cstr_old`, fresco/ext_algo/subtyping/prop_look.v:199; `e_guess_block_fresh`, prop_guess.v:195).
 - **Evidence**: cex/probe_extract_conflated_opener.v (`probe_cross_half_guard_is_necessary`, `probe_fold_stuck_deconflated`; Qed).
 - **Ask for the authors**: Add the cross-half condition to both arrow rows, or state once that all invented names come from one global supply. The implementation's `counter` (impl:type.ml:588) already does this.
 - **Source**: PG:40, PG:4439
@@ -220,8 +220,8 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-23 Collection ∀-rows lack the absence-first guard `α ∈ ftv(subject)`
 - **Kind**: Ambiguity / non-determinism · **Status**: LIVE
 - **Paper**: LS-ForallR / LS-ForallL (paper:full-algo-spec.tex:1057, :1073) and LE-ForallInh / LE-ForallSyn / LE-UnivGhost1 (:1135, :1142, :1156) do not exclude LS/LE-Absent (:1029, :1098). Only LE-FlexR (:1117) has the guard.
-- **Mechanization**: the guard is on five rows (fresco/algo/def_rules.v:651, :698, :755, :763, :774) and is admissible (`a_looksub_forall_r_adm`, fresco/algo/sub/prop_looksub.v:477).
-- **Evidence**: `e_looksub_lookeq_absent_pins` (fresco/ext_algo/prop_look.v:264, Qed). The refutations were deleted when the guard landed (eabf308).
+- **Mechanization**: the guard is on five rows (fresco/algo/def_rules.v:651, :698, :755, :763, :774) and is admissible (`a_looksub_forall_r_adm`, fresco/algo/subtyping/prop_looksub.v:477).
+- **Evidence**: `e_looksub_lookeq_absent_pins` (fresco/ext_algo/subtyping/prop_look.v:264, Qed). The refutations were deleted when the guard landed (eabf308).
 - **Ask for the authors**: Add `α ∈ ftv(subject)` to the five rows. It rejects no answer, only a derivation that wastes a name. The implementation tests Absent first (impl:type.ml:579, :680).
 - **Source**: PG:117
 
@@ -268,7 +268,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-29 The repaired SolE-FlexR still lacks `nonghost{P}` and overlaps SolE-GhostL
 - **Kind**: Missing side condition (ambiguity) · **Status**: LIVE
 - **Paper**: SolE-FlexR (paper:full-algo-spec.tex:1388-1393) has only `nonflex{P}`, and `\nonflex` means just "non-flex" (macro.tex:625). At `◇ ∼ α̂`, SolE-GhostL (:1328) returns α̂, while SolE-FlexR returns a fresh α̂₁. The -var lemmas' P_i = □ subcases silently assume the first answer.
-- **Mechanization**: `nonghost_pskl P` on `a_solve_eq__flex_r` (fresco/algo/def_rules.v:997). `a_solve_eq_ghost_subject_inv` (fresco/algo/sub/look/prop_rsubst.v:876) depends on it.
+- **Mechanization**: `nonghost_pskl P` on `a_solve_eq__flex_r` (fresco/algo/def_rules.v:997). `a_solve_eq_ghost_subject_inv` (fresco/algo/subtyping/prop_rigid_substitution.v:876) depends on it.
 - **Evidence**: argument. The implementation matches the ghost rows first (impl:type.ml:411-470).
 - **Ask for the authors**: Add `nonghost(P)` to SolE-FlexR, or define non-flex to exclude ◇ and ∀◇.
 - **Source**: PG:3844 (:3883); docs/refutations.tex §status ¶3
@@ -276,7 +276,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-30 The suffix-discarding check rows need `uniq(Ξ,Θ)` and "Ξ ∉ result"
 - **Kind**: Missing side condition · **Status**: LIVE
 - **Paper**: TI-AbsCheck and TI-AbsAnnoCheck (paper:full-algo-spec.tex:348-367) drop the body's suffix Ξ. The appeal to suffix-erasure assumes Ξ is fresh and absent from the result.
-- **Mechanization**: both conditions are premises on the four `a_typing__abs{,_anno}_check_{step,base}` rows (fresco/algo/def_rules.v:1931-1985). Completeness discharges them via fresco/algo/typing/prop_scope.v.
+- **Mechanization**: both conditions are premises on the four `a_typing__abs{,_anno}_check_{step,base}` rows (fresco/algo/def_rules.v:1931-1985). Completeness discharges them via fresco/algo/typing/prop_typing_scope.v.
 - **Evidence**: argument (neither condition is derivable). `a_typing_sound` and `a_typing_complete` are Qed with them.
 - **Ask for the authors**: State both conditions on the four rows, or say in prose that a checking body's suffix is fresh for the result.
 - **Source**: PG:3963
@@ -329,7 +329,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-36 Skeleton consistency presupposes refinement; this is load-bearing and stated only in prose
 - **Kind**: Prose completion (not derivable from the rules) · **Status**: LIVE
 - **Paper**: paper:declarative.tex:2071-2073 ("requires … the refinement judgement Γ ⊢ ⌊S⌋ ⊳ P"). It is absent from the consistency figure (:1966-2045), and the counterpart wf presupposition (:1593-1596) is also only in prose.
-- **Mechanization**: the join `d_consis_join` / `ad_consis_join` (fresco/algo_decl/def_consis_refine.v:254) is the premise of every consistency leaf of `d_pat_sub` / `ad_pat_sub` and their `_fuel` twins. `d_pat_to_ad` is hypothesis-free. The closed completeness corollaries are stated over the paper's `⊢ˢ` and `⊢` (`a_typing_complete_sd_infer`, fresco/algo/typing/prop_closed.v:298).
+- **Mechanization**: the join `d_consis_join` / `ad_consis_join` (fresco/algo_decl/def_consis_refine.v:254) is the premise of every consistency leaf of `d_pat_sub` / `ad_pat_sub` and their `_fuel` twins. `d_pat_to_ad` is hypothesis-free. The closed completeness corollaries are stated over the paper's `⊢ˢ` and `⊢` (`a_typing_complete_sd_infer`, fresco/algo/typing/prop_typing_closed.v:298).
 - **Evidence**: cex/cex_ad_pat_join_not_leaf_valid.v (`cap_consis`: the rules derive `∀X.◇ ∼ ∀ˢX.X`; `cap_no_refine`) and cex/cex_d_pat_bridges_false.v (`cap_d_pat_excluded`). Root placement is refuted by cex_p7_univ_ghost_r_vacuous.v and cex_p7_third_premise_forall.v. All compile.
 - **Ask for the authors**: Put the presupposition into the figures at the consistency leaves, not at the root (ghost-capture.tex (R-a)), or index consistency by Δ ((R-b)). Without it the rules type `x:∀α.◇ ⊢ x ⦂ ∀ˢα.α`, which no run produces.
 - **Source**: PG:1066 (supersedes PG:1121); WF:138-208; docs/ghost-capture.tex
@@ -337,7 +337,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-37 "It is easy to extend them" (declarative rules in algorithmic contexts) is a conservativity lemma
 - **Kind**: Prose completion · **Status**: LIVE. PG:848's "holds in one direction only" is outdated: both directions now hold.
 - **Paper**: paper:full-algo-spec.tex:97-115.
-- **Mechanization**: fresco/algo_decl/prop_conserv.v (`ad_pat_to_d` :962, `ad_sd_typing_to_d` :1012, `d_pat_to_ad` :1515, `d_sd_typing_to_ad` :1569).
+- **Mechanization**: fresco/algo_decl/prop_conservativity.v (`ad_pat_to_d` :962, `ad_sd_typing_to_d` :1012, `d_pat_to_ad` :1515, `d_sd_typing_to_ad` :1569).
 - **Evidence**: Qed.
 - **Ask for the authors**: State the lemma: for a flexible-free Θ, the ad judgement equals the d judgement, and ≡ collapses to =. Note that the soundness corollary closes the output context with `ζ ∷ Θ₁ ⊑ ·`.
 - **Source**: PG:848
@@ -345,7 +345,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-38 Completeness proofs assume annotations are rigid (flexible-free)
 - **Kind**: Prose completion · **Status**: LIVE
 - **Paper**: paper:proofs.tex:680 ("annotations A contain no flexible variables"). P-Anno (:1761-1773) gives no argument, and the problem definition (paper:algorithmic.tex:392) gives only scope.
-- **Mechanization**: a rigidity premise on the completeness theorems (`msubst_ptyp_rigid_id`, fresco/algo/pat/prop_completeness_pat.v:354). `a_typing_tc_rigid_output` (fresco/algo/typing/prop_rigidity.v:1072) shows the premise cannot be weakened.
+- **Mechanization**: a rigidity premise on the completeness theorems (`msubst_ptyp_rigid_id`, fresco/algo/typing/prop_completeness_pat.v:354). `a_typing_tc_rigid_output` (fresco/algo/typing/prop_typing_rigidity.v:1072) shows the premise cannot be weakened.
 - **Evidence**: Qed.
 - **Ask for the authors**: Put "annotations mention only rigid variables of Θ₀" into the problem/theorem statements, and give the P-Anno argument.
 - **Source**: PG:969 (item 1)
@@ -361,7 +361,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-40 Completeness of subtyping: the subject must be ghost-free at the TY sort
 - **Kind**: Prose completion (external sort condition) · **Status**: LIVE
 - **Paper**: thm:complete-subtyping (paper:algorithmic.tex:1455). The problem `(Θ₀;N;M;P₀;P)` does not sort P by N.
-- **Mechanization**: `NM = TY -> uskl_ghost_free R'` on `a_sub_complete` (fresco/algo/sub/prop_completeness_sub.v:1209-1212). It cannot be derived from the join, because `__arrow`'s domain and `__infer` accept ghosts.
+- **Mechanization**: `NM = TY -> uskl_ghost_free R'` on `a_sub_complete` (fresco/algo/subtyping/prop_completeness_sub.v:1209-1212). It cannot be derived from the join, because `__arrow`'s domain and `__infer` accept ghosts.
 - **Evidence**: argument.
 - **Ask for the authors**: State that at N = TY the problem's P is a type. This is G-39's discipline applied to the theorem.
 - **Source**: WF:586-630
@@ -369,7 +369,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-41 Skeleton inference's base rows need counterpart wf; no output-wf theorem is stated
 - **Kind**: Prose completion + Missing lemma · **Status**: LIVE
 - **Paper**: "wf of M and bid{P}, as well as skmod" (paper:declarative.tex:1593-1596) is stated per judgement. P-Unit, P-Var and P-Anno (:1630-1650) carry neither. lemma:context-precision-skeleton (paper:proofs.tex:128) and the Sub case use precision at base leaves, which needs `Θ ⊢ ⌊Q⌋`. The paper never proves that algorithmic outputs are well-formed.
-- **Mechanization**: `⊢ₚₛ ⌊Q⌋` (the counterpart's wf) on `d_pat__unit/__var/__anno` and `ad_pat__unit/__var/__anno`; since the 2026-10-10 rule pass P-Anno no longer carries the annotation's `⊢ₚ A`, matching the paper (fresco/algo_decl/def_typing.v:90-119). Output-wf theorems `a_consis_output_wf` and `a_sub_output_wf` (fresco/algo/prop_wf_preservation.v:114, :1001).
+- **Mechanization**: `⊢ₚₛ ⌊Q⌋` (the counterpart's wf) on `d_pat__unit/__var/__anno` and `ad_pat__unit/__var/__anno`; since the 2026-10-10 rule pass P-Anno no longer carries the annotation's `⊢ₚ A`, matching the paper (fresco/algo_decl/def_typing.v:90-119). Output-wf theorems `a_consis_output_wf` and `a_sub_output_wf` (fresco/algo/basic/prop_wf_preservation.v:114, :1001).
 - **Evidence**: `ad_refine_syn_output_not_wf` (cex/cex_refine_not_transitive.v:125) shows that wf cannot be propagated top-down past P-App.
 - **Ask for the authors**: Say that the presupposition holds at every sub-derivation, or put it on the base rules. Add the output-wf lemma for consistency and for subtyping.
 - **Source**: PG:4052; WF:229-240
@@ -377,7 +377,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-42 The subtyping solution needs the counterpart well-formed in the solution context
 - **Kind**: Prose completion · **Status**: LIVE (minor)
 - **Paper**: thm:complete-subtyping's Check case (paper:subtyping-proofs.tex:~3180-3200). The solution definition (paper:full-algo-spec.tex:1400-1413) does not require `Θ₁ ⊢ P₁`.
-- **Mechanization**: `Θ ⨟ ∅ ⊢ₚₛ ⌊Q⌋` on `a_sub_complete` (fresco/algo/sub/prop_completeness_sub.v:1208) and on `a_sub_complete_check` (fresco/algo/sub/prop_completeness_sub_gen.v:1113). It is consumed by `ad_refine_syn_trans`.
+- **Mechanization**: `Θ ⨟ ∅ ⊢ₚₛ ⌊Q⌋` on `a_sub_complete` (fresco/algo/subtyping/prop_completeness_sub.v:1208) and on `a_sub_complete_check` (fresco/algo/subtyping/prop_completeness_sub_gen.v:1113). It is consumed by `ad_refine_syn_trans`.
 - **Evidence**: argument. Since 2026-10-08 the Ghost rule no longer checks its fill, so wf is not free even at P₀ = ◇.
 - **Ask for the authors**: Add "P₁ well-formed in Θ₁" to the subtyping and consistency solution notions.
 - **Source**: PG:3321; WF:557-584
@@ -385,7 +385,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-43 P6-Cs needs ψa scoped and the consistency subject well-formed
 - **Kind**: Prose completion · **Status**: LIVE. Without the subject-wf condition the lemma is false as stated (machine-checked).
 - **Paper**: lemma:complete-consistency-constraint-collection-solving (paper:consistency-proofs.tex:921). No wf is stated for ψa or for the subject `κS[ψa/α]`.
-- **Mechanization**: `ftvar_in_uskl ψa [<=] dom Θ` and `Θ ⨟ ∅ ⊢ₚₛ ⌊(κS)[ψa/α]⌋` on `a_lookeq_solve_complete` (fresco/algo/sub/look/prop_eq_cstr.v:5201, premises ~:5235, ~:5243). The first follows from the SolE-FlexR repair, because guess payloads must be scoped.
+- **Mechanization**: `ftvar_in_uskl ψa [<=] dom Θ` and `Θ ⨟ ∅ ⊢ₚₛ ⌊(κS)[ψa/α]⌋` on `a_lookeq_solve_complete` (fresco/algo/subtyping/prop_completeness_lookeq_solve.v:5201, premises ~:5235, ~:5243). The first follows from the SolE-FlexR repair, because guess payloads must be scoped.
 - **Evidence**: cex/cex_p6cs_subject_wf.v `p6cs_without_subject_wf_is_false` and `p6cs_fires_when_the_subject_is_wf` (Qed; the subject is ∀◇(∀◈⟨⟩)). The ψa condition rests on argument.
 - **Ask for the authors**: Add both to the lemma's premises, as instances of "all inputs well-formed".
 - **Source**: WF:492-555. README.v:220 says this is in PAPER-GAPS.md, but it is not (see G-58).
@@ -393,15 +393,15 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-44 P6's "same rigid variable in the same position" is rendered as freshness
 - **Kind**: Prose completion · **Status**: LIVE
 - **Paper**: paper:consistency-proofs.tex:1215-1217 and paper:subtyping-proofs.tex:1732. A WT comment there says the property holds by construction.
-- **Mechanization**: there is no positional predicate. `a_solve_eq_complete_var` (fresco/algo/sub/look/prop_eq_var.v:3401) carries a freshness pack instead (`rsubst_fresh Δρ Θ κ`, `Δρ ⊆ Δ`, `delta_def_fresh Δ Θ`). The positional fact is recovered by `ad_ppre_delta_var_inv` (fresco/algo/sub/look/prop_rsubst.v:369). P6-Sv's `pskl_shielded_ftv` condition (fresco/algo/sub/look/prop_sub_var.v:695, :809) has not been compared with the paper's wording.
+- **Mechanization**: there is no positional predicate. `a_solve_eq_complete_var` (fresco/algo/subtyping/prop_completeness_solve_eq_var.v:3401) carries a freshness pack instead (`rsubst_fresh Δρ Θ κ`, `Δρ ⊆ Δ`, `delta_def_fresh Δ Θ`). The positional fact is recovered by `ad_ppre_delta_var_inv` (fresco/algo/subtyping/prop_rigid_substitution.v:369). P6-Sv's `pskl_shielded_ftv` condition (fresco/algo/subtyping/prop_completeness_solve_sub_var.v:695, :809) has not been compared with the paper's wording.
 - **Evidence**: argument. The v4/v5 counterexamples have no file. cex_p6cs_rsubst_delta_vacuous.v shows that the stronger `Δρ ∩ dom Θ₀ = ∅` is vacuous.
 - **Ask for the authors**: State the positional condition formally, or replace it with the freshness facts it stands for.
-- **Source**: WF:283-309; fresco/algo/sub/look/prop_rsubst.v:31-45, :363
+- **Source**: WF:283-309; fresco/algo/subtyping/prop_rigid_substitution.v:31-45, :363
 
 ### G-45 Information increase's flex-def rule lacks the θ-image wf condition
 - **Kind**: Prose completion · **Status**: LIVE (minor; the prose states it)
 - **Paper**: the rule at paper:full-algo-spec.tex:31-35 has only `Θ′ ⊢ τ′ ≡ θτ`. The prose at paper:algorithmic.tex:123-126 says "well-formed monotypes in Θ′".
-- **Mechanization**: `a_wf_ptyp Θ' τ'` and `mono_ptyp τ'` on `a_inc__flex_def` (fresco/algo/def_meta.v:222-229).
+- **Mechanization**: `a_wf_ptyp Θ' τ'` and `mono_ptyp τ'` on `a_inc__flex_def` (fresco/algo/basic/def_meta.v:222-229).
 - **Evidence**: argument (lookup stability fails without it).
 - **Ask for the authors**: Put `Θ′ ⊢ τ′` (monotype) on the rule in the figure.
 - **Source**: PG:1468
@@ -409,7 +409,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
 ### G-46 Identity metasubstitutions must preserve flexible entries
 - **Kind**: Prose completion · **Status**: LIVE (minor; the prose states it)
 - **Paper**: paper:algorithmic.tex:135-137 (prose only).
-- **Mechanization**: `a_isub`'s second component (fresco/algo/def_meta.v:264).
+- **Mechanization**: `a_isub`'s second component (fresco/algo/basic/def_meta.v:264).
 - **Evidence**: argument.
 - **Ask for the authors**: Define `⊑ι` formally with the preservation clause.
 - **Source**: PG:1478
@@ -421,7 +421,7 @@ Sections: A = 21 · B = 14 · C = 12 · D = 1 · E = 4 · F = 7 · G = 27 (settl
   - precision is refinement, so the same holds for the target in lemma:precision-sub (paper:proofs.tex:70);
   - all algorithmic inputs are well-formed (paper:algorithmic.tex:233, :915; paper:full-algo-spec.tex:1478);
   - a solution maps into well-formed monotypes of Θ′ (paper:algorithmic.tex:123-126).
-- **Mechanization**: these are hypotheses on lemma statements, not rule premises. Examples: `ad_refine_syn_trans`, `ad_precise_extends_pat_sub` (fresco/algo/sub/prop_completeness_sub_precise.v:1848), `a_sub_sound`, and `a_consis_complete` (`⊢ Θ` of the competing target, :8121).
+- **Mechanization**: these are hypotheses on lemma statements, not rule premises. Examples: `ad_refine_syn_trans`, `ad_precise_extends_pat_sub` (fresco/algo/subtyping/prop_completeness_sub_precise.v:1848), `a_sub_sound`, and `a_consis_complete` (`⊢ Θ` of the competing target, :8121).
 - **Evidence**: `ad_refine_syn_output_not_wf` (cex/cex_refine_not_transitive.v:125). The refinement rules alone derive `∀◇(□→□) ⊳ ∀α.∀◇(α→α)`, whose output is ill-formed, so the presupposition filters derivations.
 - **Ask for the authors**: none. Optionally say that the refinement presupposition is load-bearing.
 - **Note**: PG:1793's triage called this MOOT, and the WF-doc triage called it LIVE-informational. Both describe the same state.
@@ -494,7 +494,7 @@ Other UNCERTAIN items: G-50 and G-51 (implementation) and G-54 (SolS-ForallR sor
 - **Paper**: Lemma E.8, lemma:constraint-collection-stable-substitution (paper:appendices/subtyping-proofs.tex:506-522): if β ≠ α and α ∉ ftv(Q), collecting for α from P gives the SAME `Ξ ; 𝒞` as from P[Q/β], in both directions ("iff"). The paper uses the forward direction in the ForallL case of decorated-subtyping soundness and the reverse once, at subtyping-proofs.tex:2632 (ForallL case of P6-Ss).
 - **History**: the fixed-output forms `a_looksub_lookeq_subst_stable` / `_rev` (forward and reverse, both needing the Barendregt premise `ftv Q ⊆ {α} ∪ ftv(Θ)` — without it the statement is false, G-05) were Qed with no consumer and were deleted as unused in efc8707 (2026-10-07).
 - **What exists now**: `a_looksub_lookeq_subst_gen_size` / `a_looksub_subst_gen` (fresco/deco_algo/prop_decorate_sub.v §14). FORWARD direction only; no Barendregt premise; outputs are existential — `Ξ' ; 𝒞'` whose fresh binders may be chosen away from any set L, and whose constraints solve to the same decorated result (`𝒞' ⊩ ψa ⤳ Ψa`). That is "the same up to renaming of the fresh binders", which is what the decorated ForallL case needs. The reverse direction is not mechanized; the mechanization proves P6-Ss by the ρ-route, which never needs to undo a substitution.
-- **Option A — accept up to renaming**: map E.8 to the existing lemma, noting "forward direction, outputs up to renaming of fresh binders". Then fix the stale texts: the "kept on purpose" banner at fresco/algo/sub/prop_looksub.v (§4/§4b, ≈:667-720), the citations of the deleted lemmas at fresco/algo/sub/look/prop_sub_cstr.v (≈:137, ≈:2299) and fresco/deco_algo/prop_decorate_sub.v (≈:2287, ≈:2463), and the PROGRESS.md Part 1 row. (A draft of exactly these comment edits was made and reverted on 2026-10-10 pending this decision.)
+- **Option A — accept up to renaming**: map E.8 to the existing lemma, noting "forward direction, outputs up to renaming of fresh binders". Then fix the stale texts: the "kept on purpose" banner at fresco/algo/subtyping/prop_looksub.v (§4/§4b, ≈:667-720), the citations of the deleted lemmas at fresco/algo/subtyping/prop_completeness_looksub_solve.v (≈:137, ≈:2299) and fresco/deco_algo/prop_decorate_sub.v (≈:2287, ≈:2463), and the PROGRESS.md Part 1 row. (A draft of exactly these comment edits was made and reverted on 2026-10-10 pending this decision.)
 - **Option B — restore a paper-faithful lemma**: bring back both directions from efc8707^ (adjusted to current names), with the Barendregt premise; still no consumer. Optionally state a two-directional "up to renaming" version instead, closer to the paper's "iff".
 - **Either way**: the paper's statement needs the Barendregt condition or an up-to-renaming reading (G-05).
 - **Owner's direction (2026-10-10)**: up-to-renaming is acceptable, but it covers only the forward direction; whether the paper's proof ROUTE through E.8 is right is to be rethought first — see PAPER-GAPS "TO RETHINK (2026-10-10) — does the paper's proof route through Lemma E.8 hold?". Forward use (subtyping-proofs.tex:892): sound up to renaming. Reverse use (:2651, E.16 ForallL): open — the fixed-output reverse may fail at a fresh β (the deleted `_rev` needed `β ∈ ftv(Θ)`), and that case already has the `θψ_b = ψ_b` gap (PG:2967).
@@ -533,7 +533,7 @@ Other UNCERTAIN items: G-50 and G-51 (implementation) and G-54 (SolS-ForallR sor
 
   They are cited at:
   - fresco/def_shapes.v:344, :389
-  - fresco/ext_algo/def_look.v:50-51
+  - fresco/ext_algo/subtyping/def_look.v:50-51
   - prop_sub_complete.v:40-42
   - prop_extract_det.v:47-49, :2266
   - prop_look.v:258
@@ -547,11 +547,11 @@ Other UNCERTAIN items: G-50 and G-51 (implementation) and G-54 (SolS-ForallR sor
   - `fresco/algo/prop_sub_concrete_rhs.v` is now `cex/probe_sub_concrete_rhs.v` (PG:3090).
   - `ad_pat_sub_strip_suffix` is now `ad_pat_sub_fuel_strip_suffix`.
 - **Wrong PAPER-GAPS line or § pointers**:
-  - fresco/algo/sub/prop_looksub.v:706 cites PG:2257; it should be PG:3017.
-  - fresco/algo/sub/prop_looksub.v:710 cites PG:2567; it should be PG:3343.
-  - fresco/algo/prop_precise_recover.v:11 cites "§9.1" and fresco/algo/consis/prop_completeness_consis.v:359 cites "§9.2". Both sections are in docs/DESIGN-completeness-measure.md, not PAPER-GAPS.md.
-- **Stale comment**: fresco/algo/consis/prop_completeness_consis.v:356-365 says the stuck-check ingredients are "NOT supplied", but they are discharged at :4540-4546.
-- **Stale def_rules line numbers**: fresco/ext_algo/def_consis.v:5 and :35, and fresco/ext_algo/def_look.v:17 (`a_sub__forall_l`'s `uniq` is now ~:1605).
+  - fresco/algo/subtyping/prop_looksub.v:706 cites PG:2257; it should be PG:3017.
+  - fresco/algo/subtyping/prop_looksub.v:710 cites PG:2567; it should be PG:3343.
+  - fresco/algo/consistency/prop_precision_recovery.v:11 cites "§9.1" and fresco/algo/consistency/prop_completeness_consis.v:359 cites "§9.2". Both sections are in docs/DESIGN-completeness-measure.md, not PAPER-GAPS.md.
+- **Stale comment**: fresco/algo/consistency/prop_completeness_consis.v:356-365 says the stuck-check ingredients are "NOT supplied", but they are discharged at :4540-4546.
+- **Stale def_rules line numbers**: fresco/ext_algo/consistency/def_consis.v:5 and :35, and fresco/ext_algo/subtyping/def_look.v:17 (`a_sub__forall_l`'s `uniq` is now ~:1605).
 - **README.v:211-215 paper lines**:
   - P5 :1664 → :1667
   - Cv :1180 → :1187
@@ -607,7 +607,7 @@ Retracted (our own claims):
 
 Moot (mechanization bugs fixed, or encoding notes):
 - **G-71** The two-slot `∼` in Flex-Flex-Assign and Assign-Assign is consistency, not unifyvar. This was a mechanization bug (fixed 2026-07-14); the paper was right. PG:1489, PG:1571
-- **G-72** Hatted-metavariable and "fresh β̄" conventions rendered as premises. These are admissible (the eleven `*_no_loss` lemmas, fresco/algo/prop_swap.v §13b). PG:1571, PG:1907
+- **G-72** Hatted-metavariable and "fresh β̄" conventions rendered as premises. These are admissible (the eleven `*_no_loss` lemmas, fresco/algo/basic/prop_swap.v §13b). PG:1571, PG:1907
 - **G-73** Metasubstitution was a sequential fold. Fixed; the paper says finite map. PG:1728
 - **G-74** Decorated FlexR had an over-general subject. Mechanization bug, fixed. PG:1864
 - **G-75** Assign-SolveM needs a monotype. The paper's τ already says so. PG:1893

@@ -53,7 +53,7 @@ override with `make PAPER_DIR=…`).
   - ⭐⭐⭐ Type-inference SOUNDNESS (section D, thm:sound-type-inference):
     `a_typing_sound` — Qed, axiom-free, `Check`ed in `README.v`.  Its
     prerequisites are `lemma:suffix-erasure` for all six judgements
-    (`algo/prop_suffix_erase.v`) and `lemma:split-refine` COLOURED
+    (`algo/basic/prop_suffix_erase.v`) and `lemma:split-refine` COLOURED
     (`a_split_refines_gen`).  ⚠️ It required FOUR side conditions the paper
     leaves to prose to be stated ON the rules — the two Barendregt
     conditions the suffix-DISCARDING check rows need, the `uniq` filter
@@ -76,11 +76,11 @@ override with `make PAPER_DIR=…`).
     produce.  Author-facing note: [`docs/ghost-capture.tex`](docs/ghost-capture.tex).  Its one unrecorded prerequisite was
     `a_split_complete_tc`, completeness of SPLITTING at check mode (the
     paper's AbsCheck subcase 2); the suffix-discarding rows' scoping
-    premise comes from `algo/typing/prop_scope.v`.
+    premise comes from `algo/typing/prop_typing_scope.v`.
   - ⭐⭐⭐ Subtyping COMPLETENESS: `a_sub_complete` (thm:complete-subtyping),
     with **no residual hypothesis** — `Check`ed and audited in `README.v`.  Its
     generalized bundle `a_sub_complete_bundle_holds`
-    (`algo/sub/prop_completeness_sub.v`) is deliberately NOT in `README.v`: the
+    (`algo/subtyping/prop_completeness_sub.v`) is deliberately NOT in `README.v`: the
     index carries the paper's statements, not the mech's inductive
     generalizations.  P5, all five P6 lemmas (Cv/Cs/Sv/Ss/L) and P7a/b/c are
     green.
@@ -122,7 +122,7 @@ override with `make PAPER_DIR=…`).
 - **Sort discipline (2026-08-06)**: the algorithmic judgements range over one
   category (`pskl`), but the paper's rules are sorted BY METAVARIABLE — `A`/`B`
   mark TYPE positions, `P`/`Q` skeleton ones.  The rules now carry that as a
-  `pskl_ghost_free` premise (fresco/def_shapes.v; kit in `fresco/prop_basic.v`).
+  `pskl_ghost_free` premise (fresco/def_shapes.v; kit in `fresco/prop_shapes.v`).
   ⚠️ Three positions where the paper sorts a slot but the mech deliberately
   does NOT — each argued in [`docs/PAPER-GAPS.md`](docs/PAPER-GAPS.md): the two
   figures disagree on `SI-ForallR`'s subject, `SolS-ForallR`'s LHS `A` is a
@@ -132,12 +132,12 @@ override with `make PAPER_DIR=…`).
 - ⚙ **Before any performance work, read the `.aux` files** — they record
   `proof_build_time` per proof, so the hot spots are known WITHOUT rebuilding.
   Then narrow a single call with `time "F1" fsetdec`.  The 2026-08-06 pass cut
-  the tree 970 s → 608 s serial; `algo/prop_basic.v` alone went 133 s → 4.4 s, and
+  the tree 970 s → 608 s serial; `algo/basic/prop_context.v` alone went 133 s → 4.4 s, and
   BOTH culprits were `fsetdec` calls that `grep` would have called innocent
   (one already had a `clear -`, just too wide).
   - ⚠️⚠️ **`.aux` TIMES ARE WALL-CLOCK, SO THEY INFLATE UNDER `-j`** —
     measured 2026-08-22 and it invalidated a whole afternoon's numbers:
-    `ext_algo/prop_lift.v` records **42–64 s compiled ALONE** and **916 s**
+    `ext_algo/lifting/prop_lift.v` records **42–64 s compiled ALONE** and **916 s**
     when the same file is built inside `make NJOBS=10` beside the other
     heavy tail files.  ⛔ So NEVER compare `.aux` figures across runs of
     different parallelism, and never build a cost model out of a mix of
@@ -181,7 +181,7 @@ override with `make PAPER_DIR=…`).
   - ⭐⭐ **An intersection-emptiness goal over ~6+ sets wants an ELEMENTWISE
     proof**, not a bigger `fsetdec`: take `z` in the intersection and derive
     the contradiction in steps, so each residual call sees two or three sets.
-    Four such calls (24–30 s each!) took `algo/prop_wf_preservation.v` from
+    Four such calls (24–30 s each!) took `algo/basic/prop_wf_preservation.v` from
     117.8 s to **13.9 s**.  Worked examples of both cures:
     [`docs/REPORT-interface-proofpath-audit.md`](docs/REPORT-interface-proofpath-audit.md)
     §B8.
@@ -205,7 +205,7 @@ override with `make PAPER_DIR=…`).
 | [`docs/ghost-capture.tex`](docs/ghost-capture.tex) | **Author-facing note, in the paper's own notation**: the ghost-capture configuration — the consistency rules derive a pair that refinement rejects, so the paper's prose presupposition on skeleton consistency (`declarative.tex:2074`) is load-bearing and not derivable. Two refutations it forced (both since retracted BY the repair, and kept as its justification), and what the repair costs. Build: `make -f Makefile.ghost-capture` from `docs/` |
 | [`docs/refutations.tex`](docs/refutations.tex) | **Author-facing note, in the paper's own notation**: the two machine-checked refutations (Lemma E.17 Look completeness; Theorem 4.6 Completeness of subtyping), the shared configuration, the diagnosis (`SolE-FlexR` discards the accumulated pattern) and the suggested repair. Build: `make -f Makefile.refutations` from `docs/`, or `TEXINPUTS=../../impredicative/paper: pdflatex refutations.tex` |
 | [`docs/WF-SIDE-CONDITIONS.md`](docs/WF-SIDE-CONDITIONS.md) | **Read before mechanizing any refinement / consistency / subtyping / skeleton-inference lemma.** The paper states well-formedness (and sometimes a further judgment) as an EXTERNAL requirement in prose, and its rules then omit the side conditions it would supply. Several judgments look FALSE until that condition is restored. |
-| [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md) | **ACTIVE hand-off**: state the closed-program corollaries against `d_sd_typing` / `d_typing` instead of `ad_sd_typing`. ⭐ SOUNDNESS LANDED 2026-08-10 via the conservativity bridge `algo_decl/prop_conserv.v`. ⭐ 2026-08-11 the TAG-HYGIENE blocker is CLOSED — all four subtyping judgements now read the paper's `fresh Ψ'` the same, GLOBAL way. ⛔ COMPLETENESS still open, blocked by ONE thing: the leaf-valid datum at a ghosty subject (`cex/cex_ad_pat_join_not_leaf_valid.v`) |
+| [`docs/HANDOFF-closed-corollaries-declarative.md`](docs/HANDOFF-closed-corollaries-declarative.md) | **ACTIVE hand-off**: state the closed-program corollaries against `d_sd_typing` / `d_typing` instead of `ad_sd_typing`. ⭐ SOUNDNESS LANDED 2026-08-10 via the conservativity bridge `algo_decl/prop_conservativity.v`. ⭐ 2026-08-11 the TAG-HYGIENE blocker is CLOSED — all four subtyping judgements now read the paper's `fresh Ψ'` the same, GLOBAL way. ⛔ COMPLETENESS still open, blocked by ONE thing: the leaf-valid datum at a ghosty subject (`cex/cex_ad_pat_join_not_leaf_valid.v`) |
 | [`docs/HANDOFF-extractable-algo-encoding.md`](docs/HANDOFF-extractable-algo-encoding.md) | **ACTIVE hand-off. ⭐ TODO (1) IS COMPLETE (2026-08-13)** — `fresco/ext_algo/` is a SECOND algorithmic encoding in which no rule's freshness constrains its own output, because a fresh-name SUPPLY is threaded through every component (which is what `type.ml`'s `counter` does). All fourteen judgements are threaded AND bridged to `fresco/algo`'s encoding over the SAME contexts, so the four flagship theorems apply to a threaded run verbatim. ⭐ Two prose-completions became theorems on the way (`AT-Abs`'s and `a_sub__forall_l`'s `uniq` filters on generated blocks). ⭐ **TODO (2) — EXTRACTION — IS COMPLETE (2026-08-14)**: the termination campaign closed (`e_sub_order_total` and `e_consis_order_total`, unconditional, §8b.5–§8b.6), and phase 4 landed a Bove–Capretta runner for EVERY judgement (§8b.7) — `option (sig …)`-shaped, soundness-only, dispatching in the reference implementation's order — so the whole algorithm extracts to clean OCaml. ⚠️ TERMINATION was the paper's own undischarged decidability argument; §7.3 sharpens that into a finding worth sending the authors (filed in PAPER-GAPS) |
 | [`docs/HANDOFF-close-consis-unrestricted.md`](docs/HANDOFF-close-consis-unrestricted.md) | **✅ CLOSED 2026-08-17 — HISTORY**: `consis_call_no_ghost` is deleted and the three consistency-runner headlines (`e_assign_impl_complete`, `e_unify_impl_complete`, `e_consis_run_complete`) hold on GHOST-CARRYING skeletons, which is what makes the flagship path reachable. ⭐ It closed by removing the AMBIGUITY rather than solving the two-context problem: `U-FlexL`/`U-FlexR` gained `P0 <> ◇`/`P <> ◇` (the `SE-FlexR` prose-completion again — see PAPER-GAPS), so every ghost cell admits exactly ONE rule; `a_consis_complete` was re-proved by dispatching in the implementation's order (hoist `C-GhostR`, add the mirror `C-Ghost` at a flexible input). ⛔ The file KEEPS its five machine-checked refutations and constraints C1–C6 as the record of why the guard is right — do not restart them |
 | [`docs/HANDOFF-close-subtyping-completeness.md`](docs/HANDOFF-close-subtyping-completeness.md) | **ACTIVE hand-off**: close subtyping completeness — decide reachability (TASK A), state+prove the payload invariant (B), make the shield supply total or kill it (C), land it on the motive and discharge `main_forall` (D) |
@@ -225,238 +225,110 @@ override with `make PAPER_DIR=…`).
 ## Directory map
 
 ```text
-proof_fresco/   (this repository)
-├── CLAUDE.md             (this file — ground rules)
-├── DESIGN.md
-├── PROGRESS.md
-├── README.v              (paper index + Print Assumptions, compilable)
-├── Makefile              (ott + lngen + coq pipeline)
-├── _CoqProject           (-R . src)
-├── scripts/
-│   └── sync_paper_refs.py  (paper.aux → .v / .md sync)
-├── docs/
-│   └── HANDOFF-typ-all-plain-refactor.md
+proof_fresco/
+├── README.v                    compilable paper theorem index + assumptions
+├── CLAUDE.md / DESIGN.md / PROGRESS.md
+├── Makefile / _CoqProject
+├── scripts/                    build, paper references and public export
+├── docs/                       design notes, findings and historical reports
 ├── fresco/
-│   ├── language.ott      (PURE SYNTAX — types, terms, modes, skeletons,
-│   │                      tagged types/skeletons, contexts, formulas)
-│   ├── def_ott.v         (generated by ott — DO NOT EDIT)
-│   ├── prop_ln.v         (generated by lngen — DO NOT EDIT)
-│   ├── def_shapes.v      (cross-system meta-functions + ALL shape predicates:
-│   │                      ftag_in_uskl, mono_ptyp, is_dtyp / is_dskl,
-│   │                      is_styp / is_ityp / is_sskl / is_iskl, guarded_*,
-│   │                      nonghost_pskl, is_value, mod_comp_{ty,sk},
-│   │                      pskl_ghost_free / bskl_ghost_free.  The former
-│   │                      def_tags.v and predicates.v folded in here
-│   │                      2026-08-06)
-│   ├── coercions.v       (paint/erase conversions — DEFINITIONS ONLY:
-│   │                      ptyp_to_btyp_syn, ptyp_to_utyp_syn,
-│   │                      btyp_to_utyp_syn, btyp_to_ptyp, … + the 4 Coercions;
-│   │                      since 2026-10-10 also the monotype embeddings
-│   │                      ptyp_to_bskl_syn / ptyp_to_uskl_syn, formerly in
-│   │                      algo_decl/def_consis_refine.v)
-│   ├── prop_tag.v        (ε-TAG EQUIVARIANCE, syntactic layer: §0 tags are
-│   │                      blind to tvar substitution, §1 the transposition on
-│   │                      atoms and atom SETS, §2 its action on `utyp`,
-│   │                      §4 `ftag_in_uskl` across opening.
-│   │                      The paper's ForallL `fresh Ψ'` is a statement about
-│   │                      NAMES, and a swap is an automorphism with no side
-│   │                      condition where a one-way rename would need the
-│   │                      whole derivation's tags.  ⭐ §1 is SORT-AGNOSTIC and
-│   │                      shared: `algo/prop_swap.v` imports it rather than
-│   │                      redefining `swap_atom` / `swap_atoms`, which is what
-│   │                      it used to do — six colliding names, and
-│   │                      `algo/prop_pat_sub.v` imports both files)
-│   ├── prop_coercions.v  (everything ABOUT those conversions, and the only
-│   │                      place any of it goes: §1 retractions, §2 open /
-│   │                      open_rec commutation (and, since 2026-10-10,
-│   │                      substitution commutation), §3 lc + shape-predicate
-│   │                      transport, §4 ftvar transport, §5 tags, §6 the
-│   │                      monotype embeddings ptyp_to_{bskl,uskl}_syn.
-│   │                      Created 2026-08-09 from eleven scattered files —
-│   │                      see the ⚠️ below)
-│   ├── prop_basic.v      (the PREDICATE layer: the ghost-freeness kit,
-│   │                      ghost_free_auto, and — its last section — the
-│   │                      MONOTYPE-SUBSTITUTION kit: every shape predicate's
-│   │                      `X_subst_mono`, of which the decl `_subst_unit` /
-│   │                      `_rename_tvar` lemmas are one-line instances.
-│   │                      Re-exports prop_coercions.v, so its ~99 consumers
-│   │                      see both)
-│   ├── notations.v       (paper-faithful scoped notations)
-│   ├── ltac_utils.v      (tactics; coqhammer-backed)
-│   ├── decl/             (declarative system — FLAT, no subdirs)
-│   │   ├── def_rules.v   (Inductive rules: typing, subtyping, consistency,
-│   │   │                  skeleton inference, skeleton subtyping/consistency,
-│   │   │                  skeleton refinement, well-formedness)
-│   │   ├── prop_basic.v
-│   │   ├── prop_wellformed.v          (d_wf_denv + well-formedness lemmas)
-│   │   ├── prop_weakening.v           (context MONOTONICITY: one `_mono` /
-│   │   │                              `_tvar_mono` lemma per judgement over
-│   │   │                              `denv_binds_le` / `denv_tbinds_le` (the
-│   │   │                              algo_decl/prop_ctx_mono.v design);
-│   │   │                              weakening is a one-line corollary)
-│   │   ├── prop_renaming.v            (tvar-renaming closure for all judgments)
-│   │   ├── prop_skeleton.v            (skeleton refinement preserves wf, D4)
-│   │   ├── prop_tag_swap.v            (ε-tag equivariance of d_tags /
-│   │   │                              d_consis / d_sub and their skeleton
-│   │   │                              twins; the per-node ForallL freshening;
-│   │   │                              and §4-§5 the tags-BOUND twin
-│   │   │                              d_sub_tagsin + the WHOLESALE freshening
-│   │   │                              that CST consumes.  ⚠️ read its header:
-│   │   │                              the per-node freshening cannot be
-│   │   │                              iterated through an induction — that is
-│   │   │                              why §4 collects first)
-│   │   ├── prop_syntax_directed.v     (d_sd_typing ⇄ d_typing)
-│   │   ├── prop_shallow.v
-│   │   ├── prop_general_subsumption.v (D1 + D12; CST; FN^n spine machinery —
-│   │   │                              is_fn_n / btyp_spine / d_consis_sub_trans /
-│   │   │                              d_sub_trans_spine)
-│   │   └── prop_stability.v           (order irrelevance d_typing_order_irrel +
-│   │                                  structural/stability lemmas)
-│   ├── algo_decl/        (⭐ `{{ … }}ad` — the DECLARATIVE rules over an
-│   │   │                  ALGORITHMIC context: `a`lgorithmic-context
-│   │   │                  `d`eclarative, the paper's app:decl-in-algo-context.
-│   │   │                  Same rules as decl/, Θ in place of Γ.  ⚠️ NOT the
-│   │   │                  same thing as deco_algo/ below — see the legend in
-│   │   │                  fresco/notations.v; the two were ONE directory named
-│   │   │                  `decorated_algo/` until 2026-08-11, which is exactly
-│   │   │                  what made them easy to confuse)
-│   │   ├── def_{consis_refine,subtyping,typing}.v     (consistency, refinement, subtyping, precision,
-│   │   │                         and — def_typing.v — skeleton
-│   │   │                         inference `ad_pat` + syntax-directed typing
-│   │   │                         `ad_sd_typing`, which section D is stated over)
-│   │   ├── prop_ctx_mono.v      (the STRUCTURAL theory of the ad_* relations:
-│   │   │                         monotonicity along ctx precision, section D's
-│   │   │                         suffix moving, and — since 2026-08-12 — the
-│   │   │                         two bridges between the paper's [ad_pat_sub]
-│   │   │                         and its fuel-indexed mirror [ad_pat_sub_fuel].
-│   │   │                         ⚙ those last two were prop_sub_mirrors.v,
-│   │   │                         which the retirement of [_g] / [_v] had left
-│   │   │                         holding exactly two lemmas)
-│   │   └── prop_conserv.v       (⭐ CONSERVATIVITY: at a FLEXIBLE-FREE Θ the
-│   │                             decl-in-algo layer IS the plain declarative
-│   │                             system over Γ — the paper's unstated "it is
-│   │                             easy to extend them"; + the closing of the
-│   │                             run's output context.  ⚠️ Filed under
-│   │                             algo/typing/ when written and MOVED here
-│   │                             2026-08-11: it relates `d_` to `ad_`)
-│   ├── deco_algo/        (⭐ `{{ … }}da` — the paper's DECORATED ALGORITHMIC
-│   │   │                  system, app:decorated-algosub: the ALGORITHM's rules
-│   │   │                  (a run, with `⊣ Θ'`) over decorated / unresolved
-│   │   │                  skeletons `uskl` with a tag context Ψ.  So
-│   │   │                  `d → ad` changes the CONTEXT and `a → da` changes
-│   │   │                  the SUBJECT; soundness is the chain
-│   │   │                  `}}a` ⇒ `}}da` ⇒ `}}ad` ⇒ `}}d`)
-│   │   ├── def_decorated.v      (the decorated system's rules)
-│   │   └── prop_decorate_sub.v / prop_soundness_sub.v  (decoration of
-│   │                             consistency / subtyping;
-│   │                             prop_soundness_sub.v holds a_sub_sound.
-│   │                             ⚙ the third file, prop_decorate.v, was
-│   │                             deleted 2026-08-11: it held nothing but six
-│   │                             `pskl_to_uskl` conversion facts, which belong
-│   │                             in fresco/prop_coercions.v and now live there —
-│   │                             the conversion itself moved to coercions.v)
-│   ├── ext_algo/        (⭐ `{{ … }}e` — THE STATE-THREADED SECOND ENCODING of
-│   │                     the SAME algorithm as algo/: every rule carries a
-│   │                     fresh-name SUPPLY in and out (`S0 ↝ S1 ⊨ …`), so no
-│   │                     rule's freshness side condition constrains its own
-│   │                     OUTPUT.  Each judgement is bridged to its algo/ twin
-│   │                     over the SAME contexts (`e_*_sound`), which is what
-│   │                     makes the four flagships apply to a threaded run.
-│   │                     Files pair up `def_X.v` / `prop_X.v` by judgement,
-│   │                     as algo/ does.  ⚠️ NOT a fork — do not migrate
-│   │                     metatheory here; the point is that both exist and
-│   │                     compose.  docs/HANDOFF-extractable-algo-encoding.md)
-│   └── algo/             (algorithmic system — all admit-free.  Grouped BY
-│       │                  JUDGEMENT 2026-08-09; the shared machinery stays
-│       │                  FLAT because there is no soundness-only file —
-│       │                  soundness is kit for completeness, so a
-│       │                  soundness/ vs completeness/ split would lie)
-│       ├── def_rules.v          (the algorithmic rules + their notations)
-│       ├── def_meta.v           (metasubstitutions κ, a_inc / a_inc_equiv /
-│       │                         ⊴, msubst_{ptyp,btyp,pskl,uskl_syn})
-│       ├── prop_inc*.v / prop_metasubst.v / prop_compose.v   (θ-algebra)
-│       ├── prop_basic.v          (⭐ THE ALGO BASICS — the per-layer sibling of
-│       │                         fresco/prop_basic.v and decl/prop_basic.v: the
-│       │                         a_wf_ptyp / a_wf_pskl / a_wf_aenv facts, binds
-│       │                         and ftvar_in_aenv plumbing, a_decls, a_isub
-│       │                         reflexivity, rename_aenv and a_guess_mono.
-│       │                         Called prop_flex.v until 2026-08-12, after a
-│       │                         header that had described only its first section)
-│       ├── prop_mod_compat.v     (mode compatibility, BOTH sorts: the
-│       │                         skmod{SK} / skmod{TY} inversions, their
-│       │                         monotype-substitution stability, and the two
-│       │                         bridges (to mod_comp_sk, and TC ⇔ ghost-free).
-│       │                         They were spread over FIVE files, so half the
-│       │                         answers came with a theorem attached)
-│       ├── prop_normal.v / prop_mono_bridge.v   (monotypes)
-│       ├── prop_precise*.v      (precision)
-│       ├── prop_swap.v          (EQUIVARIANCE — the one renaming primitive
-│       │                         for TYPE variables.  ⚙ its §1 atom layer is
-│       │                         `fresco/prop_tag.v` §1, imported not copied)
-│       ├── prop_pat_sub.v / prop_refine.v / prop_stability.v
-│       ├── prop_suffix_erase.v / prop_rename_decl.v
-│       ├── prop_wf_preservation.v  (a run's OUTPUT context is well-formed —
-│       │                         consistency, subtyping, and splitting)
-│       ├── consis/       (consistency: prop_soundness_consis.v,
-│       │                  prop_completeness_consis.v, prop_consis_rename.v,
-│       │                  prop_consis_precise.v)
-│       ├── sub/          (subtyping — both directions and the collection layer)
-│       │   ├── prop_soundness_subtag.v
-│       │   ├── prop_looksub.v / prop_solve_sub.v  (collection + solving)
-│       │   ├── prop_sub_msubst_equiv.v
-│       │   ├── prop_completeness_sub_precise.v (P5)
-│       │   ├── prop_completeness_look.v  (P6 FACADE over look/ — read its
-│       │   │                              ⚠️ header before pointing a new
-│       │   │                              consumer at it)
-│       │   ├── prop_completeness_sub_gen.v (P7a+b, the GENERALIZED statement)
-│       │   ├── prop_completeness_sub.v     (P7c, the paper's a_sub_complete)
-│       │   └── look/    (P6 — the look judgment's completeness, a strict
-│       │                 linear chain over a TWO-file shared substrate:
-│       │                   prop_rsubst.v        the ρ relation + inversions
-│       │                                        (⚙ named prop_rho_relation.v
-│       │                                        until 2026-08-12; ρ stays as
-│       │                                        the METAVARIABLE, but lemma
-│       │                                        and file names say `rsubst` —
-│       │                                        the paper's rigid-variable
-│       │                                        substitution, distinct from
-│       │                                        `msubst_*` and `subst_*`)
-│       │                   prop_solve_ext.v     solve_ext / solve_sub_ext /
-│       │                                        solve_eq_mono_concl packages
-│       │                 then prop_eq_var (Cv) -> prop_eq_cstr (Cs) ->
-│       │                 prop_sub_var (Sv) -> prop_sub_cstr (Ss) ->
-│       │                 prop_extract (L).  ⚙ The substrate was ONE 6952-line
-│       │                 prop_kit.v until 2026-08-09; "kit" named nothing and
-│       │                 it was the tree's main source of duplicate names)
-│       ├── pat/          (skeleton inference: prop_soundness_pat.v,
-│       │                  prop_completeness_pat.v)
-│       └── typing/       (type inference — the two theorems, their
-│                          reader-facing corollaries, and the files
-│                          that serve them and nothing else:
-│                          prop_soundness_typing.v
-│                          prop_completeness_typing.v  theorem 4
-│                          prop_closed.v   the CLOSED-PROGRAM corollaries of
-│                                          both — what README.v shows
-│                          prop_rigidity.v rigid data survives a run
-│                          prop_scope.v    a run's result never mentions the
-│                                          suffix it dropped
-│                          prop_shape.v    an FN-mode run returns an arrow chain)
-├── cex/                  (machine-checked counterexamples + probes; moved
-│                          out of algo/ 2026-08-06 — they are findings, not
-│                          part of the development)
-└── test/                 (benchmark / regression checks)
+│   ├── language.ott            syntax source
+│   ├── def_ott.v / prop_ln.v   generated syntax and locally nameless facts
+│   ├── def_shapes.v           shared shape predicates and meta-functions
+│   ├── prop_shapes.v          shape, closure, opening and substitution facts
+│   ├── coercions.v / prop_coercions.v   paint/erase maps and their properties
+│   ├── prop_atom_sets.v       disjointness and freshness set algebra
+│   ├── prop_tag.v             syntactic tag equivariance
+│   ├── notations.v            notation declarations; no proof lemmas
+│   ├── ltac_utils.v           shared tactics
+│   ├── decl/                  declarative rules and metatheory, over Γ
+│   │   ├── def_rules.v
+│   │   ├── prop_ctx_mono.v    context monotonicity and weakening
+│   │   └── prop_*.v           well-formedness, renaming, subsumption, etc.
+│   ├── algo_decl/             declarative rules and metatheory, over Θ
+│   │   ├── def_consis_refine.v / def_subtyping.v / def_typing.v
+│   │   ├── prop_consistency.v definition folding for skeleton consistency
+│   │   ├── prop_ctx_mono.v    context transport, including partial precision
+│   │   ├── prop_refinement.v / prop_precision.v / prop_ctx_precision.v
+│   │   ├── prop_subtyping.v   structural subtyping and partial-precision facts
+│   │   ├── prop_renaming.v / prop_stability.v
+│   │   └── prop_conservativity.v   bridges to decl/ at flexible-free contexts
+│   ├── algo/
+│   │   ├── def_rules.v        algorithmic judgements and their notations
+│   │   ├── basic/             shared algorithmic context infrastructure
+│   │   │   ├── def_meta.v     metasubstitutions and information increase
+│   │   │   ├── prop_context.v context, well-formedness and flexibility facts
+│   │   │   ├── prop_inc.v / prop_inc_strengthen.v
+│   │   │   ├── prop_metasubst.v / prop_metasubst_composition.v
+│   │   │   ├── prop_context_normalization.v   unfolding context definitions
+│   │   │   └── prop_*.v       swaps, mode compatibility, suffix erasure, wf
+│   │   ├── consistency/
+│   │   │   ├── prop_soundness_consis.v
+│   │   │   ├── prop_consis_solution.v   measures and solution-side transport
+│   │   │   ├── prop_completeness_unify.v / prop_completeness_assign.v
+│   │   │   ├── prop_completeness_consis_step.v   consistency induction step
+│   │   │   ├── prop_completeness_consis.v        final bundle and corollaries
+│   │   │   └── prop_*.v       renaming, precision and monotype equivalence
+│   │   ├── subtyping/         subtyping, constraint collection and solving
+│   │   │   ├── prop_rigid_substitution.v / prop_solve_extension.v
+│   │   │   ├── prop_completeness_solve_eq_var.v    P6-Cv
+│   │   │   ├── prop_completeness_lookeq_solve.v    P6-Cs
+│   │   │   ├── prop_completeness_solve_sub_var.v   P6-Sv
+│   │   │   ├── prop_completeness_looksub_solve.v   P6-Ss
+│   │   │   ├── prop_completeness_extract.v        P6-L
+│   │   │   ├── prop_completeness_look.v           P6 import interface
+│   │   │   └── prop_*.v       soundness, precision and subtyping completeness
+│   │   └── typing/            both skeleton inference and term typing
+│   │       ├── prop_soundness_pat.v / prop_completeness_pat.v
+│   │       ├── prop_soundness_typing.v / prop_completeness_typing.v
+│   │       └── prop_typing_{closed,rigidity,scope,shape}.v
+│   ├── deco_algo/             decorated algorithmic rules and their bridges
+│   └── ext_algo/              supply-threaded rules and executable algorithms
+│       ├── notations.v        shared supply-threaded judgement scope
+│       ├── basic/             supplies, guessing, decisions and termination
+│       ├── consistency/       consistency rules, implementation and proofs
+│       ├── subtyping/         collection, solving, extraction and subtyping
+│       ├── typing/            skeleton inference and term typing
+│       ├── lifting/           bridges from algo/ to supply-threaded judgements
+│       │   ├── prop_lift_context.v   context, set and expression relations
+│       │   ├── prop_lift_look.v      collection transport
+│       │   ├── prop_lift_{solve,consis,sub,split,pat,typing}.v
+│       │   └── prop_lift.v           import interface through skeleton inference
+│       ├── prop_run_{invariants,complete,corollaries}.v   cross-judgement runners
+│       └── extraction/        extraction driver; extracted/ is generated
+├── cex/                       checked counterexamples and exploratory probes
+└── test/                      examples and regression checks
 ```
+
+Choose a file by the judgement or object its statement describes, not by
+which proof first needed it. In particular, standalone properties of
+`ad_*` judgements belong in `algo_decl/`; `algo/consistency/` and
+`algo/subtyping/` own the algorithmic soundness/completeness arguments that
+consume them. A lemma relating several layers belongs with that bridge.
+Shared syntax and atom-set facts stay directly under `fresco/`.
+
+The four `algo/` groups are deliberately only one level deep. `ext_algo/`
+uses the same four topic groups, with `lifting/` and the existing
+`extraction/` alongside them. Keep each executable judgement's definition,
+implementation and correctness proofs in its topic group; the runner
+modules at the root connect multiple judgements. Keep a small
+file when it has a distinct role (for example, the P6 import interface),
+and split long files at judgement or proof-phase boundaries. Do not split
+mutual inductions just to meet a line-count target. Generated files are
+left intact.
+
 
 **Naming of the soundness / completeness files** (2026-08-06):
 `prop_soundness_<judgment>.v` and `prop_completeness_<judgment>[_<role>].v` —
 `prop_soundness_consis.v`, `prop_completeness_consis.v`,
 `deco_algo/prop_soundness_sub.v` (the paper's `a_sub_sound`) and
-`algo/sub/prop_soundness_subtag.v` (its decorated-run half), and for
+`algo/subtyping/prop_soundness_subtag.v` (its decorated-run half), and for
 subtyping completeness
 `prop_completeness_sub_precise.v` (P5), `prop_completeness_look.v` (P6),
 `prop_completeness_sub_gen.v` (P7a+b, the GENERALIZED statement) and
 `prop_completeness_sub.v` (P7c, the paper's `a_sub_complete`).  The
-shared kits (`prop_inc`, `prop_metasubst`, `algo/prop_basic`, `prop_swap`,
-`prop_precise`, `prop_pat_sub`, `prop_looksub`, `prop_solve_sub`, …) keep
+shared kits (`prop_inc`, `prop_metasubst`, `algo/basic/prop_context`, `prop_swap`,
+`algo_decl/prop_precision`, `algo_decl/prop_subtyping`, `prop_looksub`, `prop_solve_sub`, …) keep
 their topic names.
 
 **Naming of LEMMAS** (2026-08-09):
@@ -469,7 +341,7 @@ their topic names.
 - ⚠️ **NEVER name a lemma after the paper's PROOF NUMBERING** (2026-08-12).
   `p6cv_concl`, `p6cs_subject_open`, `cv_mono_wrap`, `a_solve_eq_cv_mono` all
   encoded "this belongs to P6-Cv/P6-Cs" — which the READER cannot decode, which
-  the containing FILE already says (`prop_eq_var.v` *is* Cv), and which the
+  the containing FILE already says (`prop_completeness_solve_eq_var.v` *is* Cv), and which the
   judgement prefix already says (`a_solve_eq_` *is* the eq side).  Name for what
   the lemma states: `solve_eq_mono_concl`, `subst_msubst_uskl_syn_open`,
   `a_solve_eq_complete_rsubst_var`.  ⚙ The one place a paper-numbering key IS
@@ -479,7 +351,7 @@ their topic names.
   symbol for the rigid-variable substitution
   (`subtyping-proofs.tex:181`) and stays as a METAVARIABLE — `ρ`, `Δρ`, `Ψρ`,
   and the `Hrho*` hypothesis names.  But lemma names and FILE names spell it
-  **`rsubst`** (`uskl_rsubst`, `rsubst_fresh`, `prop_rsubst.v`), which also
+  **`rsubst`** (`uskl_rsubst`, `rsubst_fresh`, `prop_rigid_substitution.v`), which also
   keeps it apart from the metasubstitution `msubst_*` and the meta-level
   `subst_*`.  Renamed 2026-08-12; 39 declarations and one file.
 - ⛔ **`_no_loss` means "encoding justification — never delete for being
@@ -500,7 +372,7 @@ their topic names.
   `ftvar_in_<conversion>`: the tree accumulated all three and ended up with
   **four names for one fact**.  All such lemmas live in `fresco/prop_coercions.v`.
 - ⚠️ **A `_<qualifier>` sibling is usually a LAYER, not a size accident.**
-  `prop_inc_strengthen.v`, `prop_precise_sub.v`, `prop_precise_recover.v` look
+  `prop_inc_strengthen.v`, `prop_ctx_precision.v`, `prop_precision_recovery.v` look
   like small files that want folding into their topical base.  They do not:
   the first two would be import CYCLES (their extra dependencies reach back to
   the base), and the third would put a 5610-line consistency-soundness
@@ -556,7 +428,7 @@ before changing any of them.
 - **Skeleton ∀-scope context `Δ`** (an atom set, `atoms`, in every layer —
   the paper's Δ is a set; the declarative list Δ, `delta_agree` and
   `tvars_denv` are gone since 2026-10-09, so the conservativity bridges in
-  `algo_decl/prop_conserv.v` are stated at one Δ), written after the term context: `Γ ⨟ Δ` /
+  `algo_decl/prop_conservativity.v` are stated at one Δ), written after the term context: `Γ ⨟ Δ` /
   `Θ ⨟ Δ`. Used in skeleton well-formedness and refinement, which follow
   the paper rule for rule (2026-10-08): a ∀ binds its variable in BOTH the
   context and Δ, the variable rule reads only the context, a ∀◇ body is
@@ -843,7 +715,7 @@ before changing any of them.
   edits.
 - Do not edit `def_ott.v` or `prop_ln.v` by hand. If a generated
   file is missing a lemma, add the corresponding declaration in
-  `language.ott` (or hand-write the lemma in `prop_basic.v`).
+  `language.ott` (or hand-write the lemma in the appropriate shared property module).
 - When closing an admit, **always check `Print Assumptions` on the
   flagship theorems** (`d_sd_typing_general_subsumption` /
   `d_sd_typing_general_subsumption_spine` — general subsumption lives on the
@@ -862,6 +734,9 @@ before changing any of them.
 | Prove a declarative metatheorem | `fresco/decl/prop_*.v` (flat; pick the matching file by topic) |
 | Add an algorithmic rule | `fresco/algo/def_rules.v` |
 | Add a global notation | `fresco/notations.v` (scopes + the judgement legend); a JUDGEMENT's own notation goes on its `Inductive`, via a `where` clause in the matching `def_rules.v` |
+| Prove an atom-set fact | `fresco/prop_atom_sets.v` |
+| Prove a syntax-only shape fact | `fresco/prop_shapes.v` |
+| Prove a standalone `ad_*` property | the matching `fresco/algo_decl/prop_*.v` module |
 | Add a tactic | `fresco/ltac_utils.v` |
 | Update the paper → Coq map | `PROGRESS.md` Part 1 (then `make sync-paper-refs-md` if labels moved) |
 | Log a closure / refactor / discovery | `PROGRESS.md` Part 2 (dated entry) |

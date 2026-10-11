@@ -154,7 +154,7 @@ where "{{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad" :=
        the main induction uses lex(fuel, derivation)).
 
     ⭐ THE TWO RELATIONS ARE INTERDERIVABLE: [ad_pat_sub_of_fuel]
-    (prop_ctx_mono.v) and [ad_pat_sub_to_fuel] (algo/sub/prop_soundness_subtag.v),
+    (prop_ctx_mono.v) and [ad_pat_sub_to_fuel] (algo/subtyping/prop_soundness_subtag.v),
     unconditional at either sort over any Θ — the fuel is the derivation's
     height.  This relation appears NOWHERE outside the completeness proof:
     every rule and every other statement in the tree uses [ad_pat_sub]. *)

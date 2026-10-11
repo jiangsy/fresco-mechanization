@@ -24,13 +24,13 @@ Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo.basic.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
-Require Import src.fresco.algo.prop_inc.
-Require Import src.fresco.algo.prop_stability.
-Require Import src.fresco.algo.prop_basic.
-Require Import src.fresco.algo.prop_refine.
-Require Import src.fresco.algo.consis.prop_soundness_consis.
+Require Import src.fresco.algo.basic.prop_inc.
+Require Import src.fresco.algo_decl.prop_stability.
+Require Import src.fresco.algo.basic.prop_context.
+Require Import src.fresco.algo_decl.prop_refinement.
+Require Import src.fresco.algo.consistency.prop_soundness_consis.
 
 (** A flexible variable defined to an ARROW — a perfectly ordinary state: it is
     exactly what [Assign-SolveM] produces via [guess^TY]. *)

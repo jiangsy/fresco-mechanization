@@ -52,8 +52,8 @@ Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.deco_algo.def_decorated.
-Require Import src.fresco.algo.prop_precise.        (* ad_precise *)
-Require Import src.fresco.algo.consis.prop_soundness_consis.
+Require Import src.fresco.algo_decl.prop_precision.        (* ad_precise *)
+Require Import src.fresco.algo.consistency.prop_soundness_consis.
 
 Set Implicit Arguments.
 

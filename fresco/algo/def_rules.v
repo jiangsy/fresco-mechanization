@@ -471,7 +471,7 @@ Inductive a_guess_mono : aenv -> pskl -> aenv -> ptyp -> Prop :=
        implementation's global counter ([incr counter; Bindlib.new_var],
        type.ml:92-95).  Together with the ∀ rule's witness entering the
        context, "generated names avoid enclosing witnesses" becomes a
-       DERIVABLE property ([a_guess_mono_generated_fresh], algo/prop_basic.v)
+       DERIVABLE property ([a_guess_mono_generated_fresh], algo/basic/prop_context.v)
        instead of a hypothesis renaming lemmas cannot even state. *)
     α `notin` ftvar_in_aenv Θ ->
     a_guess_mono Θ pskl_ghost ((α ~ abind_flex_mono) ++ nil) (ptyp_var_f α)
@@ -542,8 +542,8 @@ Definition a_cstrs : Set := list a_cstr.
     rules, because two of them now READ it: the collection's arrow rows
     carry the CROSS-HALF freshness guard (see [a_lookeq__arrow]).  Until
     2026-08-19 there were two identical copies of this function, one in
-    algo/sub/prop_looksub.v ([ftvar_in_cstrs]) and one in
-    ext_algo/def_look.v ([ftvar_in_a_cstrs], whose header said to move it
+    algo/subtyping/prop_looksub.v ([ftvar_in_cstrs]) and one in
+    ext_algo/subtyping/def_look.v ([ftvar_in_a_cstrs], whose header said to move it
     here as soon as a [fresco/algo] consumer appeared).  It has appeared. *)
 Definition ftvar_in_a_cstr (c : a_cstr) : atoms :=
   match c with
@@ -819,7 +819,7 @@ where "{{ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}a" := (a_looksub Θ α m P P'
 (*  wrong avoid-set for anything that touches the guess — and SE-FlexR     *)
 (*  now does.  Concretely it is what makes the WITNESS-MOVE work: the      *)
 (*  swap [swap_aenv b δ Θ] collapses to [Θ] exactly when both atoms dodge  *)
-(*  [ftvar_in_aenv Θ] ([swap_aenv_fresh_id], algo/prop_swap.v),              *)
+(*  [ftvar_in_aenv Θ] ([swap_aenv_fresh_id], algo/basic/prop_swap.v),              *)
 (*  and the same set is what [a_solve_sub_eq_ctx_change] transports.       *)
 (*  The change only SHRINKS the judgment, so every consumer (soundness,    *)
 (*  decoration) is unaffected; the completeness proofs CONSTRUCT these     *)
@@ -981,7 +981,7 @@ with a_solve_eq : aenv -> pskl -> pskl -> aenv -> pskl -> Prop :=
        because on paper the two rows agreed.  Restoring the exclusion costs
        completeness NOTHING: at [◇] SE-GhostL is strictly more informative,
        and at [∀◇P0] SE-GhostGuarded peels to the same place.  It also keeps
-       [a_solve_eq_ghost_subject_inv] (sub/look/prop_rsubst.v) — "solving with
+       [a_solve_eq_ghost_subject_inv] (sub/look/prop_rigid_substitution.v) — "solving with
        the ghost subject returns the target verbatim", which the paper uses
        silently in every [P_i = □] subcase — TRUE. *)
     a_flex_tvar Θ α ->
@@ -1084,7 +1084,7 @@ Reserved Notation "{{ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}a"
    final guess — and each stage's avoid-input is everything generated before
    it.  All three are blocks of UNDEFINED flexibles, so their relative order
    is semantically immaterial (the homogeneous-flex reorder kit of
-   sub/look/prop_eq_cstr.v moves between them); it is fixed here only
+   sub/look/prop_completeness_lookeq_solve.v moves between them); it is fixed here only
    because [app] is not commutative on the nose. *)
 Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv -> pskl -> Prop :=
 | a_extract__solve : forall Θ0 NM α m P P' Ξ Ξs Ξ' C Q Q',
@@ -1112,7 +1112,7 @@ Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv
        rule.  ⇒ the run is not the implementation's.
 
        ✅ IT COSTS THE THREADED ENCODING NOTHING, and that is a THEOREM
-       (ext_algo/prop_extract.v): [e_looksub]'s
+       (ext_algo/subtyping/prop_extract.v): [e_looksub]'s
        constraints live in the supply it has already SPENT and
        [e_solve_cstr]'s block is drawn STRICTLY ABOVE it, so
        [e_extract_sound] discharges the guard from facts its proof already
@@ -1137,7 +1137,7 @@ Inductive a_extract : aenv -> a_sub_mode -> atom -> mode -> pskl -> pskl -> aenv
        implementation — one global counter, never reused — makes no such run.
 
        ✅ IT COSTS THE THREADED ENCODING NOTHING, and that is a THEOREM
-       ([e_extract_sound], ext_algo/prop_extract.v): [e_guess]'s block is
+       ([e_extract_sound], ext_algo/subtyping/prop_extract.v): [e_guess]'s block is
        drawn STRICTLY ABOVE the supply that already holds both [C]'s and
        [Q]'s atoms ([e_guess_block_fresh]), so soundness discharges it from
        facts its proof already computes.
@@ -1610,7 +1610,7 @@ Inductive a_sub : a_sub_mode -> mode -> pskl -> aenv -> pskl -> pskl -> aenv -> 
    full-algo-spec.tex:855) and that SI-Ghost itself omits (:849).  The
    RUNNER dispatches on the mode first and its [mode_ti] arm is SI-Infer's
    alone — it tests the counterpart for [◇] and rejects otherwise
-   (ext_algo/def_sub_impl.v:509-515) — so without the guard the relation
+   (ext_algo/subtyping/def_sub_impl.v:509-515) — so without the guard the relation
    derives, at [(SK, TI, P0 ≠ ◇, subject ◇)], a judgement the runner
    rejects: cex/probe_sub_ghost_ti.v, machine-checked.
 

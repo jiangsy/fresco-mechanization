@@ -41,10 +41,10 @@ Require Import Metalib.Metatheory.
 Require Import src.fresco.notations.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
-Require Import src.fresco.prop_basic.
+Require Import src.fresco.prop_shapes.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo.basic.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
 
 (* The fill: ∀◇(□ → □).  Well-formed at the empty Δ: the univ_ghost's body

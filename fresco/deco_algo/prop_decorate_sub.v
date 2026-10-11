@@ -17,23 +17,23 @@ Require Import src.fresco.ltac_utils.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.prop_ln.
-Require Import src.fresco.prop_basic.
+Require Import src.fresco.prop_shapes.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.decl.prop_basic.
 Require Import src.fresco.decl.prop_skeleton.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.prop_swap.
-Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo.basic.prop_swap.
+Require Import src.fresco.algo.basic.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_subtyping.
-Require Import src.fresco.algo.consis.prop_soundness_consis.
-Require Import src.fresco.algo.prop_refine.
-Require Import src.fresco.algo.prop_stability.
-Require Import src.fresco.algo.prop_pat_sub.
-Require Import src.fresco.algo.prop_basic.
-Require Import src.fresco.algo.sub.prop_looksub.
-Require Import src.fresco.algo.sub.prop_soundness_subtag.
+Require Import src.fresco.algo.consistency.prop_soundness_consis.
+Require Import src.fresco.algo_decl.prop_refinement.
+Require Import src.fresco.algo_decl.prop_stability.
+Require Import src.fresco.algo_decl.prop_subtyping.
+Require Import src.fresco.algo.basic.prop_context.
+Require Import src.fresco.algo.subtyping.prop_looksub.
+Require Import src.fresco.algo.subtyping.prop_soundness_subtag.
 
 Set Implicit Arguments.
 

@@ -12,11 +12,11 @@
     while its immediate neighbour [SI-UnivGhostL] (:855) spells the
     restriction out — "[\M \neq \TI] % should not inst when \TI".  The mech
     mirrors both faithfully ([e_sub__ghost] / [e_sub__univ_ghost_l],
-    ext_algo/def_sub.v; likewise [a_sub__ghost], algo/def_rules.v:1264).
+    ext_algo/subtyping/def_sub.v; likewise [a_sub__ghost], algo/def_rules.v:1264).
 
     The RUNNER dispatches on the mode FIRST, and its [mode_ti] arm is
     [SI-Infer]'s and nothing else: it tests the counterpart for [◇] and
-    returns [None] otherwise (ext_algo/def_sub_impl.v:509-515).  So at
+    returns [None] otherwise (ext_algo/subtyping/def_sub_impl.v:509-515).  So at
 
         NM = SK    M = TI    counterpart P0 ≠ ◇    subject ◇
 
@@ -67,9 +67,9 @@ From Equations Require Import Equations.
 From src Require Import fresco.notations.
 From src Require Import fresco.algo.def_rules.
 From src Require Import fresco.ext_algo.notations.
-From src Require Import fresco.ext_algo.def_consis.
-From src Require Import fresco.ext_algo.def_sub.
-From src Require Import fresco.ext_algo.def_sub_impl.
+From src Require Import fresco.ext_algo.consistency.def_consis.
+From src Require Import fresco.ext_algo.subtyping.def_sub.
+From src Require Import fresco.ext_algo.subtyping.def_sub_impl.
 
 Open Scope fresco_e_scope.
 

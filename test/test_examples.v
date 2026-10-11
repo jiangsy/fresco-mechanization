@@ -43,10 +43,10 @@ Require Import src.fresco.def_shapes.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.prop_basic.   (* the guess freshness kit *)
+Require Import src.fresco.algo.basic.prop_context.   (* the guess freshness kit *)
 (* cluster 4: the ∀ rows are exists-fresh + close now, so these concrete
    examples go through the cofinite ADMISSIBILITY lemmas (§9) *)
-Require Import src.fresco.algo.consis.prop_consis_rename.
+Require Import src.fresco.algo.consistency.prop_consis_rename.
 
 (* ===================================================================== *)
 (*  Tactic kit                                                            *)

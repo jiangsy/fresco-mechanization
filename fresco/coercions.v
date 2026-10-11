@@ -246,7 +246,7 @@ Coercion uskl_to_bskl : uskl >-> bskl.
 
     [uskl_to_utyp] is the retraction, defined on all of [uskl] by sending every
     ghost to [1] — an arbitrary choice, meaningful only on the ghost-free part
-    ([uskl_ghost_free_utyp_to_uskl], algo_decl/prop_conserv.v). *)
+    ([uskl_ghost_free_utyp_to_uskl], algo_decl/prop_conservativity.v). *)
 
 Fixpoint utyp_to_uskl (C : utyp) : uskl :=
   match C with
@@ -274,7 +274,7 @@ Fixpoint uskl_to_utyp (R : uskl) : utyp :=
 
 (** Monotype embeddings into the skeleton sorts — used by the
     definition-lookup rules (algo_decl/def_consis_refine.v).  ⚙ Moved here
-    from that file 2026-10-10, so that fresco/prop_basic.v's
+    from that file 2026-10-10, so that fresco/prop_shapes.v's
     monotype-substitution lemmas can be stated over them. *)
 Definition ptyp_to_bskl_syn (A : ptyp) : bskl :=
   pskl_to_bskl_syn (ptyp_to_pskl A).

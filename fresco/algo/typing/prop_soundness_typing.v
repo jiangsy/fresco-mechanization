@@ -32,36 +32,36 @@ Require Import src.fresco.notations.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.ltac_utils.
-Require Import src.fresco.prop_basic.
+Require Import src.fresco.prop_shapes.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.decl.prop_basic.
 Require Import src.fresco.decl.prop_wellformed.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.prop_mod_compat.
-Require Import src.fresco.algo.prop_wf_preservation.   (* a_split_wf *)
-Require Import src.fresco.algo.prop_swap.
-Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo.basic.prop_mod_compat.
+Require Import src.fresco.algo.basic.prop_wf_preservation.   (* a_split_wf *)
+Require Import src.fresco.algo.basic.prop_swap.
+Require Import src.fresco.algo.basic.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.algo_decl.def_subtyping.
 Require Import src.fresco.algo_decl.def_typing.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.prop_ctx_mono.
-Require Import src.fresco.algo.prop_inc.
-Require Import src.fresco.algo.prop_inc_strengthen.
-Require Import src.fresco.algo.prop_compose.
-Require Import src.fresco.algo.prop_mono_bridge.
-Require Import src.fresco.algo.prop_stability.
-Require Import src.fresco.algo.prop_basic.
-Require Import src.fresco.algo.prop_refine.
-Require Import src.fresco.algo.prop_precise.
-Require Import src.fresco.algo.prop_pat_sub.
-Require Import src.fresco.algo.consis.prop_soundness_consis.
-Require Import src.fresco.algo.sub.prop_soundness_subtag.
-Require Import src.fresco.algo.pat.prop_soundness_pat.
-Require Import src.fresco.algo.consis.prop_completeness_consis.
-Require Import src.fresco.algo.prop_rename_decl.
-Require Import src.fresco.algo.sub.prop_completeness_sub_gen.
-Require Import src.fresco.algo.prop_suffix_erase.
+Require Import src.fresco.algo.basic.prop_inc.
+Require Import src.fresco.algo.basic.prop_inc_strengthen.
+Require Import src.fresco.algo.basic.prop_metasubst_composition.
+Require Import src.fresco.algo.consistency.prop_consis_monotype_equiv.
+Require Import src.fresco.algo_decl.prop_stability.
+Require Import src.fresco.algo.basic.prop_context.
+Require Import src.fresco.algo_decl.prop_refinement.
+Require Import src.fresco.algo_decl.prop_precision.
+Require Import src.fresco.algo_decl.prop_subtyping.
+Require Import src.fresco.algo.consistency.prop_soundness_consis.
+Require Import src.fresco.algo.subtyping.prop_soundness_subtag.
+Require Import src.fresco.algo.typing.prop_soundness_pat.
+Require Import src.fresco.algo.consistency.prop_completeness_consis.
+Require Import src.fresco.algo_decl.prop_renaming.
+Require Import src.fresco.algo.subtyping.prop_completeness_sub_gen.
+Require Import src.fresco.algo.basic.prop_suffix_erase.
 Require Import src.fresco.deco_algo.prop_soundness_sub.
 
 Set Implicit Arguments.
@@ -772,7 +772,7 @@ Qed.
 
 (** ⭐ The paper asserts this inline, with no lemma: [AT-Abs]'s case reads
     "By ⑯ and definition of [guess^TY], we have [Θ1,ᾱ ⊢ inh{P} ⊳ inh{A}]"
-    (proofs.tex, thm:sound-type-inference).  [algo/prop_basic.v] has [guess^TY]'s
+    (proofs.tex, thm:sound-type-inference).  [algo/basic/prop_context.v] has [guess^TY]'s
     freshness / decls / ftv facts and its CONSISTENCY
     ([a_guess_mono_consis]) but no refinement one — see docs/PAPER-GAPS.md.
 
@@ -882,7 +882,7 @@ Proof. intros. eapply a_guess_mono_refine_size; eauto. Qed.
     the wf presupposition ([ad_refine_syn_trans]; the old refutation of it,
     cex/cex_refine_not_transitive.v, was retracted 2026-10-08).  Going
     through the CONSISTENCY instead needs neither — `consis_mono_sym`
-    (prop_mono_bridge.v) supplies the direction change. *)
+    (prop_consis_monotype_equiv.v) supplies the direction change. *)
 Lemma ad_pat_consis_mono_to_refine : forall Ψ Θ R Qt,
   {{ Ψ ⨟ Θ ⊢ˢ R ∼ Qt }}ad ->
   {{ ⊢ Θ }}a ->

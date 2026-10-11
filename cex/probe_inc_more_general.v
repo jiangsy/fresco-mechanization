@@ -22,12 +22,12 @@
     theorem for subsequent consistency derivations.
 
     ⭐⭐ AND NO NEW RELATION IS OWED.  [ext_algo] shares [aenv] with [algo/],
-    so [a_inc] (algo/def_meta.v:213, the paper's fig:information-increase)
+    so [a_inc] (algo/basic/def_meta.v:213, the paper's fig:information-increase)
     applies to a threaded run's contexts verbatim — as does its metatheory,
     which is where the route's cost estimate was wrong.  Already Qed in the
     tree and directly usable:
 
-      a_inc_compose      prop_compose.v:778   ζ ∷ Θ1 ⊑ Θ  ⇒  ζ∘κ ∷ Θ0 ⊑ Θ
+      a_inc_compose      prop_metasubst_composition.v:778   ζ ∷ Θ1 ⊑ Θ  ⇒  ζ∘κ ∷ Θ0 ⊑ Θ
                                               (GENERAL, not identity-only —
                                                this is what U-Arrow's chain
                                                composes with)
@@ -45,7 +45,7 @@ From Metalib Require Import Metatheory.
 From src Require Import fresco.notations.
 From src Require Import fresco.def_shapes.
 From src Require Import fresco.algo.def_rules.
-From src Require Import fresco.algo.def_meta.
+From src Require Import fresco.algo.basic.def_meta.
 
 Open Scope fresco_a_scope.
 

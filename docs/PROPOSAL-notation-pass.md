@@ -234,7 +234,7 @@ that differ only in the relation symbol several tokens later. Those were done
 with a bounded regex whose middle forbids every other relation symbol (plus
 `->`, `(*`, `*)`, blank line) — without that guard a comment block showing an
 `a_extract` judgement several lines above a prose `⊑ᵖ[∅]` gets its own
-turnstile marked (this really happened in `prop_extract.v`). Order matters:
+turnstile marked (this really happened in `prop_completeness_extract.v`). Order matters:
 mark the `*_pat` turnstiles WHILE `⇨` still distinguishes them, and only then
 replace `⇨` with `⦂`. Script kept out of tree; ~1.7k substitutions in 79 files.
 

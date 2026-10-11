@@ -115,7 +115,7 @@ Repeat: read the error, identify which inductive's case-split is missing the new
 - `prop_consis_trans.v` / `prop_consis_sub_trans.v` / `prop_sub_sound.v` (already partially patched per survey)
 - `def_gen.v`
 - `prop_general_subsumption.v`
-- `prop_weakening.v`
+- `prop_ctx_mono.v`
 - `prop_skeleton.v`
 - `prop_typing.v` (umbrella)
 - `prop_subtyping.v` (umbrella)

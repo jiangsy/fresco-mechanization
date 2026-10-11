@@ -34,7 +34,7 @@ Paper rework (commits `a2a5d96` "Removed base terms" + `8b3b2aa`
   sd general subsumption).  `forall`-admissibility base cases re-wrap the
   embedded subtyping with `d_sub__forall_r` (same `X:=unit` strengthening).
 - **New infrastructure**: `d_sd_typing_weakening(_mid)` / `d_sd_typing_ctx_weaken`
-  (`prop_weakening.v`); the wf-consequences block (`d_wf_denv_uniq`,
+  (`prop_ctx_mono.v`); the wf-consequences block (`d_wf_denv_uniq`,
   `d_wf_denv_binds_ptyp`, `d_consis_syn_refl`, `d_consis_paint_syn_eq`,
   `d_wf_ptyp_lc`) moved `prop_stability.v` → `prop_wellformed.v` so
   `prop_stability` can import `prop_syntax_directed`.
@@ -289,7 +289,7 @@ and the 2026-05-17 (δ-refactor) entry in Part 2 below.
 **Pre-refactor admit categories (still apply to baseline):**
 - Phase 2.E skeleton inference (D7) — 1 admit
 - Phase 2.D research-grade (stability S1/S2, expressiveness E1) — 6 admits in `prop_typing.v`
-- Phase 2.D narrowing / type subst — 3 admits in `typing/prop_weakening.v`
+- Phase 2.D narrowing / type subst — 3 admits in `typing/prop_ctx_mono.v`
 - Post-refactor false helper (lemma is FALSE under new rule set; kept with explanatory comment for now) — 1 admit (`d_consis_gen_narrow_consis` re-encoding gap, see also `d_typing_narrow_consis`)
 - Paper-flagged (D3) + colour-tag translation (`d_sub_complete_mono`) — 2 admits in `prop_sub_sound.v`
 - `d_typing_gen_lift_mono` __app — 1 admit (was no longer reachable pre-refactor; broken via `Hbody_at_tc` refactor). The non-gen sibling `d_typing_lift_mono_mut` / `d_typing_lift_mono` was deleted 2026-05-17 (zero callers).
@@ -330,7 +330,7 @@ After Pattern A + Pattern B fixes:
 
 ### Out of scope (separate effort)
 
-The pre-refactor admits in `prop_typing.v` (E1, S1/S2), `typing/prop_weakening.v` (narrowing), and `subtyping/prop_sub_sound.v` (`d_sub_complete_mono`, `d_sub_no_guess_uniqueness`) remain research-grade — not affected by the δ cascade.
+The pre-refactor admits in `prop_typing.v` (E1, S1/S2), `typing/prop_ctx_mono.v` (narrowing), and `subtyping/prop_sub_sound.v` (`d_sub_complete_mono`, `d_sub_no_guess_uniqueness`) remain research-grade — not affected by the δ cascade.
 
 ## Status legend
 
@@ -416,12 +416,12 @@ These don't appear as separate paper lemmas but are load-bearing for the mech. L
 | `d_sub_gen_weakening` / `_head` | 🟢 | [`prop_subsumption_aux.v`](fresco/decl/typing/prop_subsumption_aux.v) | weakening for the generalized subtyping scaffold |
 | `d_consis_gen_weakening` / `_head` | 🟢 | [`prop_subsumption_aux.v`](fresco/decl/typing/prop_subsumption_aux.v) | weakening for generalized consistency |
 | `d_sub_gen_trans` | 🟠 | [`prop_subsumption_aux.v`](fresco/decl/typing/prop_subsumption_aux.v) | generalized transitivity; still admitted, now blocked on generalized consistency/subtyping composition for `Arg` |
-| `d_typing_pat_weakening` / `_ctx_morph` | 🟢 | [`prop_weakening.v`](fresco/decl/prop_weakening.v) | full 18-case weakening + context morphism (mutual) |
+| `d_typing_pat_weakening` / `_ctx_morph` | 🟢 | [`prop_ctx_mono.v`](fresco/decl/prop_ctx_mono.v) | full 18-case weakening + context morphism (mutual) |
 | `d_typing_pat_preserves_wf` | 🟢 | [`prop_wellformed.v`](fresco/decl/prop_wellformed.v) | full 18-case wf preservation (mutual) |
 | `d_typing_sub_compose` | 🟢 | [`prop_subtyping.v`](fresco/decl/prop_subtyping.v) | helper for D1's `__sub` case; proof closes using D10's nil corollary |
-| `d_typing_pat_subst_typ_mut` | 🟠 | [`prop_weakening.v:644`](fresco/decl/prop_weakening.v#L644) | mutual type subst; blocked on `d_sub_subst` / `d_refine_syn_subst` / `d_pat_*_subst` (not yet stated) |
-| `d_typing_narrowing` | 🟠 | [`prop_weakening.v:668`](fresco/decl/prop_weakening.v#L668) | reduces to D1; gated on `d_typing_general_subsumption` non-base cases |
-| `d_typing_narrow_consis` / `_gen_narrow_consis` | 🟠 | [`prop_weakening.v:713`](fresco/decl/prop_weakening.v#L713), [`def_gen.v:1083`](fresco/decl/typing/def_gen.v#L1083) | post-ctyp re-encoding: `__var` returns raw bound type; old `syn_color_t`-equality insufficient |
+| `d_typing_pat_subst_typ_mut` | 🟠 | [`prop_ctx_mono.v:644`](fresco/decl/prop_ctx_mono.v#L644) | mutual type subst; blocked on `d_sub_subst` / `d_refine_syn_subst` / `d_pat_*_subst` (not yet stated) |
+| `d_typing_narrowing` | 🟠 | [`prop_ctx_mono.v:668`](fresco/decl/prop_ctx_mono.v#L668) | reduces to D1; gated on `d_typing_general_subsumption` non-base cases |
+| `d_typing_narrow_consis` / `_gen_narrow_consis` | 🟠 | [`prop_ctx_mono.v:713`](fresco/decl/prop_ctx_mono.v#L713), [`def_gen.v:1083`](fresco/decl/typing/def_gen.v#L1083) | post-ctyp re-encoding: `__var` returns raw bound type; old `syn_color_t`-equality insufficient |
 | `d_typing_swap_mono` / `_app_restructure` / `_order_irrel_adj` | 🟠 | [`prop_typing.v:77,107,153`](fresco/decl/prop_typing.v) | Stability S1/S2 + order-irrelevance; need `d_typing`-inversion through `d_pat` (research-grade) |
 | `E1_intro` / `E1_elim` / `E1_roundtrip` | 🟠 | [`prop_typing.v:218,237,247`](fresco/decl/prop_typing.v) | Expressiveness benchmark (Church-encoded existentials); gated on `d_typing_pat_subst_typ_mut` |
 | `d_sub_complete_mono` | 🟠 | [`prop_sub_sound.v:173`](fresco/decl/subtyping/prop_sub_sound.v#L173) | reviewer-suggested completeness vs monotype-only shallow subtyping; forall_r/forall_l colour-flavour mismatch |
@@ -438,7 +438,7 @@ files:
 | File | Count | Admitted lemmas |
 |---|---|---|
 | `prop_typing.v` | 6 | `d_typing_swap_mono`, `d_typing_app_restructure`, `d_typing_order_irrel_adj`, `E1_intro`, `E1_elim`, `E1_roundtrip` |
-| `typing/prop_weakening.v` | 3 | `d_typing_pat_subst_typ_mut`, `d_typing_narrowing` (D1 done; blocked on `d_sub_complete`), `d_typing_narrow_consis` |
+| `typing/prop_ctx_mono.v` | 3 | `d_typing_pat_subst_typ_mut`, `d_typing_narrowing` (D1 done; blocked on `d_sub_complete`), `d_typing_narrow_consis` |
 | `typing/def_gen.v` | 1 | `d_typing_gen_collapse` |
 | `typing/prop_subsumption_aux.v` | 4 | `d_consis_gen_trans` (B.2-gen, OFF the D1/D12 path), `d_sub_gen_trans_ti_lhs`, `d_sub_gen_trans`, `d_sub_gen_trans_btyp_nil` — **`d_consis_compose` (B.2) now Qed here**, with full tool layer (`compose_tags*`, `d_consis_compose_syn{,_nil}`, `btyp_to_gutyp_syn_eq`, round-trip lemmas) Qed |
 | `typing/prop_general_subsumption.v` | 2 | `d_typing_general_subsumption_gen` (D12 — only the function-mode `__embed` admit remains), `d_typing_general_subsumption` (D1) |
@@ -589,7 +589,7 @@ paper's now-fleshed-out algorithmic proofs (Wenhao's recent
 
 **New files (all compile under `make coq`, EXIT 0):**
 
-- [`fresco/algo/def_meta.v`](fresco/algo/def_meta.v) — metasubstitutions
+- [`fresco/algo/basic/def_meta.v`](fresco/algo/basic/def_meta.v) — metasubstitutions
   `θ` (`metasubst`), application `msubst_{ptyp,pskl,btyp,bskl}`, the
   information-increase relation `a_inc Θ θ Θ'` (paper
   fig:information-increase, Gundry-style — **not** a worklist transfer),
@@ -765,7 +765,7 @@ then `Abs`, then `Forall` re-wraps ᾱ.  Mechanizing this requires:
 
 1. **`d_refine_syn_weakening`** (new) — needed by step 2's app case.
 2. **`d_typing_weakening` / `d_pat_weakening`** — currently **Admitted**
-   (prop_weakening.v); the ~15-case mutual induction over `d_typing_mut`/
+   (prop_ctx_mono.v); the ~15-case mutual induction over `d_typing_mut`/
    `d_pat_mut`.  **This pulls in a whole chain of missing skeleton-side
    weakening lemmas**: `d_pat__sub` needs `d_pat_sub_weakening`, which needs
    `d_consis_skl_weakening` (skeleton consistency), etc.  `d_refine_syn_weakening`
@@ -1594,7 +1594,7 @@ guarded, hence wf. **No paper inconsistency.**
 
 **3.A Algorithmic defs** (`fresco/algo/def_rules.v`): 🟢 done. ~140 constructors across 16 inductives.
 
-**3.A′ Metasubstitution / questions / solutions** (`fresco/algo/def_meta.v`, `def_question.v`): 🟢 done (definitions). Replaces the trivial `a_transfers` with the paper's information-increase relation `a_inc`/`a_isub` (fig:information-increase), the `denv_of` projection, and the `*_solution`/`*_optimal` question layer for all four properties.
+**3.A′ Metasubstitution / questions / solutions** (`fresco/algo/basic/def_meta.v`, `def_question.v`): 🟢 done (definitions). Replaces the trivial `a_transfers` with the paper's information-increase relation `a_inc`/`a_isub` (fig:information-increase), the `denv_of` projection, and the `*_solution`/`*_optimal` question layer for all four properties.
 
 **3.B Algo soundness** (`fresco/algo/prop_soundness.v`): 🟡 scaffolding only, now **faithful**. 4 admits: `a_consis_sound`, `a_sub_sound`, `a_pat_sound`, `a_typing_sound`, each concluding the relevant `*_solution`.
 

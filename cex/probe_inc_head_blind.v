@@ -42,7 +42,7 @@ From Metalib Require Import Metatheory.
 From src Require Import fresco.notations.
 From src Require Import fresco.def_shapes.
 From src Require Import fresco.algo.def_rules.
-From src Require Import fresco.algo.def_meta.
+From src Require Import fresco.algo.basic.def_meta.
 
 Open Scope fresco_a_scope.
 

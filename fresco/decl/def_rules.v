@@ -527,7 +527,7 @@ where "{{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d" := (d_refine_syn Γ Δ Q Q') : fresco_d
     [bskl_to_pskl] on the right) and the two colourings need not agree at a ∀.
     The [ad] layer has had the uncoloured version all along
     ([ad_refine_pskl], algo_decl/def_consis_refine.v); this is its
-    flexible-free twin, and prop_conserv.v §5 relates them.
+    flexible-free twin, and prop_conservativity.v §5 relates them.
 
     ⚠️ [Δ] tracks the type variables bound IN THE SUBJECT, and
     [d_refine_pskl__ghost] requires the fill to avoid it: that is the paper's

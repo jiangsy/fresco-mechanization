@@ -75,7 +75,7 @@ Require Import src.fresco.def_shapes.
 Require Import src.fresco.coercions.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.          (* the algorithmic judgement notations *)
-Require Import src.fresco.algo.def_meta.            (* κ ∷ Θ ⊑ Θ', Θ ⊴ Θ' *)
+Require Import src.fresco.algo.basic.def_meta.            (* κ ∷ Θ ⊑ Θ', Θ ⊴ Θ' *)
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.algo_decl.def_subtyping.
 Require Import src.fresco.algo_decl.def_typing.
@@ -84,29 +84,29 @@ Require Import src.fresco.decl.prop_syntax_directed.
 Require Import src.fresco.decl.prop_general_subsumption.
 Require Import src.fresco.decl.prop_stability.       (* order irrelevance *)
 Require Import src.fresco.decl.prop_shallow.         (* the two expressiveness results *)
-Require Import src.fresco.algo.consis.prop_soundness_consis.
-Require Import src.fresco.algo.consis.prop_completeness_consis.
+Require Import src.fresco.algo.consistency.prop_soundness_consis.
+Require Import src.fresco.algo.consistency.prop_completeness_consis.
 Require Import src.fresco.deco_algo.prop_soundness_sub.
-Require Import src.fresco.algo.sub.prop_completeness_sub_precise.
-Require Import src.fresco.algo.sub.look.prop_eq_var.
-Require Import src.fresco.algo.sub.look.prop_eq_cstr.
-Require Import src.fresco.algo.sub.look.prop_sub_var.
-Require Import src.fresco.algo.sub.look.prop_sub_cstr.
-Require Import src.fresco.algo.sub.look.prop_extract.
-Require Import src.fresco.algo.sub.prop_completeness_sub.
-Require Import src.fresco.algo.pat.prop_soundness_pat.
+Require Import src.fresco.algo.subtyping.prop_completeness_sub_precise.
+Require Import src.fresco.algo.subtyping.prop_completeness_solve_eq_var.
+Require Import src.fresco.algo.subtyping.prop_completeness_lookeq_solve.
+Require Import src.fresco.algo.subtyping.prop_completeness_solve_sub_var.
+Require Import src.fresco.algo.subtyping.prop_completeness_looksub_solve.
+Require Import src.fresco.algo.subtyping.prop_completeness_extract.
+Require Import src.fresco.algo.subtyping.prop_completeness_sub.
+Require Import src.fresco.algo.typing.prop_soundness_pat.
 Require Import src.fresco.algo.typing.prop_soundness_typing.
-Require Import src.fresco.algo.prop_precise.      (* the {{ _ ⨟ _ ⊢ₚᵣ _ ⊑ _ }}ad notation *)
-Require Import src.fresco.algo.prop_precise_sub.
-Require Import src.fresco.algo.pat.prop_completeness_pat.
+Require Import src.fresco.algo_decl.prop_precision.      (* the {{ _ ⨟ _ ⊢ₚᵣ _ ⊑ _ }}ad notation *)
+Require Import src.fresco.algo_decl.prop_ctx_precision.
+Require Import src.fresco.algo.typing.prop_completeness_pat.
 Require Import src.fresco.algo.typing.prop_completeness_typing.
-Require Import src.fresco.algo.typing.prop_closed.
-Require Import src.fresco.algo_decl.prop_conserv.  (* [d_wf_exp], {{ Γ ⊢ᵉ e }}d *)
+Require Import src.fresco.algo.typing.prop_typing_closed.
+Require Import src.fresco.algo_decl.prop_conservativity.  (* [d_wf_exp], {{ Γ ⊢ᵉ e }}d *)
 Require Import src.fresco.ext_algo.notations.
-Require Import src.fresco.ext_algo.def_supply.
-Require Import src.fresco.ext_algo.def_typing.
-Require Import src.fresco.ext_algo.prop_typing.       (* [entry_supply] *)
-Require Import src.fresco.ext_algo.def_typing_impl.
+Require Import src.fresco.ext_algo.basic.def_supply.
+Require Import src.fresco.ext_algo.typing.def_typing.
+Require Import src.fresco.ext_algo.typing.prop_typing.       (* [entry_supply] *)
+Require Import src.fresco.ext_algo.typing.def_typing_impl.
 Require Import src.fresco.ext_algo.prop_run_corollaries.
 
 
@@ -298,13 +298,13 @@ Print Assumptions a_typing_sound.
    collapses to [syn{A}] resp. [inh{A}].
    ⚠️ [{{ · ⊢ᵉ e }}a] stays: it is the INPUT condition on the problem (the
    paper's "M is well-formed in Θ₀"), and the algorithmic run does not imply
-   it — see the header note in typing/prop_closed.v.
+   it — see the header note in typing/prop_typing_closed.v.
    ⭐ [ζ] CLOSES the run's output context, which normally still holds
    flexibles ([fun x -> x] returns [α̂ → α̂] with [Θ1 = α̂]); it is built, not
-   assumed, so the statement is not vacuous (algo_decl/prop_conserv.v §11).
+   assumed, so the statement is not vacuous (algo_decl/prop_conservativity.v §11).
    The [{{ … }}ad] → [{{ … }}d] translation is the prose-completion of the paper's
    [app:decl-in-algo-context] "it is easy to extend them to algorithmic
-   contexts Θ" — algo_decl/prop_conserv.v, docs/PAPER-GAPS.md. *)
+   contexts Θ" — algo_decl/prop_conservativity.v, docs/PAPER-GAPS.md. *)
 Check a_typing_sound_infer :
   forall e A Θ1,
   {{ nil ⊢ᵉ e }}a ->
@@ -607,7 +607,7 @@ Print Assumptions mono_lambda_anno_redundant.
    ⭐⭐⭐ SCOPE — DISCHARGED (2026-08-22).  The claim used to stop at the
    THREADED relation: [None] refuted an [e_typing] derivation, and the LIFT
    carrying an [a_typing] derivation onto the runner's rails was designed and
-   not built.  The lift is now Qed ([a_typing_rel_e], ext_algo/prop_lift.v
+   not built.  The lift is now Qed ([a_typing_rel_e], ext_algo/lifting/prop_lift.v
    §13 — the last rung of a ten-rung ladder over every judgement of the
    algorithm), so BOTH branches reach the paper's own declarative judgement:
    the POSITIVE by [e_typing_run_sound_infer]

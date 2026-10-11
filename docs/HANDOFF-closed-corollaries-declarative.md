@@ -5,14 +5,14 @@ directions.
 ## STATE (2026-08-11, third pass)
 
 ⭐ **SOUNDNESS IS DONE.**  `a_typing_sound_infer` / `a_typing_sound_check`
-(`fresco/algo/typing/prop_closed.v`) now read the paper's own §declarative
+(`fresco/algo/typing/prop_typing_closed.v`) now read the paper's own §declarative
 system on the declarative side — `· ⊢ˢ[M] e ⦂ B` AND `· ⊢[M] e ⦂ B` — over a
 declarative context.  `make coq` exit 0, admit-free, axiom-free, README.v
 24/24 `Print Assumptions` closed.
 
 ⭐ **COMPLETENESS IS DONE TOO (2026-08-11, fourth pass).**
 `a_typing_complete_sd_infer` / `_sd_check` / `_decl_infer` / `_decl_check`
-(`algo/typing/prop_closed.v`) read the paper's own declarative judgements —
+(`algo/typing/prop_typing_closed.v`) read the paper's own declarative judgements —
 `· ⊢ˢ[M] e ⦂ B` AND `· ⊢[M] e ⦂ B` — so soundness and completeness now meet on
 the same judgement. `make coq` exit 0, admit-free, axiom-free, README.v **28/28**
 `Print Assumptions` closed.
@@ -40,7 +40,7 @@ and with them on the rules the bridge is a rule-for-rule induction.
 
 ✅ **(B)'s neighbourhood is CLOSED too (2026-08-12).**  What was left of it was
 purely a FUEL question — the `ad_pat_sub → ad_pat_sub_fuel` direction — and
-that is now `ad_pat_sub_to_fuel` (`algo/sub/prop_soundness_subtag.v`),
+that is now `ad_pat_sub_to_fuel` (`algo/subtyping/prop_soundness_subtag.v`),
 UNCONDITIONAL at either sort over any Θ.  The two judgements differ neither in
 hygiene nor in the leaf datum nor, now, in derivability: they are
 INTERDERIVABLE.
@@ -74,7 +74,7 @@ same day).  `ad_pat_sub_gv_forget` went with it.  The look layer was NOT the obs
 only ever CONSUMES `_g` — and every `_g`-concluding lemma already had a `_gv`
 twin except the three `≡ᵘ`-subject reshapings P7's ForallL rows use.  Those
 needed one genuinely new fact, now proved in
-`algo/sub/prop_completeness_sub_precise.v`:
+`algo/subtyping/prop_completeness_sub_precise.v`:
 
 ```coq
 Lemma ad_refine_pskl_tyequiv_source : forall Θ0 P P',
@@ -90,7 +90,7 @@ one trap (`_gv__arrow`'s extra premise is not last) in `PROGRESS.md`.
 
 ## WHAT LANDED
 
-**`fresco/algo_decl/prop_conserv.v`** (new, ~1300 lines) — the conservativity
+**`fresco/algo_decl/prop_conservativity.v`** (new, ~1300 lines) — the conservativity
 bridge the paper asserts and never states (`app:decl-in-algo-context`: *"it is
 easy to extend them to algorithmic contexts Θ"*).  Registered in
 `docs/PAPER-GAPS.md`.
@@ -112,7 +112,7 @@ easy to extend them to algorithmic contexts Θ"*).  Registered in
 Two conversions were added to `fresco/coercions.v` (`utyp_to_uskl` — the sort
 inclusion — and its retraction `uskl_to_utyp`), with their facts in
 `fresco/prop_coercions.v`.  The `msubst_btyp` facts §11 needs are in
-prop_conserv.v: `msubst_btyp` was DEFINED in `algo/def_meta.v` and used by no
+prop_conservativity.v: `msubst_btyp` was DEFINED in `algo/basic/def_meta.v` and used by no
 proof anywhere, so that section is its only home.
 
 **The closing (§11) is the step the paper does not mention.**  Soundness
@@ -176,7 +176,7 @@ The last two are in the new `cex/cex_d_pat_bridges_false.v`; the first four in
 
 ⚠️⚠️ **`d_pat_bridges` being false makes `d_sd_typing_to_ad` VACUOUS, not merely
 conditional.** It must not be built on. It is still in the tree at
-`prop_conserv.v` §15 and comes out with the repair.
+`prop_conservativity.v` §15 and comes out with the repair.
 
 ⚠️ Neither refutation lifts to the bridge as literally stated, and the reason
 matters: both use a `dbind_skl` entry whose skeleton has a ghost under a ∀, and
@@ -237,7 +237,7 @@ the tag context splits into `Ψ₁ ∪ Ψ₂` and the subject keeps all its tags
    and `d_pat_sub`.  ⭐ The primitive is a TRANSPOSITION, not a one-way rename:
    a rename needs ε₂ fresh for the WHOLE derivation, and "the tags of a
    derivation" is not collectable from a `Prop`; a swap is a bijection, so it
-   is an automorphism outright.  (Same reason `algo/prop_swap.v` takes
+   is an automorphism outright.  (Same reason `algo/basic/prop_swap.v` takes
    equivariance as the renaming primitive for type variables.)
 2. **§3 `d_sub_freshen_forall_l`** — ONE ForallL node's instantiation moves out
    of any finite set, one transposition per offending tag.  ⚠️ **This is not

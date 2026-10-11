@@ -32,18 +32,17 @@
 From Coq Require Extraction.
 From Coq Require Import ExtrOcamlBasic ExtrOcamlNatInt.
 
-Require Import src.fresco.ext_algo.def_supply.
-Require Import src.fresco.ext_algo.def_guess.
-Require Import src.fresco.ext_algo.def_guess_impl.
-Require Import src.fresco.ext_algo.def_guess_impl_sk.
-Require Import src.fresco.ext_algo.def_dec.
-Require Import src.fresco.ext_algo.def_look_impl.
-Require Import src.fresco.ext_algo.def_solve_impl.
-Require Import src.fresco.ext_algo.def_extract_impl.
-Require Import src.fresco.ext_algo.def_consis_impl.
-Require Import src.fresco.ext_algo.def_sub_impl.
-Require Import src.fresco.ext_algo.def_pat_impl.
-Require Import src.fresco.ext_algo.def_typing_impl.
+Require Import src.fresco.ext_algo.basic.def_supply.
+Require Import src.fresco.ext_algo.basic.def_guess.
+Require Import src.fresco.ext_algo.basic.def_guess_impl.
+Require Import src.fresco.ext_algo.basic.def_dec.
+Require Import src.fresco.ext_algo.subtyping.def_look_impl.
+Require Import src.fresco.ext_algo.subtyping.def_solve_impl.
+Require Import src.fresco.ext_algo.subtyping.def_extract_impl.
+Require Import src.fresco.ext_algo.consistency.def_consis_impl.
+Require Import src.fresco.ext_algo.subtyping.def_sub_impl.
+Require Import src.fresco.ext_algo.typing.def_pat_impl.
+Require Import src.fresco.ext_algo.typing.def_typing_impl.
 Require Import src.fresco.ext_algo.extraction.PseudoMonadic.
 Require Import src.fresco.ext_algo.prop_run_corollaries.  (* [fresco_infer], §7 *)
 

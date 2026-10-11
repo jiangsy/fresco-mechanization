@@ -275,7 +275,7 @@ Tag contexts `Ψ` and skeleton ∀-scope contexts `Δ` are atom sets
 (`atoms`) in every layer, compared with `[=]`, as in the paper.
 (`Δ` was a `list atom` in the declarative layer until 2026-10-09; that
 list, `delta_agree` and `tvars_denv` are gone, and the conservativity
-bridges in `algo_decl/prop_conserv.v` are stated at one Δ.)  The paper's
+bridges in `algo_decl/prop_conservativity.v` are stated at one Δ.)  The paper's
 disjoint union `Ψ₁ ⊎ Ψ₂` is `Ψ [=] Ψ₁ ∪ Ψ₂` plus `Ψ₁ ∩ Ψ₂ [=] empty`
 in `d_tags`; the subtyping / consistency arrow rules use plain union
 (see below), and ForallL's `fresh Ψ'` is a GLOBAL disjointness side
@@ -319,13 +319,13 @@ is ONE freshness discipline per layer:**
 | layer | discipline |
 |---|---|
 | `fresco/decl/` (declarative judgments, incl. the `decl_algo` mirrors) | **cofinite** — `forall α, α ∉ L → …` |
-| `fresco/algo/def_decorated.v` (the DECORATED mirrors — a proof device) | **cofinite** — see "the line is *is it the algorithm?*" below |
+| `fresco/deco_algo/def_decorated.v` (the DECORATED mirrors — a proof device) | **cofinite** — see "the line is *is it the algorithm?*" below |
 | the ALGORITHM's own judgments (`a_sub`, `a_sub_flex`, `a_consis`, `a_assign`, `a_unify`, `a_look*`, `a_solve*`, `a_guess*`, `a_extract`, `a_pat`, `a_typing`) | **exists-fresh** — one binder α + explicit freshness side conditions |
 
 #### The line is "is it the algorithm?", not the directory (decided 2026-08-02)
 
 The campaign's first cut drew the line at `decl/` vs `algo/`.  That is wrong at
-one place: `algo/def_decorated.v`'s `a_consistag` / `a_subtag` / `a_solvetag`
+one place: `deco_algo/def_decorated.v`'s `a_consistag` / `a_subtag` / `a_solvetag`
 live under `algo/` but are **not the algorithm** — the decorated system exists
 only to state and prove the decoration and soundness results, nothing ever runs
 it, and no implementation corresponds to it.  The reason exists-fresh is FORCED
@@ -663,7 +663,7 @@ Three things the conversion cost, all of which generalize:
   UnivGhost1 fixes it and shrinks only the input, ForallSyn does the opposite).
   The decorated `a_consistag` rows are still cofinite, so each ∀ row must
   rebuild a family from the run's ONE opener; the rename lives downstream of
-  prop_decorate.v (via algo/prop_basic.v), so the lemma moved rather than the asset.
+  prop_decorate.v (via algo/basic/prop_context.v), so the lemma moved rather than the asset.
   It gained a `uniq Θ0` premise, discharged at its three consumers from
   `a_wf_aenv_uniq`.
 

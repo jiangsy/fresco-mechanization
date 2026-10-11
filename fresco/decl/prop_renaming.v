@@ -13,12 +13,12 @@ Require Import src.fresco.notations.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
-Require Import src.fresco.prop_basic.
+Require Import src.fresco.prop_shapes.
 Require Import src.fresco.prop_tag.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.decl.prop_basic.
 Require Import src.fresco.decl.prop_wellformed.
-Require Import src.fresco.decl.prop_weakening.
+Require Import src.fresco.decl.prop_ctx_mono.
 
 Set Implicit Arguments.
 

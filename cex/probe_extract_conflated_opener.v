@@ -32,7 +32,7 @@
 
     ⇒ There was no [flex_agree_rel] between the a-side's [Ξ ++ Θ0] and the
     e-side's [Ξ2 ++ Θ2], which is precisely the premise the fold transport
-    (ext_algo/prop_lift.v §7) needs — so [a_extract] ⟹ [e_extract] was FALSE
+    (ext_algo/lifting/prop_lift.v §7) needs — so [a_extract] ⟹ [e_extract] was FALSE
     as a lift.
 
     ✅ **WHAT THE GUARD DOES.**  §1c is the point of the file: at these two
@@ -57,10 +57,10 @@ From src Require Import fresco.coercions.
 From src Require Import fresco.def_shapes.
 From src Require Import fresco.algo.def_rules.
 From src Require Import fresco.ext_algo.notations.
-From src Require Import fresco.ext_algo.def_supply.
-From src Require Import fresco.ext_algo.def_look.
-From src Require Import fresco.ext_algo.def_solve.
-From src Require Import fresco.ext_algo.prop_solve.
+From src Require Import fresco.ext_algo.basic.def_supply.
+From src Require Import fresco.ext_algo.subtyping.def_look.
+From src Require Import fresco.ext_algo.subtyping.def_solve.
+From src Require Import fresco.ext_algo.subtyping.prop_solve.
 
 Open Scope fresco_a_scope.
 Open Scope fresco_e_scope.

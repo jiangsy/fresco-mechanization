@@ -63,7 +63,7 @@ Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo.basic.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.algo_decl.def_subtyping.
 
@@ -98,7 +98,7 @@ Inductive ad_pat : mode -> aenv -> exp -> bskl -> Prop :=
        [ad_refine_syn_output_not_wf], cex/cex_refine_not_transitive.v).
        lemma:context-precision's Var case and thm:complete-skeleton-
        inference's Sub case both consume exactly this premise; soundness
-       supplies it from the run by [a_sub_output_wf] (algo/prop_wf_preservation.v
+       supplies it from the run by [a_sub_output_wf] (algo/basic/prop_wf_preservation.v
        — the algorithm's outputs ARE well-formed). *)
     {{ Θ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}a ->
     ad_pat_sub a_sub_mode_sk m empty Θ uskl_unit Q ->

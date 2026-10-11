@@ -43,9 +43,9 @@ Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.def_meta.
-Require Import src.fresco.algo.prop_swap.
-Require Import src.fresco.algo.prop_inc.
+Require Import src.fresco.algo.basic.def_meta.
+Require Import src.fresco.algo.basic.prop_swap.
+Require Import src.fresco.algo.basic.prop_inc.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.algo_decl.def_subtyping.
 Require Import src.fresco.algo_decl.def_typing.
@@ -380,9 +380,9 @@ Qed.
 (*  ⚙ They are HERE, and not with the completeness files, because the      *)
 (*  SOUNDNESS side has to CONCLUDE the leaf-valid join ([ad_pat] /         *)
 (*  [ad_sd_typing] embed it, so thm:complete-skeleton/type-inference can   *)
-(*  consume it), and algo/sub/prop_soundness_subtag.v sits BEFORE the      *)
+(*  consume it), and algo/subtyping/prop_soundness_subtag.v sits BEFORE the      *)
 (*  completeness files in the dependency order.  [algo_decl/] is upstream  *)
-(*  of all of [algo/sub/], so the constraint is met here.                  *)
+(*  of all of [algo/subtyping/], so the constraint is met here.                  *)
 (* ===================================================================== *)
 
 (** Fuel monotonicity for the leaf-valid hygienic join.  The fuel is the
@@ -408,4 +408,80 @@ Lemma ad_pat_sub_of_fuel : forall n NM M Ψ Θ R Q,
   {{ Ψ ⨟ Θ ⊢ˢ[ NM | M ] R ⩽ Q }}ad.
 Proof.
   intros n NM M Ψ Θ R Q H; induction H; eauto 3 using ad_pat_sub.
+Qed.
+
+(** * Consistency and partial-precision weakening. *)
+
+Lemma ad_pat_consis_weaken : forall Ψ Θ R Q,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+  forall Θ',
+  (forall x b, binds x b Θ -> binds x b Θ') ->
+  {{ Ψ ⨟ Θ' ⊢ˢ R ∼ Q }}ad.
+Proof.
+  intros * H Θ' Hmon.
+  eapply ad_pat_consis_mono; [ exact H | ].
+  apply aenv_tbinds_le_of_binds_le. exact Hmon.
+Qed.
+
+Lemma ad_pat_consis_weaken_cons : forall Ψ Θ (e : list (atom * abind)) R Q,
+  {{ Ψ ⨟ Θ ⊢ˢ R ∼ Q }}ad ->
+  {{ Ψ ⨟ (e ++ Θ) ⊢ˢ R ∼ Q }}ad.
+Proof.
+  intros. eapply ad_pat_consis_weaken; eauto;
+    try (intros x b Hb; unfold binds; apply in_or_app; auto).
+Qed.
+
+(* ===================================================================== *)
+(*  §1  Tag-context congruence                                            *)
+
+Lemma ad_partial_precise_psi_cong : forall Θ Δ Ψ P ψ,
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
+  forall Ψc, Ψ [=] Ψc ->
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψc ] ψ }}ad.
+Proof.
+  intros Θ Δ Ψ P ψ H; induction H; intros Ψc Heq;
+    econstructor; eauto; fsetdec.
+Qed.
+
+(* ===================================================================== *)
+
+(* ===================================================================== *)
+(*  §3  Context weakening (binds-monotone)                                *)
+
+Lemma ad_partial_precise_weaken : forall Θ Δ Ψ P ψ,
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
+  forall Θ',
+  (forall x b, binds x b Θ -> binds x b Θ') ->
+  {{ Θ' ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
+Proof.
+  intros Θ Δ Ψ P ψ H; induction H; intros Θ' Hmon.
+  - apply ad_ppre__unit; auto.
+  - apply ad_ppre__var; auto.
+  - eapply ad_ppre__arrow; eauto.
+  - eapply ad_ppre__forall with (L := L); eauto.
+    intros α Hα. apply H0; auto.
+    intros x b Hb.
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
+      [ unfold binds; left; reflexivity
+      | unfold binds; right; apply Hmon; auto ].
+  - apply ad_ppre__ghost; auto.
+  - apply ad_ppre__univ_ghost_remove; auto.
+  - eapply ad_ppre__univ_ghost_fill with (L := L).
+    intros α Hα. apply H0; auto.
+    intros x b Hb.
+    destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? ?] | Hb']; subst;
+      [ unfold binds; left; reflexivity
+      | unfold binds; right; apply Hmon; auto ].
+  - apply ad_ppre__univ_ghost_keep; auto.
+  - eapply ad_ppre__flex_l; eauto.
+  - eapply ad_ppre__flex_r; eauto.
+Qed.
+
+(** A rigid entry in front: the ∀ row's premise lives at [Θ,α]. *)
+Lemma ad_partial_precise_weaken_tvar : forall α Θ Δ Ψ P ψ,
+  {{ Θ ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad ->
+  {{ ((α ~ abind_tvar) ++ Θ) ⨟ Δ ⊢ˢ P ⊑ᵖ[ Ψ ] ψ }}ad.
+Proof.
+  intros α Θ Δ Ψ P ψ H. eapply ad_partial_precise_weaken; [ exact H | ].
+  intros x b Hb. unfold binds; right; exact Hb.
 Qed.

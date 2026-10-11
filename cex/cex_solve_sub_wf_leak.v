@@ -53,7 +53,7 @@ Require Import src.fresco.notations.
 Require Import src.fresco.ltac_utils.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo.basic.def_meta.
 
 Set Implicit Arguments.
 

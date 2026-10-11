@@ -51,12 +51,12 @@ Require Import src.fresco.notations.
 Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.prop_swap.
-Require Import src.fresco.algo.consis.prop_consis_rename.
+Require Import src.fresco.algo.basic.prop_swap.
+Require Import src.fresco.algo.consistency.prop_consis_rename.
 Require Import src.fresco.ext_algo.notations.
-Require Import src.fresco.ext_algo.def_supply.
-Require Import src.fresco.ext_algo.def_guess.
-Require Import src.fresco.ext_algo.def_consis.
+Require Import src.fresco.ext_algo.basic.def_supply.
+Require Import src.fresco.ext_algo.basic.def_guess.
+Require Import src.fresco.ext_algo.consistency.def_consis.
 
 Open Scope fresco_a_scope.
 Open Scope fresco_e_scope.

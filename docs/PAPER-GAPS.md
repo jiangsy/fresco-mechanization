@@ -117,7 +117,7 @@ opener is invisible to the right half no matter what the context carries.
 ## MISSING SIDE CONDITION (2026-08-17, machine-checked) — the COLLECTION rules lack the `α ∈ ftv(subject)` guard that renders the implementation's absence-first dispatch, so a collection call can spend a fresh name it never needed
 
 > **✅ FIXED IN THE MECH ON BOTH ENCODINGS (2026-08-17/18).**  The five LEAKING
-> rows of `fresco/algo/def_rules.v` AND `fresco/ext_algo/def_look.v` —
+> rows of `fresco/algo/def_rules.v` AND `fresco/ext_algo/subtyping/def_look.v` —
 > `LS-ForallR`, `LS-ForallL`, `LE-ForallInh`, `LE-ForallSyn`, `LE-UnivGhost1` —
 > now carry `α ∈ ftvar_in_pskl <subject>` (`LE-FlexR` already did).
 > `make coq` rc=0, `README.v` 32/32.  **The finding below stands unchanged for
@@ -126,7 +126,7 @@ opener is invisible to the right half no matter what the context carries.
 >
 > ⭐⭐ **AND IT COST THE CONSUMERS NOTHING, because THE GUARD IS ADMISSIBLE** —
 > the result worth passing to the authors alongside the gap itself.
-> `algo/sub/prop_looksub.v` §2b proves each rule in its PRE-GUARD form
+> `algo/subtyping/prop_looksub.v` §2b proves each rule in its PRE-GUARD form
 > (`a_looksub_forall_r_adm`, …) by the one case split the guard introduces: at
 > an α-free subject the rule's own opener is fresh for `α`, so the premise
 > collected NOTHING (`a_looksub_lookeq_absent_nil`) and `LS`/`LE-Absent`
@@ -162,7 +162,7 @@ opener is invisible to the right half no matter what the context carries.
 **Where.**  `LS-ForallR`, `LS-Arrow`, `LS-ForallL`, `LS-UnivGhostL`, `LS-Check`
 and their `LE-*` twins (`full-algo-spec.tex`'s collection figure;
 `fresco/algo/def_rules.v:418-528` and its threaded copy
-`fresco/ext_algo/def_look.v`).  `LS-Absent` fires whenever the looked-for
+`fresco/ext_algo/subtyping/def_look.v`).  `LS-Absent` fires whenever the looked-for
 variable `α` does not occur in the SUBJECT, and it is stated with no exclusion
 against any of them.  The same holds for `LS-Vacuous` (counterpart `◇`).
 
@@ -170,7 +170,7 @@ against any of them.  The same holds for `LS-Vacuous` (counterpart `◇`).
 `constr_collect_sub` (:649-701) and `constr_collect_eq` (:542-626) — and this
 tree's runner faithfully renders that: every non-Absent clause of
 `e_looksub_impl` / `e_lookeq_impl` sits behind `mem α (ftvar_in_pskl P)`
-(`fresco/ext_algo/def_look_impl.v:360, 377, 393, 406, …`), with the Vacuous test
+(`fresco/ext_algo/subtyping/def_look_impl.v:360, 377, 393, 406, …`), with the Vacuous test
 second.  A relational encoding has no match order, so the exclusion has to be a
 PREMISE.
 
@@ -213,7 +213,7 @@ unchanged**, hypothesis-free, which is exactly what the guard buys — and
 `rel_e_absent_{sub,eq}`, the empty answer for the a→e transport.
 
 ⛔ What it costs is BREADTH.  Both encodings: ~70 constructor sites and ~170
-case labels over twelve files, of which `algo/sub/prop_looksub.v` (32 sites),
+case labels over twelve files, of which `algo/subtyping/prop_looksub.v` (32 sites),
 `deco_algo/prop_decorate_sub.v` (10) and the P6 `look/` chain are the bulk.
 Scoped to the THREADED encoding alone — which is where the fact it protects
 (the supply) lives, and where `e_looksub_sound` keeps the a-side untouched —
@@ -475,7 +475,7 @@ the runner against the rules need.
 > inherited type — so it was not a corner case.
 >
 > ⛔ **The CONTEXT-FREE form of the guard is REFUTED** (`remech-guard4-wip`):
-> it is machine-blocked at `algo/sub/look/prop_eq_cstr.v`'s ⫯-grid, and the
+> it is machine-blocked at `algo/subtyping/prop_completeness_lookeq_solve.v`'s ⫯-grid, and the
 > implementation sides with that site (`MFlex` ≠ `TVar`, `lib/type.ml:23`).
 > The design, the four passes it took, and the two simplifications it bought
 > are in
@@ -559,14 +559,14 @@ the mech's `e_` (supply-threaded) encoding:
 
 (A) is what the mech's own runner would justify, because `e_lookeq_impl`
 takes FlexR at ANY variable counterpart — but that is the MECH being
-unfaithful, not the paper.  It is machine-BLOCKED: `algo/sub/look/prop_eq_cstr.v`
+unfaithful, not the paper.  It is machine-BLOCKED: `algo/subtyping/prop_completeness_lookeq_solve.v`
 :4676-4698, the P6 chain at a ⫯-headed subject against `P0 = pskl_var_f β0`,
 BUILDS `LE-UnivGhost2` there, and under (A) that row is barred.  Parked on
 branch `remech-guard4-wip` (`40f900c`) with the full measurement.
 
 ⭐ **AND THE MECH HAS ITS OWN BUG HERE, which (B) fixes.**
 `a_lookeq__flex_r` / `e_lookeq__flex_r` (`fresco/algo/def_rules.v`,
-`fresco/ext_algo/def_look.v`) fire at ANY `pskl_var_f β` — no `a_flex_tvar Θ β`
+`fresco/ext_algo/subtyping/def_look.v`) fire at ANY `pskl_var_f β` — no `a_flex_tvar Θ β`
 premise — where the paper's conclusion is at `β̂`.  Contrast the SOLVE layer's
 twin `a_solve_eq__flex_r`, which DOES carry `a_flex_tvar Θ α` and documents at
 length why the exclusion matters.  The two rows are mirror images and only one
@@ -684,7 +684,7 @@ look-completeness argument:
 > put, and `LS-Var` fires at the leaf.
 
 Mechanized as `alpha_stack_looksub`
-(`fresco/algo/sub/look/prop_sub_cstr.v:373`), whose comment records the
+(`fresco/algo/subtyping/prop_completeness_looksub_solve.v:373`), whose comment records the
 consequence the proof relies on: *"Sub-ForallR's stack branch never
 invokes `LS-ForallR`, and the β it would have had to strip is simply
 never introduced."*  With the guard that is false exactly at `M = TC`
@@ -716,7 +716,7 @@ unchanged.**  The guard was carried through the mechanization as
 `forall_r_off m P'` (`fresco/def_shapes.v`) on `LS-ForallL` and
 `LS-UnivGhostL`, both encodings.  It is GREEN on fourteen of the fifteen
 files it touches; the fifteenth is Lemma E.17's own proof
-(`algo/sub/look/prop_sub_cstr.v`), exactly as predicted above.  The work is
+(`algo/subtyping/prop_completeness_looksub_solve.v`), exactly as predicted above.  The work is
 preserved on branch `remech-guard3-wip` (`d78d8f6`) and the full design,
 measurement and remaining obligations are in
 [`HANDOFF-extractable-algo-encoding.md`](HANDOFF-extractable-algo-encoding.md)
@@ -863,7 +863,7 @@ and then states **no conservativity lemma in either direction**.  Everything
 in §D — including the four theorems — is therefore stated over `⊢ᵃᵈ`, and a
 reader who has only met the §declarative figure never learns how to get back.
 
-**The mechanization supplies the translation** (algo_decl/prop_conserv.v).
+**The mechanization supplies the translation** (algo_decl/prop_conservativity.v).
 A declarative context IS an algorithmic one with no flexible variables
 (`denv_to_aenv`), each `ad_` judgement is its `d_` version plus the
 flexible-lookup rows, and those rows are vacuous in the image — so the
@@ -897,7 +897,7 @@ have to be made explicit on the way, and each is a small finding of its own:
 
 ⛔ **The `d_ → ad_` direction does NOT hold as stated**, and the reason is not
 bookkeeping.  Two independent obstructions, both recorded at
-algo_decl/prop_conserv.v §12:
+algo_decl/prop_conservativity.v §12:
 
 - **(A) the leaf-valid datum.**  `ad_pat` / `ad_sd_typing` embed the augmented
   join (`ad_pat_sub_v`), whose consistency leaves additionally carry the
@@ -993,7 +993,7 @@ skeleton inference never exhibits its subject (P-Anno has no premise about
 read the annotation's wf — `a_pat_complete`'s Anno case, for `lc A` — gets it
 from the theorem's own `lc_exp e`.  The declarative `d_sd_typing__anno` /
 `d_typing__anno` never carried it.
-The visible payoff: `a_typing_complete_infer` (algo/typing/prop_closed.v)
+The visible payoff: `a_typing_complete_infer` (algo/typing/prop_typing_closed.v)
 — completeness of INFERENCE at a closed program — now has the declarative
 derivation as its **only** premise.
 
@@ -1222,7 +1222,7 @@ lookups and the rigid-variable rows all put the variable in the subject or
 the target); `ForallL` is the one row that does not.
 
 ⚙ **The mechanization already had this insight one layer down.**
-`ad_pat_sub_strip_suffix` (`algo/prop_pat_sub.v`), built during the
+`ad_pat_sub_strip_suffix` (`algo_decl/prop_subtyping.v`), built during the
 subtyping-soundness campaign, IS this lemma for the all-in-one subtyping
 judgement, and `ad_pat_sub_subst_flex`'s header states the reason
 verbatim: *"the ForallL witnesses are rewritten too, which is exactly why
@@ -1232,7 +1232,7 @@ is not news to the tree — but it is news to the paper, whose proof of
 TYPING judgement, which sits above subtyping and inherits the problem.
 
 **The route that works** (built for refinement, type equivalence and
-consistency 2026-08-06; `algo/prop_suffix_erase.v`): erase by
+consistency 2026-08-06; `algo/basic/prop_suffix_erase.v`): erase by
 **solving**, not by dropping.  A suffix of flexible entries always admits
 a metasubstitution `θ` into `Θ` — map an undefined `α̂` to `1` and a
 defined one to (the image of) its definition, which is well-scoped in the
@@ -1310,7 +1310,7 @@ proved.
    the same transport in the function's DOMAIN instead.
 2. **`\tilab{Abs}`** — "By ⑯ and definition of `\guessMono{P}`, we have
    `Θ1,ᾱ ⊢ inh{P} ⊳ inh{A}`".  A refinement property of `guess^TY` used as
-   if definitional; the mech had no such lemma (algo/prop_basic.v carries only its
+   if definitional; the mech had no such lemma (algo/basic/prop_context.v carries only its
    freshness, `a_decls` and ftv facts).
    **✅ SUPPLIED AND PROVED (2026-08-06)**: `a_guess_mono_refine`
    (`algo/prop_soundness_typing.v` §9), Qed and axiom-free.  What the
@@ -1408,7 +1408,7 @@ repaired.  Both proof texts are preserved in git at commit **`eabf308`**.
 
 | deleted file | what it proved | why it is retracted |
 |---|---|---|
-| `cex/probe_extract_supply_drift.v` | `e_extract_det_false` — `e_extract` is not deterministic up to a renaming, because at an α-FREE subject against a `∀` counterpart both `LS-Absent` (spends nothing) and `LS-ForallR` (draws an opener) fire and both emit the empty collection | the absence-first guard landed on `e_looksub`/`e_lookeq`'s five leaking rows, so the second derivation cannot be built.  ⭐ Its POSITIVE replacement is `e_looksub_lookeq_absent_pins` (`ext_algo/prop_look.v` §2c): at an α-free subject the collection returns `Ξ = ·`, `𝒞 = ·` AND the supply unchanged, hypothesis-free — which is precisely the conjunct this file refuted |
+| `cex/probe_extract_supply_drift.v` | `e_extract_det_false` — `e_extract` is not deterministic up to a renaming, because at an α-FREE subject against a `∀` counterpart both `LS-Absent` (spends nothing) and `LS-ForallR` (draws an opener) fire and both emit the empty collection | the absence-first guard landed on `e_looksub`/`e_lookeq`'s five leaking rows, so the second derivation cannot be built.  ⭐ Its POSITIVE replacement is `e_looksub_lookeq_absent_pins` (`ext_algo/subtyping/prop_look.v` §2c): at an α-free subject the collection returns `Ξ = ·`, `𝒞 = ·` AND the supply unchanged, hypothesis-free — which is precisely the conjunct this file refuted |
 | `cex/probe_sub_supply_drift.v` | `e_sub_det_false` — the same drift REACHES SUBTYPING through `SI-ForallL`, so level 6's motive is false at its supply conjunct.  ⭐ It closed the one step of the §8c.13 diagnosis that had been argued by INSPECTION | same guard.  It was written as the GATE for the repair — the whole plan rested on the inspection step, so it was machine-checked first and the repair only then begun.  Having done its job it is retracted with the file it was checking |
 
 ⚙ **AND A THIRD WENT THE SAME WAY (2026-08-18)** — same reason again: it
@@ -1505,7 +1505,7 @@ directions of subtyping stay closed and unconditional.
 
 ## PROSE-COMPLETION — `⊑`'s flex-def rule lacks the θ-image side-condition
 - Where: fig:information-increase (full-algo-spec.tex:30-35); mech
-  `a_inc__flex_def` (algo/def_meta.v).
+  `a_inc__flex_def` (algo/basic/def_meta.v).
 - The figure's rule for `Θ,α̂:=τ ⊑[θ,τ'/α̂] Θ'` constrains `τ'` only by
   `Θ' ⊢ τ' ≡ θτ`, but the prose (algorithmic.tex:123-126) says θ maps
   flexible variables to *well-formed monotypes in Θ'*.  Without the wf
@@ -1516,12 +1516,12 @@ directions of subtyping stay closed and unconditional.
 ## PROSE-COMPLETION — identity metasubstitutions preserve entries
 - Where: algorithmic.tex:135 ("For an identity metasubstitution, all
   entries of flexible variables in Θ are preserved in Θ'"); mech `a_isub`
-  (algo/def_meta.v).
+  (algo/basic/def_meta.v).
 - The figure alone does not pin the target's flexible entries even for ι.
   The identity shorthand `⊴` therefore carries the prose characterization
   as a second component: definitions, once made, are preserved verbatim.
   This is what makes the FlexL/FlexR lookup rules stable under `⊴`
-  (algo/prop_stability.v) — without it, a definition could be swapped for
+  (algo_decl/prop_stability.v) — without it, a definition could be swapped for
   an ≡-equivalent one and the lookup-shaped rules would not transport.
 
 ## MECH-BUG (FIXED 2026-07-14) — `Flex-Flex-Assign` must recurse into CONSISTENCY, not into `unifyvar`
@@ -1584,7 +1584,7 @@ directions of subtyping stay closed and unconditional.
   Also fixed: `a_split__flex` (full-algo-spec.tex:393), whose premise input
   is an ARROW and so could never have been `unifyvar` — forcing it through
   `a_unify` is what made `a_unify` take general monotypes in the first place.
-- CONSEQUENCES, all landed (algo/prop_consis_sound.v, prop_mono_bridge.v):
+- CONSEQUENCES, all landed (algo/prop_consis_sound.v, prop_consis_monotype_equiv.v):
   - `a_unify_consis_sound`: ONE mutual induction (Combined Scheme, 6+14
     cases) proving parts 1+2 of thm:sound-consistency together, exactly how
     the paper organises its own proof (consistency-proofs.tex:1562).  The
@@ -1594,7 +1594,7 @@ directions of subtyping stay closed and unconditional.
     Flex-Flex-Assign case recovers it from consistency's join + the input's
     refinement via the monotype BRIDGE (`consis_refine_mono_tyequiv`), and
     part 1's Flex case converts it back to declarative consistency via the
-    CONVERSE bridge (`tyequiv_mono_consis`) — both in prop_mono_bridge.v.
+    CONVERSE bridge (`tyequiv_mono_consis`) — both in prop_consis_monotype_equiv.v.
   - `a_consistag_sound_aux` (decorated, Appendix B) stays a PLAIN induction
     above the bundle: `a_consistag` is not in the recursion cycle (its flex
     rules take `a_unify`/`a_assign` derivations as opaque premises).
@@ -1722,7 +1722,7 @@ The 1011-line archived attempt (`algo/prop_symmetry.v.deferred`) was DELETED
 It never compiled (it HANGS: 90s+ of CPU at 98% without terminating, reason 1
 below), its approach is the wrong one (reason 2 below), and 28 of its 65
 definitions have since been re-proved — correctly, and in the build — by the
-swap kit `algo/prop_swap.v`.  Everything it recorded is in this section.
+swap kit `algo/basic/prop_swap.v`.  Everything it recorded is in this section.
 
 Intended statement:
 
@@ -1744,7 +1744,7 @@ TWO REASONS IT STALLED, both worth knowing before anyone retries:
    does not abstract, so the `if` survives, the `match` fires again, and
    `repeat` loops forever.  The working form is
    `destruct (@eq_dec ptypvar EqDec_eq_of_X x y)`.  (Same gotcha bites
-   `subst_pskl_in_pskl`; recorded in algo/prop_basic.v.)  The file also has ~10
+   `subst_pskl_in_pskl`; recorded in algo/basic/prop_context.v.)  The file also has ~10
    UNSCOPED `fsetdec` calls, which are minutes-slow in this codebase.
 
 2. **The design, which is the real obstacle.**  The output must be
@@ -1767,7 +1767,7 @@ follow the paper.  It only upgrades our verdict on someone else's code.
 - Where: algorithmic.tex:123 — "A metasubstitution `Θ ⊑[θ] Θ'` is a finite **MAP**
   θ from flexible variables in Θ to well-formed monotypes in Θ'."  A finite map is
   a SIMULTANEOUS substitution.  Mech `msubst_ptyp` / `_pskl` / `_btyp` / `_bskl`
-  (algo/def_meta.v) instead encoded a SEQUENTIAL fold:
+  (algo/basic/def_meta.v) instead encoded a SEQUENTIAL fold:
   `msubst ((α,τ)::θ) A = msubst θ (A[τ/α])`.
 - These are DIFFERENT functions: the fold lets a LATER entry rewrite inside an
   EARLIER entry's image.  Take the (perfectly legal) `θ = [α ↦ β̂, β̂ ↦ unit]` — the
@@ -1808,7 +1808,7 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   `Θ ⊢ inh{P} ⊳ inh{Q}`, so the lemma is an instance of transitivity of
   refinement — and refinement is not transitive on the bare rules
   (`algo/cex/cex_refine_not_transitive.v`).  An unwritten proof hid that.
-- MECHANIZED (algo/prop_precise.v, Qed + axiom-free): `ad_refine_syn_trans`
+- MECHANIZED (algo_decl/prop_precision.v, Qed + axiom-free): `ad_refine_syn_trans`
   (general transitivity, given the result is well-formed) and
   `ad_precise_preserves_refine` (the paper's lemma, a direct corollary).
 - Proof shape, for the authors: OUTER induction on the second derivation, INNER
@@ -1886,7 +1886,7 @@ follow the paper.  It only upgrades our verdict on someone else's code.
   the rules was tried and rejected: it does not survive `ad_refine_*_f_strip`
   (a ∀◇-ghost body may mention a context rigid α that the strip removes, and
   α ∈ Δ does not rescue it because ∀◇-ghost bodies are checked at the EMPTY Δ).
-- MECHANIZED (algo/prop_precise.v, all Qed + axiom-free): `ad_refine_syn_syn_l`
+- MECHANIZED (algo_decl/prop_precision.v, all Qed + axiom-free): `ad_refine_syn_syn_l`
   (a syn-headed refinement lands in a syn painting — shape only, no wf),
   `ad_wf_pskl_delta_shrink`, `ad_wf_pskl_empty_delta_free`,
   `ad_refine_syn_syn_delta_free` (a syn-headed refinement never fires the `all`
@@ -2255,7 +2255,7 @@ substitute the stripped variables away, rewriting
 witnesses too — unit for an undefined flex entry, its own definition
 painting for a defined one, iterating head-first over Ξ (defs scope to
 tails, so the head entry is never mentioned elsewhere).  Foundations in
-algo/prop_pat_sub.v §4 (`guarded_pskl_subst`, `a_wf_pskl_subst_ctx`,
+algo_decl/prop_subtyping.v §4 (`guarded_pskl_subst`, `a_wf_pskl_subst_ctx`,
 `uskl_to_pskl_subst_unit`); the `ad_pat_consis`/`ad_pat_sub` strip
 inductions and the suffix driver are the remaining pieces (the decl cribs
 are `d_pat_consis_subst_unit` / `d_pat_sub_subst_unit`,
@@ -2280,7 +2280,7 @@ decoration whose tag names avoid the rule's cofinite set L:
 
 — the tag analog of cofinite binder quantification.  Consumers pick a
 witness via `pskl_decorate_exists` / `a_tags_sort_decorate_exists`
-(algo/prop_pat_sub.v §7).  This is an ENCODING device, not a semantic
+(algo_decl/prop_subtyping.v §7).  This is an ENCODING device, not a semantic
 strengthening: with a decoration-renaming lemma the single-witness rule is
 equivalent (renaming lets any consumer move to fresh tag names); the family
 form just avoids proving that renaming.  Paper needs no change beyond
@@ -3051,7 +3051,7 @@ not fix finding 3 (different wall).  Decision deferred to the authors.
     wants the strengthened conclusion.
   - The reverse direction of
     `lemma:constraint-collection-stable-substitution` is mechanized as
-    `a_looksub_lookeq_subst_stable_rev` (algo/sub/prop_looksub.v §4b, `Qed`, axiom-free).
+    `a_looksub_lookeq_subst_stable_rev` (algo/subtyping/prop_looksub.v §4b, `Qed`, axiom-free).
     The ρ-route does not need it (the looksub side stays on var-opened
     subjects), but it is the lemma the PAPER's own proof route ends with,
     and it is true and kept.
@@ -3614,7 +3614,7 @@ syntax-directed figure, and the `forall ᾱ` prefix is introduced ONLY by
 `\dtylab{AbsCheck}`, in CHECKING mode.  The algorithm represents that family
 by the unsolved flexible: `(unit -> γ̂) -> γ̂`, and optimality says every
 solution is a MONOTYPE instantiation of it (`a_inc__flex` carries
-`mono_ptyp τ`, algo/def_meta.v:211-215), so `γ̂` cannot be instantiated with a
+`mono_ptyp τ`, algo/basic/def_meta.v:211-215), so `γ̂` cannot be instantiated with a
 polytype.  `forall b . (unit -> b) -> b` is a *different, stronger* statement
 reachable only by annotation — the observable difference is that a checked
 `ap` is usable at two result types while an inferred one is not
@@ -4080,7 +4080,7 @@ is a property of the SOLVER's placement, several judgements away, not
 something `AT-AbsCheck` can see.)
 
 ⚙ With them, the mechanization gets both halves it owes: `lemma:suffix-erasure`
-for `ad_sd_typing` (`algo/prop_suffix_erase.v`) and the same strip for the
+for `ad_sd_typing` (`algo/basic/prop_suffix_erase.v`) and the same strip for the
 information increase (`a_isub_strip_tvar_mid` / the new
 `a_isub_strip_var_typ_mid`), whose ⊴-obligation also has to lose `Ξ`.
 
@@ -4168,7 +4168,7 @@ which is exactly where the two proofs consume it, and nothing propagates.
 **The soundness obligation this creates is a theorem about the ALGORITHM
 the paper never states**: the outputs of the consistency and subtyping runs
 are well-formed (`a_consis_output_wf` / `a_sub_output_wf`,
-algo/prop_wf_preservation.v — both Qed, axiom-free).  The consistency induction is
+algo/basic/prop_wf_preservation.v — both Qed, axiom-free).  The consistency induction is
 where the content is: the run's `Δ1`/`Δ2` rigid-trackers and the Ghost /
 GhostR rules' `Δ ∩ ftv` side conditions are PRECISELY what makes it go
 through — the close-rows re-bind an opened rigid, which is sound only
@@ -4229,7 +4229,7 @@ binder instance and must rebuild the DECLARATIVE side's cofinite families
 itself — term binders via the existing `ad_sd_typing_rename_tm`/wf-exp
 renaming, type binders via NEW declarative-over-Θ renaming lemmas
 (`ad_pat_rename_tvar` / `ad_sd_typing_rename_tvar` / `a_tyequiv_rename_tvar`,
-algo/prop_rename_decl.v).
+algo_decl/prop_renaming.v).
 
 ### 3. What did NOT change
 
@@ -4262,7 +4262,7 @@ and then splits into subcase 1 (the arrow — the identity split) and subcase 2
 immediately.  A VARIABLE does not: the paper's `\hat\alpha` silently assumes
 the variable is FLEXIBLE, and the rigid case has to be refuted, because the
 split's flexible row is what the subcase is about and `a_split__flex` on a
-rigid variable is absurd (`a_split_rigid_var_absurd`, `algo/typing/prop_rigidity.v`).
+rigid variable is absurd (`a_split_rigid_var_absurd`, `algo/typing/prop_typing_rigidity.v`).
 The refutation is short but is a lemma: a variable painting that refines to
 an ARROW must be a *defined* flexible, since refinement's `__var` and
 `__flex_r` rows both conclude at a VARIABLE target, so only `__flex_l` can
@@ -4335,7 +4335,7 @@ pending suffix `Ξ` does not occur in the run's result (the side condition
 registered as `RULE-LEVEL SIDE CONDITIONS` §1, 2026-08-06, which the rules
 now carry as a premise and which completeness has to DISCHARGE when it builds
 those rows).  Both are consequences of one invariant, now proved in a
-dedicated file `algo/typing/prop_scope.v`: a run's result is scoped in the region
+dedicated file `algo/typing/prop_typing_scope.v`: a run's result is scoped in the region
 at-or-below any marker of its input context, EXCEPT for atoms that are rigid
 there.  It is a SCOPE-PROPAGATION statement over the subtyping and typing
 towers plus a region walk over assignment/unification/consistency; naive
@@ -4385,7 +4385,7 @@ decidability into it; nothing in the paper supports that reading.
 ### Mechanized status (fresco/ext_algo/, 2026-08-13/14) — the argument, made and checked
 
 The principle itself is now a theorem, in the exact currency the
-termination argument needs (`fresco/ext_algo/prop_termination.v`; all
+termination argument needs (`fresco/ext_algo/basic/prop_termination.v`; all
 axiom-free):
 
 - `guess^TY` copies quantifiers and never invents one

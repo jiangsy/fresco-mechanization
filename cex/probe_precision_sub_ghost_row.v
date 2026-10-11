@@ -50,13 +50,13 @@ Require Import src.fresco.def_shapes.
 Require Import src.fresco.coercions.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo.basic.def_meta.
 Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_subtyping.
-Require Import src.fresco.algo.prop_precise.
-Require Import src.fresco.algo.prop_refine.
-Require Import src.fresco.algo.sub.look.prop_extract.   (* pskl_inh_eq_syn_inv *)
+Require Import src.fresco.algo_decl.prop_precision.
+Require Import src.fresco.algo_decl.prop_refinement.
+Require Import src.fresco.algo.subtyping.prop_completeness_extract.   (* pskl_inh_eq_syn_inv *)
 
 Set Implicit Arguments.
 

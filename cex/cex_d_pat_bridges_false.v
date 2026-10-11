@@ -57,11 +57,11 @@ Require Import src.fresco.algo_decl.def_consis_refine.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_subtyping.
 Require Import src.fresco.algo_decl.def_typing.
-Require Import src.fresco.algo.pat.prop_soundness_pat.   (* a_wf_exp *)
-Require Import src.fresco.algo_decl.prop_conserv.
+Require Import src.fresco.algo.typing.prop_soundness_pat.   (* a_wf_exp *)
+Require Import src.fresco.algo_decl.prop_conservativity.
 Require Import src.cex.cex_ad_pat_join_not_leaf_valid.
 
-(** ⚙ NO [Set Implicit Arguments] — prop_conserv.v is compiled without it
+(** ⚙ NO [Set Implicit Arguments] — prop_conservativity.v is compiled without it
     (see its header), so its lemmas take every argument explicitly here. *)
 
 (** the one-entry context carrying the ghosty skeleton *)
@@ -113,7 +113,7 @@ Qed.
 
 (** …and therefore the pointwise bridge it refuted can no longer be refuted
     THIS way: [d_pat] and [ad_pat] agree at the configuration.  The positive
-    statement is [d_pat_to_ad] (algo_decl/prop_conserv.v §15), which is
+    statement is [d_pat_to_ad] (algo_decl/prop_conservativity.v §15), which is
     now a theorem with no hypothesis at all. *)
 Theorem cap_bridge_holds : forall x,
   {{ (capΓ x) ⊢ˢ[ mode_ti ] (exp_var_f x) ⦂ capQ }}d ->

@@ -1,0 +1,1396 @@
+(** ext_algo — the supply invariants of the [assign]/[unifyvar]/[consistency]
+    block, and the bridge to [fresco/algo]'s encoding.
+
+    §1  supply growth — hypothesis-free, and needed by everything below
+    §2  the domain upper bound — ⭐ THE LEMMA THAT RETIRES THE EIGHT
+        OUTPUT-FRESHNESS PREMISES
+
+    Layout note: §1 and §2 are separate mutual inductions because §1 is
+    hypothesis-free and §2 is not, and §2 consumes §1 in its arrow and
+    threading rows.
+
+    §3  the two helpers the bridge needs and the tree does not have
+    §4  ⭐ THE BRIDGE — [e_*] implies [a_*], over the SAME contexts
+
+    ⭐ WHAT §4 BUYS.  Composed with it, every theorem stated over
+    [fresco/algo]'s encoding — including the four flagships — applies verbatim
+    to a run of the threaded one.  So the second encoding is not a parallel
+    development: it is a front end to the existing metatheory.
+
+    ⚙ §4's motive carries two conjuncts beyond the bridge itself ([uniq Θ1]
+    and [ftvar_in_aenv Θ1 [<=] S1]) because they are mutually needed with it
+    and a separate pass would traverse all 28 rows again.  Which row forces
+    which is recorded at the lemma. *)
+
+Require Import Coq.Lists.List.
+Require Import Metalib.Metatheory.
+
+Require Import src.fresco.notations.
+Require Import src.fresco.coercions.
+Require Import src.fresco.def_shapes.
+Require Import src.fresco.prop_coercions.
+Require Import src.fresco.ltac_utils.
+Require Import src.fresco.decl.def_rules.
+Require Import src.fresco.algo.def_rules.
+Require Import src.fresco.algo.basic.prop_context.
+Require Import src.fresco.prop_tag.
+Require Import src.fresco.algo.basic.prop_swap.
+Require Import src.fresco.ext_algo.notations.
+Require Import src.fresco.ext_algo.basic.def_supply.
+Require Import src.fresco.ext_algo.basic.def_guess.
+Require Import src.fresco.ext_algo.basic.prop_guess.
+Require Import src.fresco.ext_algo.consistency.def_consis.
+
+Set Implicit Arguments.
+
+(** Substituting the same replacement in two covered inputs preserves their
+    joint cover, including the surrounding context's variables [V]. *)
+Lemma subst_pskl_preserves_cover : forall P Q R α V S,
+  V ∪ ftvar_in_pskl P ∪ ftvar_in_pskl Q ∪ ftvar_in_pskl R [<=] S ->
+  V ∪ ftvar_in_pskl (subst_pskl_in_pskl R α P)
+    ∪ ftvar_in_pskl (subst_pskl_in_pskl R α Q) [<=] S.
+Proof.
+  intros P Q R α V S Hcov x Hx. apply Hcov.
+  repeat rewrite union_iff in Hx |- *.
+  destruct Hx as [Hx | [Hx | Hx]]; [ tauto | | ].
+  - apply (ftvar_in_pskl_subst_pskl_in_pskl_upper P R α) in Hx.
+    clear - Hx. fsetdec.
+  - apply (ftvar_in_pskl_subst_pskl_in_pskl_upper Q R α) in Hx.
+    clear - Hx. fsetdec.
+Qed.
+
+Open Scope fresco_e_scope.
+
+(* ===================================================================== *)
+(*  §1  The supply only grows                                             *)
+(*                                                                        *)
+(*  Hypothesis-free, and the reason the block can be reasoned about at    *)
+(*  all: it is what lets a fact established against the INPUT supply be   *)
+(*  used against the output one, which every threading row needs.         *)
+(* ===================================================================== *)
+
+Lemma e_assign_unify_consis_supply_grows :
+  (forall S0 Θ0 Ξ α P S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e -> S0 [<=] S1) /\
+  (forall S0 Θ0 α β S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e -> S0 [<=] S1) /\
+  (forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e -> S0 [<=] S1).
+Proof.
+  apply (e_assign_unify_consis_mutind
+           (fun S0 Θ0 Ξ α P S1 Θ1 _ => S0 [<=] S1)
+           (fun S0 Θ0 α β S1 Θ1 _ => S0 [<=] S1)
+           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ => S0 [<=] S1));
+    intros;
+    (* [Assign-SolveM] is the only row whose growth is not immediate from an
+       IH or from reflexivity: its supply moves because [guess^TY] moved it *)
+    try (match goal with
+         | Hg : e_guess_mono _ _ _ _ _ |- _ =>
+             exact (e_guess_mono_supply_grows Hg)
+         end);
+    (* the three ∀ rows run their premise at [add α S0], so the IH is one
+       [add] too strong — exactly as in [e_guess_mono_supply_grows] *)
+    fsetdec.
+Qed.
+
+(** The three projections, for use without [proj1]/[proj2] gymnastics. *)
+Corollary e_assign_supply_grows : forall S0 Θ0 Ξ α P S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e -> S0 [<=] S1.
+Proof. apply e_assign_unify_consis_supply_grows. Qed.
+
+Corollary e_unify_supply_grows : forall S0 Θ0 α β S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e -> S0 [<=] S1.
+Proof. apply e_assign_unify_consis_supply_grows. Qed.
+
+Corollary e_consis_supply_grows : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e -> S0 [<=] S1.
+Proof. apply e_assign_unify_consis_supply_grows. Qed.
+
+(* ===================================================================== *)
+(*  §2  ⭐ THE DOMAIN UPPER BOUND — what retires the eight premises        *)
+(*                                                                        *)
+(*  Every name in the output context either came IN, or was GENERATED by  *)
+(*  this run — and a generated name is outside the input supply:          *)
+(*                                                                        *)
+(*      dom Θ1  [<=]  dom (inputs)  ∪  (S1 ∖ S0)                          *)
+(*                                                                        *)
+(*  Read against a re-attaching row, that IS the retired premise.  The     *)
+(*  walked-past entry β is in S0 (the supply covers the context) and not   *)
+(*  in the STRIPPED context (the context is uniq), so it is in neither     *)
+(*  summand, so β ∉ dom Θ1 — the very side condition                       *)
+(*  fresco/algo/def_rules.v has to state, now a consequence.                *)
+(*                                                                        *)
+(*  ⚙ Its mirror image [a_assign_unify_consis_dom_mono]                    *)
+(*  (algo/consistency/prop_consis_rename.v §1) bounds the domain from BELOW,    *)
+(*  hypothesis-free.  The two together pin the output domain.              *)
+(* ===================================================================== *)
+
+(** Turn every derivation in the context into its §1 growth fact, WITHOUT
+    naming it.  The [lazymatch] guard is what stops the [repeat] looping —
+    without it the tactic re-derives the same fact forever.
+
+    ⚙ Name-free on purpose.  A [Combined Scheme] goal has auto-generated
+    hypothesis names, so a proof that spells them is a rename away from
+    breaking; and the alternative — explicit [intros] for all 28 rows — is
+    what makes this kind of bundle unreadable. *)
+#[local] Ltac supply_grow_facts :=
+  repeat match goal with
+  | H : e_assign ?S0 _ _ _ _ ?S1 _ |- _ =>
+      lazymatch goal with
+      | _ : S0 [<=] S1 |- _ => fail
+      | _ => pose proof (e_assign_supply_grows H)
+      end
+  | H : e_unify ?S0 _ _ _ ?S1 _ |- _ =>
+      lazymatch goal with
+      | _ : S0 [<=] S1 |- _ => fail
+      | _ => pose proof (e_unify_supply_grows H)
+      end
+  | H : e_consis _ _ ?S0 _ _ _ _ ?S1 _ |- _ =>
+      lazymatch goal with
+      | _ : S0 [<=] S1 |- _ => fail
+      | _ => pose proof (e_consis_supply_grows H)
+      end
+  end.
+
+Lemma e_assign_unify_consis_dom_upper :
+  (forall S0 Θ0 Ξ α P S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
+     dom Θ1 [<=] dom (Ξ ++ Θ0) ∪ (S1 ∖ S0)) /\
+  (forall S0 Θ0 α β S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
+     dom Θ1 [<=] dom Θ0 ∪ (S1 ∖ S0)) /\
+  (forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+     dom Θ1 [<=] dom Θ0 ∪ (S1 ∖ S0)).
+Proof.
+  apply (e_assign_unify_consis_mutind
+           (fun S0 Θ0 Ξ α P S1 Θ1 _ =>
+              dom Θ1 [<=] dom (Ξ ++ Θ0) ∪ (S1 ∖ S0))
+           (fun S0 Θ0 α β S1 Θ1 _ => dom Θ1 [<=] dom Θ0 ∪ (S1 ∖ S0))
+           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
+              dom Θ1 [<=] dom Θ0 ∪ (S1 ∖ S0)));
+    intros; supply_grow_facts;
+    (* ⭐ 27 of the 28 rows are set arithmetic once the growth facts are in.
+       The three ∀ rows are worth checking by hand: their IH is one [add α]
+       too strong, and what pays for α is that the rule picked it OUT of S0
+       while growth put it IN S1 — so α lands in the [S1 ∖ S0] summand. *)
+    try solve [ simpl_env in *; repeat rewrite dom_app in *;
+                simpl dom in *; fsetdec ].
+  (* Assign-SolveM — the one row that generates, so the one row whose growth
+     is a fresh BLOCK rather than a pass-through *)
+  match goal with Hg : e_guess_mono _ _ _ _ _ |- _ =>
+    pose proof (e_guess_mono_generated_in_supply Hg) as Hin;
+    pose proof (@e_guess_mono_generated_fresh _ _ _ _ _ Hg) as Hfr
+  end.
+  assert (Hblock : dom βs [<=] S1 ∖ S0).
+  { intros γ Hγ.
+    assert (Hin1 : γ `in` S1) by (clear - Hin Hγ; fsetdec).
+    pose proof (Hfr γ Hγ) as Hout. clear - Hin1 Hout. fsetdec. }
+  repeat rewrite dom_app. simpl dom. clear - Hblock. fsetdec.
+Qed.
+
+(* ===================================================================== *)
+(*  §3  Helpers the bridge needs and the tree does not have               *)
+(* ===================================================================== *)
+
+(** A flexible variable is in the domain.  ⚙ Both disjuncts of [a_flex_tvar]
+    are [binds] facts, so this is [binds_In] twice; it is stated because
+    [Flex-Flex-Assign] substitutes its two subjects and therefore needs them
+    inside the supply, which is a statement about [dom]. *)
+#[local] Ltac sgf_ctx :=
+  repeat match goal with
+  | H : e_assign ?S0 _ _ _ _ ?S1 _ |- _ =>
+      lazymatch goal with
+      | _ : S0 [<=] S1 |- _ => fail
+      | _ => pose proof (e_assign_supply_grows H)
+      end
+  | H : e_unify ?S0 _ _ _ ?S1 _ |- _ =>
+      lazymatch goal with
+      | _ : S0 [<=] S1 |- _ => fail
+      | _ => pose proof (e_unify_supply_grows H)
+      end
+  | H : e_consis _ _ ?S0 _ _ _ _ ?S1 _ |- _ =>
+      lazymatch goal with
+      | _ : S0 [<=] S1 |- _ => fail
+      | _ => pose proof (e_consis_supply_grows H)
+      end
+  | H : e_guess_mono ?S0 _ ?S1 _ _ |- _ =>
+      lazymatch goal with
+      | _ : S0 [<=] S1 |- _ => fail
+      | _ => pose proof (e_guess_mono_supply_grows H)
+      end
+  end.
+
+(** ⭐⭐ THE OUTPUT CONTEXT LIVES IN THE OUTPUT SUPPLY — the CONTEXT twin of
+    [e_assign_unify_consis_dom_upper], and what [a_consis__arrow] needs to
+    hand its second premise: everything the motive says about side 2's
+    context has to be re-established at the FIRST premise's output, and
+    "[ftvar_in_aenv] is covered" is the half [dom_upper] does not give. *)
+Lemma e_assign_unify_consis_ctx_ftvar :
+  (forall S0 Θ0 Ξ α P S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
+     ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S0 ->
+     ftvar_in_aenv Θ1 [<=] S1) /\
+  (forall S0 Θ0 α β S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
+     ftvar_in_aenv Θ0 [<=] S0 ->
+     ftvar_in_aenv Θ1 [<=] S1) /\
+  (forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+     ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P [<=] S0 ->
+     ftvar_in_aenv Θ1 [<=] S1).
+Proof.
+  apply (e_assign_unify_consis_mutind
+           (fun S0 Θ0 Ξ α P S1 Θ1 _ =>
+              ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S0 ->
+              ftvar_in_aenv Θ1 [<=] S1)
+           (fun S0 Θ0 α β S1 Θ1 _ =>
+              ftvar_in_aenv Θ0 [<=] S0 -> ftvar_in_aenv Θ1 [<=] S1)
+           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
+              ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P [<=] S0 ->
+              ftvar_in_aenv Θ1 [<=] S1));
+    intros; sgf_ctx;
+    repeat rewrite ftvar_in_aenv_app in *; simpl in *;
+    try solve [ clear - H; fsetdec ]; try solve [ fsetdec ].
+  (* the RE-ATTACHING rows: the IH covers the tail, the head is an input *)
+  all: try (match goal with
+            | IH : _ -> ftvar_in_aenv ?Θ [<=] ?S |- _ =>
+                let Hih := fresh "Hih" in
+                assert (Hih : ftvar_in_aenv Θ [<=] S)
+                  by (apply IH; repeat rewrite ftvar_in_aenv_app; simpl;
+                      fsetdec)
+            end; fsetdec).
+  (* ⭐ [Assign-SolveM]: the guessed block and the guessed payload *)
+  { match goal with
+    | Hg : e_guess_mono _ _ _ _ _ |- _ =>
+        pose proof (e_guess_mono_ftv Hg) as Hgf;
+        pose proof (e_guess_mono_generated_in_supply Hg) as Hgd;
+        pose proof (e_guess_mono_generated_ftvar Hg) as Hgv
+    end.
+    fsetdec. }
+  (* ⭐ [Assign-Assign]: the premise's skeletons are SUBSTITUTED *)
+  { match goal with | Hc : _ [<=] S0 |- _ => rename Hc into Hcov0 end.
+    assert (Hτ : ftvar_in_ptyp τ [<=] S0) by (clear - Hcov0; fsetdec).
+    assert (HP : ftvar_in_pskl P [<=] S0) by (clear - Hcov0; fsetdec).
+    assert (Hα : singleton α [<=] S0).
+    { match goal with
+      | Hf : a_flex_tvar ?Θ α |- _ =>
+          pose proof (a_flex_tvar_in_dom Hf) as Hd;
+          pose proof (dom_subset_ftvar_in_aenv Θ) as Hds
+      end. simpl in *. clear - Hcov0 Hd Hds. fsetdec. }
+    assert (HΘ : ftvar_in_aenv Ξ ∪ ftvar_in_aenv Θ0 [<=] S0)
+      by (clear - Hcov0; fsetdec).
+    match goal with
+    | IH : _ -> ftvar_in_aenv ?Θ [<=] ?S |- _ =>
+        assert (Hih : ftvar_in_aenv Θ [<=] S)
+    end.
+    { match goal with
+      | IH : _ -> ftvar_in_aenv _ [<=] _ |- _ => apply IH
+      end.
+      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (ptyp_to_pskl τ) β)
+        as Hu1.
+      rewrite ftvar_ptyp_to_pskl in Hu1.
+      assert (Hs1 : ftvar_in_pskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β P)
+                    [<=] S0) by (clear - Hu1 HP Hτ; fsetdec).
+      match goal with
+      | |- context [ if ?X then _ else _ ] => destruct X
+      end.
+      - rewrite ftvar_ptyp_to_pskl. clear - HΘ Hs1 Hτ. fsetdec.
+      - simpl. clear - HΘ Hs1 Hα. fsetdec. }
+    assert (Hhd : add β (ftvar_in_ptyp τ) [<=] S0) by (clear - Hcov0; fsetdec).
+    match goal with | Hg : S0 [<=] S1 |- _ => rename Hg into Hgr end.
+    clear - Hih Hhd Hgr. fsetdec. }
+  (* [Flex-Flex-L] / [Flex-Flex-R]: the payload is a context variable *)
+  { match goal with | Hc : _ [<=] ?S |- _ [<=] ?S => rename Hc into Hcov0 end.
+    match goal with
+    | Hf : a_flex_tvar ?Θ ?y |- _ =>
+        pose proof (a_flex_tvar_in_dom Hf) as Hd;
+        pose proof (dom_subset_ftvar_in_aenv Θ) as Hds
+    end. clear - Hcov0 Hd Hds. fsetdec. }
+  { match goal with | Hc : _ [<=] ?S |- _ [<=] ?S => rename Hc into Hcov0 end.
+    match goal with
+    | Hf : a_flex_tvar ?Θ ?y |- _ =>
+        pose proof (a_flex_tvar_in_dom Hf) as Hd;
+        pose proof (dom_subset_ftvar_in_aenv Θ) as Hds
+    end. clear - Hcov0 Hd Hds. fsetdec. }
+  (* ⭐ [Flex-Flex-Assign] *)
+  { match goal with | Hc : _ [<=] S0 |- _ => rename Hc into Hcov0 end.
+    assert (Hτ : ftvar_in_ptyp τ [<=] S0) by (clear - Hcov0; fsetdec).
+    assert (HΘ : ftvar_in_aenv Θ0 [<=] S0) by (clear - Hcov0; fsetdec).
+    assert (Hd0 : add α1 (dom Θ0) [<=] S0).
+    { pose proof (dom_subset_ftvar_in_aenv Θ0) as Hds.
+      clear - Hcov0 Hds. fsetdec. }
+    assert (Hab : singleton α ∪ singleton β [<=] S0).
+    { match goal with
+      | Hfa : a_flex_tvar ?Θ α, Hfb : a_flex_tvar ?Θ β |- _ =>
+          pose proof (a_flex_tvar_in_dom Hfa) as Hda;
+          pose proof (a_flex_tvar_in_dom Hfb) as Hdb
+      end. simpl in Hda, Hdb. clear - Hd0 Hda Hdb. fsetdec. }
+    match goal with
+    | IH : _ -> ftvar_in_aenv ?Θ [<=] ?S |- _ =>
+        assert (Hih : ftvar_in_aenv Θ [<=] S)
+    end.
+    { match goal with
+      | IH : _ -> ftvar_in_aenv _ [<=] _ |- _ => apply IH
+      end.
+      repeat rewrite ftvar_ptyp_to_pskl.
+      repeat match goal with
+      | |- context [ if ?X then _ else _ ] => destruct X
+      end; simpl; clear - HΘ Hτ Hab; fsetdec. }
+    assert (Hhd : add α1 (ftvar_in_ptyp τ) [<=] S0) by (clear - Hcov0; fsetdec).
+    match goal with | Hg : S0 [<=] S1 |- _ => rename Hg into Hgr end.
+    clear - Hih Hhd Hgr. fsetdec. }
+  (* ⭐ [U-Arrow]: the second half runs at the first half's OUTPUT *)
+  { match goal with
+    | IH1 : _ -> ftvar_in_aenv ?Θa [<=] ?Sa,
+      IH2 : _ -> ftvar_in_aenv ?Θb [<=] ?Sb |- _ =>
+        let H1 := fresh "Hih1" in
+        assert (H1 : ftvar_in_aenv Θa [<=] Sa) by (apply IH1; fsetdec);
+        apply IH2; fsetdec
+    end. }
+  (* the three ∀ rows: the opener joins the supply and the context *)
+  all: match goal with
+       | IH : ?A -> ?C |- _ =>
+           let Hih := fresh "Hih" in
+           assert (Hih : C);
+           [ apply IH;
+             repeat match goal with
+             | |- context [ open_pskl_wrt_pskl ?B (pskl_var_f ?a) ] =>
+                 lazymatch goal with
+                 | _ : ftvar_in_pskl (open_pskl_wrt_pskl B (pskl_var_f a))
+                       [<=] _ |- _ => fail
+                 | _ => pose proof
+                          (ftvar_in_pskl_open_pskl_wrt_pskl_upper B
+                             (pskl_var_f a))
+                 end
+             end;
+             simpl in *; fsetdec
+           | clear - Hih; simpl in Hih; fsetdec ]
+       end.
+Qed.
+
+
+(** [dom] and [ftvar_in_aenv] normalisation, in the one direction every case
+    below wants: everything spelled out over [++] and a cons.  Exported:
+    prop_sub.v, prop_pat.v and prop_typing.v use it too. *)
+Ltac env_simp :=
+  simpl_env in *;
+  repeat (rewrite ftvar_in_aenv_app in * );
+  repeat (rewrite dom_app in * );
+  simpl ftvar_in_aenv in *; simpl dom in *; simpl_env in *.
+
+(* ===================================================================== *)
+(*  §4  ⭐ THE BRIDGE — [e_*] implies [a_*], over the SAME contexts        *)
+(*                                                                        *)
+(*  Inputs fixed POINTWISE ([Θ0], [Ξ], [α], [P], [Δ1], [Δ2]) and the       *)
+(*  output [Θ1] carried across unchanged — the discipline the             *)
+(*  [*_swap_junk] lemmas are stated in, and the reason this composes with  *)
+(*  the soundness/completeness theorems, which fix [Θ0]/[Θ1]               *)
+(*  (hand-off §3).                                                        *)
+(*                                                                        *)
+(*  TWO HYPOTHESES, and both are the supply's own discipline:              *)
+(*                                                                        *)
+(*    uniq (inputs)     the context is well-formed.  ⚠️ NOT decoration:    *)
+(*                      a re-attaching row discharges [β ∉ dom Θ1] partly  *)
+(*                      from "β is not in the STRIPPED context", which is  *)
+(*                      exactly uniqueness.                                *)
+(*    supply covers     [ftvar_in_aenv (inputs) ∪ … [<=] S0].  ⚠️ The      *)
+(*                      consis component must cover [Δ1] and [Δ2] TOO —    *)
+(*                      the ∀ rows' side condition names them and they are *)
+(*                      reachable from neither the context nor the         *)
+(*                      skeletons.                                         *)
+(*                                                                        *)
+(*  THE MOTIVE CARRIES TWO MORE CONJUNCTS, because they are mutually       *)
+(*  needed and a separate pass would traverse all 28 rows again:           *)
+(*    [uniq Θ1]                    — consumed by the re-attaching rows     *)
+(*    [ftvar_in_aenv Θ1 [<=] S1]   — consumed by [Arrow] ALONE, whose      *)
+(*                                   second premise runs at [Θ1] and [S1]  *)
+(* ===================================================================== *)
+
+Lemma e_assign_unify_consis_sound :
+  (forall S0 Θ0 Ξ α P S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
+     uniq (Ξ ++ Θ0) ->
+     ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S0 ->
+     {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1) /\
+  (forall S0 Θ0 α β S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
+     uniq Θ0 ->
+     ftvar_in_aenv Θ0 [<=] S0 ->
+     {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1) /\
+  (forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+     uniq Θ0 ->
+     ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P
+       ∪ Δ1 ∪ Δ2 [<=] S0 ->
+     {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a
+     /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1).
+Proof.
+  apply (e_assign_unify_consis_mutind
+    (fun S0 Θ0 Ξ α P S1 Θ1 _ =>
+       uniq (Ξ ++ Θ0) ->
+       ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S0 ->
+       {{ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}a /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1)
+    (fun S0 Θ0 α β S1 Θ1 _ =>
+       uniq Θ0 -> ftvar_in_aenv Θ0 [<=] S0 ->
+       {{ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}a /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1)
+    (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
+       uniq Θ0 ->
+       ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P
+         ∪ Δ1 ∪ Δ2 [<=] S0 ->
+       {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a
+       /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1)).
+
+
+  (* ---------------- assign ---------------- *)
+  - (* Assign-UnivGhost-Id *)
+    intros S Θ0 α Hu Hcov.
+    repeat split;
+      [ apply a_assign__univ_ghost_id
+      | clear - Hu; solve_uniq
+      | clear - Hcov; env_simp; fsetdec ].
+
+  - (* Assign-SolveM — the generating row.  ⭐ [uniq βs] and the paper's
+       "fresh β̄" filter are BOTH discharged from M1's invariants here. *)
+    intros S0 S1 Θ0 Ξ α P βs τ Hnα Hg Hm Hu Hcov.
+    pose proof (e_guess_mono_uniq Hg) as Hubs.
+    pose proof (e_guess_mono_generated_in_supply Hg) as Hbin.
+    pose proof (@e_guess_mono_generated_fresh _ _ _ _ _ Hg) as Hbfr.
+    pose proof (e_guess_mono_supply_grows Hg) as Hgrow.
+    pose proof (dom_subset_ftvar_in_aenv (Ξ ++ (α ~ abind_flex_mono) ++ Θ0))
+      as Hdcov.
+    assert (HcovΘ : ftvar_in_aenv Θ0 [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    assert (HcovP : ftvar_in_pskl P [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    assert (Hga : a_guess_mono Θ0 P βs τ)
+      by (eapply e_guess_mono_sound; eauto).
+    assert (HdomS : dom (Ξ ++ (α ~ abind_flex_mono) ++ Θ0) [<=] S0)
+      by (clear - Hcov Hdcov; fsetdec).
+    assert (Hfilter : forall α1, α1 `in` dom βs ->
+                      α1 `notin` add α (dom (Ξ ++ Θ0))).
+    { intros α1 Hα1. pose proof (Hbfr α1 Hα1) as Hout.
+      clear - Hout HdomS. env_simp. fsetdec. }
+    pose proof (a_guess_mono_generated_ftvar Hga) as Hbftv.
+    pose proof (a_guess_mono_ftv Hga) as Hτ.
+    assert (HuΞΘ : uniq (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+    assert (Hαdom : α `notin` dom (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+    assert (HαS : α `in` S0) by (clear - HdomS; env_simp; fsetdec).
+    repeat split.
+    + apply a_assign__solve_m; assumption.
+    + apply uniq_push.
+      * apply uniq_app_4; [ assumption | assumption | ].
+        unfold disjoint. intros y Hy.
+        assert (Hy1 : y `in` dom βs) by (clear - Hy; fsetdec).
+        assert (Hy2 : y `in` dom (Ξ ++ Θ0)) by (clear - Hy; fsetdec).
+        pose proof (Hfilter y Hy1) as Hd. clear - Hd Hy2. fsetdec.
+      * assert (Hαβs : α `notin` dom βs).
+        { intros Hin. pose proof (Hbfr α Hin) as Hc. clear - Hc HαS.
+          contradiction. }
+        clear - Hαdom Hαβs. env_simp. fsetdec.
+    + assert (HcovΞΘ : ftvar_in_aenv (Ξ ++ Θ0) [<=] S0)
+        by (clear - Hcov; env_simp; fsetdec).
+      clear - HαS HcovΞΘ Hbin Hbftv Hτ HcovP Hgrow. env_simp. fsetdec.
+
+  - (* Assign-Assign — ⭐ the retired [β ∉ dom Θ1] is §2 applied to the
+       consistency premise, plus [β ∉ dom (Ξ ++ Θ0)] from uniqueness *)
+    intros S0 S1 Θ0 Θ1 Ξ α β τ P Q Hf Hc IH Hu Hcov.
+    assert (HuΞΘ : uniq (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+    assert (Hβdom : β `notin` dom (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+    assert (HβS : β `in` S0) by (clear - Hcov; env_simp; fsetdec).
+    assert (Hτcov : ftvar_in_ptyp τ [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    assert (HcovΞΘ : ftvar_in_aenv (Ξ ++ Θ0) [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    assert (HcovP : ftvar_in_pskl P [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    assert (HαS : α `in` S0).
+    { pose proof (a_flex_tvar_in_dom Hf) as Hd.
+      pose proof (dom_subset_ftvar_in_aenv
+                    ((β ~ abind_flex_mono_def τ) ++ Θ0)) as He.
+      clear - Hd He Hcov. env_simp. fsetdec. }
+    assert (Hsub : ftvar_in_aenv (Ξ ++ Θ0)
+              ∪ ftvar_in_pskl (subst_pskl_in_pskl (ptyp_to_pskl τ) β P)
+              ∪ ftvar_in_pskl
+                  (subst_pskl_in_pskl (ptyp_to_pskl τ) β (pskl_var_f α))
+              ∪ empty ∪ empty [<=] S0).
+    { repeat rewrite (empty_union_2 (s := empty)) by (unfold Empty; clear; fsetdec).
+      apply subst_pskl_preserves_cover.
+      rewrite ftvar_ptyp_to_pskl. simpl.
+      clear - Hτcov HcovΞΘ HcovP HαS. fsetdec. }
+    destruct (IH HuΞΘ Hsub) as [Hca [Hu1 Hcov1]].
+    pose proof (e_consis_supply_grows Hc) as Hgrow.
+    assert (Hβ1 : β `notin` dom Θ1).
+    { pose proof ((proj2 (proj2 e_assign_unify_consis_dom_upper)) _ _ _ _ _ _ _ _ _ Hc)
+        as Hdu. clear - Hdu Hβdom HβS. fsetdec. }
+    repeat split.
+    + apply a_assign__assign with (Q := Q); assumption.
+    + apply uniq_push; assumption.
+    + clear - Hcov1 HβS Hτcov Hgrow. env_simp. fsetdec.
+
+  - (* Assign-Depend — pure threading; [Ξ] grew at its tail *)
+    intros S0 S1 Θ0 Θ1 Ξ α β P Hne Hin Ha IH Hu Hcov.
+    assert (Hu' : uniq ((Ξ ++ (β ~ abind_flex_mono)) ++ Θ0))
+      by (clear - Hu; simpl_env in *; solve_uniq).
+    assert (Hcov' : ftvar_in_aenv ((Ξ ++ (β ~ abind_flex_mono)) ++ Θ0)
+                      ∪ ftvar_in_pskl P [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    destruct (IH Hu' Hcov') as [Hca [Hu1 Hcov1]].
+    repeat split; [ apply a_assign__depend | | ]; assumption.
+
+  - (* Assign-Skip *)
+    intros S0 S1 Θ0 Θ1 Ξ α β P Hne Hnb Ha IH Hu Hcov.
+    assert (Hu' : uniq (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+    assert (Hβdom : β `notin` dom (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+    assert (HβS : β `in` S0) by (clear - Hcov; env_simp; fsetdec).
+    assert (Hcov' : ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    destruct (IH Hu' Hcov') as [Hca [Hu1 Hcov1]].
+    pose proof (e_assign_supply_grows Ha) as Hgrow.
+    assert (Hβ1 : β `notin` dom Θ1).
+    { pose proof ((proj1 e_assign_unify_consis_dom_upper) _ _ _ _ _ _ _ Ha)
+        as Hdu. clear - Hdu Hβdom HβS. fsetdec. }
+    repeat split.
+    + apply a_assign__skip; assumption.
+    + apply uniq_push; assumption.
+    + clear - Hcov1 HβS Hgrow. env_simp. fsetdec.
+
+  - (* Assign-SkipRigid *)
+    intros S0 S1 Θ0 Θ1 Ξ α β P Hnb Ha IH Hu Hcov.
+    assert (Hu' : uniq (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+    assert (Hβdom : β `notin` dom (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+    assert (HβS : β `in` S0) by (clear - Hcov; env_simp; fsetdec).
+    assert (Hcov' : ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    destruct (IH Hu' Hcov') as [Hca [Hu1 Hcov1]].
+    pose proof (e_assign_supply_grows Ha) as Hgrow.
+    assert (Hβ1 : β `notin` dom Θ1).
+    { pose proof ((proj1 e_assign_unify_consis_dom_upper) _ _ _ _ _ _ _ Ha)
+        as Hdu. clear - Hdu Hβdom HβS. fsetdec. }
+    repeat split.
+    + apply a_assign__skip_rigid; assumption.
+    + apply uniq_push; assumption.
+    + clear - Hcov1 HβS Hgrow. env_simp. fsetdec.
+
+  - (* Assign-SkipTmVar *)
+    intros S0 S1 Θ0 Θ1 Ξ α x A P Ha IH Hu Hcov.
+    assert (Hu' : uniq (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+    assert (Hxdom : x `notin` dom (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+    assert (HxS : x `in` S0) by (clear - Hcov; env_simp; fsetdec).
+    assert (HAcov : ftvar_in_ptyp A [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    assert (Hcov' : ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    destruct (IH Hu' Hcov') as [Hca [Hu1 Hcov1]].
+    pose proof (e_assign_supply_grows Ha) as Hgrow.
+    assert (Hx1 : x `notin` dom Θ1).
+    { pose proof ((proj1 e_assign_unify_consis_dom_upper) _ _ _ _ _ _ _ Ha)
+        as Hdu. clear - Hdu Hxdom HxS. fsetdec. }
+    repeat split.
+    + apply a_assign__skip_tm_var; assumption.
+    + apply uniq_push; assumption.
+    + clear - Hcov1 HxS HAcov Hgrow. env_simp. fsetdec.
+
+  - (* Assign-SkipTmVar (skl) *)
+    intros S0 S1 Θ0 Θ1 Ξ α x Q P Ha IH Hu Hcov.
+    assert (Hu' : uniq (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+    assert (Hxdom : x `notin` dom (Ξ ++ Θ0)) by (clear - Hu; solve_uniq).
+    assert (HxS : x `in` S0) by (clear - Hcov; env_simp; fsetdec).
+    assert (HQcov : ftvar_in_pskl Q [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    assert (Hcov' : ftvar_in_aenv (Ξ ++ Θ0) ∪ ftvar_in_pskl P [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    destruct (IH Hu' Hcov') as [Hca [Hu1 Hcov1]].
+    pose proof (e_assign_supply_grows Ha) as Hgrow.
+    assert (Hx1 : x `notin` dom Θ1).
+    { pose proof ((proj1 e_assign_unify_consis_dom_upper) _ _ _ _ _ _ _ Ha)
+        as Hdu. clear - Hdu Hxdom HxS. fsetdec. }
+    repeat split.
+    + apply a_assign__skip_tm_skl; assumption.
+    + apply uniq_push; assumption.
+    + clear - Hcov1 HxS HQcov Hgrow. env_simp. fsetdec.
+
+  (* ---------------- unify ---------------- *)
+  - (* Flex-Flex-Id *)
+    intros S Θ0 α Hf Hu Hcov.
+    repeat split; [ apply a_unify__flex_id | | ]; assumption.
+
+  - (* Flex-Flex-L *)
+    intros S Θ0 α β Hne Hf Hu Hcov.
+    assert (HβS : β `in` S).
+    { pose proof (a_flex_tvar_in_dom Hf) as Hd.
+      pose proof (dom_subset_ftvar_in_aenv Θ0) as He.
+      clear - Hd He Hcov. env_simp. fsetdec. }
+    repeat split.
+    + apply a_unify__flex_l; assumption.
+    + clear - Hu; solve_uniq.
+    + clear - Hcov HβS. env_simp. fsetdec.
+
+  - (* Flex-Flex-R *)
+    intros S Θ0 α β Hne Hf Hu Hcov.
+    assert (HαS : α `in` S).
+    { pose proof (a_flex_tvar_in_dom Hf) as Hd.
+      pose proof (dom_subset_ftvar_in_aenv Θ0) as He.
+      clear - Hd He Hcov. env_simp. fsetdec. }
+    repeat split.
+    + apply a_unify__flex_r; assumption.
+    + clear - Hu; solve_uniq.
+    + clear - Hcov HαS. env_simp. fsetdec.
+
+  - (* Flex-Flex-Assign — as Assign-Assign: §2 on the consistency premise *)
+    intros S0 S1 Θ0 Θ1 α1 τ α β Q Hfα Hfβ Hc IH Hu Hcov.
+    assert (Hu' : uniq Θ0) by (clear - Hu; solve_uniq).
+    assert (H1dom : α1 `notin` dom Θ0) by (clear - Hu; solve_uniq).
+    assert (H1S : α1 `in` S0) by (clear - Hcov; env_simp; fsetdec).
+    assert (Hτcov : ftvar_in_ptyp τ [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    assert (HcovΘ : ftvar_in_aenv Θ0 [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    pose proof (dom_subset_ftvar_in_aenv ((α1 ~ abind_flex_mono_def τ) ++ Θ0))
+      as Hdc.
+    assert (HαS : α `in` S0).
+    { pose proof (a_flex_tvar_in_dom Hfα) as Hd. clear - Hd Hdc Hcov. fsetdec. }
+    assert (HβS : β `in` S0).
+    { pose proof (a_flex_tvar_in_dom Hfβ) as Hd. clear - Hd Hdc Hcov. fsetdec. }
+    assert (Hsub : ftvar_in_aenv Θ0
+              ∪ ftvar_in_pskl (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f β)))
+              ∪ ftvar_in_pskl (ptyp_to_pskl (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α)))
+              ∪ empty ∪ empty [<=] S0).
+    { repeat rewrite (empty_union_2 (s := empty)) by (unfold Empty; clear; fsetdec).
+      repeat rewrite ptyp_to_pskl_subst.
+      apply subst_pskl_preserves_cover. repeat rewrite ftvar_ptyp_to_pskl. simpl.
+      clear - Hτcov HcovΘ HαS HβS. fsetdec. }
+    destruct (IH Hu' Hsub) as [Hca [Hu1 Hcv1]].
+    pose proof (e_consis_supply_grows Hc) as Hgrow.
+    assert (H11 : α1 `notin` dom Θ1).
+    { pose proof ((proj2 (proj2 e_assign_unify_consis_dom_upper))
+                    _ _ _ _ _ _ _ _ _ Hc) as Hdu.
+      clear - Hdu H1dom H1S. fsetdec. }
+    repeat split.
+    + apply a_unify__flex_assign with (Q := Q); assumption.
+    + apply uniq_push; assumption.
+    + clear - Hcv1 H1S Hτcov Hgrow. env_simp. fsetdec.
+
+  - (* Flex-Flex-Skip *)
+    intros S0 S1 Θ0 Θ1 α1 α β Hn1 Hn2 Hun IH Hu Hcov.
+    assert (Hu' : uniq Θ0) by (clear - Hu; solve_uniq).
+    assert (H1dom : α1 `notin` dom Θ0) by (clear - Hu; solve_uniq).
+    assert (H1S : α1 `in` S0) by (clear - Hcov; env_simp; fsetdec).
+    assert (Hcov' : ftvar_in_aenv Θ0 [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    destruct (IH Hu' Hcov') as [Hca [Hu1 Hcv1]].
+    pose proof (e_unify_supply_grows Hun) as Hgrow.
+    assert (H11 : α1 `notin` dom Θ1).
+    { pose proof ((proj1 (proj2 e_assign_unify_consis_dom_upper))
+                    _ _ _ _ _ _ Hun) as Hdu.
+      clear - Hdu H1dom H1S. fsetdec. }
+    repeat split.
+    + apply a_unify__flex_skip; assumption.
+    + apply uniq_push; assumption.
+    + clear - Hcv1 H1S Hgrow. env_simp. fsetdec.
+
+  - (* Flex-Flex-Skip' *)
+    intros S0 S1 Θ0 Θ1 c b α β Hb Hun IH Hu Hcov.
+    assert (Hu' : uniq Θ0) by (clear - Hu; solve_uniq).
+    assert (Hcdom : c `notin` dom Θ0) by (clear - Hu; solve_uniq).
+    assert (HcS : c `in` S0) by (clear - Hcov; env_simp; fsetdec).
+    assert (Hbcov : ftvar_in_abind b [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    assert (Hcov' : ftvar_in_aenv Θ0 [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    destruct (IH Hu' Hcov') as [Hca [Hu1 Hcv1]].
+    pose proof (e_unify_supply_grows Hun) as Hgrow.
+    assert (Hc1 : c `notin` dom Θ1).
+    { pose proof ((proj1 (proj2 e_assign_unify_consis_dom_upper))
+                    _ _ _ _ _ _ Hun) as Hdu.
+      clear - Hdu Hcdom HcS. fsetdec. }
+    repeat split.
+    + apply a_unify__skip_other; assumption.
+    + apply uniq_push; assumption.
+    + clear - Hcv1 HcS Hbcov Hgrow. env_simp. fsetdec.
+
+  (* ---------------- consistency ---------------- *)
+  - (* Ghost *)
+    intros Δ1 Δ2 S Θ0 P0 Hd Hu Hcov.
+    repeat split; [ apply a_consis__ghost | | ];
+      solve [ assumption | clear - Hcov; fsetdec ].
+  - (* Unit *)
+    intros Δ1 Δ2 S Θ0 Hu Hcov.
+    repeat split; [ apply a_consis__unit | assumption
+                  | clear - Hcov; fsetdec ].
+  - (* Rigid *)
+    intros Δ1 Δ2 S Θ0 α Hb Hu Hcov.
+    repeat split; [ apply a_consis__rigid; assumption | assumption
+                  | clear - Hcov; fsetdec ].
+
+  - (* Arrow — ⭐ the ONLY row that needs the output-coverage conjunct: its
+       second premise runs at [Θ1] and [S1] *)
+    intros Δ1 Δ2 S0 S1 S2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc1 IH1 Hc2 IH2 Hu Hcov.
+    simpl in Hcov.
+    assert (Hcov1 : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0a ∪ ftvar_in_pskl P1
+                      ∪ Δ1 ∪ Δ2 [<=] S0) by (clear - Hcov; fsetdec).
+    destruct (IH1 Hu Hcov1) as [Ha1 [Hu1 Hcv1]].
+    pose proof (e_consis_supply_grows Hc1) as Hg1.
+    assert (Hcov2 : ftvar_in_aenv Θ1 ∪ ftvar_in_pskl P0b ∪ ftvar_in_pskl P2
+                      ∪ Δ1 ∪ Δ2 [<=] S1) by (clear - Hcov Hcv1 Hg1; fsetdec).
+    destruct (IH2 Hu1 Hcov2) as [Ha2 [Hu2 Hcv2]].
+    repeat split; [ eapply a_consis__arrow; eassumption | assumption
+                  | assumption ].
+
+  - (* ForallInh *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hnα Hc IH Hu Hcov.
+    simpl in Hcov.
+    pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdc.
+    assert (Hαdom : α `notin` dom Θ0) by (clear - Hdc Hcov Hnα; fsetdec).
+    assert (Hu' : uniq ((α ~ abind_tvar) ++ Θ0))
+      by (clear - Hu Hαdom; solve_uniq).
+    assert (Hcov' : ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0)
+                    ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0 (pskl_var_f α))
+                    ∪ ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α))
+                    ∪ add α Δ1 ∪ add α Δ2 [<=] add α S0).
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f α)) as H1.
+      pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α)) as H2.
+      simpl in H1, H2. clear - H1 H2 Hcov. env_simp. fsetdec. }
+    destruct (IH Hu' Hcov') as [Hca [Hu1 Hcv1]].
+    repeat split.
+    + apply a_consis__forall_inh; [ clear - Hcov Hnα; fsetdec | assumption ].
+    + clear - Hu1; solve_uniq.
+    + clear - Hcv1. env_simp. fsetdec.
+
+  - (* ForallSyn *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hnα Hc IH Hu Hcov.
+    simpl in Hcov.
+    pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdc.
+    assert (Hαdom : α `notin` dom Θ0) by (clear - Hdc Hcov Hnα; fsetdec).
+    assert (Hu' : uniq ((α ~ abind_tvar) ++ Θ0))
+      by (clear - Hu Hαdom; solve_uniq).
+    assert (Hcov' : ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0)
+                    ∪ ftvar_in_pskl (pskl_univ_ghost P0)
+                    ∪ ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α))
+                    ∪ Δ1 ∪ add α Δ2 [<=] add α S0).
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α)) as H2.
+      simpl in H2 |- *. clear - H2 Hcov. env_simp. fsetdec. }
+    destruct (IH Hu' Hcov') as [Hca [Hu1 Hcv1]].
+    repeat split.
+    + apply a_consis__forall_syn; [ clear - Hcov Hnα; fsetdec | assumption ].
+    + clear - Hu1; solve_uniq.
+    + clear - Hcv1. env_simp. fsetdec.
+
+  - (* UnivGhost *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q Hc IH Hu Hcov.
+    simpl in Hcov.
+    destruct (IH Hu ltac:(clear - Hcov; fsetdec)) as [Hca [Hu1 Hcv1]].
+    repeat split; [ apply a_consis__univ_ghost | | ]; assumption.
+
+  - (* UnivGhost1 *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hnα Hc IH Hu Hcov.
+    simpl in Hcov.
+    pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdc.
+    assert (Hαdom : α `notin` dom Θ0) by (clear - Hdc Hcov Hnα; fsetdec).
+    assert (Hu' : uniq ((α ~ abind_tvar) ++ Θ0))
+      by (clear - Hu Hαdom; solve_uniq).
+    assert (Hcov' : ftvar_in_aenv ((α ~ abind_tvar) ++ Θ0)
+                    ∪ ftvar_in_pskl (open_pskl_wrt_pskl P0 (pskl_var_f α))
+                    ∪ ftvar_in_pskl (pskl_univ_ghost P)
+                    ∪ add α Δ1 ∪ Δ2 [<=] add α S0).
+    { pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f α)) as H1.
+      simpl in H1 |- *. clear - H1 Hcov. env_simp. fsetdec. }
+    destruct (IH Hu' Hcov') as [Hca [Hu1 Hcv1]].
+    repeat split.
+    + apply a_consis__univ_ghost1; [ clear - Hcov Hnα; fsetdec | assumption ].
+    + clear - Hu1; solve_uniq.
+    + clear - Hcv1. env_simp. fsetdec.
+
+  - (* UnivGhost2 *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q Hgd Hnf Hc IH Hu Hcov.
+    simpl in Hcov.
+    destruct (IH Hu ltac:(clear - Hcov; fsetdec)) as [Hca [Hu1 Hcv1]].
+    repeat split; [ apply a_consis__univ_ghost2 | | ]; assumption.
+
+  - (* Flex *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α β Hun IH Hu Hcov.
+    destruct (IH Hu ltac:(clear - Hcov; fsetdec)) as [Hua [Hu1 Hcv1]].
+    repeat split; [ apply a_consis__flex | | ]; assumption.
+
+  - (* FlexL *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Hnhole Ha IH Hu Hcov.
+    assert (Hu' : uniq (nil ++ Θ0)) by (clear - Hu; simpl_env; assumption).
+    assert (Hcov' : ftvar_in_aenv (nil ++ Θ0) ∪ ftvar_in_pskl P0 [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    destruct (IH Hu' Hcov') as [Haa [Hu1 Hcv1]].
+    repeat split; [ apply a_consis__flex_l | | ]; assumption.
+
+  - (* FlexR *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Hnhole Ha IH Hu Hcov.
+    assert (Hu' : uniq (nil ++ Θ0)) by (clear - Hu; simpl_env; assumption).
+    assert (Hcov' : ftvar_in_aenv (nil ++ Θ0) ∪ ftvar_in_pskl P [<=] S0)
+      by (clear - Hcov; env_simp; fsetdec).
+    destruct (IH Hu' Hcov') as [Haa [Hu1 Hcv1]].
+    repeat split; [ apply a_consis__flex_r | | ]; assumption.
+
+  - (* GhostR *)
+    intros Δ1 Δ2 S Θ0 P Hd Hu Hcov.
+    repeat split; [ apply a_consis__ghost_r; assumption | assumption
+                  | clear - Hcov; fsetdec ].
+
+  - (* UnivGhostR *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q Hgd Hnf Hc IH Hu Hcov.
+    simpl in Hcov.
+    destruct (IH Hu ltac:(clear - Hcov; fsetdec)) as [Hca [Hu1 Hcv1]].
+    repeat split; [ apply a_consis__univ_ghost_r | | ]; assumption.
+Qed.
+
+(* ===================================================================== *)
+(*  §5  The three projections — what a consumer actually applies          *)
+(* ===================================================================== *)
+
+Corollary e_consis_sound : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+  uniq Θ0 ->
+  ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P ∪ Δ1 ∪ Δ2 [<=] S0 ->
+  {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a.
+Proof.
+  intros. eapply (proj2 (proj2 e_assign_unify_consis_sound)); eassumption.
+Qed.
+
+(** ⭐ AND THE EIGHT [*_no_loss] LEMMAS OF THIS BLOCK ARE NOW REDUNDANT AS
+    JUSTIFICATION.  [prop_swap.v] §13c argues, per rule, that
+    [fresco/algo]'s output-freshness premises reject nothing — by transposing
+    a colliding run to a fresh name.  §4 says the same thing structurally and
+    once: the threaded rules HAVE no such premise, and every run of them is a
+    run of the premise-carrying ones.  ⚠️ Do not delete the [*_no_loss] family
+    on the strength of this; they justify the encoding [fresco/algo] SHIPS,
+    which is still the one the four flagship theorems are stated over.  What
+    changes is that a reader now has a second, constructive answer.  See
+    CLAUDE.md's [_no_loss] naming rule and docs/HANDOFF-extractable-algo-encoding.md §1. *)
+
+(* ===================================================================== *)
+(*  §6  THE PREMISES COST NOTHING AT THE ENTRY POINT                      *)
+(*                                                                        *)
+(*  §4's two hypotheses are a fair thing to be suspicious of: a bridge     *)
+(*  that needs side conditions buys a weaker guarantee than one that does  *)
+(*  not.  The corollary below is the answer, and it is hypothesis-FREE.    *)
+(*                                                                        *)
+(*  Neither premise reaches the extracted program — §4 is [Prop] and is    *)
+(*  erased entirely, and the Bove-Capretta runner recurses on a domain     *)
+(*  predicate that never mentions them (M1.7, def_guess_impl.v).  What     *)
+(*  they are is INITIALISATION CONDITIONS on the driver:                   *)
+(*                                                                        *)
+(*    [uniq (inputs)]  - at the entry point the context is [nil].  Along   *)
+(*                       a run it re-establishes ITSELF: that is the       *)
+(*                       [uniq Θ1] conjunct of §4's motive.                *)
+(*    supply coverage  - the driver CHOOSES [S0], so taking it to be       *)
+(*                       exactly what the inputs mention makes the         *)
+(*                       condition [reflexivity].  Along a run it also     *)
+(*                       re-establishes itself: the                        *)
+(*                       [ftvar_in_aenv Θ1 [<=] S1] conjunct.              *)
+(*                                                                        *)
+(*  ⭐ So the guarantee is the same one [fresco/algo]'s encoding gives, with *)
+(*  no residue — which is what the two extra motive conjuncts were FOR.    *)
+(*  ⚙ And this choice of [S0] is what [type.ml] does at its own entry      *)
+(*  point: start the counter, start the context empty.                     *)
+(* ===================================================================== *)
+
+Corollary e_consis_sound_init : forall P0 P Q S1 Θ1,
+  {{ (ftvar_in_pskl P0 ∪ ftvar_in_pskl P) ↝ S1
+     ⊨ nil ⊢[ empty | empty | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+  {{ nil ⊢[ P0 ] P ∼ Q ⊣ Θ1 }}a.
+Proof.
+  intros * He. eapply e_consis_sound; [ exact He | apply uniq_nil | ].
+  simpl. fsetdec.
+Qed.
+
+(* ===================================================================== *)
+(*  §7  THE OUTPUT SKELETON IS COVERED TOO — [ftvar_in_pskl Q [<=] S1]    *)
+(*                                                                        *)
+(*  §4 bounds the output CONTEXT; this bounds the output SKELETON, which  *)
+(*  is what a caller that FEEDS the join onwards needs.  Its consumer is  *)
+(*  M4: [a_pat]'s App row runs the function at the argument's inferred     *)
+(*  skeleton, so the second premise's coverage is a statement about the    *)
+(*  first premise's OUTPUT.                                               *)
+(*                                                                        *)
+(*  ⚙ A SEPARATE INDUCTION ON PURPOSE, unlike §4's two extra conjuncts.    *)
+(*  It is not mutually needed with the bridge: the one row that consumes   *)
+(*  an earlier output ([Arrow]) needs only the CONTEXT coverage, which §4  *)
+(*  already proves, so this can consume §4 instead of riding in it.        *)
+(*  ⚠️ That is NOT true of [e_pat]'s own version (prop_pat.v), where the    *)
+(*  App row needs both at once and they must share a motive.              *)
+(*                                                                        *)
+(*  The [assign] / [unify] components have no skeleton output, so their    *)
+(*  motives are [True] and their fourteen rows close by [exact I].         *)
+(* ===================================================================== *)
+
+Lemma e_assign_unify_consis_out_ftvar :
+  (forall S0 Θ0 Ξ α P S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e -> True) /\
+  (forall S0 Θ0 α β S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e -> True) /\
+  (forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+     uniq Θ0 ->
+     ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P
+       ∪ Δ1 ∪ Δ2 [<=] S0 ->
+     ftvar_in_pskl Q [<=] S1).
+Proof.
+  apply (e_assign_unify_consis_mutind
+    (fun S0 Θ0 Ξ α P S1 Θ1 _ => True)
+    (fun S0 Θ0 α β S1 Θ1 _ => True)
+    (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
+       uniq Θ0 ->
+       ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P
+         ∪ Δ1 ∪ Δ2 [<=] S0 ->
+       ftvar_in_pskl Q [<=] S1));
+    (* the fourteen [assign] / [unify] rows have no skeleton output *)
+    try (intros; exact I).
+
+  - (* Ghost — the join is the INPUT skeleton *)
+    intros Δ1 Δ2 S Θ0 P0 Hd Hu Hcov. clear - Hcov. fsetdec.
+  - (* Unit *)
+    intros Δ1 Δ2 S Θ0 Hu Hcov. simpl. fsetdec.
+  - (* Rigid *)
+    intros Δ1 Δ2 S Θ0 α Hb Hu Hcov. clear - Hcov. simpl in *. fsetdec.
+
+  - (* Arrow — the second half runs at [Θ1] and [S1], so its coverage is
+       §4's output-context conjunct plus §1's growth *)
+    intros Δ1 Δ2 S0 S1 S2 Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc1 IH1 Hc2 IH2 Hu Hcov.
+    simpl in Hcov |- *.
+    pose proof (e_consis_supply_grows Hc1) as Hg1.
+    pose proof (e_consis_supply_grows Hc2) as Hg2.
+    pose proof ((proj2 (proj2 e_assign_unify_consis_sound))
+                  _ _ _ _ _ _ _ _ _ Hc1 Hu ltac:(clear - Hcov; fsetdec))
+      as [_ [Hu1 Hcv1]].
+    specialize (IH1 Hu ltac:(clear - Hcov; fsetdec)).
+    specialize (IH2 Hu1 ltac:(clear - Hcov Hcv1 Hg1; fsetdec)).
+    clear - IH1 IH2 Hg2. fsetdec.
+
+  (* the ∀ rows: the join is CLOSEd, and [close] only ever removes an atom *)
+  - (* ForallInh *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hnα Hc IH Hu Hcov.
+    simpl in Hcov.
+    pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdc.
+    assert (Hαdom : α `notin` dom Θ0) by (clear - Hdc Hcov Hnα; fsetdec).
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f α)) as H1.
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α)) as H2.
+    simpl in H1, H2.
+    specialize (IH ltac:(clear - Hu Hαdom; solve_uniq)
+                   ltac:(clear - H1 H2 Hcov; env_simp; fsetdec)).
+    simpl. rewrite ftvar_in_pskl_close_pskl_wrt_pskl. clear - IH. fsetdec.
+
+  - (* ForallSyn *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hnα Hc IH Hu Hcov.
+    simpl in Hcov.
+    pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdc.
+    assert (Hαdom : α `notin` dom Θ0) by (clear - Hdc Hcov Hnα; fsetdec).
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P (pskl_var_f α)) as H2.
+    simpl in H2.
+    specialize (IH ltac:(clear - Hu Hαdom; solve_uniq)
+                   ltac:(clear - H2 Hcov; env_simp; simpl; fsetdec)).
+    simpl. rewrite ftvar_in_pskl_close_pskl_wrt_pskl. clear - IH. fsetdec.
+
+  - (* UnivGhost *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q Hc IH Hu Hcov.
+    simpl in Hcov |- *. apply IH; [ exact Hu | clear - Hcov; fsetdec ].
+
+  - (* UnivGhost1 *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hnα Hc IH Hu Hcov.
+    simpl in Hcov.
+    pose proof (dom_subset_ftvar_in_aenv Θ0) as Hdc.
+    assert (Hαdom : α `notin` dom Θ0) by (clear - Hdc Hcov Hnα; fsetdec).
+    pose proof (ftvar_in_pskl_open_pskl_wrt_pskl_upper P0 (pskl_var_f α)) as H1.
+    simpl in H1.
+    specialize (IH ltac:(clear - Hu Hαdom; solve_uniq)
+                   ltac:(clear - H1 Hcov; env_simp; simpl; fsetdec)).
+    simpl. rewrite ftvar_in_pskl_close_pskl_wrt_pskl. clear - IH. fsetdec.
+
+  - (* UnivGhost2 *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q Hgd Hnf Hc IH Hu Hcov.
+    simpl in Hcov. apply IH; [ exact Hu | clear - Hcov; fsetdec ].
+
+  (* the three flexible rows: the join IS the subject variable *)
+  - (* Flex *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α β Hun IH Hu Hcov.
+    pose proof (e_unify_supply_grows Hun) as Hg.
+    clear - Hcov Hg. simpl in *. fsetdec.
+  - (* FlexL *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P0 Hnf Hnhole Ha IH Hu Hcov.
+    pose proof (e_assign_supply_grows Ha) as Hg.
+    clear - Hcov Hg. simpl in *. fsetdec.
+  - (* FlexR *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 α P Hnf Hnhole Ha IH Hu Hcov.
+    pose proof (e_assign_supply_grows Ha) as Hg.
+    clear - Hcov Hg. simpl in *. fsetdec.
+
+  - (* GhostR — the join is the SUBJECT *)
+    intros Δ1 Δ2 S Θ0 P Hd Hu Hcov. clear - Hcov. fsetdec.
+  - (* UnivGhostR *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q Hgd Hnf Hc IH Hu Hcov.
+    simpl in Hcov. apply IH; [ exact Hu | clear - Hcov; fsetdec ].
+Qed.
+
+Corollary e_consis_out_ftvar : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+  uniq Θ0 ->
+  ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 ∪ ftvar_in_pskl P ∪ Δ1 ∪ Δ2 [<=] S0 ->
+  ftvar_in_pskl Q [<=] S1.
+Proof.
+  intros. eapply (proj2 (proj2 e_assign_unify_consis_out_ftvar)); eassumption.
+Qed.
+
+(* ===================================================================== *)
+(*  §8  ⭐ WHAT A WALK FOUND — the two flexibility facts                   *)
+(*                                                                        *)
+(*  §8c.10's completeness level reads the runner's flexibility TESTS       *)
+(*  ([flex_bound_ck] / [rigid_bound_ck]) against the derivation's root,    *)
+(*  and every one of those confrontations goes through one of these two:   *)
+(*  a walk that reached its target found that target flex-bound.  They     *)
+(*  are what makes the three ambiguous shape pairs come out as EXCLUSIVE   *)
+(*  disjunctions (prop_consis_complete.v §4).                              *)
+(*                                                                        *)
+(*  ⚙ [e_unify]'s version is about BOTH names, which is what the runner's  *)
+(*  [Flex-Flex-Id] arm needs: at [α̂ ≈ᵘ α̂] it tests [flex_bound_ck Θ α],    *)
+(*  and a derivation exists only if that test succeeds.                    *)
+(*                                                                        *)
+(*  ⛔ THE REFLEXIVITY FACT ITSELF ([α̂ ≈ᵘ α̂] moves neither the context nor *)
+(*  the supply) IS NOT HERE.  Its hypothesis is [aenv_defs_mono], the      *)
+(*  runner's own context discipline, whose definition sits above this file *)
+(*  (prop_termination.v); the fact lives in prop_consis_complete.v §5,     *)
+(*  where that is in scope.                                                *)
+(*                                                                        *)
+(*  ⚙ The [fresco/algo]-side helper that sat here ([a_flex_tvar_flex]) is  *)
+(*  [a_flex_var_iff_tvar] in algo/basic/prop_context.v since 2026-10-10;           *)
+(*  [a_flex_tvar]'s weakening is that file's [a_flex_tvar_weaken_app].     *)
+(* ===================================================================== *)
+
+(** The assign half, and STRONGER than the motive needed: a walk that
+    assigns [α̂] anything at all must have found [α̂] flex-bound.  Every
+    row either IS the flexible entry ([Assign-UnivGhost-Id],
+    [Assign-SolveM]), demands the fact outright ([Assign-Assign]), or
+    steps past one more entry — so the walk cannot reach [nil].
+
+    ⚙ Stated in its strongest form — for an arbitrary pattern, not for the
+    [P = α̂] instance a mutual induction would hand out. *)
+Lemma e_assign_target_flex : forall S0 Θ0 Ξ α P S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e -> a_flex_tvar Θ0 α.
+Proof.
+  intros * Hd.
+  induction Hd; try (apply a_flex_tvar_weaken_app; assumption).
+  - (* Assign-UnivGhost-Id — the head IS the target *) left; simpl; auto.
+  - (* Assign-SolveM — likewise *) left; simpl; auto.
+  - (* Assign-Assign — the rule's own premise *) assumption.
+Qed.
+
+(** The unify half, and about BOTH names: the walk cannot reach [nil]
+    either, so it bottoms out at [Flex-Flex-Id] / [-L] / [-R] /
+    [-Assign], and every one of those either IS the flexible entry for one
+    of the two names or demands the fact outright for both. *)
+Lemma e_unify_target_flex : forall S0 Θ0 α β S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
+  a_flex_tvar Θ0 α /\ a_flex_tvar Θ0 β.
+Proof.
+  intros * Hd.
+  induction Hd;
+    try (destruct IHHd as [Hα Hβ];
+         split; apply a_flex_tvar_weaken_app; assumption).
+  - (* Flex-Flex-Id *) split; assumption.
+  - (* Flex-Flex-L — the head IS α *)
+    split; [ left; simpl; auto | apply a_flex_tvar_weaken_app; assumption ].
+  - (* Flex-Flex-R — the head IS β *)
+    split; [ apply a_flex_tvar_weaken_app; assumption | left; simpl; auto ].
+  - (* Flex-Flex-Assign — both are rule premises *) split; assumption.
+Qed.
+
+(* ===================================================================== *)
+(*  §9  THE SUPPLY IS READ UP TO [=], for the whole trio                   *)
+(*                                                                        *)
+(*  prop_guess.v §7's companion, and needed for the same reason: the      *)
+(*  supply is a SET carried as a judgement INDEX, so a caller holding an  *)
+(*  [=]-variant cannot [rewrite] it into place.  ∃-form, as               *)
+(*  prop_look_pair.v §1's look-side twin: the OUTPUT supply moves too,    *)
+(*  and only up to [=].                                                   *)
+(*                                                                        *)
+(*  ⭐ Only four rows do any work — [Assign-SolveM] (through [guess^TY])  *)
+(*  and the three ∀ rows (whose opener is drawn from the supply); the     *)
+(*  rest either keep the supply or thread it, and [U-Arrow] is the one    *)
+(*  row where the two ∃-witnesses have to CHAIN.                          *)
+(* ===================================================================== *)
+
+Lemma e_assign_unify_consis_supply_respect :
+  (forall S0 Θ0 Ξ α P S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e) /\
+  (forall S0 Θ0 α β S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e) /\
+  (forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       {{ S0' ↝ S1' ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e).
+Proof.
+  apply (e_assign_unify_consis_mutind
+           (fun S0 Θ0 Ξ α P S1 Θ1 _ =>
+              forall S0', S0' [=] S0 ->
+              exists S1', S1' [=] S1 /\
+                {{ S0' ↝ S1' ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e)
+           (fun S0 Θ0 α β S1 Θ1 _ =>
+              forall S0', S0' [=] S0 ->
+              exists S1', S1' [=] S1 /\
+                {{ S0' ↝ S1' ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e)
+           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
+              forall S0', S0' [=] S0 ->
+              exists S1', S1' [=] S1 /\
+                {{ S0' ↝ S1' ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e)).
+  all: try solve [
+    intros;
+    transport_supply_witnesses;
+    eexists; split; [ eassumption | econstructor; eauto 2 ] ].
+  - (* Assign-SolveM — the supply moves through [guess^TY] *)
+    intros S0 S1 Θ0 Ξ α P βs τ Hocc Hg Hm S0' Heq.
+    destruct (e_guess_mono_supply_respect Hg Heq) as [S1' [HS1 Hg']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_assign__solve_m with (βs := βs); assumption.
+  - (* ForallInh — the opener is drawn from the supply *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hα Hd IH S0' Heq.
+    destruct (IH (add α S0')) as [S1' [HS1 Hd']]; [ clear - Heq; fsetdec | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__forall_inh with (α := α);
+      [ clear - Hα Heq; fsetdec | exact Hd' ].
+  - (* ForallSyn *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hα Hd IH S0' Heq.
+    destruct (IH (add α S0')) as [S1' [HS1 Hd']]; [ clear - Heq; fsetdec | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__forall_syn with (α := α);
+      [ clear - Hα Heq; fsetdec | exact Hd' ].
+  - (* UnivGhost1 *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hα Hd IH S0' Heq.
+    destruct (IH (add α S0')) as [S1' [HS1 Hd']]; [ clear - Heq; fsetdec | ].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__univ_ghost1 with (α := α);
+      [ clear - Hα Heq; fsetdec | exact Hd' ].
+Qed.
+
+Corollary e_consis_supply_respect : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\
+    {{ S0' ↝ S1' ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e.
+Proof. apply e_assign_unify_consis_supply_respect. Qed.
+
+(** ⭐ AND THE SAME FOR THE TWO Δ-SLOTS, which are read as judgement
+    INDEXES exactly as the supply is.  ⚙ NO ∃-form here and no companion
+    on the other two judgements: [Δ1]/[Δ2] are pure INPUTS (the ∀ rows
+    grow them by an [add], nothing returns them), and [assign] /
+    [unifyvar] do not carry them at all — so the plain non-mutual
+    [e_consis] scheme suffices, and the four rows that read a Δ
+    ([Ghost], [GhostR] and the three ∀ openers) each close by [fsetdec].
+
+    §8c.10 consumes it twice: [U-Arrow] transports its second premise
+    along a CHAIN, which moves the Δ-slots only up to [=], and the chain
+    lemma's own base case is this. *)
+Lemma e_consis_delta_respect : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+  forall Δ1' Δ2', Δ1' [=] Δ1 -> Δ2' [=] Δ2 ->
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1' | Δ2' | P0 ] P ∼ Q ⊣ Θ1 }}e.
+Proof.
+  induction 1; intros Δ1' Δ2' HD1 HD2;
+    try solve [econstructor; eauto 2].
+  - apply e_consis__ghost. clear - H HD2; fsetdec.
+  - apply e_consis__forall_inh with (α := α); auto.
+    apply IHe_consis; [ clear - HD1; fsetdec | clear - HD2; fsetdec ].
+  - apply e_consis__forall_syn with (α := α); auto.
+    apply IHe_consis; [ assumption | clear - HD2; fsetdec ].
+  - apply e_consis__univ_ghost1 with (α := α); auto.
+    apply IHe_consis; [ clear - HD1; fsetdec | assumption ].
+  - apply e_consis__ghost_r. clear - H HD1; fsetdec.
+Qed.
+
+(* ===================================================================== *)
+(*  §10  EQUIVARIANCE for the whole trio                                  *)
+(*                                                                        *)
+(*  prop_guess.v §8's companion, and needed for the same reason: §8c.10's *)
+(*  completeness level compares a derivation, which opens its binders at  *)
+(*  ANY fresh atom, with the RUNNER, which opens them at                   *)
+(*  [supply_fresh S0] — so the two agree only up to a transposition.      *)
+(*  algo/basic/prop_swap.v §11's [a_assign_unify_consis_swap] is the template,  *)
+(*  rule for rule; the supply-threaded copy differs in exactly the four   *)
+(*  ways the encoding does.  [Δ-drop] deletes the [∉ dom Θ1] premises     *)
+(*  (so the a-side's [swap_aenv_dom_notin] calls are gone), [Δ-supply]    *)
+(*  turns the ∀ rows' freshness into [α ∉ S0] (one [swap_notin_eq]),      *)
+(*  [Δ-guess] routes [Assign-SolveM] through [e_guess_mono_swap], and     *)
+(*  [Δ-thread] is what forces the ∃-form: the swapped run's OUTPUT supply *)
+(*  is fixed only up to [=], and at [U-Arrow] the two ∃-witnesses chain.  *)
+(*                                                                        *)
+(*  ⚠️ The Δ-slots and the supply are all atom SETS, so they enter        *)
+(*  extensionally ([Δ1' [=] swap_atoms a b Δ1], …): [swap_atoms] cannot   *)
+(*  be a Leibniz homomorphism on the opaque [atoms], which is why the     *)
+(*  ∀ rows go through [eq_swap_atoms_add] rather than [rewrite].          *)
+(* ===================================================================== *)
+
+Lemma e_assign_unify_consis_swap : forall a b,
+  (forall S0 Θ0 Ξ α P S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
+     forall S0', S0' [=] swap_atoms a b S0 ->
+     exists S1', S1' [=] swap_atoms a b S1 /\
+       {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲[ swap_aenv a b Ξ ]
+          (swap_atom a b α) ≔ (swap_pskl a b P)
+          ⊣ (swap_aenv a b Θ1) }}e) /\
+  (forall S0 Θ0 α β S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
+     forall S0', S0' [=] swap_atoms a b S0 ->
+     exists S1', S1' [=] swap_atoms a b S1 /\
+       {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲
+          (swap_atom a b α) ≈ᵘ (swap_atom a b β)
+          ⊣ (swap_aenv a b Θ1) }}e) /\
+  (forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+     forall Δ1' Δ2' S0',
+       Δ1' [=] swap_atoms a b Δ1 -> Δ2' [=] swap_atoms a b Δ2 ->
+       S0' [=] swap_atoms a b S0 ->
+     exists S1', S1' [=] swap_atoms a b S1 /\
+       {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊢[ Δ1' | Δ2' | (swap_pskl a b P0) ]
+          (swap_pskl a b P) ∼ (swap_pskl a b Q)
+          ⊣ (swap_aenv a b Θ1) }}e).
+Proof.
+  intros a b.
+  apply (e_assign_unify_consis_mutind
+           (fun S0 Θ0 Ξ α P S1 Θ1 _ =>
+              forall S0', S0' [=] swap_atoms a b S0 ->
+              exists S1', S1' [=] swap_atoms a b S1 /\
+                {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲[ swap_aenv a b Ξ ]
+                   (swap_atom a b α) ≔ (swap_pskl a b P)
+                   ⊣ (swap_aenv a b Θ1) }}e)
+           (fun S0 Θ0 α β S1 Θ1 _ =>
+              forall S0', S0' [=] swap_atoms a b S0 ->
+              exists S1', S1' [=] swap_atoms a b S1 /\
+                {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊲
+                   (swap_atom a b α) ≈ᵘ (swap_atom a b β)
+                   ⊣ (swap_aenv a b Θ1) }}e)
+           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
+              forall Δ1' Δ2' S0',
+                Δ1' [=] swap_atoms a b Δ1 -> Δ2' [=] swap_atoms a b Δ2 ->
+                S0' [=] swap_atoms a b S0 ->
+              exists S1', S1' [=] swap_atoms a b S1 /\
+                {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0)
+                   ⊢[ Δ1' | Δ2' | (swap_pskl a b P0) ]
+                   (swap_pskl a b P) ∼ (swap_pskl a b Q)
+                   ⊣ (swap_aenv a b Θ1) }}e)).
+  all: try solve [
+    intros; simpl;
+    repeat match goal with
+    | IH : forall S', S' [=] ?S -> exists _, _ /\ _,
+      Heq : ?S' [=] ?S |- _ =>
+        destruct (IH _ Heq) as [? [? ?]]; clear IH
+    | IH : forall Δ1' Δ2' S', Δ1' [=] ?Δ1 -> Δ2' [=] ?Δ2 ->
+        S' [=] ?S -> exists _, _ /\ _,
+      HΔ1 : ?Δ1' [=] ?Δ1, HΔ2 : ?Δ2' [=] ?Δ2,
+      Heq : ?S' [=] ?S |- _ =>
+        destruct (IH _ _ _ HΔ1 HΔ2 Heq) as [? [? ?]]; clear IH
+    end;
+    eexists; split; [ eassumption | econstructor;
+      eauto 3 using swap_atom_neq, a_flex_tvar_swap, swap_pskl_ftv_notin,
+        swap_aenv_binds, guarded_pskl_swap, a_non_flex_swap,
+        swap_pskl_not_ghost, swap_inter_ftv_empty ] ].
+  - (* Assign-SolveM — the generative row *)
+    intros S0 S1 Θ0 Ξ α P βs τ Hocc Hg Hm S0' Heq. simpl.
+    destruct (e_guess_mono_swap Hg Heq) as [S1' [HS1 Hg']].
+    exists S1'. split; [ exact HS1 | ].
+    rewrite !swap_aenv_app.
+    apply e_assign__solve_m with (βs := swap_aenv a b βs);
+      auto using swap_pskl_ftv_notin, mono_ptyp_swap.
+  - (* Assign-Assign *)
+    intros S0 S1 Θ0 Θ1 Ξ α β τ P Q Hflex Hd IH S0' Heq. simpl.
+    destruct (IH empty empty S0'
+                 (empty_eq_swap_atoms_empty a b)
+                 (empty_eq_swap_atoms_empty a b) Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    eapply e_assign__assign.
+    + exact (a_flex_tvar_swap a b _ _ Hflex).
+    + rewrite swap_aenv_app in Hd'.
+      rewrite !swap_pskl_subst in Hd'.
+      rewrite !swap_pskl_ptyp_to_pskl in Hd'.
+      change (swap_pskl a b (pskl_var_f α)) with
+        (pskl_var_f (swap_atom a b α)) in Hd'.
+      exact Hd'.
+  - (* Assign-Depend *)
+    intros S0 S1 Θ0 Θ1 Ξ α β P Hne Hin Hd IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    rewrite swap_aenv_app in Hd'.
+    apply e_assign__depend;
+      [ auto using swap_atom_neq | auto using swap_pskl_ftv_in | exact Hd' ].
+  - (* Flex-Flex-Assign *)
+    intros S0 S1 Θ0 Θ1 α1 τ α β Q Hf1 Hf2 Hd IH S0' Heq. simpl.
+    destruct (IH empty empty S0'
+                 (empty_eq_swap_atoms_empty a b)
+                 (empty_eq_swap_atoms_empty a b) Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    eapply e_unify__flex_assign.
+    + exact (a_flex_tvar_swap a b _ _ Hf1).
+    + exact (a_flex_tvar_swap a b _ _ Hf2).
+    + rewrite !swap_pskl_ptyp_to_pskl in Hd'.
+      rewrite !swap_ptyp_subst in Hd'.
+      change (swap_ptyp a b (ptyp_var_f β)) with
+        (ptyp_var_f (swap_atom a b β)) in Hd'.
+      change (swap_ptyp a b (ptyp_var_f α)) with
+        (ptyp_var_f (swap_atom a b α)) in Hd'.
+      exact Hd'.
+  - (* Flex-Flex-Skip' *)
+    intros S0 S1 Θ0 Θ1 c bd α β Hb Hd IH S0' Heq. simpl.
+    destruct (IH _ Heq) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_unify__skip_other; [ | exact Hd' ].
+    destruct Hb as [-> | [[A ->] | [Qb ->]]]; simpl.
+    + left; reflexivity.
+    + right; left; eexists; reflexivity.
+    + right; right; eexists; reflexivity.
+  - (* Rigid *)
+    intros Δ1 Δ2 S Θ0 α Hb Δ1' Δ2' S0' HΔ1 HΔ2 Heq. simpl.
+    exists S0'. split; [ exact Heq | ].
+    apply e_consis__rigid. exact (swap_aenv_binds a b _ _ _ Hb).
+  - (* ForallInh *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hfr Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq.
+    simpl. rewrite swap_pskl_close.
+    destruct (IH (add (swap_atom a b α) Δ1') (add (swap_atom a b α) Δ2')
+                 (add (swap_atom a b α) S0')
+                 (eq_swap_atoms_add a b α _ _ HΔ1)
+                 (eq_swap_atoms_add a b α _ _ HΔ2)
+                 (eq_swap_atoms_add a b α _ _ Heq)) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__forall_inh with (α := swap_atom a b α).
+    + eapply swap_notin_eq; eassumption.
+    + rewrite !swap_pskl_open_var in Hd'. exact Hd'.
+  - (* ForallSyn *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hfr Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq.
+    simpl. rewrite swap_pskl_close.
+    destruct (IH Δ1' (add (swap_atom a b α) Δ2')
+                 (add (swap_atom a b α) S0')
+                 HΔ1 (eq_swap_atoms_add a b α _ _ HΔ2)
+                 (eq_swap_atoms_add a b α _ _ Heq)) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__forall_syn with (α := swap_atom a b α).
+    + eapply swap_notin_eq; eassumption.
+    + rewrite !swap_pskl_open_var in Hd'. exact Hd'.
+  - (* UnivGhost1 *)
+    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hfr Hd IH Δ1' Δ2' S0' HΔ1 HΔ2 Heq.
+    simpl. rewrite swap_pskl_close.
+    destruct (IH (add (swap_atom a b α) Δ1') Δ2'
+                 (add (swap_atom a b α) S0')
+                 (eq_swap_atoms_add a b α _ _ HΔ1) HΔ2
+                 (eq_swap_atoms_add a b α _ _ Heq)) as [S1' [HS1 Hd']].
+    exists S1'. split; [ exact HS1 | ].
+    apply e_consis__univ_ghost1 with (α := swap_atom a b α).
+    + eapply swap_notin_eq; eassumption.
+    + rewrite !swap_pskl_open_var in Hd'. exact Hd'.
+Qed.
+
+Corollary e_consis_swap : forall a b Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+  forall Δ1' Δ2' S0',
+    Δ1' [=] swap_atoms a b Δ1 -> Δ2' [=] swap_atoms a b Δ2 ->
+    S0' [=] swap_atoms a b S0 ->
+  exists S1', S1' [=] swap_atoms a b S1 /\
+    {{ S0' ↝ S1' ⊨ (swap_aenv a b Θ0) ⊢[ Δ1' | Δ2' | (swap_pskl a b P0) ]
+       (swap_pskl a b P) ∼ (swap_pskl a b Q) ⊣ (swap_aenv a b Θ1) }}e.
+Proof. intros a b. apply e_assign_unify_consis_swap. Qed.

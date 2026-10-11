@@ -177,7 +177,7 @@ questions (`def_question.v`). **(Finding F4.)**
 
 ## Unit 5 — Real declarative notions for solution/optimality
 
-**Files:** `algo/prop_lemmas.v`, `algo/def_meta.v`, `algo/def_question.v`.
+**Files:** `algo/prop_lemmas.v`, `algo/basic/def_meta.v`, `algo/def_question.v`.
 Independent of Units 1–3. Split by whether the paper has a real definition:
 
 **Has a real paper definition → mechanize faithfully:**

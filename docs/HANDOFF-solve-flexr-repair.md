@@ -647,7 +647,7 @@ syntactically so).
 κ-extension kit (`keys`, `keys_eq_dom`, `all_flex_mono`, `all_flex_mono_app`,
 `msubst_pskl_mid_skip`, `msubst_lookup_mid_skip`,
 `msubst_pskl_lookup_congr_ftv`) was **moved upstream** to
-`fresco/algo/prop_metasubst.v` — both its old homes sat *below* the file that
+`fresco/algo/basic/prop_metasubst.v` — both its old homes sat *below* the file that
 now needs it.
 
 **In progress**: `a_solve_eq_cv_mono` is restated (`cv_mono_concl` names the

@@ -17,12 +17,12 @@
     only when ε2 is fresh for the WHOLE derivation, and "the tags of a
     derivation" is not something a [Prop] lets us collect; a swap is a
     bijection, so it is an automorphism unconditionally — the same reason
-    algo/prop_swap.v takes equivariance as the renaming primitive for TYPE
+    algo/basic/prop_swap.v takes equivariance as the renaming primitive for TYPE
     variables.
 
     ⭐ §1 IS SORT-AGNOSTIC AND SHARED.  A transposition of two ATOMS knows
     nothing about ε tags, so [swap_atom] / [swap_atoms] and their spec live
-    here ONCE and algo/prop_swap.v — the TYPE-variable equivariance kit —
+    here ONCE and algo/basic/prop_swap.v — the TYPE-variable equivariance kit —
     imports them — do not redefine them there.
 
     ⚙ ε tags are plain atoms occupying a slot in [utyp_all_tag] /
@@ -74,7 +74,7 @@ Proof.
 Qed.
 
 (** Opening by a VARIABLE adds no tag; opening by anything adds at most its
-    tags.  (The [uskl] twins are in algo/consis/prop_consis_precise.v.) *)
+    tags.  (The [uskl] twins are in algo/consistency/prop_consis_precise.v.) *)
 Lemma ftag_in_utyp_open_rec_var : forall α' C k,
   ftag_in_utyp (open_utyp_wrt_utyp_rec k (utyp_var_f α') C) [=] ftag_in_utyp C.
 Proof.
@@ -112,7 +112,7 @@ Proof. intros; unfold open_utyp_wrt_utyp; apply ftag_in_utyp_open_rec_upper. Qed
 Definition swap_atom (ε1 ε2 α : atom) : atom :=
   if α == ε1 then ε2 else if α == ε2 then ε1 else α.
 
-(** ⚙ [simpl] must never unfold [swap_atom] into its if-form: [algo/prop_swap.v]
+(** ⚙ [simpl] must never unfold [swap_atom] into its if-form: [algo/basic/prop_swap.v]
     destructs and rewrites on [swap_atom _ _ _] syntactically. *)
 Global Arguments swap_atom : simpl never.
 
@@ -416,7 +416,7 @@ Qed.
 (* ===================================================================== *)
 (*  §4  [ftag_in_uskl] across opening                                     *)
 (*                                                                        *)
-(*  ⚙ Moved here 2026-10-10 from algo/consis/prop_consis_precise.v.       *)
+(*  ⚙ Moved here 2026-10-10 from algo/consistency/prop_consis_precise.v.       *)
 (* ===================================================================== *)
 
 Lemma ftag_in_uskl_open_rec_var : forall α' R k,

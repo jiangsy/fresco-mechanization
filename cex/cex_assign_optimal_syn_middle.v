@@ -7,7 +7,7 @@
     STATUS.  Found 2026-07-15; the mechanization has since ADOPTED the fix —
     GMM-style SEMANTIC ENTRIES (GundryMM10 §3.1: an increase preserves each
     entry up to the equational theory, never syntactically) — in [a_inc]'s
-    var/var_skl rules (algo/def_meta.v).  This file keeps the refutation
+    var/var_skl rules (algo/basic/def_meta.v).  This file keeps the refutation
     against a LOCAL COPY of the original rules ([a_inc_syn] below), plus the
     positive twin: under the adopted semantic rules the very same instance
     DOES factor ([cex_zeta_semantic]).  The paper still states the syntactic
@@ -66,11 +66,11 @@ Require Import src.fresco.coercions.
 Require Import src.fresco.def_shapes.
 Require Import src.fresco.decl.def_rules.
 Require Import src.fresco.algo.def_rules.
-Require Import src.fresco.algo.def_meta.
+Require Import src.fresco.algo.basic.def_meta.
 Require Import src.fresco.deco_algo.def_decorated.
 Require Import src.fresco.algo_decl.def_consis_refine.
-Require Import src.fresco.algo.prop_swap.          (* a_wf_ptyp_ftv_tvarish *)
-Require Import src.fresco.algo.prop_basic.
+Require Import src.fresco.algo.basic.prop_swap.          (* a_wf_ptyp_ftv_tvarish *)
+Require Import src.fresco.algo.basic.prop_context.
 
 Set Implicit Arguments.
 
