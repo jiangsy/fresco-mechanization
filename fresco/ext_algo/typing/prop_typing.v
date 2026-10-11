@@ -186,16 +186,13 @@ Proof.
       by (clear - Hcov Hcv1 Hqs Hgs Hgg Hbin Hbftv HAcov; env_simp; fsetdec).
     destruct (IHe_typing Hu' (cover_open_body_typ x Hsc))
       as [Ha [Hub [Hcvb Hqb]]].
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ2 : x `notin` dom Θ2)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ2 & Hub' & Hcvb').
     repeat split.
     + apply a_typing__abs with (x := x) (Θ1 := Θ1) (P := P) (Q := Q) (αs := αs);
         try assumption.
       clear - Hxd HxΞ HxΘ2 Hcov H3 Hgs Hgg. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + exact Hub'.
+    + exact Hcvb'.
     + pose proof (e_typing_supply_grows H4) as Hgb.
       simpl. clear - HAcov Hqb Hgb. fsetdec.
 
@@ -220,17 +217,14 @@ Proof.
       by (clear - Hcov Hcv2 Hqs Hgs Hgc HAe; env_simp; fsetdec).
     destruct (IHe_typing Hu' (cover_open_body_typ x Hsc))
       as [Ha [Hub [Hcvb Hqb]]].
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ3 : x `notin` dom Θ3)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ3 & Hub' & Hcvb').
     repeat split.
     + apply a_typing__abs_anno with (x := x) (Θ1 := Θ1) (Θ2 := Θ2)
                                     (P := P) (Q := Q);
         try assumption; [ exists Qc; exact Hca | ].
       clear - Hxd HxΞ HxΘ3 Hcov H3 Hgs Hgc. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + exact Hub'.
+    + exact Hcvb'.
     + pose proof (e_typing_supply_grows H4) as Hgb.
       simpl. clear - Hqb Hcov Hgs Hgc Hgb HAe. fsetdec.
 
@@ -242,10 +236,7 @@ Proof.
     assert (Hu' : uniq ((α ~ abind_tvar) ++ Θ0))
       by (clear - Hu Hαd; solve_uniq).
     destruct (IHe_typing Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
-    assert (HαΞ : α `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HαΘ1 : α `notin` dom Θ1)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    destruct (drop_binder_facts Hub Hcvb) as (HαΞ & HαΘ1 & Hub' & Hcvb').
     pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A (ptyp_var_f α)) as Hlo.
     repeat split.
     + apply a_typing__abs_check_step with (α := α) (Ξ := Ξ);
@@ -254,8 +245,8 @@ Proof.
       simpl in He2, Hcov.
       clear - Hαd HαΞ HαΘ1 H2 H3 Hcov He2.
       simpl ftvar_in_exp. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + clear - Hub'; solve_uniq.
+    + clear - Hcvb'. env_simp. fsetdec.
     + simpl. clear - Hqb Hlo. fsetdec.
 
   - (* AT-AbsCheck (base) *)
@@ -275,17 +266,14 @@ Proof.
       by (clear - Hcov Hcv1 Hqs Hgs HeA HeB; env_simp; fsetdec).
     destruct (IHe_typing Hu' (cover_open_body_typ x Hsc))
       as [Ha [Hub [Hcvb Hqb]]].
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ2 : x `notin` dom Θ2)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ2 & Hub' & Hcvb').
     repeat split.
     + apply a_typing__abs_check_base with (x := x) (Θ1 := Θ1) (B := B)
                                           (Ξ := Ξ);
         try assumption.
       clear - Hxd HxΞ HxΘ2 Hcov H3 Hgs. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + clear - Hub'; solve_uniq.
+    + clear - Hcvb'. env_simp. fsetdec.
     + pose proof (e_typing_supply_grows H4) as Hgb.
       simpl. clear - Hqs Hqb Hgb HeA. fsetdec.
 
@@ -297,10 +285,7 @@ Proof.
     assert (Hu' : uniq ((α ~ abind_tvar) ++ Θ0))
       by (clear - Hu Hαd; solve_uniq).
     destruct (IHe_typing Hu' Hcov') as [Ha [Hub [Hcvb Hqb]]].
-    assert (HαΞ : α `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HαΘ1 : α `notin` dom Θ1)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    destruct (drop_binder_facts Hub Hcvb) as (HαΞ & HαΘ1 & Hub' & Hcvb').
     pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_lower A (ptyp_var_f α)) as Hlo.
     repeat split.
     + apply a_typing__abs_anno_check_step with (α := α) (Ξ := Ξ);
@@ -309,8 +294,8 @@ Proof.
       simpl in He2, Hcov.
       clear - Hαd HαΞ HαΘ1 H2 H3 Hcov He2.
       simpl ftvar_in_exp. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + clear - Hub'; solve_uniq.
+    + clear - Hcvb'. env_simp. fsetdec.
     + simpl. clear - Hqb Hlo. fsetdec.
 
   - (* AT-AbsAnnoCheck (base) *)
@@ -337,17 +322,14 @@ Proof.
       by (clear - Hcov Hcv2 Hqs Hgs Hgc HeA HeB; env_simp; fsetdec).
     destruct (IHe_typing Hu' (cover_open_body_typ x Hsc))
       as [Ha [Hub [Hcvb Hqb]]].
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ3 : x `notin` dom Θ3)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ3 & Hub' & Hcvb').
     repeat split.
     + apply a_typing__abs_anno_check_base with (x := x) (Θ1 := Θ1) (Θ2 := Θ2)
                                                (B := B) (Ξ := Ξ);
         try assumption; [ exists Qc; exact Hca | ].
       clear - Hxd HxΞ HxΘ3 Hcov H4 Hgs Hgc. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + clear - Hub'; solve_uniq.
+    + clear - Hcvb'. env_simp. fsetdec.
     + pose proof (e_typing_supply_grows H5) as Hgb.
       simpl. clear - Hqs Hqb Hgb Hgc HeA'. fsetdec.
 

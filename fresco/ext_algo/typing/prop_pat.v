@@ -199,6 +199,21 @@ Proof.
   simpl in *. fsetdec.
 Qed.
 
+(** What an abs row reads off its premise's output [Ξ ++ (x ~ b) ++ Θ]
+    once it drops the binder: [x] is in neither half, and what is left is
+    still unique and still covered. *)
+Lemma drop_binder_facts {Ξ Θ : aenv} {x b} {S : atoms} :
+  uniq (Ξ ++ (x ~ b) ++ Θ) -> ftvar_in_aenv (Ξ ++ (x ~ b) ++ Θ) [<=] S ->
+  x `notin` dom Ξ /\ x `notin` dom Θ /\ uniq (Ξ ++ Θ)
+  /\ ftvar_in_aenv (Ξ ++ Θ) [<=] S.
+Proof.
+  intros Hu Hcv. repeat split.
+  - clear - Hu; simpl_env in *; solve_uniq.
+  - clear - Hu; simpl_env in *; solve_uniq.
+  - clear - Hu; simpl_env in *; solve_uniq.
+  - clear - Hcv; env_simp; fsetdec.
+Qed.
+
 Arguments cover_open_body_skl {S Θ P0 P e} x _.
 Arguments cover_open_body_typ {S Θ P0 A e} x _.
 Arguments cover_open_tvar {S Θ A0 e} α _.
@@ -283,16 +298,13 @@ Proof.
     destruct (IHe_pat Hu' (cover_open_body_skl x Hsc))
       as [Ha [Hub [Hcvb Hqb]]].
     (* the two OUTPUT halves of the side condition come from uniqueness *)
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ2 : x `notin` dom Θ2)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ2 & Hub' & Hcvb').
     repeat split.
     + apply a_pat__abs with (x := x) (Θ1 := Θ1) (Q0 := Q0);
         try assumption.
       clear - Hxd HxΞ HxΘ2 Hcov H2 Hgs. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + exact Hub'.
+    + exact Hcvb'.
     + pose proof (e_pat_supply_grows H3) as Hgb.
       simpl. clear - Hqs Hqb Hgb. fsetdec.
 
@@ -318,17 +330,14 @@ Proof.
       by (clear - HAe Hcov Hcv2 Hqs Hgs Hgc; env_simp; fsetdec).
     destruct (IHe_pat Hu' (cover_open_body_typ x Hsc))
       as [Ha [Hub [Hcvb Hqb]]].
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ3 : x `notin` dom Θ3)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ3 & Hub' & Hcvb').
     repeat split.
     + apply a_pat__abs_anno with (x := x) (Θ1 := Θ1) (Θ2 := Θ2)
                                  (P := P) (Q0 := Q0);
         try assumption; [ exists Qc; exact Hca | ].
       clear - Hxd HxΞ HxΘ3 Hcov H3 Hgs Hgc. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + exact Hub'.
+    + exact Hcvb'.
     + pose proof (e_pat_supply_grows H4) as Hgb.
       simpl. rewrite ftvar_ptyp_to_pskl.
       clear - Hqb Hcov Hgs Hgc Hgb. fsetdec.
@@ -345,15 +354,12 @@ Proof.
       by (clear - Hcov; env_simp; fsetdec).
     destruct (IHe_pat Hu' (cover_open_body_skl x Hsc))
       as [Ha [Hub [Hcvb Hqb]]].
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ1 : x `notin` dom Θ1)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ1 & Hub' & Hcvb').
     repeat split.
     + apply a_pat__abs_check with (x := x); try assumption.
       clear - Hxd HxΞ HxΘ1 Hcov H0. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + exact Hub'.
+    + exact Hcvb'.
     + simpl. clear - Hqb. fsetdec.
 
   - (* AP-AbsAnnoCheck *)
@@ -367,15 +373,12 @@ Proof.
       by (clear - Hcov; env_simp; fsetdec).
     destruct (IHe_pat Hu' (cover_open_body_typ x Hsc))
       as [Ha [Hub [Hcvb Hqb]]].
-    assert (HxΞ : x `notin` dom Ξ)
-      by (clear - Hub; simpl_env in *; solve_uniq).
-    assert (HxΘ1 : x `notin` dom Θ1)
-      by (clear - Hub; simpl_env in *; solve_uniq).
+    destruct (drop_binder_facts Hub Hcvb) as (HxΞ & HxΘ1 & Hub' & Hcvb').
     repeat split.
     + apply a_pat__abs_anno_check with (x := x); try assumption.
       clear - Hxd HxΞ HxΘ1 Hcov H0. env_simp. fsetdec.
-    + clear - Hub; simpl_env in *; solve_uniq.
-    + clear - Hcvb. env_simp. fsetdec.
+    + exact Hub'.
+    + exact Hcvb'.
     + pose proof (e_pat_supply_grows H1) as Hgb.
       pose proof (ftvar_ptyp_to_pskl A) as HAe.
       simpl. clear - Hqb Hcov Hgb HAe. fsetdec.
