@@ -800,7 +800,6 @@ Proof.
         destruct (e_split_lc Hrs HP0) as [Hlcd Hlcc].
         pose proof (e_split_supply_grows Hrs) as Hgrs.
         pose proof (e_split_supply_grows Dsp) as Hgrd.
-        pose proof (supply_fresh_notin (sp_supply rs)) as Hsfs.
         (* the two readbacks the runner performs *)
         assert (HdomR : sp_dom rs = ptyp_to_pskl (swaps_ptyp ps1 A))
           by (rewrite <- HP1; apply swaps_pskl_ptyp_to_pskl).
@@ -1514,7 +1513,6 @@ Proof.
       pose proof (e_consis_defs_mono Hrc HDs) as HDc;
       pose proof (e_consis_env_lc Hrc HΘs) as HΘc;
       pose proof (e_consis_supply_grows Hrc) as Hgrc;
-      pose proof (supply_fresh_notin (cs_supply rc)) as Hsfc;
       assert (HScc : swaps_atoms psc (swaps_atoms ps1 S2) [=] cs_supply rc)
         by (rewrite <- HSc; apply swaps_atoms_cong; symmetry; exact HSc1);
       assert (Hx1S : swaps_atom psc (swaps_atom ps1 xd)

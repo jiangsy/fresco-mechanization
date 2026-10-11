@@ -1002,7 +1002,6 @@ Proof.
       destruct (e_split_lc Hrs HP0) as [Hlcd Hlcc];
       pose proof (e_split_supply_grows Hrs) as Hgrs;
       pose proof (e_split_supply_grows Dsp) as Hgrd;
-      pose proof (supply_fresh_notin (sp_supply rs)) as Hsf;
       (* the derivation's binder, first along the split's chain … *)
       assert (Hx1S : swaps_atom ps1 xd `notin` sp_supply rs)
         by (eapply swaps_notin_eq; [ symmetry; exact HS1 | exact Hxd ]);
@@ -1225,7 +1224,6 @@ Proof.
       pose proof (e_consis_defs_mono Hrc HDs) as HDc;
       pose proof (e_consis_env_lc Hrc HΘs) as HΘc;
       pose proof (e_consis_supply_grows Hrc) as Hgrc;
-      pose proof (supply_fresh_notin (cs_supply rc)) as Hsf;
       (* the derivation's binder, along BOTH chains and onto the draw *)
       assert (HScc : swaps_atoms psc (swaps_atoms ps1 S2) [=] cs_supply rc)
         by (rewrite <- HSc; apply swaps_atoms_cong; symmetry; exact HSc1);
@@ -1315,27 +1313,22 @@ Proof.
                 (swaps_aenv psc (swaps_aenv ps1 Ξ)))))
         by (repeat apply a_suffix_swaps; exact Hsuf);
       bool_true_pat;
+      pose proof (swaps_dodge_draw
+                    (swaps_dodge_app Hav1 Havc (reflexivity _) Hgrs)
+                    Hx10 (transitivity Hgrs Hgrc) Hav2) as Havall;
       eexists;
       exists (((ps1 ++ psc) ++ ((swaps_atom psc (swaps_atom ps1 xd),
                 supply_fresh (cs_supply rc)) :: nil)) ++ ps2);
       split; [ cbn [pat_answer proj1_sig]; reflexivity | ];
       repeat apply conj;
-      [ exact (swaps_dodge_draw
-          (swaps_dodge_app Hav1 Havc (reflexivity _) Hgrs)
-          Hx10 (transitivity Hgrs Hgrc) Hav2)
+      [ exact Havall
       | exact (swaps_atoms_app_transport
           (swaps_atoms_app_compose HSd2 HSd1) HS2)
       | cbn [pt_ctx]; rewrite swaps_aenv_app_dist, ! swaps_aenv_app;
         reflexivity
       | cbn [pt_skel]; rewrite swaps_pskl_arrow; f_equal;
-        [ apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-          repeat (apply in_app_or in Hin; destruct Hin as [Hin | Hin]);
-          [ destruct (Hav1 _ _ Hin) as [Hka Hkb]
-          | destruct (Havc _ _ Hin) as [Hka Hkb]
-          | destruct Hin as [Heq0 | []]; inversion Heq0; subst;
-            pose proof Hx10 as Hka; pose proof Hsf as Hkb
-          | destruct (Hav2 _ _ Hin) as [Hka Hkb] ];
-          split; clear - Hka Hkb Hcov HAe Hgrs Hgrc; simpl in *; fsetdec
+        [ apply swaps_pskl_fresh_id, (swaps_dodge_sub Havall);
+          clear - Hcov HAe; simpl in *; fsetdec
         | rewrite ! swaps_pskl_app; exact HQ2 ] ]
     ).
 
