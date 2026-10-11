@@ -181,6 +181,24 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Remove recursive coverage detours in mutual soundness
+
+Use each soundness invariant's coverage premise directly for its final
+domain implication, instead of walking through recursive output contexts.
+Use the same premise with input head separation to rebuild
+`flex_above_free` in four assignment and three unification cases.
+Discard unused recursive domain conclusions and remove obsolete comments
+about fresh-atom arguments that are no longer needed.
+
+Net reduction: **89 physical Coq lines / 86 nonblank, noncomment lines**.
+All 97 existing theorem statements and all three soundness postcondition
+definitions are unchanged. Inline tactic terms remain at 74; none were added.
+
+Validation: `make coq` passed with all 34 headline assumption reports closed
+under the global context, no axioms, and no errors. Statement and postcondition
+comparison and `git diff --check` passed.
+
+
 ## 2026-10-11 — Derive global rigid-variable survival from scoped survival
 
 Replace the entire induction of `ad_pat_consis_rigid_ftv_rev` with an

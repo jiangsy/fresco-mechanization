@@ -1872,6 +1872,8 @@ Qed.
 (* ===================================================================== *)
 
 (** Conclusions of the two motives (hypotheses live in [*_concl] below). *)
+(** Each invariant's final domain implication is already supplied by its
+    coverage premise. Reuse that premise when rebuilding a context. *)
 Definition unify_sound_post (Θ0 : aenv) (α β : atom)
     (Θ1 : aenv) : Prop :=
   Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\ dom Θ0 [<=] dom Θ1 /\
@@ -2221,11 +2223,8 @@ Proof.
           clear - Hhd Hα0Δ HXin. fsetdec. }
         eapply faf_tail; eauto.
       + intros α0 Hα0Δ HXd.
-        simpl in HXd. repeat rewrite dom_app in HXd.
-        assert (Hn2 : α0 `notin` dom βs) by auto.
-        assert (Hn1 : α0 `notin` add α (dom Θ0))
-          by (clear - Hhd Hα0Δ; fsetdec).
-        simpl. clear - HXd Hn1 Hn2. fsetdec. }
+        repeat rewrite dom_app in *; simpl in *.
+        clear - Hcov Hα0Δ HXd; fsetdec. }
     apply ad_pat_consis__flex_r with (τ := τ);
       [ unfold binds; left; reflexivity | ].
     eapply a_guess_mono_consis; eauto.
@@ -2386,22 +2385,11 @@ Proof.
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
           [ inversion Heq; subst; exact Hτ0 | exact (IH1 β' τ' Hb') ].
       + apply faf_cons; [ | exact IH2 ].
-        intros _. apply inter_empty_pointwise.
-        intros α0 Hα0Δ HXin.
-        assert (Hβ' : α0 `notin` add β (dom Θ0))
-          by (clear - Hhd Hα0Δ; fsetdec).
-        assert (HΘ1 : α0 `notin` dom Θ1).
-        { intro HXd. specialize (IH3 α0 Hα0Δ HXd).
-          rewrite dom_app in IH3.
-          assert (Hα0Ξ : α0 `notin` dom Ξ) by (clear - HΔΞ Hα0Δ; fsetdec).
-          clear - IH3 Hα0Ξ Hβ'. fsetdec. }
-        clear - HXin Hβ' HΘ1. fsetdec.
-      + intros α0 Hα0Δ HXd. simpl in HXd.
-        assert (Hnex : α0 <> β)
-          by (intro; subst; clear - Hhd Hα0Δ; fsetdec).
-        assert (HXd1 : α0 `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
-        specialize (IH3 α0 Hα0Δ HXd1).
-        rewrite dom_app in IH3. simpl. clear - IH3. fsetdec. }
+        intros _. repeat rewrite dom_app in *; simpl in *.
+        clear - Hcov Hhd HΔΞ; fsetdec.
+      + intros α0 Hα0Δ HXd.
+        repeat rewrite dom_app in *; simpl in *.
+        clear - Hcov Hα0Δ HXd; fsetdec. }
     (* 5. the augmented solution: eliminate the join [P3] *)
     (* (a) the join is a monotype painting, ≡ᵗ-equal to the subject *)
     rewrite subst_pskl_var_ptyp in HconsQ.
@@ -2541,21 +2529,11 @@ Proof.
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
           [ discriminate | exact (IH1 β' τ' Hb') ].
       + apply faf_cons; [ | exact IH2 ].
-        intros _. apply inter_empty_pointwise.
-        intros α0 Hα0Δ HXin.
-        assert (Hβ' : α0 `notin` add β (dom Θ0))
-          by (clear - Hhd Hα0Δ; fsetdec).
-        assert (HΘ1 : α0 `notin` dom Θ1).
-        { intro HXd. specialize (IH3 α0 Hα0Δ HXd).
-          assert (Hα0Ξ : α0 `notin` dom Ξ) by (clear - HΔΞ Hα0Δ; fsetdec).
-          clear - IH3 Hα0Ξ Hβ'. fsetdec. }
-        clear - HXin Hβ' HΘ1. fsetdec.
-      + intros α0 Hα0Δ HXd. simpl in HXd.
-        assert (Hnex : α0 <> β)
-          by (intro; subst; clear - Hhd Hα0Δ; fsetdec).
-        assert (HXd1 : α0 `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
-        specialize (IH3 α0 Hα0Δ HXd1). simpl.
-        clear - IH3. fsetdec. }
+        intros _. repeat rewrite dom_app in *; simpl in *.
+        clear - Hcov Hhd HΔΞ; fsetdec.
+      + intros α0 Hα0Δ HXd.
+        repeat rewrite dom_app in *; simpl in *.
+        clear - Hcov Hα0Δ HXd; fsetdec. }
     apply ad_pat_consis_weaken_cons. exact Hcons.
 
   - (* Assign-SkipRigid *)
@@ -2606,10 +2584,9 @@ Proof.
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
           [ discriminate | exact (IH1 β' τ' Hb') ].
       + apply faf_cons; [ intros Hne; congruence | exact IH2 ].
-      + intros α0 Hα0Δ HXd. simpl in HXd. simpl.
-        destruct (eq_var α0 β) as [->|Hnex]; [ clear; fsetdec | ].
-        assert (HXd1 : α0 `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
-        specialize (IH3 α0 Hα0Δ HXd1). clear - IH3. fsetdec. }
+      + intros α0 Hα0Δ HXd.
+        repeat rewrite dom_app in *; simpl in *.
+        clear - Hcov Hα0Δ HXd; fsetdec. }
     apply ad_pat_consis_weaken_cons. exact Hcons.
 
   - (* Assign-SkipTmVar (typ) *)
@@ -2679,21 +2656,11 @@ Proof.
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
           [ discriminate | exact (IH1 β' τ' Hb') ].
       + apply faf_cons; [ | exact IH2 ].
-        intros _. apply inter_empty_pointwise.
-        intros α0 Hα0Δ HXin.
-        assert (Hx' : α0 `notin` add x (dom Θ0))
-          by (clear - Hhd Hα0Δ; fsetdec).
-        assert (HΘ1 : α0 `notin` dom Θ1).
-        { intro HXd. specialize (IH3 α0 Hα0Δ HXd).
-          assert (Hα0Ξ : α0 `notin` dom Ξ) by (clear - HΔΞ Hα0Δ; fsetdec).
-          clear - IH3 Hα0Ξ Hx'. fsetdec. }
-        clear - HXin Hx' HΘ1. fsetdec.
-      + intros α0 Hα0Δ HXd. simpl in HXd.
-        assert (Hnex : α0 <> x)
-          by (intro; subst; clear - Hhd Hα0Δ; fsetdec).
-        assert (HXd1 : α0 `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
-        specialize (IH3 α0 Hα0Δ HXd1). simpl.
-        clear - IH3. fsetdec. }
+        intros _. repeat rewrite dom_app in *; simpl in *.
+        clear - Hcov Hhd HΔΞ; fsetdec.
+      + intros α0 Hα0Δ HXd.
+        repeat rewrite dom_app in *; simpl in *.
+        clear - Hcov Hα0Δ HXd; fsetdec. }
     apply ad_pat_consis_weaken_cons. exact Hcons.
 
   - (* Assign-SkipTmVar (skl) *)
@@ -2762,21 +2729,11 @@ Proof.
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
           [ discriminate | exact (IH1 β' τ' Hb') ].
       + apply faf_cons; [ | exact IH2 ].
-        intros _. apply inter_empty_pointwise.
-        intros α0 Hα0Δ HXin.
-        assert (Hx' : α0 `notin` add x (dom Θ0))
-          by (clear - Hhd Hα0Δ; fsetdec).
-        assert (HΘ1 : α0 `notin` dom Θ1).
-        { intro HXd. specialize (IH3 α0 Hα0Δ HXd).
-          assert (Hα0Ξ : α0 `notin` dom Ξ) by (clear - HΔΞ Hα0Δ; fsetdec).
-          clear - IH3 Hα0Ξ Hx'. fsetdec. }
-        clear - HXin Hx' HΘ1. fsetdec.
-      + intros α0 Hα0Δ HXd. simpl in HXd.
-        assert (Hnex : α0 <> x)
-          by (intro; subst; clear - Hhd Hα0Δ; fsetdec).
-        assert (HXd1 : α0 `in` dom Θ1) by (clear - HXd Hnex; fsetdec).
-        specialize (IH3 α0 Hα0Δ HXd1). simpl.
-        clear - IH3. fsetdec. }
+        intros _. repeat rewrite dom_app in *; simpl in *.
+        clear - Hcov Hhd HΔΞ; fsetdec.
+      + intros α0 Hα0Δ HXd.
+        repeat rewrite dom_app in *; simpl in *.
+        clear - Hcov Hα0Δ HXd; fsetdec. }
     apply ad_pat_consis_weaken_cons. exact Hcons.
   - (* U-Flex-Flex-Id *)
     intros Θ0 α Hb Hwf.
@@ -2953,7 +2910,7 @@ Proof.
         { destruct Hfδ as [Hb | [τ' Hb]]; apply binds_In in Hb;
             simpl in Hb; clear - Hb; fsetdec. }
         clear - Hτfree Hα0Δ HX' Hhd Hδd. fsetdec. }
-      destruct (Hinv Δ) as [Hnd1 [Hfa1 Hbk1]].
+      destruct (Hinv Δ) as [Hnd1 [Hfa1 _]].
       { eapply no_flex_dep_tail; eauto. }
       { eapply faf_tail; eauto. }
       { intros α0 Hα0.
@@ -2969,17 +2926,10 @@ Proof.
           [ inversion Heq; subst; exact Hτfree
           | exact (Hnd1 β' τ' Hb') ].
       - apply faf_cons; [ | exact Hfa1 ].
-        intros _.
-        apply inter_empty_pointwise. intros α0 Hα0Δ HXin.
-        assert (Hα0γ : α0 <> α1) by (clear - Hhd Hα0Δ; fsetdec).
-        assert (HXd : α0 `in` dom Θ1) by (clear - HXin Hα0γ; fsetdec).
-        pose proof (Hbk1 α0 Hα0Δ HXd) as HX0.
-        clear - Hhd Hα0Δ HX0. fsetdec.
-      - intros α0 Hα0Δ HXd. simpl in HXd.
-        assert (Hα0γ : α0 <> α1) by (clear - Hhd Hα0Δ; fsetdec).
-        assert (HXd1 : α0 `in` dom Θ1) by (clear - HXd Hα0γ; fsetdec).
-        pose proof (Hbk1 α0 Hα0Δ HXd1) as HX0.
-        simpl. clear - HX0. fsetdec. }
+        intros _. simpl in *; clear - Hcov Hhd; fsetdec.
+      - intros α0 Hα0Δ HXd.
+        repeat rewrite dom_app in *; simpl in *.
+        clear - Hcov Hα0Δ HXd; fsetdec. }
     (* the type equivalence, via the BRIDGE *)
     assert (HeqAB : {{ Θ1 ⊢ (subst_ptyp_in_ptyp τ α1 (ptyp_var_f α))
                        ≡ᵗ (subst_ptyp_in_ptyp τ α1 (ptyp_var_f β)) }}a).
@@ -3007,7 +2957,7 @@ Proof.
     { intros Δ Hnd Hfa Hcov.
       assert (Hhd : Δ ∩ (add α1 (dom Θ0)) [=] empty)
         by (apply (faf_head Hfa); discriminate).
-      destruct (Hinv Δ) as [Hnd1 [Hfa1 Hbk1]].
+      destruct (Hinv Δ) as [Hnd1 [Hfa1 _]].
       { eapply no_flex_dep_tail; eauto. }
       { eapply faf_tail; eauto. }
       { intros α0 Hα0.
@@ -3018,17 +2968,10 @@ Proof.
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heq] | Hb'];
           [ discriminate | exact (Hnd1 β' τ' Hb') ].
       - apply faf_cons; [ | exact Hfa1 ].
-        intros _.
-        apply inter_empty_pointwise. intros α0 Hα0Δ HXin.
-        assert (Hα0γ : α0 <> α1) by (clear - Hhd Hα0Δ; fsetdec).
-        assert (HXd : α0 `in` dom Θ1) by (clear - HXin Hα0γ; fsetdec).
-        pose proof (Hbk1 α0 Hα0Δ HXd) as HX0.
-        clear - Hhd Hα0Δ HX0. fsetdec.
-      - intros α0 Hα0Δ HXd. simpl in HXd.
-        assert (Hα0γ : α0 <> α1) by (clear - Hhd Hα0Δ; fsetdec).
-        assert (HXd1 : α0 `in` dom Θ1) by (clear - HXd Hα0γ; fsetdec).
-        pose proof (Hbk1 α0 Hα0Δ HXd1) as HX0.
-        simpl. clear - HX0. fsetdec. }
+        intros _. simpl in *; clear - Hcov Hhd; fsetdec.
+      - intros α0 Hα0Δ HXd.
+        repeat rewrite dom_app in *; simpl in *.
+        clear - Hcov Hα0Δ HXd; fsetdec. }
     apply a_tyequiv_weaken_cons. exact Heq1.
   - (* U-Flex-Flex-Skip' *)
     intros Θ0 Θ1 c b α β Hb Hbar Hu IHu Hwf.
@@ -3061,7 +3004,7 @@ Proof.
     split; [ simpl; clear - Hdom; fsetdec | ].
     split.
     { intros Δ Hnd Hfa Hcov.
-      destruct (Hinv Δ) as [Hnd1 [Hfa1 Hbk1]].
+      destruct (Hinv Δ) as [Hnd1 [Hfa1 _]].
       { eapply no_flex_dep_tail; eauto. }
       { eapply faf_tail; eauto. }
       { intros α0 Hα0.
@@ -3074,19 +3017,11 @@ Proof.
         exfalso.
         destruct Hb as [Hb2 | [[Qb Hb2] | [Qb Hb2]]]; subst; congruence.
       - apply faf_cons; [ | exact Hfa1 ].
-        intros Hne.
-        assert (Hhd : Δ ∩ (add c (dom Θ0)) [=] empty)
-          by (apply (faf_head Hfa); exact Hne).
-        apply inter_empty_pointwise. intros α0 Hα0Δ HXin.
-        assert (HXc : α0 <> c) by (clear - Hhd Hα0Δ; fsetdec).
-        assert (HXd : α0 `in` dom Θ1) by (clear - HXin HXc; fsetdec).
-        pose proof (Hbk1 α0 Hα0Δ HXd) as HX0.
-        clear - Hhd Hα0Δ HX0. fsetdec.
-      - intros α0 Hα0Δ HXd. simpl in HXd.
-        destruct (α0 == c) as [->|HXc]; [ simpl; clear; fsetdec | ].
-        assert (HXd1 : α0 `in` dom Θ1) by (clear - HXd HXc; fsetdec).
-        pose proof (Hbk1 α0 Hα0Δ HXd1) as HX0.
-        simpl. clear - HX0. fsetdec. }
+        intros Hnonrig. pose proof (faf_head Hfa Hnonrig) as Hhd.
+        simpl in *; clear - Hcov Hhd; fsetdec.
+      - intros α0 Hα0Δ HXd.
+        repeat rewrite dom_app in *; simpl in *.
+        clear - Hcov Hα0Δ HXd; fsetdec. }
     apply a_tyequiv_weaken_cons. exact Heq1.
   - (* C-Ghost *)
     intros Δ1 Δ2 Θ0 P0 Hint Hwf HwfP0 HwfP Hrig Hnfd Hfaf.
@@ -3165,17 +3100,17 @@ Proof.
     split.
     { intros Δ Hnd Hfa Hcov Hft.
       destruct (Hinv1 Δ Hnd Hfa ltac:(clear - Hcov Hdom2; solve_notin_auto))
-        as [Hnd1' [Hfa1' Hbk1']].
+        as [Hnd1' [Hfa1' _]].
       { intros α0 Hα0 HXd HXin. apply (Hft α0 Hα0 HXd).
         simpl. clear - HXin. fsetdec. }
-      destruct (Hinv2 Δ Hnd1' Hfa1') as [Hnd2' [Hfa2' Hbk2']].
+      destruct (Hinv2 Δ Hnd1' Hfa1') as [Hnd2' [Hfa2' _]].
       { clear - Hcov Hdom1. fsetdec. }
       { intros α0 Hα0 HXd HXin.
         apply (Hft α0 Hα0).
         - intros HXin0. apply HXd. apply Hdom1. exact HXin0.
         - simpl. clear - HXin. fsetdec. }
       split; [ exact Hnd2' | ]. split; [ exact Hfa2' | ].
-      intros α0 Hα0 HXd. apply (Hbk1' α0 Hα0). apply (Hbk2' α0 Hα0). exact HXd. }
+      intros α0 Hα0 HXd. clear - Hcov Hα0 HXd; fsetdec. }
     split.
     + exists (bskl_arrow Qt1 Qt2). split.
       { simpl. rewrite HeQt1, HeQt2. reflexivity. }
@@ -3251,10 +3186,7 @@ Proof.
       clear - Hx1 Hxα. fsetdec. }
     split.
     { intros Δ HndΔ HfaΔ HcovΔ Hft.
-      (* the old proof picked a SECOND fresh atom here, only so that it could
-         miss [Δ]; the rule's opener cannot, but it does not have to — the
-         [α0 = α] branch below is refuted by [α ∉ dom Θ1] instead *)
-      destruct (Hinvα Δ) as [Hnd' [Hfa' Hbk']].
+      destruct (Hinvα Δ) as [Hnd' [Hfa' _]].
       { intros β' τ' Hb.
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
           [ discriminate | exact (HndΔ β' τ' Hb') ]. }
@@ -3277,12 +3209,7 @@ Proof.
         unfold binds; right; exact Hb'. }
       split.
       { eapply faf_tail. exact Hfa'. }
-      { intros α0 Hα0 HXd.
-        assert (HX1 : α0 `in` dom ((α ~ abind_tvar) ++ Θ1))
-          by (simpl; clear - HXd; fsetdec).
-        pose proof (Hbk' α0 Hα0 HX1) as HX0. simpl in HX0.
-        assert (Hα0α2 : α0 <> α) by (intros ->; clear - Hα1 HXd; fsetdec).
-        clear - HX0 Hα0α2. fsetdec. } }
+      { intros α0 Hα0 HXd. clear - HcovΔ Hα0 HXd; fsetdec. } }
     split.
     + exists (bskl_all_inh (close_bskl_wrt_bskl α Qtα)). split.
       { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
@@ -3364,9 +3291,7 @@ Proof.
       clear - Hx1 Hxα. fsetdec. }
     split.
     { intros Δ HndΔ HfaΔ HcovΔ Hft.
-      (* the rule's opener replaces the old second fresh atom; the
-         [α0 = α] branch is refuted by [α ∉ dom Θ1] *)
-      destruct (Hinvα Δ) as [Hnd' [Hfa' Hbk']].
+      destruct (Hinvα Δ) as [Hnd' [Hfa' _]].
       { intros β' τ' Hb.
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
           [ discriminate | exact (HndΔ β' τ' Hb') ]. }
@@ -3387,12 +3312,7 @@ Proof.
         unfold binds; right; exact Hb'. }
       split.
       { eapply faf_tail. exact Hfa'. }
-      { intros α0 Hα0 HXd.
-        assert (HX1 : α0 `in` dom ((α ~ abind_tvar) ++ Θ1))
-          by (simpl; clear - HXd; fsetdec).
-        pose proof (Hbk' α0 Hα0 HX1) as HX0. simpl in HX0.
-        assert (Hα0α2 : α0 <> α) by (intros ->; clear - Hα1 HXd; fsetdec).
-        clear - HX0 Hα0α2. fsetdec. } }
+      { intros α0 Hα0 HXd. clear - HcovΔ Hα0 HXd; fsetdec. } }
     split.
     + exists (bskl_all_syn (close_bskl_wrt_bskl α Qtα)). split.
       { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
@@ -3498,7 +3418,7 @@ Proof.
       clear - Hx1 Hxα. fsetdec. }
     split.
     { intros Δ HndΔ HfaΔ HcovΔ Hft.
-      destruct (Hinvα Δ) as [Hnd' [Hfa' Hbk']].
+      destruct (Hinvα Δ) as [Hnd' [Hfa' _]].
       { intros β' τ' Hb.
         destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
           [ discriminate | exact (HndΔ β' τ' Hb') ]. }
@@ -3519,12 +3439,7 @@ Proof.
         unfold binds; right; exact Hb'. }
       split.
       { eapply faf_tail. exact Hfa'. }
-      { intros α0 Hα0 HXd.
-        assert (HX1 : α0 `in` dom ((α ~ abind_tvar) ++ Θ1))
-          by (simpl; clear - HXd; fsetdec).
-        pose proof (Hbk' α0 Hα0 HX1) as HX0. simpl in HX0.
-        assert (Hα0α2 : α0 <> α) by (intros ->; clear - Hα1 HXd; fsetdec).
-        clear - HX0 Hα0α2. fsetdec. } }
+      { intros α0 Hα0 HXd. clear - HcovΔ Hα0 HXd; fsetdec. } }
     split.
     + exists (bskl_all_inh (close_bskl_wrt_bskl α Qtα)). split.
       { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
@@ -3666,7 +3581,7 @@ Proof.
     split; [ exact Hdom | ].
     split.
     { intros Δ HndΔ HfaΔ HcovΔ Hft.
-      destruct (Hinv Δ) as [Hnd' [Hfa' Hbk']].
+      destruct (Hinv Δ) as [Hnd' [Hfa' _]].
       { exact HndΔ. }
       { exact HfaΔ. }
       { simpl. clear. fsetdec. }
@@ -3674,9 +3589,7 @@ Proof.
       { intros α0 Hα0 HXd. pose proof (Hft α0 Hα0 HXd) as Hf0.
         clear - Hf0. fsetdec. }
       split; [ exact Hnd' | ]. split; [ exact Hfa' | ].
-      intros α0 Hα0 HXd.
-      pose proof (Hbk' α0 Hα0 HXd) as HX0. simpl in HX0.
-      clear - HX0. fsetdec. }
+      intros α0 Hα0 HXd. clear - HcovΔ Hα0 HXd; fsetdec. }
     split.
     + exists (bskl_var_f α). split; [ reflexivity | ].
       split.
@@ -3720,7 +3633,7 @@ Proof.
     split; [ exact Hdom | ].
     split.
     { intros Δ HndΔ HfaΔ HcovΔ Hft.
-      destruct (Hinv Δ) as [Hnd' [Hfa' Hbk']].
+      destruct (Hinv Δ) as [Hnd' [Hfa' _]].
       { exact HndΔ. }
       { exact HfaΔ. }
       { simpl. clear. fsetdec. }
@@ -3728,9 +3641,7 @@ Proof.
       { intros α0 Hα0 HXd. pose proof (Hft α0 Hα0 HXd) as Hf0.
         clear - Hf0. fsetdec. }
       split; [ exact Hnd' | ]. split; [ exact Hfa' | ].
-      intros α0 Hα0 HXd.
-      pose proof (Hbk' α0 Hα0 HXd) as HX0. simpl in HX0.
-      clear - HX0. fsetdec. }
+      intros α0 Hα0 HXd. clear - HcovΔ Hα0 HXd; fsetdec. }
     split.
     + exists (bskl_var_f α). split; [ reflexivity | ].
       split.
