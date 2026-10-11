@@ -182,6 +182,31 @@ them (PAPER-GAPS has the details):
 # Part 2: Progress log (most recent first)
 
 
+## 2026-10-11 — Reuse substitution and lookup arguments
+
+Replace the unit and monotype ghost-free substitution inductions with direct
+applications of the existing general substitution lemma. In source folding,
+handle the target-lookup constructor before splitting the source skeleton,
+removing nine copies of the same recursive argument. In ghost-free refinement
+strengthening, share lookup stripping and scope facts for cases 9 and 10 with
+an explicit commented selector; keep the two recursive cases explicit.
+
+Net reduction: **105 physical Coq lines / 105 nonblank, noncomment lines**.
+All 35 existing theorem statements in the edited module are unchanged. No
+inline tactic terms added. Related edits were checked together with focused
+compilation, followed by one full build and assumption audit for the batch.
+
+User priority update: focus on large structural opportunities before small
+cleanups. The next candidate is the tagged/untagged forall pair in
+`a_lookeq_solve_complete_gen`: 474 and 543 lines, with 456 exactly matching
+aligned lines. Investigate normalizing the body tag premises to share the
+recursive proof, retaining explicit constructor-specific preparation.
+
+Validation: `make coq` passed. All 34 headline assumption reports are
+closed under the global context; no axiom reports or errors. Theorem
+statements are unchanged and `git diff --check` passes.
+
+
 ## 2026-10-11 — Explicit case selection and routine premise automation
 
 Following the user's proof-style corrections, replace the speculative
