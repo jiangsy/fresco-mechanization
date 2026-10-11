@@ -1240,21 +1240,8 @@ Proof.
                         ∪ ftvar_in_pskl (sp_dom rs)
                         ∪ empty ∪ empty [<=] sp_supply rs)
           by (clear - Hcvs Hpqs Hcov HAe Hgrs; simpl in *; fsetdec).
-        match goal with
-        | |- context [ e_consis_impl ?d1 ?d2 ?S ?T ?p0 ?p ?h0 ?h1 ?hd ?h ] =>
-            let Hx := fresh "Hx" in let Hcl := fresh "Hcl" in
-            let rc0 := fresh "rc0" in let Heqr := fresh "Heqr" in
-            destruct (e_consis_impl_complete h0 h1 hd h Dc1 Hus Hcovc)
-              as [rc0 [psc [Hx [Havc [HSc [HTc HQc]]]]]];
-            destruct (e_consis_impl d1 d2 S T p0 p h0 h1 hd h)
-              as [ [rc Hrc] | ] eqn:Hcl;
-            try rewrite Hcl in Hx;
-            [ assert (Heqr : rc0 = exist (consis_spec d1 d2 S T p0 p) rc Hrc)
-                by congruence;
-              subst rc0; cbn [proj1_sig] in HSc, HTc, HQc;
-              clear Hx Hcl; cbv beta iota
-            | discriminate ]
-        end.
+        kill_consis_call Dc1 Hus Hcovc rc Hrc psc Havc HSc HTc
+          HQc.
         unfold consis_spec in Hrc.
         destruct ((proj2 (proj2 e_assign_unify_consis_sound))
                     _ _ _ _ _ _ _ _ _ Hrc Hus Hcovc) as [Hca [Huc Hcvc]].
@@ -1460,19 +1447,8 @@ Proof.
                       ∪ ftvar_in_pskl (ptyp_to_pskl A) ∪ empty ∪ empty
                       [<=] sp_supply rs)
         by (clear - Hcvs Hpqs Hcov HAe Hgrs; simpl in *; fsetdec);
-      match goal with
-      | |- context [ e_consis_impl ?d1 ?d2 ?S ?T ?p0 ?p ?h0 ?h1 ?hd ?h ] =>
-          destruct (e_consis_impl_complete h0 h1 hd h Dc1 Hus Hcovc)
-            as [rc0 [psc [Hxc [Havc [HSc [HTc HQc]]]]]];
-          destruct (e_consis_impl d1 d2 S T p0 p h0 h1 hd h)
-            as [ [rc Hrc] | ] eqn:Hclc;
-          try rewrite Hclc in Hxc;
-          [ | discriminate ];
-          assert (Heqrc : rc0 = exist (consis_spec d1 d2 S T p0 p) rc Hrc)
-            by congruence;
-          subst rc0; cbn [proj1_sig] in HSc, HTc, HQc;
-          clear Hxc Hclc; cbv beta iota
-      end;
+      kill_consis_call Dc1 Hus Hcovc rc Hrc psc Havc HSc HTc
+        HQc;
       unfold consis_spec in Hrc;
       destruct ((proj2 (proj2 e_assign_unify_consis_sound))
                   _ _ _ _ _ _ _ _ _ Hrc Hus Hcovc) as [Hca [Huc Hcvc]];
@@ -1790,21 +1766,8 @@ Proof.
                     ∪ empty ∪ empty [<=] ty_supply r1).
     { pose proof (ftvar_ptyp_to_pskl (ty_out r1)) as Ho1.
       clear - Hcov Hcv1 Hq1 HBe Ho1 Hgr1; simpl in *; fsetdec. }
-    match goal with
-    | |- context [ e_consis_impl ?d1 ?d2 ?S ?T ?p0 ?p ?h0 ?h1 ?hd ?h ] =>
-        let Hx := fresh "Hx" in let Hcl := fresh "Hcl" in
-        let rc0 := fresh "rc0" in let Heqr := fresh "Heqr" in
-        destruct (e_consis_impl_complete h0 h1 hd h Dc1 Hu1 Hcovc)
-          as [rc0 [ps2 [Hx [Hav2 [HS2 [HT2 HQ2]]]]]];
-        destruct (e_consis_impl d1 d2 S T p0 p h0 h1 hd h)
-          as [ [rc Hrc] | ] eqn:Hcl;
-        try rewrite Hcl in Hx;
-        [ assert (Heqr : rc0 = exist (consis_spec d1 d2 S T p0 p) rc Hrc)
-            by congruence;
-          subst rc0; cbn [proj1_sig] in HS2, HT2, HQ2;
-          clear Hx Hcl; cbv beta iota
-        | discriminate ]
-    end.
+    kill_consis_call Dc1 Hu1 Hcovc rc Hrc ps2 Hav2 HS2 HT2
+      HQ2.
     eexists; exists (ps1 ++ ps2).
     split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
     repeat apply conj.

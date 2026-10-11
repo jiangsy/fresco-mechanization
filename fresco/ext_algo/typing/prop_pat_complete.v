@@ -807,6 +807,24 @@ Ltac kill_split Dsp HD Hu Hcovsp rs Hrs ps1 Hav1 HS1 HT1 HP1 HQ1 :=
       clear Hxs Hcls; cbv beta iota; unfold split_spec in Hrs
   end.
 
+(** The same for a CONSISTENCY call the goal contains: level 5's headline
+    at the call's own proof arguments, then the answer read off the call.
+    Exported: prop_typing_complete.v uses it too. *)
+Ltac kill_consis_call Dc Hu Hcov rc Hrc ps Hav HS HT HQ :=
+  match goal with
+  | |- context [ e_consis_impl ?d1 ?d2 ?S ?T ?p0 ?p ?h0 ?h1 ?hd ?h ] =>
+      let rc0 := fresh "rc0" in let Hx := fresh "Hx" in
+      let Hcl := fresh "Hcl" in let Heqr := fresh "Heqr" in
+      destruct (e_consis_impl_complete h0 h1 hd h Dc Hu Hcov)
+        as [rc0 [ps [Hx [Hav [HS [HT HQ]]]]]];
+      destruct (e_consis_impl d1 d2 S T p0 p h0 h1 hd h)
+        as [ [rc Hrc] | ] eqn:Hcl;
+      try rewrite Hcl in Hx; try discriminate;
+      assert (Heqr : rc0 = exist (consis_spec d1 d2 S T p0 p) rc Hrc)
+        by congruence;
+      subst rc0; cbn [proj1_sig] in HS, HT, HQ; clear Hx Hcl; cbv beta iota
+  end.
+
 (** A row that answers from its inputs alone: the EMPTY chain. *)
 Lemma e_pat_impl_complete_ind : forall S0 m Θ0 P0 e,
   e_pat_order S0 m Θ0 P0 e -> pat_complete S0 m Θ0 P0 e.
@@ -1164,19 +1182,8 @@ Proof.
                       ∪ ftvar_in_pskl (ptyp_to_pskl A) ∪ empty ∪ empty
                       [<=] sp_supply rs)
         by (clear - Hcvs Hpqs Hcov HAe Hgrs; simpl in *; fsetdec);
-      match goal with
-      | |- context [ e_consis_impl ?d1 ?d2 ?S ?T ?p0 ?p ?h0 ?h1 ?hd ?h ] =>
-          destruct (e_consis_impl_complete h0 h1 hd h Dc1 Hus Hcovc)
-            as [rc0 [psc [Hxc [Havc [HSc [HTc HQc]]]]]];
-          destruct (e_consis_impl d1 d2 S T p0 p h0 h1 hd h)
-            as [ [rc Hrc] | ] eqn:Hclc;
-          try rewrite Hclc in Hxc;
-          [ | discriminate ];
-          assert (Heqrc : rc0 = exist (consis_spec d1 d2 S T p0 p) rc Hrc)
-            by congruence;
-          subst rc0; cbn [proj1_sig] in HSc, HTc, HQc;
-          clear Hxc Hclc; cbv beta iota
-      end;
+      kill_consis_call Dc1 Hus Hcovc rc Hrc psc Havc HSc HTc
+        HQc;
       unfold consis_spec in Hrc;
       destruct ((proj2 (proj2 e_assign_unify_consis_sound))
                   _ _ _ _ _ _ _ _ _ Hrc Hus Hcovc) as [Hca [Huc Hcvc]];
