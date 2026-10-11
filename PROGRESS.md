@@ -181,6 +181,23 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share ordinary consistency binder preparation
+
+Share opener freshness, output closing equations and output-context
+well-formedness across the ForallInh, ForallSyn and UnivGhost1 cases of
+`a_assign_unify_consis_sound`. Keep each body premise and final constructor
+explicit. Numbered selectors identify the cases and document Coq's regrouping
+of the three selected goals; the intervening UnivGhost case follows them.
+
+Net reduction: **55 physical Coq lines / 52 nonblank, noncomment lines**.
+All 97 existing theorem statements are unchanged. Inline tactic terms remain
+at 74; none were added.
+
+Validation: `make coq` passed with all 34 headline assumption reports closed
+under the global context, no axioms, and no errors. Statement comparison
+and `git diff --check` passed.
+
+
 ## 2026-10-11 — Remove recursive coverage detours in mutual soundness
 
 Use each soundness invariant's coverage premise directly for its final
