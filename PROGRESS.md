@@ -182,6 +182,32 @@ them (PAPER-GAPS has the details):
 # Part 2: Progress log (most recent first)
 
 
+## 2026-10-11 — Let lookup induction cover leaf cases directly
+
+Broaden the proof motive of `a_looksub_solve_complete_gen` so absent and
+variable subjects are handled inside the induction. Preserve a copy of the
+current subtyping derivation for the common leaf dispatch. Five recursive
+sites now invoke the induction hypothesis directly, removing ten repeated
+leaf-lemma applications and the nonleaf premises formerly threaded through
+every recursive call.
+
+Consume the recursive results directly in the arrow and ghost cases, and
+apply `looksub_solve_forall_l_close` before recursing in the forall cases.
+This removes all five local `REC` assertions from the main proof. The named
+lemma `looksub_solve_univ_ghost_l_close` shares output normalization and
+transport between the ordinary and dotted universal-ghost constructors.
+
+Net reduction: **341 physical Coq lines / 288 nonblank, noncomment lines**.
+All 10 existing theorem statements are unchanged. No inline tactic terms
+added; their count falls from 13 to 12. Related induction and result-transport
+changes were batched before the final full build.
+
+Validation: `make coq` passed. All 34 headline assumption reports are
+closed under the global context, with no axiom reports or errors. Existing
+theorem statements are unchanged and `git diff --check` passes. The final
+comment correction was also checked to preserve every Coq token.
+
+
 ## 2026-10-11 — Share the complete forall lookup argument
 
 Consolidate the tagged and untagged forall branches of
