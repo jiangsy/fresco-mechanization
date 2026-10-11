@@ -612,8 +612,7 @@ Proof.
       as (S1 & ρe & Θ1' & Q' & De & HrΘ1 & Hagr1 & HrQ & Hext & Hdom1).
     exists S1, ρe, Θ1', Q'.
     split; [ apply e_pat__unit; exact De | ].
-    split; [ exact HrΘ1 | ]. split; [ exact Hagr1 | ].
-    split; [ exact HrQ | ]. split; [ exact Hext | ]. exact Hdom1.
+    exact (conj HrΘ1 (conj Hagr1 (conj HrQ (conj Hext Hdom1)))).
   - (* AP-Var, type-bound *)
     inversion HrE as [ | | x1 x2 Hax | | | | | ]; subst.
     destruct (@rel_aenv_binds_pin ρ V Θa Θ0' x x2 (abind_var_typ A)
@@ -632,8 +631,7 @@ Proof.
       as (S1 & ρe & Θ1' & Q' & De & HrΘ1 & Hagr1 & HrQ & Hext & Hdom1).
     exists S1, ρe, Θ1', Q'.
     split; [ eapply e_pat__var; [ exact Hb2 | exact De ] | ].
-    split; [ exact HrΘ1 | ]. split; [ exact Hagr1 | ].
-    split; [ exact HrQ | ]. split; [ exact Hext | ]. exact Hdom1.
+    exact (conj HrΘ1 (conj Hagr1 (conj HrQ (conj Hext Hdom1)))).
   - (* AP-Var, skeleton-bound *)
     inversion HrE as [ | | x1 x2 Hax | | | | | ]; subst.
     destruct (@rel_aenv_binds_pin ρ V Θa Θ0' x x2 (abind_var_skl Ps)
@@ -649,8 +647,7 @@ Proof.
       as (S1 & ρe & Θ1' & Q' & De & HrΘ1 & Hagr1 & HrQ & Hext & Hdom1).
     exists S1, ρe, Θ1', Q'.
     split; [ eapply e_pat__var_skl; [ exact Hb2 | exact De ] | ].
-    split; [ exact HrΘ1 | ]. split; [ exact Hagr1 | ].
-    split; [ exact HrQ | ]. split; [ exact Hext | ]. exact Hdom1.
+    exact (conj HrΘ1 (conj Hagr1 (conj HrQ (conj Hext Hdom1)))).
   - (* AP-Anno *)
     inversion HrE as [ | | | | | | eb1 eb2 A1 A2 HrEb HrA | ]; subst.
     inversion Hwfe as [ | | Θq eq Aq HwfAq Hwfeq | | | | ]; subst.
@@ -665,8 +662,7 @@ Proof.
       as (S1 & ρe & Θ1' & Q' & De & HrΘ1 & Hagr1 & HrQ & Hext & Hdom1).
     exists S1, ρe, Θ1', Q'.
     split; [ apply e_pat__anno; exact De | ].
-    split; [ exact HrΘ1 | ]. split; [ exact Hagr1 | ].
-    split; [ exact HrQ | ]. split; [ exact Hext | ]. exact Hdom1.
+    exact (conj HrΘ1 (conj Hagr1 (conj HrQ (conj Hext Hdom1)))).
   - (* AP-Freeze *)
     inversion HrE as [ | | | | | | | eb1 eb2 HrEb ]; subst.
     inversion HrP0; subst.
@@ -680,8 +676,7 @@ Proof.
       as (S1 & ρe & Θ1' & Q' & De & HrΘ1 & Hagr1 & HrQ & Hext & Hdom1).
     exists S1, ρe, Θ1', Q'.
     split; [ apply e_pat__freeze; exact De | ].
-    split; [ exact HrΘ1 | ]. split; [ exact Hagr1 | ].
-    split; [ exact HrQ | ]. split; [ exact Hext | ]. exact Hdom1.
+    exact (conj HrΘ1 (conj Hagr1 (conj HrQ (conj Hext Hdom1)))).
   - (* ⭐⭐ AP-Abs — the SK split is CONTEXT-IDENTITY ([a_split_sk_shape]),
        so the row is one CORE call ([lift_split_identity] covers both
        shapes). *)

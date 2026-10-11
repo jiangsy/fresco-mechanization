@@ -2159,10 +2159,7 @@ Proof.
         [ eapply rel_pskl_guarded; [ exact HrP0 | exact Hg ]
         | eapply rel_pskl_non_flex; [ exact HrP0 | exact Hagr | exact Hnf ]
         | exact De ]. }
-    split; [ exact HrΘ1 | ].
-    split; [ exact Hagr1 | ].
-    split; [ exact HrQ | ].
-    split; [ exact Hext | ]. exact Hdom1.
+    exact (conj HrΘ1 (conj Hagr1 (conj HrQ (conj Hext Hdom1)))).
   - (* C-Flex : hand to the UNIFY IH *)
     intros Δ1 Δ2 Θ0 Θ1 α β HU IH.
     intros S0 Θ0' Δ1' Δ2' P0' P' ρ V HrΘ HrP0 HrP Hrd1 Hrd2 Hagr Hinj Hfun
@@ -2307,8 +2304,5 @@ Proof.
         [ eapply rel_pskl_guarded; [ exact HrP | exact Hg ]
         | eapply rel_pskl_non_flex; [ exact HrP | exact Hagr | exact Hnf ]
         | exact De ]. }
-    split; [ exact HrΘ1 | ].
-    split; [ exact Hagr1 | ].
-    split; [ exact HrQ | ].
-    split; [ exact Hext | ]. exact Hdom1.
+    exact (conj HrΘ1 (conj Hagr1 (conj HrQ (conj Hext Hdom1)))).
 Qed.

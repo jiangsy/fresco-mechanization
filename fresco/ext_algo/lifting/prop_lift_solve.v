@@ -1030,9 +1030,7 @@ Proof.
       - exact Hβ2.
       - exact D2p. }
     split; [ exact E1 | split; [ exact E2 | ] ].
-    split; [ exact HρxN | ].
-    split; [ exact HtrN | ].
-    exact HrelN.
+    exact (conj HρxN (conj HtrN HrelN)).
   - (* ⭐ SS-Arrow: §5's eq half feeds the threaded sub half *)
     inversion HrelP; subst. inversion HrelQ; subst.
     match goal with

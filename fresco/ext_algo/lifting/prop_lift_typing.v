@@ -729,12 +729,8 @@ Proof.
       | clear - Hscp Hsc0; fsetdec | exact Hcov | exact Hblk ]. }
 
   exists S1, ρeo, Θ1', (ptyp_all (close_ptyp_wrt_ptyp α2 B'')).
-  split; [ exact Dc | ].
-  split; [ exact HrΘfin | ].
-  split; [ exact Hagrfin | ].
-  split; [ exact HrQfin | ].
-  split; [ exact Hextfin | ].
-  exact Hdomeo.
+  exact (conj Dc (conj HrΘfin (conj Hagrfin (conj HrQfin (conj Hextfin
+    Hdomeo))))).
 Qed.
 
 (* ===================================================================== *)
@@ -964,8 +960,7 @@ Proof.
       as (A' & -> & HrA').
     exists S1, ρe, Θ1', A'.
     split; [ apply e_typing__unit; exact De | ].
-    split; [ exact HrΘ1 | ]. split; [ exact Hagr1 | ].
-    split; [ exact HrA' | ]. split; [ exact Hext | ]. exact Hdom1.
+    exact (conj HrΘ1 (conj Hagr1 (conj HrA' (conj Hext Hdom1)))).
   - (* AT-Var *)
     inversion HrE as [ | | x1 x2 Hat | | | | | ]; subst.
     destruct (@rel_aenv_binds_pin ρ V Θa Θ0' x x2 (abind_var_typ A)
@@ -986,8 +981,7 @@ Proof.
       as (B' & -> & HrB').
     exists S1, ρe, Θ1', B'.
     split; [ eapply e_typing__var; [ exact Hb2 | exact De ] | ].
-    split; [ exact HrΘ1 | ]. split; [ exact Hagr1 | ].
-    split; [ exact HrB' | ]. split; [ exact Hext | ]. exact Hdom1.
+    exact (conj HrΘ1 (conj Hagr1 (conj HrB' (conj Hext Hdom1)))).
   - (* ⭐ AT-Anno — the recursive call at (TC, ⌈A⌉), whose RESULT the rule
        PINS to the annotation.  The IH gives only a RELATED result, and the
        pin is recovered by [rel_pskl_fun_dom] — functionality of the

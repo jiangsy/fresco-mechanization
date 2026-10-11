@@ -320,10 +320,8 @@ Proof.
       - eapply rel_pskl_guarded; [ exact HrelP | assumption ].
       - eapply rel_pskl_guarded; [ exact HrelP' | assumption ].
       - exact D2. }
-    split; [ exact E1 | ]. split; [ exact E2 | ].
-    split; [ exact Hpairs | ]. split; [ exact Hxb | ].
-    split; [ exact Hoc2 | ]. split; [ exact Hcl2 | ].
-    exact Hrel'.
+    exact (conj E1 (conj E2 (conj Hpairs (conj Hxb (conj Hoc2 (conj Hcl2
+      Hrel')))))).
   - (* LS-ForallR — leaks its opener *)
     intros Θ1 α A B Ξ C β Hgf Hβ1 Hocc Hnv Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
@@ -503,10 +501,8 @@ Proof.
           [ eapply rel_pskl_neq_ghost; [ exact HrelP' | exact Hnh ]
           | eapply rel_pskl_forall_r_off; [ exact HrelP' | exact Hfr3 ]
           | exact D2 ] | ].
-    split; [ exact E1 | ]. split; [ exact E2 | ].
-    split; [ exact Hpairs | ]. split; [ exact Hxb | ].
-    split; [ exact Hoc2 | ]. split; [ exact Hcl2 | ].
-    exact Hrel'.
+    exact (conj E1 (conj E2 (conj Hpairs (conj Hxb (conj Hoc2 (conj Hcl2
+      Hrel')))))).
   - (* LE-Var *)
     intros Θ1 α Pt S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
     inversion HrelP; subst.
@@ -775,10 +771,8 @@ Proof.
       as (S1 & ρx & ρn & Ξ2 & C2 & D2 & E1 & E2 & Hpairs & Hxb & Hoc2 & Hcl2 & Hrel').
     exists S1, ρx, ρn, Ξ2, C2.
     split; [ apply e_lookeq__univ_ghost; exact D2 | ].
-    split; [ exact E1 | ]. split; [ exact E2 | ].
-    split; [ exact Hpairs | ]. split; [ exact Hxb | ].
-    split; [ exact Hoc2 | ]. split; [ exact Hcl2 | ].
-    exact Hrel'.
+    exact (conj E1 (conj E2 (conj Hpairs (conj Hxb (conj Hoc2 (conj Hcl2
+      Hrel')))))).
   - (* LE-UnivGhost1 — leaks; only the TARGET opens *)
     intros Θ1 α Pb Pb' Ξ C β Hβ1 Hocc Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
@@ -850,10 +844,8 @@ Proof.
           [ exact (proj2 (proj2 Hag a0 b0 Hin) Hf)
           | exact (proj2 (proj1 Hag a0 Hin) Hf) ].
       - exact D2. }
-    split; [ exact E1 | ]. split; [ exact E2 | ].
-    split; [ exact Hpairs | ]. split; [ exact Hxb | ].
-    split; [ exact Hoc2 | ]. split; [ exact Hcl2 | ].
-    exact Hrel'.
+    exact (conj E1 (conj E2 (conj Hpairs (conj Hxb (conj Hoc2 (conj Hcl2
+      Hrel')))))).
   - (* LE-UnivGhostR *)
     intros Θ1 α Ps Pt Ξ C Hne Hg Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
@@ -882,8 +874,6 @@ Proof.
         end.
       - eapply rel_pskl_guarded; [ exact HrelP | assumption ].
       - exact D2. }
-    split; [ exact E1 | ]. split; [ exact E2 | ].
-    split; [ exact Hpairs | ]. split; [ exact Hxb | ].
-    split; [ exact Hoc2 | ]. split; [ exact Hcl2 | ].
-    exact Hrel'.
+    exact (conj E1 (conj E2 (conj Hpairs (conj Hxb (conj Hoc2 (conj Hcl2
+      Hrel')))))).
 Qed.

@@ -1093,10 +1093,7 @@ Proof.
       as (S1 & ρe & Θ1' & Q' & De & HrΘ1 & Hagr1 & HrQ & Hext & Hdom1).
     exists S1, ρe, Θ1', Q'.
     split; [ apply e_sub__univ_ghost_l; [ exact Hne | exact De ] | ].
-    split; [ exact HrΘ1 | ].
-    split; [ exact Hagr1 | ].
-    split; [ exact HrQ | ].
-    split; [ exact Hext | ]. exact Hdom1.
+    exact (conj HrΘ1 (conj Hagr1 (conj HrQ (conj Hext Hdom1)))).
   - (* ⭐⭐ W-Solve — the walk's GENERATIVE row.  It invents two atoms fresh
        for the CONTEXT only, so (like the ∀ rows) ρ must be restricted at
        them first; then TWO pairs are pushed and the head gains a
@@ -1572,10 +1569,7 @@ Proof.
     subst Θ0'. inversion Hbd; subst.
     exists S1, ρe, ((b ~ abind_flex_mono) ++ Θ1'), Q'.
     split; [ apply e_sub_flex__skip; [ exact Hne2 | exact HbP | exact De ] | ].
-    split; [ exact HrΘ1 | ].
-    split; [ exact Hagr1 | ].
-    split; [ exact HrQ | ].
-    split; [ exact Hext | ]. exact Hdom1.
+    exact (conj HrΘ1 (conj Hagr1 (conj HrQ (conj Hext Hdom1)))).
   - (* W-SkipRigid *)
     intros NM M P0 Θ0 Θ1 Ξ α β Q Hne Hni Hβ1 Hprem IH.
     intros S0 Θ0' Ξ' α' P0' ρ V HrΘ HrΞ Hrα HrP0 Hagr Hinj Hfun Hwf Hdec
@@ -1589,10 +1583,7 @@ Proof.
     exists S1, ρe, ((b ~ abind_tvar) ++ Θ1'), Q'.
     split;
       [ apply e_sub_flex__skip_rigid; [ exact Hne2 | exact HbP | exact De ] | ].
-    split; [ exact HrΘ1 | ].
-    split; [ exact Hagr1 | ].
-    split; [ exact HrQ | ].
-    split; [ exact Hext | ]. exact Hdom1.
+    exact (conj HrΘ1 (conj Hagr1 (conj HrQ (conj Hext Hdom1)))).
   - (* W-SkipTmVar (type entry) : the two side conditions the rule does NOT
        state are THEOREMS — a term entry is not tvar-ish, so it is neither the
        walk's subject nor a free variable of the check-against *)
@@ -1619,10 +1610,7 @@ Proof.
     subst Θ0'. inversion Hbd; subst.
     exists S1, ρe, ((b ~ abind_var_typ A2) ++ Θ1'), Q'.
     split; [ apply e_sub_flex__skip_tm_var; exact De | ].
-    split; [ exact HrΘ1 | ].
-    split; [ exact Hagr1 | ].
-    split; [ exact HrQ | ].
-    split; [ exact Hext | ]. exact Hdom1.
+    exact (conj HrΘ1 (conj Hagr1 (conj HrQ (conj Hext Hdom1)))).
   - (* W-SkipTmVar (skeleton entry) *)
     intros NM M P0 Θ0 Θ1 Ξ α x Qpay Q Hxout Hprem IH.
     intros S0 Θ0' Ξ' α' P0' ρ V HrΘ HrΞ Hrα HrP0 Hagr Hinj Hfun Hwf Hdec
@@ -1647,8 +1635,5 @@ Proof.
     subst Θ0'. inversion Hbd; subst.
     exists S1, ρe, ((b ~ abind_var_skl Q2) ++ Θ1'), Q'.
     split; [ apply e_sub_flex__skip_tm_skl; exact De | ].
-    split; [ exact HrΘ1 | ].
-    split; [ exact Hagr1 | ].
-    split; [ exact HrQ | ].
-    split; [ exact Hext | ]. exact Hdom1.
+    exact (conj HrΘ1 (conj Hagr1 (conj HrQ (conj Hext Hdom1)))).
 Qed.
