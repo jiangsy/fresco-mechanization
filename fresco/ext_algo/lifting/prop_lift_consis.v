@@ -663,7 +663,10 @@ Lemma lift_drop_mid :
     /\ (forall a, a `in` dom Θ1 -> a `notin` dom (Ξ ++ Θ0) ->
           a `notin` cols_l ρ)
     /\ dom (Ξ' ++ Θ0'') [<=] S0
-    /\ VS ∪ cols_r ρ [<=] S0.
+    /\ VS ∪ cols_r ρ [<=] S0
+    /\ (forall a a', rel_atom ρ V a a' -> a <> β -> rel_atom ρ VS a a')
+    /\ (forall R R', rel_pskl ρ V R R' -> β `notin` ftvar_in_pskl R ->
+          rel_pskl ρ VS R R').
 Proof.
   intros ρ V Ξ Ξ' β b bd bd2 Θ0 Θ0'' Θ1 S0 HrΞ Hrest Hab Hagr Hinj Hfun
     Hwf Hdec Huq2p Hftv2 Hscp Hblk Hβd HdΘ Hcov.
@@ -695,9 +698,7 @@ Proof.
     assert (Hin : β `in` ftvar_in_aenv (Ξ ++ Θ0))
       by (subst VS; clear - Hx; fsetdec).
     clear - Hin HscC Hβnd. fsetdec. }
-  exists VS.
-  split; [ exact HVS | ].
-  split.
+  assert (HVSsplit : forall x, x `in` V -> x <> β -> x `in` VS).
   { intros x Hx Hne0. subst VS.
     pose proof (dom_subset_ftvar_in_aenv (Ξ ++ Θ0)) as Hds.
     assert (Hxd : x `in` dom (Ξ ++ (β ~ bd) ++ Θ0))
@@ -705,6 +706,9 @@ Proof.
     repeat rewrite dom_app in Hxd. simpl in Hxd.
     repeat rewrite dom_app in Hds.
     clear - Hx Hne0 Hxd Hds. fsetdec. }
+  exists VS.
+  split; [ exact HVS | ].
+  split; [ exact HVSsplit | ].
   split; [ exact Hβfun | ].
   split; [ exact Hβnd | ].
   split; [ exact Hbnd | ].
@@ -743,7 +747,14 @@ Proof.
   split.
   { repeat rewrite dom_app in HdΘ |- *; simpl in HdΘ.
     clear - HdΘ; fsetdec. }
-  clear - Hcov HVS; fsetdec.
+  split; [ clear - Hcov HVS; fsetdec | ].
+  split.
+  { intros a a' Hr Hne. inversion Hr; subst.
+    - apply rel_atom__pair; assumption.
+    - apply rel_atom__id. apply HVSsplit; assumption. }
+  intros R R' Hr Hβ. eapply rel_pskl_shrink_V; [ exact Hr | ].
+  intros x Hx Hf. apply HVSsplit; [ exact Hx | ].
+  intros ->. contradiction.
 Qed.
 
 Lemma lift_reattach_mid :
@@ -841,26 +852,14 @@ Proof.
   destruct (rel_aenv_cons_inv_l HrΘ)
     as (b0 & bdd & Θ0'' & E0' & Hab & Hbd & Hrest).
   subst Θ0'.
-  assert (Huq1 : uniq ((c ~ bc) ++ Θ0)) by (apply a_wf_aenv_uniq; exact Hwf).
-  assert (Huq2 : uniq ((b0 ~ bdd) ++ Θ0'')) by (exact Huq2p).
-  assert (HwfC : {{ ⊢ Θ0 }}a)
-    by (eapply (@a_wf_aenv_strip_prefix ((c ~ bc))); exact Hwf).
-  assert (Huq2C : uniq Θ0'') by (clear - Huq2p; solve_uniq).
-  assert (Hftv2C : ftvar_in_aenv Θ0'' [<=] S0)
-    by (simpl in Hftv2; clear - Hftv2; fsetdec).
-  assert (Hcnd : c `notin` dom Θ0) by (clear - Huq1; destruct_uniq; fsetdec).
-  assert (Hbnd : b0 `notin` dom Θ0'') by (clear - Huq2; destruct_uniq; fsetdec).
+  destruct (lift_drop_mid (@rel_aenv__nil ρ V) Hrest Hab Hagr Hinj Hfun Hwf
+              a_decls__nil Huq2p Hftv2 Hscp Hblk Hcd HdΘ Hcov)
+    as (VS & HVS & HVSsplit & Hcfun & Hcnd & Hbnd & _ & HrΘS & HagrS
+        & HinjS & HfunS & HwfC & Huq2C & Hftv2C & HscpS & HblkS & HdΘS & HcovS
+        & Hshr_at & _).
+  simpl in Hcnd, Hbnd.
   assert (Hpay : ftvar_in_abind bc [<=] dom Θ0)
     by (eapply a_wf_aenv_cons_payload_ftv; exact Hwf).
-  assert (Hsc : ftvar_in_aenv ((c ~ bc) ++ Θ0) [<=] dom ((c ~ bc) ++ Θ0))
-    by (apply a_wf_aenv_ftv_dom; exact Hwf).
-  assert (HVdom : V [<=] dom ((c ~ bc) ++ Θ0))
-    by (clear - Hscp Hsc; fsetdec).
-  assert (HscC : ftvar_in_aenv Θ0 [<=] dom Θ0)
-    by (apply a_wf_aenv_ftv_dom; exact HwfC).
-  assert (Hcd0 : c `in` dom ((c ~ bc) ++ Θ0)) by (simpl; clear; fsetdec).
-  assert (Hcfun : forall y, rel_atom ρ V c y -> y = b0)
-    by (intros y Hy; exact (Hfun c y b0 Hcd0 Hy Hab)).
   destruct (Hside2 _ _ _ Hbd) as [Hflag Hrule2].
   destruct (Hne_of Hcnd Hfl1 Hfl2) as [Hneα Hneβ].
   assert (Hne2α : α' <> b0).
@@ -869,54 +868,12 @@ Proof.
   assert (Hne2β : β' <> b0).
   { intros Ex. apply Hneβ. rewrite Ex in Hrβ.
     exact (Hinj β c b0 Hrβ Hab). }
-  remember (V ∩ ftvar_in_aenv Θ0) as VS eqn:EVS.
-  assert (HVS : VS [<=] V) by (subst VS; clear; fsetdec).
-  assert (HVSsplit : forall y, y `in` V -> y <> c -> y `in` VS).
-  { intros y Hy Hne0. subst VS.
-    pose proof (dom_subset_ftvar_in_aenv Θ0) as Hds.
-    assert (Hyd : y `in` dom ((c ~ bc) ++ Θ0)) by (clear - Hy HVdom; fsetdec).
-    simpl in Hyd. clear - Hy Hne0 Hyd Hds. fsetdec. }
-  assert (HVSne : forall y, y `in` VS -> y <> c).
-  { intros y Hy Ex. rewrite Ex in Hy.
-    assert (Hin : c `in` ftvar_in_aenv Θ0) by (subst VS; clear - Hy; fsetdec).
-    clear - Hin HscC Hcnd. fsetdec. }
-  assert (HrΘS : rel_aenv ρ VS Θ0 Θ0'').
-  { eapply rel_aenv_shrink_V; [ exact Hrest | ].
-    intros y Hy Hf. subst VS.
-    pose proof (dom_subset_ftvar_in_aenv Θ0) as Hds.
-    clear - Hy Hf Hds. fsetdec. }
-  assert (HrαS : rel_atom ρ VS α α').
-  { inversion Hrα; subst.
-    - apply rel_atom__pair; assumption.
-    - apply rel_atom__id. apply HVSsplit; [ assumption | exact Hneα ]. }
-  assert (HrβS : rel_atom ρ VS β β').
-  { inversion Hrβ; subst.
-    - apply rel_atom__pair; assumption.
-    - apply rel_atom__id. apply HVSsplit; [ assumption | exact Hneβ ]. }
-  assert (HagrS : flex_agree_rel ρ VS Θ0 Θ0'')
-    by (eapply flex_agree_peel_cons;
-        [ exact Hagr | exact Hab | exact Hinj | exact Hcfun | exact Hcnd
-        | exact Hbnd | exact HVS | exact HVSne ]).
-  assert (HinjS : rel_inj ρ VS)
-    by (eapply rel_inj_weaken_V; [ exact Hinj | exact HVS ]).
-  assert (HfunS : rel_fun ρ VS (dom Θ0)).
-  { eapply rel_fun_weaken;
-      [ eapply rel_fun_weaken_V; [ exact Hfun | exact HVS ]
-      | intros y z Hy; exact Hy | simpl; clear; fsetdec ]. }
   assert (HflαS : a_flex_tvar Θ0 α)
     by (rewrite <- (@a_flex_tvar_cons_other c bc Θ0 α Hneα); exact Hfl1).
   assert (HflβS : a_flex_tvar Θ0 β)
     by (rewrite <- (@a_flex_tvar_cons_other c bc Θ0 β Hneβ); exact Hfl2).
-  assert (HscpS : VS [<=] ftvar_in_aenv Θ0) by (subst VS; clear; fsetdec).
-  assert (HblkS : forall a0, a0 `in` dom Θ1 -> a0 `notin` dom Θ0 ->
-                  a0 `notin` cols_l ρ).
-  { intros a0 Ha0 Hn0. apply Hblk.
-    - simpl. clear - Ha0. fsetdec.
-    - assert (Hne0 : a0 <> c) by (intros Ex; rewrite Ex in Ha0; contradiction).
-      simpl. clear - Hn0 Hne0. fsetdec. }
-  assert (HdΘS : dom Θ0'' [<=] S0) by (simpl in HdΘ; clear - HdΘ; fsetdec).
-  assert (HcovS : VS ∪ cols_r ρ [<=] S0) by (clear - Hcov HVS; fsetdec).
-  destruct (IH S0 Θ0'' α' β' ρ VS HrΘS HrαS HrβS HagrS HinjS HfunS
+  destruct (IH S0 Θ0'' α' β' ρ VS HrΘS (Hshr_at α α' Hrα Hneα)
+              (Hshr_at β β' Hrβ Hneβ) HagrS HinjS HfunS
               HflαS HflβS HwfC Huq2C Hftv2C HscpS HblkS HdΘS HcovS)
     as (S1 & ρe & Θ1' & D2 & HrΘ1 & Hagr1 & Hext1 & Hdom1).
   assert (Hbnd1 : b0 `notin` dom Θ1').
@@ -924,42 +881,12 @@ Proof.
                   _ _ _ _ _ _ D2) as Hup.
     assert (HbS0 : b0 `in` S0) by (simpl in HdΘ; clear - HdΘ; fsetdec).
     clear - Hup Hbnd HbS0. fsetdec. }
+  destruct (lift_reattach_mid (Ξ := nil) Hab Hbd Hinj Hcov HVS HVSsplit Hcfun
+              Hpay (Hflag _ _ _ Hcd Hbnd1) HrΘ1 Hagr1 Hext1 Hdom1 Hcd)
+    as (HrF & HagrF & HextF & HdomF).
   exists S1, ρe, ((b0 ~ bdd) ++ Θ1').
   split; [ apply Hrule2; [ exact Hne2α | exact Hne2β | exact D2 ] | ].
-  split.
-  { apply rel_aenv__cons.
-    - eapply rel_atom_incl; [ exact Hab | ].
-      intros y z Hy. apply in_or_app. right. exact Hy.
-    - eapply rel_abind_mono;
-        [ exact Hbd | intros y z Hy; apply in_or_app; right; exact Hy
-        | intros y Hy; exact Hy ].
-    - eapply rel_aenv_mono;
-        [ exact HrΘ1 | intros y z Hy; exact Hy | exact HVS ]. }
-  assert (Hinj' : rel_inj (ρe ++ ρ) V)
-    by (eapply rel_inj_app; [ exact Hinj | exact Hext1 | exact Hcov ]).
-  assert (Hab' : rel_atom (ρe ++ ρ) V c b0)
-    by (eapply rel_atom_incl;
-        [ exact Hab | intros y z Hy; apply in_or_app; right; exact Hy ]).
-  assert (Hcfun' : forall y, rel_atom (ρe ++ ρ) V c y -> y = b0).
-  { intros y Hy. destruct (rel_atom_app_inv ρe ρ Hy) as [Hin0 | Hat0].
-    - exfalso. destruct (Hdom1 _ _ Hin0) as [Hd1 _]. contradiction.
-    - exact (Hcfun y Hat0). }
-  split.
-  { eapply flex_agree_reattach;
-      [ exact Hagr1 | exact Hab' | exact Hinj' | exact Hcfun'
-      | exact HVSsplit
-      | intros HcV; symmetry; apply Hcfun; apply rel_atom__id; exact HcV
-      | apply Hflag; [ exact Hcd | exact Hbnd1 ] ]. }
-  assert (Hftsub : ftvar_in_aenv ((c ~ bc) ++ Θ0)
-                   [<=] add c (ftvar_in_aenv Θ0)).
-  { simpl. pose proof (dom_subset_ftvar_in_aenv Θ0) as Hds.
-    clear - Hpay Hds. fsetdec. }
-  split.
-  { eapply rel_ext_add_scope_l; [ exact Hext1 | exact Hftsub | ].
-    intros a_new b_new Hin_new Heq_new. destruct (Hdom1 _ _ Hin_new) as [Hd_new _].
-    subst a_new; contradiction. }
-  intros a0 b1 Hin. destruct (Hdom1 _ _ Hin) as [Hd1 Hd2].
-  split; simpl; [ clear - Hd1; fsetdec | clear - Hd2; fsetdec ].
+  exact (conj HrF (conj HagrF (conj HextF HdomF))).
 Qed.
 
 (* ===================================================================== *)
@@ -998,102 +925,26 @@ Proof.
     as (b & bdd & Θ0'' & E0' & Hab & Hbd & Hrest).
   subst Θ0'.
   pose proof (Hbd2 _ _ _ Hbd) as Ebd. subst bdd.
+  destruct (lift_drop_mid HrΞ Hrest Hab Hagr Hinj Hfun Hwf Hdec Huq2p Hftv2
+              Hscp Hblk Hβd HdΘ Hcov)
+    as (VS & HVS & HVSsplit & Hβfun & Hβnd & Hbnd & HrΞS & HrΘS & HagrS
+        & HinjS & HfunS & HwfC & Huq2C & Hftv2C & HscpS & HblkS & HdΘS & HcovS
+        & Hshr_at & Hshr).
   assert (Huq1 : uniq (Ξ ++ (β ~ bd) ++ Θ0))
     by (apply a_wf_aenv_uniq; exact Hwf).
-  assert (Huq2 : uniq (Ξ' ++ (b ~ bd) ++ Θ0''))
-    by (exact Huq2p).
-  assert (HwfC : {{ ⊢ (Ξ ++ Θ0) }}a)
-    by (eapply a_wf_aenv_strip_mid; [ exact Hdec | exact Hwf ]).
-  assert (Huq2C : uniq (Ξ' ++ Θ0'')) by (clear - Huq2p; solve_uniq).
-  assert (Hftv2C : ftvar_in_aenv (Ξ' ++ Θ0'') [<=] S0).
-  { repeat rewrite ftvar_in_aenv_app in Hftv2 |- *. simpl in Hftv2.
-    clear - Hftv2. fsetdec. }
-  assert (Hβnd : β `notin` dom (Ξ ++ Θ0)).
-  { clear - Huq1. repeat rewrite dom_app in *. simpl in *.
-    destruct_uniq. fsetdec. }
-  assert (Hbnd : b `notin` dom (Ξ' ++ Θ0'')).
-  { clear - Huq2. repeat rewrite dom_app in *. simpl in *.
-    destruct_uniq. fsetdec. }
-  assert (Hsc : ftvar_in_aenv (Ξ ++ (β ~ bd) ++ Θ0)
-                [<=] dom (Ξ ++ (β ~ bd) ++ Θ0))
-    by (apply a_wf_aenv_ftv_dom; exact Hwf).
-  assert (HVdom : V [<=] dom (Ξ ++ (β ~ bd) ++ Θ0))
-    by (clear - Hscp Hsc; fsetdec).
-  assert (HscC : ftvar_in_aenv (Ξ ++ Θ0) [<=] dom (Ξ ++ Θ0))
-    by (apply a_wf_aenv_ftv_dom; exact HwfC).
-  assert (Hβd0 : β `in` dom (Ξ ++ (β ~ bd) ++ Θ0))
-    by (repeat rewrite dom_app; simpl; clear; fsetdec).
-  assert (Hβfun : forall y, rel_atom ρ V β y -> y = b)
-    by (intros y Hy; exact (Hfun β y b Hβd0 Hy Hab)).
   pose proof (Hne_of Huq1 Hfl) as Hne.
   assert (Hne2 : α' <> b).
   { intros Ex. apply Hne. rewrite Ex in Hrα. exact (Hinj α β b Hrα Hab). }
   assert (HbP : b `notin` ftvar_in_pskl P')
     by (eapply rel_pskl_notin_r_inj;
         [ exact HrP | exact Hinj | exact Hab | exact Hβp ]).
-  remember (V ∩ ftvar_in_aenv (Ξ ++ Θ0)) as VS eqn:EVS.
-  assert (HVS : VS [<=] V) by (subst VS; clear; fsetdec).
-  assert (HVSsplit : forall x, x `in` V -> x <> β -> x `in` VS).
-  { intros x Hx Hne0. subst VS.
-    pose proof (dom_subset_ftvar_in_aenv (Ξ ++ Θ0)) as Hds.
-    assert (Hxd : x `in` dom (Ξ ++ (β ~ bd) ++ Θ0))
-      by (clear - Hx HVdom; fsetdec).
-    repeat rewrite dom_app in Hxd. simpl in Hxd.
-    repeat rewrite dom_app in Hds.
-    clear - Hx Hne0 Hxd Hds. fsetdec. }
-  assert (HVSne : forall x, x `in` VS -> x <> β).
-  { intros x Hx Ex. rewrite Ex in Hx.
-    assert (Hin : β `in` ftvar_in_aenv (Ξ ++ Θ0))
-      by (subst VS; clear - Hx; fsetdec).
-    clear - Hin HscC Hβnd. fsetdec. }
-  assert (HrΘS : rel_aenv ρ VS Θ0 Θ0'').
-  { eapply rel_aenv_shrink_V; [ exact Hrest | ].
-    intros x Hx Hf. subst VS.
-    pose proof (dom_subset_ftvar_in_aenv Θ0) as Hds.
-    rewrite ftvar_in_aenv_app. clear - Hx Hf Hds. fsetdec. }
-  assert (HrΞS : rel_aenv ρ VS Ξ Ξ').
-  { eapply rel_aenv_shrink_V; [ exact HrΞ | ].
-    intros x Hx Hf. subst VS.
-    pose proof (dom_subset_ftvar_in_aenv Ξ) as Hds.
-    rewrite ftvar_in_aenv_app. clear - Hx Hf Hds. fsetdec. }
-  assert (HrαS : rel_atom ρ VS α α').
-  { inversion Hrα; subst.
-    - apply rel_atom__pair; assumption.
-    - apply rel_atom__id. apply HVSsplit; [ assumption | exact Hne ]. }
-  assert (HrPS : rel_pskl ρ VS P P').
-  { eapply rel_pskl_shrink_V; [ exact HrP | ].
-    intros x Hx Hf. apply HVSsplit; [ exact Hx | ].
-    intros Ex. rewrite Ex in Hf. contradiction. }
-  assert (HagrS : flex_agree_rel ρ VS (Ξ ++ Θ0) (Ξ' ++ Θ0''))
-    by (eapply flex_agree_peel;
-        [ exact Hagr | exact Hab | exact Hinj | exact Hβfun | exact Hβnd
-        | exact Hbnd | exact HVS | exact HVSne ]).
-  assert (HinjS : rel_inj ρ VS)
-    by (eapply rel_inj_weaken_V; [ exact Hinj | exact HVS ]).
-  assert (HfunS : rel_fun ρ VS (dom (Ξ ++ Θ0))).
-  { eapply rel_fun_weaken;
-      [ eapply rel_fun_weaken_V; [ exact Hfun | exact HVS ]
-      | intros x y Hx; exact Hx
-      | repeat rewrite dom_app; simpl; clear; fsetdec ]. }
   assert (HflS : a_flex_tvar (Ξ ++ Θ0) α)
     by (rewrite <- (@a_flex_tvar_mid_other Ξ β bd Θ0 α Hne);
         exact Hfl).
-  assert (HscpS : VS [<=] ftvar_in_aenv (Ξ ++ Θ0))
-    by (subst VS; clear; fsetdec).
-  assert (HblkS : forall a0, a0 `in` dom Θ1 -> a0 `notin` dom (Ξ ++ Θ0) ->
-                  a0 `notin` cols_l ρ).
-  { intros a0 Ha0 Hn0. apply Hblk.
-    - simpl. clear - Ha0. fsetdec.
-    - assert (Hne0 : a0 <> β)
-        by (intros Ex; rewrite Ex in Ha0; contradiction).
-      repeat rewrite dom_app in Hn0 |- *. simpl. clear - Hn0 Hne0. fsetdec. }
-  assert (HdΘS : dom (Ξ' ++ Θ0'') [<=] S0)
-    by (repeat rewrite dom_app in HdΘ |- *; simpl in HdΘ;
-        clear - HdΘ; fsetdec).
-  assert (HcovS : VS ∪ cols_r ρ [<=] S0) by (clear - Hcov HVS; fsetdec).
   assert (HwfpS : {{ (Ξ ++ Θ0) ⨟ empty ⊢ₚₛ P }}a)
     by (eapply a_wf_pskl_strip_mid; [ exact Hwfp | exact Hβp ]).
-  destruct (IH S0 Θ0'' Ξ' α' P' ρ VS HrΘS HrΞS HrαS HrPS HagrS HinjS HfunS
+  destruct (IH S0 Θ0'' Ξ' α' P' ρ VS HrΘS HrΞS (Hshr_at α α' Hrα Hne)
+              (Hshr P P' HrP Hβp) HagrS HinjS HfunS
               HflS HwfC Hdec Hdec2 Huq2C Hftv2C HscpS HblkS HdΘS HcovS HcovP HwfpS)
     as (S1 & ρe & Θ1' & D2 & HrΘ1 & Hagr1 & Hext1 & Hdom1).
   assert (Hbnd1 : b `notin` dom Θ1').
@@ -1102,41 +953,13 @@ Proof.
     assert (HbS0 : b `in` S0).
     { repeat rewrite dom_app in HdΘ. simpl in HdΘ. clear - HdΘ. fsetdec. }
     clear - Hup Hbnd HbS0. fsetdec. }
+  assert (Hpay : ftvar_in_abind bd [<=] dom Θ0) by (clear - Hbdft; fsetdec).
+  destruct (lift_reattach_mid Hab Hbd Hinj Hcov HVS HVSsplit Hβfun Hpay
+              (Hflag _ _ _ Hβd Hbnd1) HrΘ1 Hagr1 Hext1 Hdom1 Hβd)
+    as (HrF & HagrF & HextF & HdomF).
   exists S1, ρe, ((b ~ bd) ++ Θ1').
   split; [ apply Hrule2; [ exact Hne2 | exact HbP | exact D2 ] | ].
-  split.
-  { apply rel_aenv__cons.
-    - eapply rel_atom_incl; [ exact Hab | ].
-      intros x y Hx. apply in_or_app. right. exact Hx.
-    - eapply rel_abind_mono;
-        [ exact Hbd | intros x y Hx; apply in_or_app; right; exact Hx
-        | intros x Hx; exact Hx ].
-    - eapply rel_aenv_mono;
-        [ exact HrΘ1 | intros x y Hx; exact Hx | exact HVS ]. }
-  assert (Hinj' : rel_inj (ρe ++ ρ) V)
-    by (eapply rel_inj_app; [ exact Hinj | exact Hext1 | exact Hcov ]).
-  assert (Hab' : rel_atom (ρe ++ ρ) V β b)
-    by (eapply rel_atom_incl;
-        [ exact Hab | intros x y Hx; apply in_or_app; right; exact Hx ]).
-  assert (Hβfun' : forall y, rel_atom (ρe ++ ρ) V β y -> y = b).
-  { intros y Hy. destruct (rel_atom_app_inv ρe ρ Hy) as [Hin0 | Hat0].
-    - exfalso. destruct (Hdom1 _ _ Hin0) as [Hd1 _]. contradiction.
-    - exact (Hβfun y Hat0). }
-  split.
-  { eapply flex_agree_reattach;
-      [ exact Hagr1 | exact Hab' | exact Hinj' | exact Hβfun'
-      | exact HVSsplit
-      | intros HβV; symmetry; apply Hβfun; apply rel_atom__id; exact HβV
-      | apply Hflag; [ exact Hβd | exact Hbnd1 ] ]. }
-  assert (Hftsub : ftvar_in_aenv (Ξ ++ (β ~ bd) ++ Θ0)
-                   [<=] add β (ftvar_in_aenv (Ξ ++ Θ0))).
-  { repeat rewrite ftvar_in_aenv_app. simpl. clear - Hbdft; fsetdec. }
-  split.
-  { eapply rel_ext_add_scope_l; [ exact Hext1 | exact Hftsub | ].
-    intros a_new b_new Hin_new Heq_new. destruct (Hdom1 _ _ Hin_new) as [Hd_new _].
-    subst a_new; contradiction. }
-  intros a0 b0 Hin. destruct (Hdom1 _ _ Hin) as [Hd1 Hd2].
-  split; simpl; [ clear - Hd1; fsetdec | clear - Hd2; fsetdec ].
+  exact (conj HrF (conj HagrF (conj HextF HdomF))).
 Qed.
 
 (* ===================================================================== *)
@@ -1624,7 +1447,8 @@ Proof.
     destruct (lift_drop_mid HrΞ Hrest Hab Hagr Hinj Hfun Hwf Hdec Huq2p Hftv2
                 Hscp Hblk Hβd HdΘ Hcov)
       as (VC & HVC & HVCsplit & Hβfun & Hβnd & Hbnd & HrΞC & HrΘ0C & HagrC
-          & HinjC & HfunC & HwfC & Huq2C & Hftv2C & HscpC & HblkC & HdΘC & HcovC).
+          & HinjC & HfunC & HwfC & Huq2C & Hftv2C & HscpC & HblkC & HdΘC & HcovC
+          & _ & _).
     assert (HrΘC : rel_aenv ρ VC (Ξ ++ Θ0) (Ξ' ++ Θ0''))
       by (apply rel_aenv_app; [ exact HrΞC | exact HrΘ0C ]).
     (* ---- side 2's subject is flexible too ---- *)
