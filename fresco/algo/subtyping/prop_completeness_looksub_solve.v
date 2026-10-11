@@ -1841,28 +1841,16 @@ Proof.
     pose proof (d_tags_skl_ftag (a_tags_sort_d_tags Htags)) as Hψatag.
     assert (HΨa : Ψa [=] union (Ψ1 ∩ Ψ') (Ψ2 ∩ Ψ'))
       by (clear - HΨs1 HΨs2 Hsub H0 Hdisj HΨρ; fsetdec).
-    (* under ρ the per-component bounds read off the ρ-IMAGES, so each picks up
-       its own slice of Ψρ ([uskl_rsubst_ftag_sub]) *)
-    assert (HΨ1sub : Ψ1 [<=] union (ftag_in_uskl Ra) (union Ψρ1 Ψ')).
-    { pose proof (ad_pat_consis_ftag_sub (ad_consis_join_consis H)) as Hf1.
-      pose proof (uskl_rsubst_ftag_sub Hrhoa) as Hr1.
-      pose proof (ftag_in_uskl_subst_uskl_in_uskl ψa α
-                    (msubst_uskl_syn κ Ra)) as Hb1.
-      pose proof (ftag_in_uskl_msubst_uskl_syn κ Ra) as Hm1.
-      clear - Hf1 Hr1 Hb1 Hm1 Hψatag; fsetdec. }
-    assert (HΨ2sub : Ψ2 [<=] union (ftag_in_uskl Rb) (union Ψρ2 Ψ')).
-    { pose proof (ad_pat_sub_fuel_ftag_sub Hsubty) as Hf2.
-      pose proof (uskl_rsubst_ftag_sub Hrhob) as Hr2.
-      pose proof (ftag_in_uskl_subst_uskl_in_uskl ψa α
-                    (msubst_uskl_syn κ Rb)) as Hb2.
-      pose proof (ftag_in_uskl_msubst_uskl_syn κ Rb) as Hm2.
-      clear - Hf2 Hr2 Hb2 Hm2 Hψatag; fsetdec. }
+    (* under ρ the per-component bounds read off the ρ-IMAGES *)
+    pose proof (rsubst_component_tags
+                  (ad_pat_consis_ftag_sub (ad_consis_join_consis H)) Hrhoa Hψatag)
+      as HΨs1L.
+    pose proof (rsubst_component_tags (ad_pat_sub_fuel_ftag_sub Hsubty) Hrhob Hψatag)
+      as HΨs1R.
     assert (HΨρ1e : Ψρ1 ∩ Ψ' [=] empty) by (clear - HΨρ HΨρeq; fsetdec).
     assert (HΨρ2e : Ψρ2 ∩ Ψ' [=] empty) by (clear - HΨρ HΨρeq; fsetdec).
     (* --- LEFT branch: the consistency premise, straight to P6-Cs --- *)
     assert (HsubL : Ψi `union` (Ψ1 ∩ Ψ') [<=] Ψ') by (clear - Hsub; fsetdec).
-    assert (HΨs1L : Ψ1 [<=] union (ftag_in_uskl Ra) (union Ψρ1 (Ψ1 ∩ Ψ')))
-      by (clear - HΨ1sub; fsetdec).
     assert (HΨs2L : Ψ1 ∩ Ψ' [<=] Ψ1) by (clear; fsetdec).
     assert (HΔρftvL : forall α0, α0 `in` Δρ ->
               α0 `notin` ftvar_in_pskl P01 `union` ftvar_in_pskl Pi)
@@ -1961,8 +1949,6 @@ Proof.
       pose proof (Hfrs1 x Hx) as Hf. clear - Hf Hfd02 HLav Hdf0; fsetdec. }
     assert (HsubR : (Ψi `union` (Ψ1 ∩ Ψ')) `union` (Ψ2 ∩ Ψ') [=] Ψ')
       by (clear - Hsub HΨa; fsetdec).
-    assert (HΨs1R : Ψ2 [<=] union (ftag_in_uskl Rb) (union Ψρ2 (Ψ2 ∩ Ψ')))
-      by (clear - HΨ2sub; fsetdec).
     assert (HΨs2R : Ψ2 ∩ Ψ' [<=] Ψ2) by (clear; fsetdec).
     assert (HdisjRb : (ftag_in_uskl Rb) ∩ Ψ' [=] empty)
       by (clear - Hdisj; cbn in Hdisj; fsetdec).

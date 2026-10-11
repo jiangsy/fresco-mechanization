@@ -2199,6 +2199,22 @@ Proof.
   pose proof (Himg1 p Hp) as Hb. clear - Hb Hψaw; fsetdec.
 Qed.
 
+(** Under ρ a component's tag bound reads off its ρ-IMAGE, so it picks up
+    its own slice of Ψρ ([uskl_rsubst_ftag_sub]); what remains of ψa's tags
+    is the component's share of Ψ'. *)
+Lemma rsubst_component_tags : forall {NM Θ Δρ Ψρc Ψc Rsub Rc ψa α κ Ψ'},
+  Ψc [<=] ftag_in_uskl Rsub ->
+  uskl_rsubst NM Θ Δρ Ψρc Rsub (subst_uskl_in_uskl ψa α (msubst_uskl_syn κ Rc)) ->
+  Ψ' [=] ftag_in_uskl ψa ->
+  Ψc [<=] union (ftag_in_uskl Rc) (union Ψρc (Ψc ∩ Ψ')).
+Proof.
+  intros NM Θ Δρ Ψρc Ψc Rsub Rc ψa α κ Ψ' Hf Hrho Hψatag.
+  pose proof (uskl_rsubst_ftag_sub Hrho) as Hr.
+  pose proof (ftag_in_uskl_subst_uskl_in_uskl ψa α (msubst_uskl_syn κ Rc)) as Hb.
+  pose proof (ftag_in_uskl_msubst_uskl_syn κ Rc) as Hm.
+  clear - Hf Hr Hb Hm Hψatag; fsetdec.
+Qed.
+
 (** The merged metasubstitution is the right run's, reordered: the same
     bindings on pairwise-disjoint domains, so a lookup-level identity — peel
     [κs2], swap [κc2] past [κs1], peel [κs1], swap [κc2] past [κc1]. *)
@@ -3638,20 +3654,11 @@ Proof.
         (* --- tag algebra: Ψa = (Ψ1∩Ψ') ∪ (Ψ2∩Ψ') --- *)
         assert (HΨa : Ψa [=] union (Ψ1 ∩ Ψ') (Ψ2 ∩ Ψ'))
           by (clear - HΨs1 HΨs2 Hsub H6 Hdisj HΨρ; fsetdec).
-        (* under ρ the per-component tag bounds read off the ρ-IMAGES, so each
-           picks up its own slice of Ψρ ([uskl_rsubst_ftag_sub]) *)
-        assert (HΨ1sub : Ψ1 [<=] union (ftag_in_uskl Ra) (union Ψρ1 Ψ')).
-        { pose proof (ad_pat_consis_ftag_sub H1) as Hf1.
-          pose proof (uskl_rsubst_ftag_sub Hrhoa) as Hr1.
-          pose proof (ftag_in_uskl_subst_uskl_in_uskl ψa α (msubst_uskl_syn κ Ra)) as Hb1.
-          pose proof (ftag_in_uskl_msubst_uskl_syn κ Ra) as Hm1.
-          clear - Hf1 Hr1 Hb1 Hm1 Hψatag; fsetdec. }
-        assert (HΨ2sub : Ψ2 [<=] union (ftag_in_uskl Rb) (union Ψρ2 Ψ')).
-        { pose proof (ad_pat_consis_ftag_sub H4) as Hf2.
-          pose proof (uskl_rsubst_ftag_sub Hrhob) as Hr2.
-          pose proof (ftag_in_uskl_subst_uskl_in_uskl ψa α (msubst_uskl_syn κ Rb)) as Hb2.
-          pose proof (ftag_in_uskl_msubst_uskl_syn κ Rb) as Hm2.
-          clear - Hf2 Hr2 Hb2 Hm2 Hψatag; fsetdec. }
+        (* under ρ the per-component tag bounds read off the ρ-IMAGES *)
+        pose proof (rsubst_component_tags (ad_pat_consis_ftag_sub H1) Hrhoa Hψatag)
+          as HΨs1L.
+        pose proof (rsubst_component_tags (ad_pat_consis_ftag_sub H4) Hrhob Hψatag)
+          as HΨs1R.
         assert (HΨρ1e : Ψρ1 ∩ Ψ' [=] empty) by (clear - HΨρ HΨρeq; fsetdec).
         assert (HΨρ2e : Ψρ2 ∩ Ψ' [=] empty) by (clear - HΨρ HΨρeq; fsetdec).
         assert (HscopeSa : ftvar_in_uskl Ra [<=] add α (dom Θ0 `union` dom Θ))
@@ -3666,8 +3673,6 @@ Proof.
         assert (Hmr : size_uskl Rb + size_pskl P02 <= n) by (cbn in Hn; lia).
         assert (HsubL : union Ψi (Ψ1 ∩ Ψ') [<=] Ψ')
           by (clear - Hsub; fsetdec).
-        assert (HΨs1L : Ψ1 [<=] union (ftag_in_uskl Ra) (union Ψρ1 (Ψ1 ∩ Ψ')))
-          by (clear - HΨ1sub; fsetdec).
         assert (HΨs2L : Ψ1 ∩ Ψ' [<=] Ψ1) by (clear; fsetdec).
         (* ⭐ THE AVOID-SETS (2026-08-04, the SolE-FlexR repair).  BOTH IHs must
            dodge [α] — the row needs [α ∉ dom Ξs1] to rebuild
@@ -3742,8 +3747,6 @@ Proof.
         assert (HsubR : union (union Ψi (Ψ1 ∩ Ψ'))
                               (Ψ2 ∩ Ψ') [<=] Ψ')
           by (clear - Hsub; fsetdec).
-        assert (HΨs1R : Ψ2 [<=] union (ftag_in_uskl Rb) (union Ψρ2 (Ψ2 ∩ Ψ')))
-          by (clear - HΨ2sub; fsetdec).
         assert (HΨs2R : Ψ2 ∩ Ψ' [<=] Ψ2) by (clear; fsetdec).
         assert (HwfP02R : {{ (Ξs1 ++ Ξc1 ++ Θ0) ⨟ empty ⊢ₚₛ P02 }}a)
           by (eapply a_wf_pskl_weaken;
