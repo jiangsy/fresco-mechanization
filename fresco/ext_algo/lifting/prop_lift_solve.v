@@ -285,8 +285,6 @@ Proof.
     assert (Hup : ftvar_in_pskl (open_pskl_wrt_pskl Q0 (pskl_var_f β2))
                   [<=] ftvar_in_pskl (pskl_var_f β2) ∪ ftvar_in_pskl Q0)
       by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
-    assert (Hcr0 : cols_r (restrict_pairs β β2 ρ) [<=] cols_r ρ)
-      by apply cols_r_restrict_pairs.
     assert (Hscp2' : V ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q0 (pskl_var_f β2))
                        [<=] add β2 S0)
       by (simpl in *; clear - Hscp2 Hup; fsetdec).
@@ -405,6 +403,139 @@ Qed.
 
 Arguments solve_lift_open_context {ρ V Θ Θ2 S Ξ β β2} _ _ _ _ _ _ _ _.
 
+(** ⭐ SE-Forall, SE-GhostForall and SE-ForallGhost, ONE proof: they differ
+    only in which side OPENS at the binder (the other keeps its [∀◇]).
+    Side 2 opens at ITS supply-fresh witness; the openers PAIR, after the
+    old pairs at either opener are restricted away. *)
+Lemma solve_eq_binder_row : forall (opensP opensQ : bool) {Θ P Q Ξ Y β},
+  β `notin` ftvar_in_aenv Θ `union` ftvar_in_pskl P `union` ftvar_in_pskl Q ->
+  {{ ((β ~ abind_tvar) ++ Θ) ⊢ₑ (binder_body opensP P β)
+     ∼ (binder_body opensQ Q β) ⤳ Ξ ⨾ Y }}a ->
+  (forall S0 Θ2 P2 Q2 ρ V,
+     rel_pskl ρ V (binder_body opensP P β) P2 ->
+     rel_pskl ρ V (binder_body opensQ Q β) Q2 ->
+     flex_agree_rel ρ V ((β ~ abind_tvar) ++ Θ) Θ2 ->
+     V [<=] ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) ->
+     dom Ξ ∩ cols_l ρ [=] empty ->
+     dom Θ2 [<=] S0 ->
+     V ∪ cols_r ρ [<=] S0 ->
+     ftvar_in_pskl P2 ∪ ftvar_in_pskl Q2 [<=] S0 ->
+     exists S1 ρn Ξ2 P2',
+       {{ S0 ↝ S1 ⊨ Θ2 ⊢ₑ P2 ∼ Q2 ⤳ Ξ2 ⨾ P2' }}e
+       /\ Ξ = flex_pairs_l ρn /\ Ξ2 = flex_pairs_r ρn
+       /\ rel_pskl (ρn ++ ρ) V Y P2') ->
+  (forall S0 S1 Θ P Q Ξ P' β,
+     β `notin` S0 ->
+     {{ (add β S0) ↝ S1 ⊨ ((β ~ abind_tvar) ++ Θ)
+        ⊢ₑ (binder_body opensP P β) ∼ (binder_body opensQ Q β) ⤳ Ξ ⨾ P' }}e ->
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ (binder_head opensP P) ∼ (binder_head opensQ Q)
+        ⤳ Ξ ⨾ (pskl_all_syn (close_pskl_wrt_pskl β P')) }}e) ->
+  forall S0 Θ2 P3 Q3 ρ V,
+  rel_pskl ρ V (binder_head opensP P) P3 ->
+  rel_pskl ρ V (binder_head opensQ Q) Q3 ->
+  flex_agree_rel ρ V Θ Θ2 ->
+  V [<=] ftvar_in_aenv Θ ->
+  dom Ξ ∩ cols_l ρ [=] empty ->
+  dom Θ2 [<=] S0 ->
+  V ∪ cols_r ρ [<=] S0 ->
+  ftvar_in_pskl P3 ∪ ftvar_in_pskl Q3 [<=] S0 ->
+  exists S1 ρn Ξ2 P2',
+    {{ S0 ↝ S1 ⊨ Θ2 ⊢ₑ P3 ∼ Q3 ⤳ Ξ2 ⨾ P2' }}e
+    /\ Ξ = flex_pairs_l ρn /\ Ξ2 = flex_pairs_r ρn
+    /\ rel_pskl (ρn ++ ρ) V (pskl_all_syn (close_pskl_wrt_pskl β Y)) P2'.
+Proof.
+  intros opensP opensQ Θ P Q Ξ Y β Hβ1 HD IH Hrule
+    S0 Θ2 P3 Q3 ρ V HrelP HrelQ Hagr Hscp1 Hblk HdΘ Hscp2 Hcov.
+  destruct (rel_pskl_binder_head_inv HrelP) as (P2b & -> & HrP0).
+  destruct (rel_pskl_binder_head_inv HrelQ) as (Q2b & -> & HrQ0).
+  rewrite !ftvar_in_pskl_binder_head in Hcov.
+  destruct (atom_fresh S0) as [β2 Hβ2].
+  assert (Hcov' : ftvar_in_pskl (binder_body opensP P2b β2)
+                  ∪ ftvar_in_pskl (binder_body opensQ Q2b β2) [<=] add β2 S0).
+  { pose proof (ftvar_in_pskl_binder_body_upper opensP P2b β2) as HupP.
+    pose proof (ftvar_in_pskl_binder_body_upper opensQ Q2b β2) as HupQ.
+    clear - Hcov HupP HupQ; fsetdec. }
+  assert (Hd1p : dom Ξ ∩ ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) [=] empty)
+    by (exact ((proj2 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ HD)).
+  assert (HβΘ : β `notin` ftvar_in_aenv Θ)
+    by (clear - Hβ1; fsetdec).
+  destruct (solve_lift_open_context Hagr Hscp1 HdΘ Hscp2 Hblk Hd1p HβΘ Hβ2)
+    as (Hagr' & Hscp1' & HdΘ' & Hscp2' & Hblk').
+  assert (HrP0' : rel_pskl ((β, β2) :: restrict_pairs β β2 ρ) V
+                    (binder_body opensP P β) (binder_body opensP P2b β2)).
+  { apply rel_pskl_binder_body. apply rel_pskl_restrict;
+      [ exact HrP0 | clear - Hβ1; fsetdec | clear - Hβ2 Hcov; fsetdec ]. }
+  assert (HrQ0' : rel_pskl ((β, β2) :: restrict_pairs β β2 ρ) V
+                    (binder_body opensQ Q β) (binder_body opensQ Q2b β2)).
+  { apply rel_pskl_binder_body. apply rel_pskl_restrict;
+      [ exact HrQ0 | clear - Hβ1; fsetdec | clear - Hβ2 Hcov; fsetdec ]. }
+  destruct (IH (add β2 S0) ((β2 ~ abind_tvar) ++ Θ2)
+              (binder_body opensP P2b β2) (binder_body opensQ Q2b β2)
+              ((β, β2) :: restrict_pairs β β2 ρ) V
+              HrP0' HrQ0' Hagr' Hscp1' Hblk' HdΘ' Hscp2' Hcov')
+    as (S1 & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hrel').
+  assert (Hd2p : dom Ξ2 ∩ add β2 S0 [=] empty)
+    by (apply (proj2 e_solve_sub_eq_block) in D2p; tauto).
+  pose proof (dom_flex_pairs_l ρn) as Hdfl. rewrite <- E1 in Hdfl.
+  pose proof (dom_flex_pairs_r ρn) as Hdfr. rewrite <- E2 in Hdfr.
+  exists S1, ρn, Ξ2, (pskl_all_syn (close_pskl_wrt_pskl β2 Y2)).
+  split; [ apply Hrule; [ exact Hβ2 | exact D2p ] | ].
+  split; [ exact E1 | split; [ exact E2 | ] ].
+  constructor.
+  eapply rel_pskl_close_pair_restrict.
+  - exact Hrel'.
+  - clear - Hβ1 Hscp1. fsetdec.
+  - simpl in Hd1p. clear - Hd1p Hdfl. fsetdec.
+  - clear - Hβ2 Hscp2. fsetdec.
+  - clear - Hd2p Hdfr. fsetdec.
+  - in_incl.
+  - in_incl.
+Qed.
+
+(** ⭐ A THREADED PAIR OF SOLVE CALLS (SE-Arrow, SS-Arrow, SS-GhostLF,
+    SC-Eq): the first call's generated block [Ξ1 ↔ Ξ2a] joins the relation
+    as flexible pairs, and everything the second call's motive asks of the
+    context moves to the extended contexts. *)
+Lemma solve_seq_push : forall {ρ ρnA V Θ Θ2 Ξ1 Ξ2 Ξ2a S0 S1},
+  Ξ1 = flex_pairs_l ρnA ->
+  Ξ2a = flex_pairs_r ρnA ->
+  flex_agree_rel ρ V Θ Θ2 ->
+  V [<=] ftvar_in_aenv Θ ->
+  dom (Ξ2 ++ Ξ1) ∩ cols_l ρ [=] empty ->
+  dom Ξ1 ∩ ftvar_in_aenv Θ [=] empty ->
+  dom Ξ2 ∩ ftvar_in_aenv (Ξ1 ++ Θ) [=] empty ->
+  dom Ξ2a ∩ S0 [=] empty ->
+  dom Ξ2a [<=] S1 ->
+  S0 [<=] S1 ->
+  dom Θ2 [<=] S0 ->
+  V ∪ cols_r ρ [<=] S0 ->
+  flex_agree_rel (ρnA ++ ρ) V (Ξ1 ++ Θ) (Ξ2a ++ Θ2)
+  /\ V [<=] ftvar_in_aenv (Ξ1 ++ Θ)
+  /\ dom Ξ2 ∩ cols_l (ρnA ++ ρ) [=] empty
+  /\ dom (Ξ2a ++ Θ2) [<=] S1
+  /\ V ∪ cols_r (ρnA ++ ρ) [<=] S1.
+Proof.
+  intros ρ ρnA V Θ Θ2 Ξ1 Ξ2 Ξ2a S0 S1 E1a E2a Hagr Hscp1 Hblk Hd1a Hd1b
+    Hd2a Hi2a Hgr1 HdΘ Hscp2.
+  pose proof (dom_flex_pairs_l ρnA) as Hdfl. rewrite <- E1a in Hdfl.
+  pose proof (dom_flex_pairs_r ρnA) as Hdfr. rewrite <- E2a in Hdfr.
+  rewrite dom_app in Hblk.
+  split.
+  { rewrite E1a, E2a. apply flex_agree_rel_push_pairs.
+    - exact Hagr.
+    (* ⭐ the head block dodges the pair columns — the SECOND half of the
+       old scoping premise, now hypothesised directly. *)
+    - clear - Hd1a Hscp1 Hdfl Hblk. fsetdec.
+    - clear - Hd2a Hscp2 Hdfr. fsetdec. }
+  split; [ rewrite ftvar_in_aenv_app; clear - Hscp1; fsetdec | ].
+  split.
+  { rewrite cols_l_app. rewrite ftvar_in_aenv_app in Hd1b.
+    pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds.
+    clear - Hd1b Hds Hdfl Hblk. fsetdec. }
+  split; [ rewrite dom_app; clear - Hi2a HdΘ Hgr1; fsetdec | ].
+  rewrite cols_r_app. clear - Hscp2 Hdfr Hi2a Hgr1. fsetdec.
+Qed.
+
 Lemma a_solve_eq_rel_e : forall Θ1 P1 Q1 Ξ1 P1',
   {{ Θ1 ⊢ₑ P1 ∼ Q1 ⤳ Ξ1 ⨾ P1' }}a ->
   forall S0 Θ2 P2 Q2 ρ V,
@@ -514,21 +645,6 @@ Proof.
     assert (Hd2a : dom Ξ2a ∩ S0 [=] empty)
       by (apply (proj2 e_solve_sub_eq_block) in D2a; tauto).
     assert (Hi2a : dom Ξ2a [<=] S1) by (exact (e_solve_eq_block_in_supply D2a)).
-    pose proof (dom_flex_pairs_l ρnA) as Hdfl. rewrite <- E1a in Hdfl.
-    pose proof (dom_flex_pairs_r ρnA) as Hdfr. rewrite <- E2a in Hdfr.
-    assert (Hagr' : flex_agree_rel (ρnA ++ ρ) V (Ξ1 ++ Θ) (Ξ2a ++ Θ2)).
-    { rewrite E1a, E2a. apply flex_agree_rel_push_pairs.
-      - exact Hagr.
-      (* ⭐ the head block dodges the pair columns — the SECOND half of the
-         old scoping premise, now hypothesised directly. *)
-      - clear - Hd1a Hscp1 Hdfl Hblk1. fsetdec.
-      - clear - Hd2a Hscp2 Hdfr. fsetdec. }
-    assert (Hscp1' : V [<=] ftvar_in_aenv (Ξ1 ++ Θ))
-      by (rewrite ftvar_in_aenv_app; clear - Hscp1; fsetdec).
-    assert (HdΘ' : dom (Ξ2a ++ Θ2) [<=] S1)
-      by (rewrite dom_app; clear - Hi2a HdΘ Hgr1; fsetdec).
-    assert (Hscp2' : V ∪ cols_r (ρnA ++ ρ) [<=] S1).
-    { rewrite cols_r_app. clear - Hscp2 Hdfr Hi2a Hgr1. fsetdec. }
     assert (HcovB : ftvar_in_pskl P2b ∪ ftvar_in_pskl Q2b [<=] S1)
       by (clear - Hcov Hgr1; simpl in *; fsetdec).
     assert (HrPb' : rel_pskl (ρnA ++ ρ) V P2 P2b)
@@ -537,11 +653,9 @@ Proof.
       by (apply rel_pskl_widen; exact HrQb).
     assert (Hd1b : dom Ξ2 ∩ ftvar_in_aenv (Ξ1 ++ Θ) [=] empty)
       by (exact ((proj2 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ HD2)).
-    assert (Hblk2 : dom Ξ2 ∩ cols_l (ρnA ++ ρ) [=] empty).
-    { rewrite cols_l_app. rewrite ftvar_in_aenv_app in Hd1b.
-      pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds.
-      rewrite dom_app in Hblk.
-      clear - Hd1b Hds Hdfl Hblk. fsetdec. }
+    destruct (solve_seq_push E1a E2a Hagr Hscp1 Hblk Hd1a Hd1b Hd2a Hi2a Hgr1
+                HdΘ Hscp2)
+      as (Hagr' & Hscp1' & Hblk2 & HdΘ' & Hscp2').
     destruct (IHHD2 S1 (Ξ2a ++ Θ2) P2b Q2b (ρnA ++ ρ) V
                 HrPb' HrQb' Hagr' Hscp1' Hblk2 HdΘ' Hscp2' HcovB)
       as (S2 & ρnB & Ξ2b & P2b' & D2b & E1b & E2b & HrelB').
@@ -555,64 +669,11 @@ Proof.
     + apply rel_pskl_widen_hd. exact HrelA'.
     + apply rel_pskl_app_assoc. exact HrelB'.
   - (* ⭐ SE-Forall — side 2 opens at ITS supply-fresh witness; openers PAIR *)
-    inversion HrelP; subst. inversion HrelQ; subst.
-    match goal with
-    | Ha : rel_pskl ρ V P ?xa, Hb : rel_pskl ρ V Q ?xb |- _ =>
-        rename Ha into HrP0; rename Hb into HrQ0;
-        rename xa into P2b; rename xb into Q2b
-    end.
     match goal with
     | Hf : β `notin` union _ _ |- _ => rename Hf into Hβ1
     end.
-    destruct (atom_fresh S0) as [β2 Hβ2].
-    assert (HupP : ftvar_in_pskl (open_pskl_wrt_pskl P2b (pskl_var_f β2))
-                   [<=] ftvar_in_pskl (pskl_var_f β2) ∪ ftvar_in_pskl P2b)
-      by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
-    assert (HupQ : ftvar_in_pskl (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
-                   [<=] ftvar_in_pskl (pskl_var_f β2) ∪ ftvar_in_pskl Q2b)
-      by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
-    assert (Hcov' : ftvar_in_pskl (open_pskl_wrt_pskl P2b (pskl_var_f β2))
-                    ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
-                      [<=] add β2 S0)
-      by (simpl in *; clear - Hcov HupP HupQ; fsetdec).
-    assert (Hd1p : dom Ξ ∩ ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) [=] empty)
-      by (exact ((proj2 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ HD)).
-    assert (HβΘ : β `notin` ftvar_in_aenv Θ)
-      by (clear - Hβ1; fsetdec).
-    destruct (solve_lift_open_context Hagr Hscp1 HdΘ Hscp2 Hblk Hd1p HβΘ Hβ2)
-      as (Hagr' & Hscp1' & HdΘ' & Hscp2' & Hblk').
-    assert (HrP0r : rel_pskl (restrict_pairs β β2 ρ) V P P2b)
-      by (apply rel_pskl_restrict;
-          [ exact HrP0 | clear - Hβ1; fsetdec
-          | clear - Hβ2 Hcov; simpl in Hcov; fsetdec ]).
-    assert (HrQ0r : rel_pskl (restrict_pairs β β2 ρ) V Q Q2b)
-      by (apply rel_pskl_restrict;
-          [ exact HrQ0 | clear - Hβ1; fsetdec
-          | clear - Hβ2 Hcov; simpl in Hcov; fsetdec ]).
-    destruct (IHHD (add β2 S0) ((β2 ~ abind_tvar) ++ Θ2)
-                (open_pskl_wrt_pskl P2b (pskl_var_f β2))
-                (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
-                ((β, β2) :: restrict_pairs β β2 ρ) V
-                ltac:(apply rel_pskl_open_pair; exact HrP0r)
-                ltac:(apply rel_pskl_open_pair; exact HrQ0r)
-                Hagr' Hscp1' Hblk' HdΘ' Hscp2' Hcov')
-      as (S1 & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hrel').
-    assert (Hd2p : dom Ξ2 ∩ add β2 S0 [=] empty)
-      by (apply (proj2 e_solve_sub_eq_block) in D2p; tauto).
-    pose proof (dom_flex_pairs_l ρn) as Hdfl. rewrite <- E1 in Hdfl.
-    pose proof (dom_flex_pairs_r ρn) as Hdfr. rewrite <- E2 in Hdfr.
-    exists S1, ρn, Ξ2, (pskl_all_syn (close_pskl_wrt_pskl β2 Y2)).
-    split; [ apply e_solve_eq__forall with (β := β2); [ exact Hβ2 | exact D2p ] | ].
-    split; [ exact E1 | split; [ exact E2 | ] ].
-    constructor.
-    eapply rel_pskl_close_pair_restrict.
-    + exact Hrel'.
-    + clear - Hβ1 Hscp1. fsetdec.
-    + simpl in Hd1p. clear - Hd1p Hdfl. fsetdec.
-    + clear - Hβ2 Hscp2. fsetdec.
-    + clear - Hd2p Hdfr. fsetdec.
-    + in_incl.
-    + in_incl.
+    exact (solve_eq_binder_row true true Hβ1 HD IHHD e_solve_eq__forall
+             HrelP HrelQ Hagr Hscp1 Hblk HdΘ Hscp2 Hcov).
   - (* SE-UnivGhost: ⫯ on both sides passes through *)
     inversion HrelP; subst. inversion HrelQ; subst.
     match goal with
@@ -629,63 +690,11 @@ Proof.
     split; [ exact E1 | split; [ exact E2 | ] ].
     constructor. exact Hrel'.
   - (* SE-GhostForall: the TARGET opens; the subject stays whole *)
-    inversion HrelP; subst. inversion HrelQ; subst.
-    match goal with
-    | Ha : rel_pskl ρ V P ?xa, Hb : rel_pskl ρ V Q ?xb |- _ =>
-        rename Ha into HrP0; rename Hb into HrQ0;
-        rename xa into P2b; rename xb into Q2b
-    end.
     match goal with
     | Hf : β `notin` union _ _ |- _ => rename Hf into Hβ1
     end.
-    destruct (atom_fresh S0) as [β2 Hβ2].
-    assert (HupQ : ftvar_in_pskl (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
-                   [<=] ftvar_in_pskl (pskl_var_f β2) ∪ ftvar_in_pskl Q2b)
-      by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
-    assert (Hcov' : ftvar_in_pskl (pskl_univ_ghost P2b)
-                    ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
-                      [<=] add β2 S0)
-      by (simpl in *; clear - Hcov HupQ; fsetdec).
-    assert (Hd1p : dom Ξ ∩ ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) [=] empty)
-      by (exact ((proj2 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ HD)).
-    assert (HβΘ : β `notin` ftvar_in_aenv Θ)
-      by (clear - Hβ1; fsetdec).
-    destruct (solve_lift_open_context Hagr Hscp1 HdΘ Hscp2 Hblk Hd1p HβΘ Hβ2)
-      as (Hagr' & Hscp1' & HdΘ' & Hscp2' & Hblk').
-    assert (HrP0r : rel_pskl (restrict_pairs β β2 ρ) V P P2b)
-      by (apply rel_pskl_restrict;
-          [ exact HrP0 | clear - Hβ1; fsetdec
-          | clear - Hβ2 Hcov; simpl in Hcov; fsetdec ]).
-    assert (HrQ0r : rel_pskl (restrict_pairs β β2 ρ) V Q Q2b)
-      by (apply rel_pskl_restrict;
-          [ exact HrQ0 | clear - Hβ1; fsetdec
-          | clear - Hβ2 Hcov; simpl in Hcov; fsetdec ]).
-    destruct (IHHD (add β2 S0) ((β2 ~ abind_tvar) ++ Θ2)
-                (pskl_univ_ghost P2b)
-                (open_pskl_wrt_pskl Q2b (pskl_var_f β2))
-                ((β, β2) :: restrict_pairs β β2 ρ) V
-                ltac:(apply rel_pskl_extend_pair; constructor; exact HrP0r)
-                ltac:(apply rel_pskl_open_pair; exact HrQ0r)
-                Hagr' Hscp1' Hblk' HdΘ' Hscp2' Hcov')
-      as (S1 & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hrel').
-    assert (Hd2p : dom Ξ2 ∩ add β2 S0 [=] empty)
-      by (apply (proj2 e_solve_sub_eq_block) in D2p; tauto).
-    pose proof (dom_flex_pairs_l ρn) as Hdfl. rewrite <- E1 in Hdfl.
-    pose proof (dom_flex_pairs_r ρn) as Hdfr. rewrite <- E2 in Hdfr.
-    exists S1, ρn, Ξ2, (pskl_all_syn (close_pskl_wrt_pskl β2 Y2)).
-    split;
-      [ apply e_solve_eq__univ_ghost_l_all with (β := β2);
-        [ exact Hβ2 | exact D2p ] | ].
-    split; [ exact E1 | split; [ exact E2 | ] ].
-    constructor.
-    eapply rel_pskl_close_pair_restrict.
-    + exact Hrel'.
-    + clear - Hβ1 Hscp1. fsetdec.
-    + simpl in Hd1p. clear - Hd1p Hdfl. fsetdec.
-    + clear - Hβ2 Hscp2. fsetdec.
-    + clear - Hd2p Hdfr. fsetdec.
-    + in_incl.
-    + in_incl.
+    exact (solve_eq_binder_row false true Hβ1 HD IHHD e_solve_eq__univ_ghost_l_all
+             HrelP HrelQ Hagr Hscp1 Hblk HdΘ Hscp2 Hcov).
   - (* SE-GhostGuarded: the subject strips its ⫯ *)
     inversion HrelP; subst.
     match goal with
@@ -703,62 +712,11 @@ Proof.
         | exact D2p ]. }
     split; [ exact E1 | split; [ exact E2 | exact Hrel' ] ].
   - (* SE-ForallGhost: the SUBJECT opens; the target stays whole *)
-    inversion HrelP; subst. inversion HrelQ; subst.
-    match goal with
-    | Ha : rel_pskl ρ V P ?xa, Hb : rel_pskl ρ V Q ?xb |- _ =>
-        rename Ha into HrP0; rename Hb into HrQ0;
-        rename xa into P2b; rename xb into Q2b
-    end.
     match goal with
     | Hf : β `notin` union _ _ |- _ => rename Hf into Hβ1
     end.
-    destruct (atom_fresh S0) as [β2 Hβ2].
-    assert (HupP : ftvar_in_pskl (open_pskl_wrt_pskl P2b (pskl_var_f β2))
-                   [<=] ftvar_in_pskl (pskl_var_f β2) ∪ ftvar_in_pskl P2b)
-      by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
-    assert (Hcov' : ftvar_in_pskl (open_pskl_wrt_pskl P2b (pskl_var_f β2))
-                    ∪ ftvar_in_pskl (pskl_univ_ghost Q2b) [<=] add β2 S0)
-      by (simpl in *; clear - Hcov HupP; fsetdec).
-    assert (Hd1p : dom Ξ ∩ ftvar_in_aenv ((β ~ abind_tvar) ++ Θ) [=] empty)
-      by (exact ((proj2 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ HD)).
-    assert (HβΘ : β `notin` ftvar_in_aenv Θ)
-      by (clear - Hβ1; fsetdec).
-    destruct (solve_lift_open_context Hagr Hscp1 HdΘ Hscp2 Hblk Hd1p HβΘ Hβ2)
-      as (Hagr' & Hscp1' & HdΘ' & Hscp2' & Hblk').
-    assert (HrP0r : rel_pskl (restrict_pairs β β2 ρ) V P P2b)
-      by (apply rel_pskl_restrict;
-          [ exact HrP0 | clear - Hβ1; fsetdec
-          | clear - Hβ2 Hcov; simpl in Hcov; fsetdec ]).
-    assert (HrQ0r : rel_pskl (restrict_pairs β β2 ρ) V Q Q2b)
-      by (apply rel_pskl_restrict;
-          [ exact HrQ0 | clear - Hβ1; fsetdec
-          | clear - Hβ2 Hcov; simpl in Hcov; fsetdec ]).
-    destruct (IHHD (add β2 S0) ((β2 ~ abind_tvar) ++ Θ2)
-                (open_pskl_wrt_pskl P2b (pskl_var_f β2))
-                (pskl_univ_ghost Q2b)
-                ((β, β2) :: restrict_pairs β β2 ρ) V
-                ltac:(apply rel_pskl_open_pair; exact HrP0r)
-                ltac:(apply rel_pskl_extend_pair; constructor; exact HrQ0r)
-                Hagr' Hscp1' Hblk' HdΘ' Hscp2' Hcov')
-      as (S1 & ρn & Ξ2 & Y2 & D2p & E1 & E2 & Hrel').
-    assert (Hd2p : dom Ξ2 ∩ add β2 S0 [=] empty)
-      by (apply (proj2 e_solve_sub_eq_block) in D2p; tauto).
-    pose proof (dom_flex_pairs_l ρn) as Hdfl. rewrite <- E1 in Hdfl.
-    pose proof (dom_flex_pairs_r ρn) as Hdfr. rewrite <- E2 in Hdfr.
-    exists S1, ρn, Ξ2, (pskl_all_syn (close_pskl_wrt_pskl β2 Y2)).
-    split;
-      [ apply e_solve_eq__all_l_univ_ghost with (β := β2);
-        [ exact Hβ2 | exact D2p ] | ].
-    split; [ exact E1 | split; [ exact E2 | ] ].
-    constructor.
-    eapply rel_pskl_close_pair_restrict.
-    + exact Hrel'.
-    + clear - Hβ1 Hscp1. fsetdec.
-    + simpl in Hd1p. clear - Hd1p Hdfl. fsetdec.
-    + clear - Hβ2 Hscp2. fsetdec.
-    + clear - Hd2p Hdfr. fsetdec.
-    + in_incl.
-    + in_incl.
+    exact (solve_eq_binder_row true false Hβ1 HD IHHD e_solve_eq__all_l_univ_ghost
+             HrelP HrelQ Hagr Hscp1 Hblk HdΘ Hscp2 Hcov).
   - (* SE-GuardedGhost: the target strips its ⫯ *)
     inversion HrelQ; subst.
     match goal with
@@ -1099,9 +1057,7 @@ Proof.
       - exact Hβ2.
       - exact D2p. }
     split; [ exact E1 | split; [ exact E2 | ] ].
-    split; [ exact HρxN | ].
-    split; [ exact HtrN | ].
-    exact HrelN.
+    exact (conj HρxN (conj HtrN HrelN)).
   - (* ⭐ SS-Arrow: §5's eq half feeds the threaded sub half *)
     inversion HrelP; subst. inversion HrelQ; subst.
     match goal with
@@ -1128,30 +1084,13 @@ Proof.
     assert (Hd2a : dom Ξ2a ∩ S0 [=] empty)
       by (apply (proj2 e_solve_sub_eq_block) in D2a; tauto).
     assert (Hi2a : dom Ξ2a [<=] S1) by (exact (e_solve_eq_block_in_supply D2a)).
-    pose proof (dom_flex_pairs_l ρnA) as Hdfl. rewrite <- E1a in Hdfl.
-    pose proof (dom_flex_pairs_r ρnA) as Hdfr. rewrite <- E2a in Hdfr.
-    assert (Hagr' : flex_agree_rel (ρnA ++ ρ) V (Ξ1 ++ Θ) (Ξ2a ++ Θ2)).
-    { rewrite E1a, E2a. apply flex_agree_rel_push_pairs.
-      - exact Hagr.
-      (* ⭐ the head block dodges the pair columns — the SECOND half of the
-         old scoping premise, now hypothesised directly. *)
-      - clear - Hd1a Hscp1 Hdfl Hblk1. fsetdec.
-      - clear - Hd2a Hscp2 Hdfr. fsetdec. }
-    assert (Hscp1' : V [<=] ftvar_in_aenv (Ξ1 ++ Θ))
-      by (rewrite ftvar_in_aenv_app; clear - Hscp1; fsetdec).
-    assert (HdΘ' : dom (Ξ2a ++ Θ2) [<=] S1)
-      by (rewrite dom_app; clear - Hi2a HdΘ Hgr1; fsetdec).
-    assert (Hscp2' : V ∪ cols_r (ρnA ++ ρ) [<=] S1).
-    { rewrite cols_r_app. clear - Hscp2 Hdfr Hi2a Hgr1. fsetdec. }
     assert (HcovB : ftvar_in_pskl P3b ∪ ftvar_in_pskl Q3b [<=] S1)
       by (clear - Hcov Hgr1; simpl in *; fsetdec).
     assert (Hd1b : dom Ξ2 ∩ ftvar_in_aenv (Ξ1 ++ Θ) [=] empty)
       by (exact ((proj1 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ _ HD)).
-    assert (Hblk2 : dom Ξ2 ∩ cols_l (ρnA ++ ρ) [=] empty).
-    { rewrite cols_l_app. rewrite ftvar_in_aenv_app in Hd1b.
-      pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds.
-      rewrite dom_app in Hblk.
-      clear - Hd1b Hds Hdfl Hblk. fsetdec. }
+    destruct (solve_seq_push E1a E2a Hagr Hscp1 Hblk Hd1a Hd1b Hd2a Hi2a Hgr1
+                HdΘ Hscp2)
+      as (Hagr' & Hscp1' & Hblk2 & HdΘ' & Hscp2').
     destruct (IHHD S1 (Ξ2a ++ Θ2) P3b Q3b (ρnA ++ ρ) V
                 ltac:(apply rel_pskl_widen; exact HrPb)
                 ltac:(apply rel_pskl_widen; exact HrQb)
@@ -1195,30 +1134,13 @@ Proof.
     assert (Hd2a : dom Ξ2a ∩ S0 [=] empty)
       by (apply (proj2 e_solve_sub_eq_block) in D2a; tauto).
     assert (Hi2a : dom Ξ2a [<=] S1) by (exact (e_solve_eq_block_in_supply D2a)).
-    pose proof (dom_flex_pairs_l ρnA) as Hdfl. rewrite <- E1a in Hdfl.
-    pose proof (dom_flex_pairs_r ρnA) as Hdfr. rewrite <- E2a in Hdfr.
-    assert (Hagr' : flex_agree_rel (ρnA ++ ρ) V (Ξ1 ++ Θ) (Ξ2a ++ Θ2)).
-    { rewrite E1a, E2a. apply flex_agree_rel_push_pairs.
-      - exact Hagr.
-      (* ⭐ the head block dodges the pair columns — the SECOND half of the
-         old scoping premise, now hypothesised directly. *)
-      - clear - Hd1a Hscp1 Hdfl Hblk1. fsetdec.
-      - clear - Hd2a Hscp2 Hdfr. fsetdec. }
-    assert (Hscp1' : V [<=] ftvar_in_aenv (Ξ1 ++ Θ))
-      by (rewrite ftvar_in_aenv_app; clear - Hscp1; fsetdec).
-    assert (HdΘ' : dom (Ξ2a ++ Θ2) [<=] S1)
-      by (rewrite dom_app; clear - Hi2a HdΘ Hgr1; fsetdec).
-    assert (Hscp2' : V ∪ cols_r (ρnA ++ ρ) [<=] S1).
-    { rewrite cols_r_app. clear - Hscp2 Hdfr Hi2a Hgr1. fsetdec. }
     assert (HcovB : ftvar_in_pskl pskl_ghost ∪ ftvar_in_pskl Q3b [<=] S1)
       by (clear - Hcov Hgr1; simpl in *; fsetdec).
     assert (Hd1b : dom Ξ2 ∩ ftvar_in_aenv (Ξ1 ++ Θ) [=] empty)
       by (exact ((proj1 a_solve_sub_eq_generated_fresh_set) _ _ _ _ _ _ HD)).
-    assert (Hblk2 : dom Ξ2 ∩ cols_l (ρnA ++ ρ) [=] empty).
-    { rewrite cols_l_app. rewrite ftvar_in_aenv_app in Hd1b.
-      pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds.
-      rewrite dom_app in Hblk.
-      clear - Hd1b Hds Hdfl Hblk. fsetdec. }
+    destruct (solve_seq_push E1a E2a Hagr Hscp1 Hblk Hd1a Hd1b Hd2a Hi2a Hgr1
+                HdΘ Hscp2)
+      as (Hagr' & Hscp1' & Hblk2 & HdΘ' & Hscp2').
     destruct (IHHD S1 (Ξ2a ++ Θ2) pskl_ghost Q3b (ρnA ++ ρ) V
                 (rel_pskl__ghost (ρnA ++ ρ) V)
                 ltac:(apply rel_pskl_widen; exact HrQb)
@@ -1357,30 +1279,13 @@ Proof.
     assert (Hd2a : dom Ξ2a ∩ S0 [=] empty)
       by (apply (proj2 e_solve_sub_eq_block) in D2a; tauto).
     assert (Hi2a : dom Ξ2a [<=] S1) by (exact (e_solve_eq_block_in_supply D2a)).
-    pose proof (dom_flex_pairs_l ρnA) as Hdfl. rewrite <- E1a in Hdfl.
-    pose proof (dom_flex_pairs_r ρnA) as Hdfr. rewrite <- E2a in Hdfr.
-    assert (Hagr' : flex_agree_rel (ρnA ++ ρ) V (Ξ1 ++ Θ) (Ξ2a ++ Θ2)).
-    { rewrite E1a, E2a. apply flex_agree_rel_push_pairs.
-      - exact Hagr.
-      (* ⭐ the head block dodges the pair columns — the SECOND half of the
-         old scoping premise, now hypothesised directly. *)
-      - clear - Hd1a Hscp1 Hdfl Hblk1. fsetdec.
-      - clear - Hd2a Hscp2 Hdfr. fsetdec. }
-    assert (Hscp1' : V [<=] ftvar_in_aenv (Ξ1 ++ Θ))
-      by (rewrite ftvar_in_aenv_app; clear - Hscp1; fsetdec).
-    assert (HdΘ' : dom (Ξ2a ++ Θ2) [<=] S1)
-      by (rewrite dom_app; clear - Hi2a HdΘ Hgr1; fsetdec).
-    assert (Hscp2' : V ∪ cols_r (ρnA ++ ρ) [<=] S1).
-    { rewrite cols_r_app. clear - Hscp2 Hdfr Hi2a Hgr1. fsetdec. }
     assert (HcovT : ftvar_in_pskl Pmid2 ∪ ftvar_in_a_cstrs C2' [<=] S1)
       by (clear - Hout Hcov Hgr1; simpl in *; fsetdec).
     assert (Hd1b : dom Ξ2 ∩ ftvar_in_aenv (Ξ1 ++ Θ) [=] empty)
       by (exact (a_solve_cstr_generated_fresh_set HD)).
-    assert (Hblk2 : dom Ξ2 ∩ cols_l (ρnA ++ ρ) [=] empty).
-    { rewrite cols_l_app. rewrite ftvar_in_aenv_app in Hd1b.
-      pose proof (dom_subset_ftvar_in_aenv Ξ1) as Hds.
-      rewrite dom_app in Hblk.
-      clear - Hd1b Hds Hdfl Hblk. fsetdec. }
+    destruct (solve_seq_push E1a E2a Hagr Hscp1 Hblk Hd1a Hd1b Hd2a Hi2a Hgr1
+                HdΘ Hscp2)
+      as (Hagr' & Hscp1' & Hblk2 & HdΘ' & Hscp2').
     destruct (IHHD S1 (Ξ2a ++ Θ2) C2' Pmid2 (ρnA ++ ρ) V
                 HrelM
                 ltac:(apply rel_a_cstrs_widen; exact HrelC')
