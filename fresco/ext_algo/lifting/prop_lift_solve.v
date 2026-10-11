@@ -285,8 +285,6 @@ Proof.
     assert (Hup : ftvar_in_pskl (open_pskl_wrt_pskl Q0 (pskl_var_f β2))
                   [<=] ftvar_in_pskl (pskl_var_f β2) ∪ ftvar_in_pskl Q0)
       by (apply ftvar_in_pskl_open_pskl_wrt_pskl_upper).
-    assert (Hcr0 : cols_r (restrict_pairs β β2 ρ) [<=] cols_r ρ)
-      by apply cols_r_restrict_pairs.
     assert (Hscp2' : V ∪ ftvar_in_pskl (open_pskl_wrt_pskl Q0 (pskl_var_f β2))
                        [<=] add β2 S0)
       by (simpl in *; clear - Hscp2 Hup; fsetdec).

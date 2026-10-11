@@ -951,8 +951,6 @@ Proof.
                      | a1 a2 b1 b2 HrE1 HrE2
                      | e1a e2a A1 A2 HrEa HrA | e1a e2a HrEa ]; subst.
     destruct (a_wf_exp_app_inv Hwfe) as [Hwfe1 Hwfe2].
-    assert (Hsc0 : ftvar_in_aenv Θa [<=] dom Θa)
-      by (apply a_wf_aenv_ftv_dom; exact Hwf).
     assert (Hdm0 : dom Θa [<=] dom Θb) by (exact (a_pat_dom_mono Hp2)).
     assert (Hdm1 : dom Θb [<=] dom Θc) by (exact (a_pat_dom_mono Hp1)).
     assert (Hblk1 : forall a, a `in` dom Θb -> a `notin` dom Θa ->

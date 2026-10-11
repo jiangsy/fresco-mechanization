@@ -793,6 +793,203 @@ Proof.
   exact Hdomeo.
 Qed.
 
+(* ===================================================================== *)
+(*  ⭐ THE [_check_base] ROWS' JUNK STRIP, shared by AT-AbsCheckBase and    *)
+(*  AT-AbsAnnoCheckBase.  Both run a middle stage (the split, plus the     *)
+(*  consis-chk for the annotated row) at pairs [ρm] over the caller's      *)
+(*  list restricted at the junk suffix ([ρ0 = restrict_l (dom Ξ) ρ]),      *)
+(*  then the body through [lift_typing_abs_core], which KEEPS [Ξ]; these   *)
+(*  rows DROP it.  What is left after the core is the same for both: side  *)
+(*  2's junk is apart from the middle output (the e-rule's [uniq] and      *)
+(*  γ-filter premises), and the outputs are handed back at the CALLER's   *)
+(*  pair list with the junk's pairs cut off.                              *)
+(* ===================================================================== *)
+
+Lemma lift_check_base_strip :
+  forall {ρ ρ0 ρm ρe2 V Ξ Ξ2 Θa Θm Θm' Θout Θout' S0 Sm S2 x x2 A A2 Ad Ad'
+          B0' B1 B1' eb2},
+  (forall a b, In (a, b) ρ0 -> In (a, b) ρ) ->
+  (forall a, a `in` dom Ξ -> a `notin` cols_l ρ0) ->
+  rel_inj ρ V ->
+  rel_fun ρ V (dom Θa) ->
+  V ∪ cols_r ρ [<=] S0 ->
+  {{ ⊢ Θa }}a ->
+  V [<=] ftvar_in_aenv Θa ->
+  (forall a, a `in` dom Θout -> a `notin` dom Θa -> a `notin` cols_l ρ) ->
+  rel_ext ρm (ftvar_in_aenv Θa) S0 ->
+  (forall a b, In (a, b) ρm -> a `in` dom Θm /\ b `in` dom Θm') ->
+  S0 [<=] Sm ->
+  dom Θm' [<=] Sm ->
+  uniq Θm' ->
+  ftvar_in_aenv Θm' [<=] Sm ->
+  dom Θa [<=] dom Θm ->
+  dom Θm [<=] dom Θout ->
+  uniq (Ξ ++ Θm) ->
+  rel_inj (ρm ++ ρ0) V ->
+  V ∪ cols_r (ρm ++ ρ0) [<=] Sm ->
+  {{ ⊢ (Ξ ++ (x ~ abind_var_typ A) ++ Θout) }}a ->
+  x2 `notin` Sm ->
+  ftvar_in_ptyp A2 ∪ ftvar_in_pskl (ptyp_to_pskl B0') ∪ ftvar_in_exp eb2
+    ∪ fvar_in_exp eb2 [<=] Sm ->
+  {{ (add x2 Sm) ↝ S2 ⊨ ((x2 ~ abind_var_typ A2) ++ Θm')
+     ⊢[ mode_tc ; (ptyp_to_pskl B0') ] (open_exp_wrt_exp eb2 (exp_var_f x2))
+     ⦂ B1' ⊣ (Ξ2 ++ (x2 ~ abind_var_typ A2) ++ Θout') }}e ->
+  rel_aenv (ρe2 ++ ρm ++ ρ0) V Ξ Ξ2 ->
+  rel_aenv (ρe2 ++ ρm ++ ρ0) V Θout Θout' ->
+  rel_ptyp (ρe2 ++ ρm ++ ρ0) V B1 B1' ->
+  rel_ext ρe2 (ftvar_in_aenv Θm) Sm ->
+  (forall a b, In (a, b) ρe2 ->
+     a `in` dom (Ξ ++ Θout) /\ b `in` dom (Ξ2 ++ Θout')) ->
+  dom Θm' [<=] dom (Ξ2 ++ Θout') ->
+  (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp B1) ->
+  rel_ptyp (ρm ++ ρ0) V Ad Ad' ->
+  ftvar_in_ptyp Ad [<=] dom Θm ->
+  uniq (Ξ2 ++ Θm')
+  /\ (forall γ, γ `in` dom Ξ2 -> γ `notin` ftvar_in_ptyp B1')
+  /\ rel_aenv (restrict_l (dom Ξ) (ρe2 ++ ρm) ++ ρ) V Θout Θout'
+  /\ flex_agree_rel (restrict_l (dom Ξ) (ρe2 ++ ρm) ++ ρ) V Θout Θout'
+  /\ rel_ptyp (restrict_l (dom Ξ) (ρe2 ++ ρm) ++ ρ) V
+       (ptyp_arrow Ad B1) (ptyp_arrow Ad' B1')
+  /\ rel_ext (restrict_l (dom Ξ) (ρe2 ++ ρm)) (ftvar_in_aenv Θa) S0
+  /\ (forall a b, In (a, b) (restrict_l (dom Ξ) (ρe2 ++ ρm)) ->
+        a `in` dom Θout /\ b `in` dom Θout').
+Proof.
+  intros ρ ρ0 ρm ρe2 V Ξ Ξ2 Θa Θm Θm' Θout Θout' S0 Sm S2 x x2 A A2 Ad Ad'
+    B0' B1 B1' eb2 Hρ0incl HΞcols Hinj Hfun Hcov Hwf Hscp Hblk Hextm Hdomm
+    Hgrm HdΘm' HuqΘm' HftvΘm' Hdm0 Hdmout Huq Hinj1 HcovX HwfOutB Hx2S HcovPX
+    De HrFΞ HrFΘ HrB1' HextF HdomF Hdm2 Hgam HrAs HftAd.
+  assert (Hsc0 : ftvar_in_aenv Θa [<=] dom Θa)
+    by (apply a_wf_aenv_ftv_dom; exact Hwf).
+  assert (HdisjΞ : disjoint Ξ Θm) by (clear - Huq; solve_uniq).
+  unfold disjoint in HdisjΞ.
+  (* ---- side 2's package at the body's output ---- *)
+  assert (Hx2Θm' : x2 `notin` dom Θm') by (clear - Hx2S HdΘm'; fsetdec).
+  assert (Huq2X : uniq ((x2 ~ abind_var_typ A2) ++ Θm'))
+    by (clear - HuqΘm' Hx2Θm'; solve_uniq).
+  assert (HcovDe : ftvar_in_aenv ((x2 ~ abind_var_typ A2) ++ Θm')
+                   ∪ ftvar_in_pskl (ptyp_to_pskl B0')
+                   ∪ fvar_in_exp (open_exp_wrt_exp eb2 (exp_var_f x2))
+                   ∪ ftvar_in_exp (open_exp_wrt_exp eb2 (exp_var_f x2))
+                   [<=] add x2 Sm).
+  { pose proof (ftvar_in_exp_open_exp_wrt_exp_upper eb2 (exp_var_f x2))
+      as Hu1.
+    pose proof (fvar_in_exp_open_exp_wrt_exp_upper eb2 (exp_var_f x2))
+      as Hu2.
+    simpl in Hu1, Hu2. simpl.
+    clear - Hu1 Hu2 HftvΘm' HcovPX. fsetdec. }
+  destruct (e_typing_sound De Huq2X HcovDe) as (_ & HuqOutDe & _).
+  assert (Hinjcore : rel_inj (ρe2 ++ ρm ++ ρ0) V)
+    by (eapply rel_inj_app; [ exact Hinj1 | exact HextF | exact HcovX ]).
+  split.
+  (* ---- side 2's junk is apart from the middle output ---- *)
+  { apply uniq_app_4.
+    - clear - HuqOutDe. solve_uniq.
+    - exact HuqΘm'.
+    - apply disjoint_from_pointwise. intros b0 Hb0.
+      destruct (rel_aenv_dom_r_inv HrFΞ Hb0) as (a' & Ha' & Hat').
+      inversion Hat' as [ z0 y0 Hin | z0 HinV ]; subst.
+      + apply in_app_or in Hin. destruct Hin as [Hin | Hin].
+        * destruct HextF as [Hxfr _]. destruct (Hxfr _ _ Hin) as [_ Hnb].
+          clear - Hnb HdΘm'. fsetdec.
+        * apply in_app_or in Hin. destruct Hin as [Hin | Hin].
+          -- exfalso. destruct (Hdomm _ _ Hin) as [Hd1 _].
+             clear - HdisjΞ Ha' Hd1. fsetdec.
+          -- exfalso. apply (HΞcols a' Ha'). eapply cols_l_in. exact Hin.
+      + exfalso.
+        assert (Had : b0 `in` dom Θa)
+          by (apply Hscp in HinV; clear - HinV Hsc0; fsetdec).
+        clear - HdisjΞ Ha' Had Hdm0. fsetdec. }
+  split.
+  (* ---- the γ-filter on the RESULT, via the correspondence ---- *)
+  { intros γ Hγ Hc.
+    assert (HγB2 : γ `in` ftvar_in_pskl (ptyp_to_pskl B1')).
+    { pose proof (ftvar_ptyp_to_pskl B1') as He. clear - He Hc. fsetdec. }
+    destruct (rel_pskl_ftv_corr_r HrB1' HγB2) as (a & Ha & Hat).
+    destruct (rel_aenv_dom_r_inv HrFΞ Hγ) as (a' & Ha' & Hat').
+    assert (Ea : a' = a) by (exact (Hinjcore a' a γ Hat' Hat)).
+    subst a'.
+    assert (HaB1 : a `in` ftvar_in_ptyp B1).
+    { pose proof (ftvar_ptyp_to_pskl B1) as He. clear - He Ha. fsetdec. }
+    exact (Hgam a Ha' HaB1). }
+  (* ---- THE JUNK STRIP: hand back at the CALLER's pair list ---- *)
+  set (ρef := restrict_l (dom Ξ) (ρe2 ++ ρm)).
+  assert (Hinclr : forall a b,
+    In (a, b) (restrict_l (dom Ξ) (ρe2 ++ ρm ++ ρ0)) -> In (a, b) (ρef ++ ρ)).
+  { unfold ρef. intros a b Hin. eapply restrict_l_app_restore;
+      [ exact Hρ0incl | rewrite !app_assoc; exact Hin ]. }
+  (* dom Ξ is apart from Θout (side 1's own output uniq) *)
+  assert (HuqOutB : uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θout))
+    by (apply a_wf_aenv_uniq; exact HwfOutB).
+  assert (HΞΘout : dom Ξ ∩ dom Θout [=] empty).
+  { assert (Hd : disjoint Ξ ((x ~ abind_var_typ A) ++ Θout))
+      by (clear - HuqOutB; solve_uniq).
+    unfold disjoint in Hd. simpl in Hd. clear - Hd. fsetdec. }
+  assert (HwfΘout : {{ ⊢ Θout }}a).
+  { eapply a_wf_aenv_strip_prefix.
+    eapply a_wf_aenv_strip_prefix with (Ξ := Ξ). simpl_env. exact HwfOutB. }
+  assert (HftvΘout : ftvar_in_aenv Θout [<=] dom Θout)
+    by (apply a_wf_aenv_ftv_dom; exact HwfΘout).
+  assert (HΞfΘout : dom Ξ ∩ ftvar_in_aenv Θout [=] empty)
+    by (clear - HΞΘout HftvΘout; fsetdec).
+  assert (HrΘfin : rel_aenv (ρef ++ ρ) V Θout Θout').
+  { eapply rel_aenv_mono;
+      [ exact (rel_aenv_restrict_l HrFΘ HΞfΘout)
+      | exact Hinclr | intros z Hz; exact Hz ]. }
+  assert (Hextfin : rel_ext ρef (ftvar_in_aenv Θa) S0).
+  { assert (Hd1s : dom Θm [<=] ftvar_in_aenv Θm)
+      by (apply dom_subset_ftvar_in_aenv).
+    assert (Hcomb : rel_ext (ρe2 ++ ρm) (ftvar_in_aenv Θa) S0).
+    { eapply rel_ext_app;
+        [ exact Hextm | exact HextF
+        | clear - Hsc0 Hdm0 Hd1s; fsetdec
+        | exact Hgrm
+        | intros a b0 Hin; destruct (Hdomm _ _ Hin) as [Hd1 Hd2];
+          split; [ clear - Hd1 Hd1s; fsetdec
+                 | clear - Hd2 HdΘm'; fsetdec ] ]. }
+    unfold ρef. apply rel_ext_restrict_l; exact Hcomb. }
+  split; [ exact HrΘfin | ].
+  split.
+  { eapply rel_aenv_flex_agree_ext;
+      [ exact HrΘfin | exact Hinj | exact Hfun | exact Hextfin
+      | apply dom_subset_ftvar_in_aenv
+      | clear - Hscp Hsc0; fsetdec | exact Hcov | exact Hblk ]. }
+  split.
+  (* ---- the RESULT's relation, restricted off the junk ---- *)
+  { assert (HΞftAd : dom Ξ ∩ ftvar_in_pskl (ptyp_to_pskl Ad) [=] empty).
+    { pose proof (ftvar_ptyp_to_pskl Ad) as He.
+      clear - He HftAd HdisjΞ. fsetdec. }
+    assert (HΞftB1 : dom Ξ ∩ ftvar_in_pskl (ptyp_to_pskl B1) [=] empty).
+    { pose proof (ftvar_ptyp_to_pskl B1) as He.
+      intros z. split; intros Hz; [ exfalso | exfalso; clear - Hz; fsetdec ].
+      assert (Hz1 : z `in` dom Ξ) by (clear - Hz; fsetdec).
+      assert (Hz3 : z `in` ftvar_in_ptyp B1) by (clear - He Hz; fsetdec).
+      exact (Hgam z Hz1 Hz3). }
+    assert (HrAs2 : rel_pskl (ρe2 ++ ρm ++ ρ0) V (ptyp_to_pskl Ad)
+                      (ptyp_to_pskl Ad'))
+      by (eapply rel_pskl_mono;
+          [ exact HrAs
+          | intros u v Hu; apply in_or_app; right; exact Hu
+          | intros u Hu; exact Hu ]).
+    unfold rel_ptyp. simpl. constructor.
+    - eapply rel_pskl_mono;
+        [ apply rel_pskl_restrict_l; [ exact HrAs2 | exact HΞftAd ]
+        | exact Hinclr | intros z Hz; exact Hz ].
+    - eapply rel_pskl_mono;
+        [ apply rel_pskl_restrict_l; [ exact HrB1' | exact HΞftB1 ]
+        | exact Hinclr | intros z Hz; exact Hz ]. }
+  split; [ exact Hextfin | ].
+  unfold ρef. eapply rel_aenv_restrict_l_dom;
+    [ exact HrFΞ | exact Hinjcore
+    | intros a b Hin; repeat rewrite <- app_assoc in Hin;
+      repeat rewrite <- app_assoc;
+      apply in_or_app; auto | ].
+  intros a b Hin. apply in_app_or in Hin; destruct Hin as [Hin | Hin].
+  - exact (HdomF _ _ Hin).
+  - destruct (Hdomm _ _ Hin) as [Ha Hb].
+    split; [ rewrite dom_app; apply AtomSetImpl.union_3; apply Hdmout; exact Ha
+           | apply Hdm2; exact Hb ].
+Qed.
+
 Theorem a_typing_rel_e : forall m Θ0 P0 e B Θ1,
   {{ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}a ->
   lift_typing_concl m Θ0 P0 e B Θ1.
@@ -1033,13 +1230,6 @@ Proof.
     assert (Hαout : dom αs [<=] dom (Ξ ++ Θc)).
     { intros a Ha.
       assert (Hax : a <> x) by (intros ->; exact (Hxαs Ha)).
-      assert (Ha1 : a `in` dom ((x ~ abind_var_typ A) ++ αs ++ Θa))
-        by (simpl_env; clear - Ha; fsetdec).
-      apply Hdmb in Ha1. simpl_env in Ha1. simpl_env.
-      clear - Ha1 Hax. fsetdec. }
-    assert (HΘaout : dom Θa [<=] dom (Ξ ++ Θc)).
-    { intros a Ha.
-      assert (Hax : a <> x) by (intros ->; exact (HxΘa Ha)).
       assert (Ha1 : a `in` dom ((x ~ abind_var_typ A) ++ αs ++ Θa))
         by (simpl_env; clear - Ha; fsetdec).
       apply Hdmb in Ha1. simpl_env in Ha1. simpl_env.
@@ -1529,60 +1719,21 @@ Proof.
                 HblkX HdΘb' HcovX HcovPX)
       as (S2 & x2 & ρe2 & Ξ2 & Θc2' & B1' & Hx2S & De & HsufΞ2 & HrF
           & HrFΞ & HrFΘ & HagrF & HrB1' & HextF & HdomF & Hdm2).
-    (* ---- side 2's package at the body's output ---- *)
-    assert (Hx2Θb' : x2 `notin` dom Θb') by (clear - Hx2S HdΘb'; fsetdec).
-    assert (Huq2X : uniq ((x2 ~ abind_var_typ A') ++ Θb'))
-      by (clear - HuqΘb' Hx2Θb'; solve_uniq).
-    assert (HcovDe : ftvar_in_aenv ((x2 ~ abind_var_typ A') ++ Θb')
-                     ∪ ftvar_in_pskl (ptyp_to_pskl B0')
-                     ∪ fvar_in_exp (open_exp_wrt_exp eb2 (exp_var_f x2))
-                     ∪ ftvar_in_exp (open_exp_wrt_exp eb2 (exp_var_f x2))
-                     [<=] add x2 S1s).
-    { pose proof (ftvar_in_exp_open_exp_wrt_exp_upper eb2 (exp_var_f x2))
-        as Hu1.
-      pose proof (fvar_in_exp_open_exp_wrt_exp_upper eb2 (exp_var_f x2))
-        as Hu2.
-      simpl in Hu1, Hu2. simpl.
-      clear - Hu1 Hu2 HftvΘb' HcovPX HftA'. fsetdec. }
-    destruct (e_typing_sound De Huq2X HcovDe)
-      as (HaDe & HuqOutDe & HftvOutDe & HftB1').
-    assert (Hinjcore : rel_inj (ρe2 ++ ρs ++ ρ0) V)
-      by (eapply rel_inj_app; [ exact Hinj1 | exact HextF | exact HcovX ]).
-    (* ---- side 2's junk is apart from the split's output ---- *)
-    assert (HΞ2Θb' : forall b0, b0 `in` dom Ξ2 -> b0 `notin` dom Θb').
-    { intros b0 Hb0.
-      destruct (rel_aenv_dom_r_inv HrFΞ Hb0) as (a' & Ha' & Hat').
-      inversion Hat' as [ z0 y0 Hin | z0 HinV ]; subst.
-      - apply in_app_or in Hin. destruct Hin as [Hin | Hin].
-        + destruct HextF as [Hxfr _]. destruct (Hxfr _ _ Hin) as [_ Hnb].
-          clear - Hnb HdΘb'. fsetdec.
-        + apply in_app_or in Hin. destruct Hin as [Hin | Hin].
-          * exfalso. destruct (Hdoms _ _ Hin) as [Hd1 _].
-            assert (Hd : disjoint Ξ Θb) by (clear - Huq; solve_uniq).
-            unfold disjoint in Hd. clear - Hd Ha' Hd1. fsetdec.
-          * exfalso. apply (HΞcols a' Ha'). eapply cols_l_in. exact Hin.
-      - exfalso.
-        assert (Had : b0 `in` dom Θa)
-          by (apply Hscp in HinV; clear - HinV Hsc0; fsetdec).
-        assert (Hd : disjoint Ξ Θb) by (clear - Huq; solve_uniq).
-        unfold disjoint in Hd. clear - Hd Ha' Had Hdm0. fsetdec. }
-    assert (Huq2Ξ : uniq (Ξ2 ++ Θb')).
-    { apply uniq_app_4.
-      - clear - HuqOutDe. solve_uniq.
-      - exact HuqΘb'.
-      - apply disjoint_from_pointwise. exact HΞ2Θb'. }
-    (* ---- the γ-filter on the RESULT, via the correspondence ---- *)
-    assert (Hγ2 : forall γ, γ `in` dom Ξ2 -> γ `notin` ftvar_in_ptyp B1').
-    { intros γ Hγ Hc.
-      assert (HγB2 : γ `in` ftvar_in_pskl (ptyp_to_pskl B1')).
-      { pose proof (ftvar_ptyp_to_pskl B1') as He. clear - He Hc. fsetdec. }
-      destruct (rel_pskl_ftv_corr_r HrB1' HγB2) as (a & Ha & Hat).
-      destruct (rel_aenv_dom_r_inv HrFΞ Hγ) as (a' & Ha' & Hat').
-      assert (Ea : a' = a) by (exact (Hinjcore a' a γ Hat' Hat)).
-      subst a'.
-      assert (HaB1 : a `in` ftvar_in_ptyp B1).
-      { pose proof (ftvar_ptyp_to_pskl B1) as He. clear - He Ha. fsetdec. }
-      exact (Hgam a Ha' HaB1). }
+    (* ---- the junk strip ---- *)
+    assert (HwfQsX : {{ ((x ~ abind_var_typ A) ++ Θb) ⨟ empty ⊢ₚₛ
+                       (ptyp_to_pskl B0) }}a)
+      by (eapply a_wf_pskl_weaken;
+          [ intros z b1 Hb1; apply binds_app_3; exact Hb1 | exact HwfQs ]).
+    destruct (a_typing_sound Ht HwfXb HwfQsX (a_ty_mode_compat__tc B0) Hwfeo)
+      as [_ [HwfOutB _]].
+    assert (HcovDe : ftvar_in_ptyp A' ∪ ftvar_in_pskl (ptyp_to_pskl B0')
+                     ∪ ftvar_in_exp eb2 ∪ fvar_in_exp eb2 [<=] S1s)
+      by (clear - HftA' HcovPX; fsetdec).
+    destruct (lift_check_base_strip Hρ0incl HΞcols Hinj Hfun Hcov Hwf Hscp Hblk
+                Hexts Hdoms Hgrs HdΘb' HuqΘb' HftvΘb' Hdm0 Hdmout Huq Hinj1
+                HcovX HwfOutB Hx2S HcovDe De HrFΞ HrFΘ HrB1' HextF HdomF Hdm2
+                Hgam HrAs (a_wf_ptyp_ftv_dom HwfA))
+      as (Huq2Ξ & Hγ2 & HrΘfin & Hagrfin & HrQfin & Hextfin & Hdomef).
     assert (Dc : {{ S0 ↝ S2 ⊨ Θ0' ⊢[ mode_tc ; (ptyp_to_pskl A0') ]
                     (exp_abs eb2) ⦂ (ptyp_arrow A' B1') ⊣ Θc2' }}e).
     { apply e_typing__abs_check_base with (x := x2) (Ξ := Ξ2)
@@ -1593,107 +1744,9 @@ Proof.
         | exact Hγ2
         | exact Hx2S
         | exact De ]. }
-    (* ---- THE JUNK STRIP: hand back at the CALLER's pair list ---- *)
-    set (ρef := restrict_l (dom Ξ) (ρe2 ++ ρs)).
-    assert (Hinclr : forall a b,
-      In (a, b) (restrict_l (dom Ξ) (ρe2 ++ ρs ++ ρ0)) -> In (a, b) (ρef ++ ρ)).
-    { unfold ρef. intros a b Hin. eapply restrict_l_app_restore;
-        [ exact Hρ0incl | rewrite !app_assoc; exact Hin ]. }
-    (* dom Ξ is apart from Θc (side 1's own output uniq) *)
-    assert (HwfQsX : {{ ((x ~ abind_var_typ A) ++ Θb) ⨟ empty ⊢ₚₛ
-                       (ptyp_to_pskl B0) }}a)
-      by (eapply a_wf_pskl_weaken;
-          [ intros z b1 Hb1; apply binds_app_3; exact Hb1 | exact HwfQs ]).
-    destruct (a_typing_sound Ht HwfXb HwfQsX (a_ty_mode_compat__tc B0) Hwfeo)
-      as [HleB [HwfOutB _]].
-    assert (HuqOutB : uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θc))
-      by (apply a_wf_aenv_uniq; exact HwfOutB).
-    assert (HΞΘc : dom Ξ ∩ dom Θc [=] empty).
-    { assert (Hd : disjoint Ξ ((x ~ abind_var_typ A) ++ Θc))
-        by (clear - HuqOutB; solve_uniq).
-      unfold disjoint in Hd. simpl in Hd. clear - Hd. fsetdec. }
-    assert (HwfΘc : {{ ⊢ Θc }}a).
-    { eapply a_wf_aenv_strip_prefix.
-      eapply a_wf_aenv_strip_prefix with (Ξ := Ξ). simpl_env. exact HwfOutB. }
-    assert (HftvΘc : ftvar_in_aenv Θc [<=] dom Θc)
-      by (apply a_wf_aenv_ftv_dom; exact HwfΘc).
-    assert (HΞfΘc : dom Ξ ∩ ftvar_in_aenv Θc [=] empty)
-      by (clear - HΞΘc HftvΘc; fsetdec).
-    (* the CONTEXT relation at (Θc, Θc2') *)
-    assert (HrΘfin : rel_aenv (ρef ++ ρ) V Θc Θc2').
-    { eapply rel_aenv_mono;
-        [ exact (rel_aenv_restrict_l HrFΘ HΞfΘc)
-        | exact Hinclr | intros z Hz; exact Hz ]. }
-    assert (Hdomef : forall a b, In (a, b) ρef ->
-      a `in` dom Θc /\ b `in` dom Θc2').
-    { unfold ρef. eapply rel_aenv_restrict_l_dom;
-        [ exact HrFΞ | exact Hinjcore
-        | intros a b Hin; repeat rewrite <- app_assoc in Hin;
-          repeat rewrite <- app_assoc;
-          apply in_or_app; auto | ].
-      intros a b Hin. apply in_app_or in Hin; destruct Hin as [Hin | Hin].
-      - exact (HdomF _ _ Hin).
-      - destruct (Hdoms _ _ Hin) as [Ha Hb].
-        split; [ rewrite dom_app; apply AtomSetImpl.union_3; apply Hdmout; exact Ha
-               | apply Hdm2; exact Hb ]. }
-    (* ---- the RESULT's relation, restricted off the junk ---- *)
-    assert (HΞftA' : dom Ξ ∩ ftvar_in_pskl (ptyp_to_pskl A) [=] empty).
-    { pose proof (ftvar_ptyp_to_pskl A) as He.
-      pose proof (a_wf_ptyp_ftv_dom HwfA) as Hd.
-      assert (Hdisj : disjoint Ξ Θb) by (clear - Huq; solve_uniq).
-      unfold disjoint in Hdisj. clear - He Hd Hdisj. fsetdec. }
-    assert (HΞftB1 : dom Ξ ∩ ftvar_in_pskl (ptyp_to_pskl B1) [=] empty).
-    { pose proof (ftvar_ptyp_to_pskl B1) as He.
-      intros z. split; intros Hz; [ exfalso | exfalso; clear - Hz; fsetdec ].
-      assert (Hz1 : z `in` dom Ξ) by (clear - Hz; fsetdec).
-      assert (Hz2 : z `in` ftvar_in_pskl (ptyp_to_pskl B1))
-        by (clear - Hz; fsetdec).
-      assert (Hz3 : z `in` ftvar_in_ptyp B1) by (clear - He Hz2; fsetdec).
-      exact (Hgam z Hz1 Hz3). }
-    assert (HrAs2 : rel_pskl (ρe2 ++ ρs ++ ρ0) V (ptyp_to_pskl A)
-                      (ptyp_to_pskl A'))
-      by (eapply rel_pskl_mono;
-          [ exact HrAs
-          | intros u v Hu; apply in_or_app; right; exact Hu
-          | intros u Hu; exact Hu ]).
-    assert (HrAr : rel_pskl (restrict_l (dom Ξ) (ρe2 ++ ρs ++ ρ0)) V
-                     (ptyp_to_pskl A) (ptyp_to_pskl A'))
-      by (apply rel_pskl_restrict_l; [ exact HrAs2 | exact HΞftA' ]).
-    assert (HrB1r : rel_pskl (restrict_l (dom Ξ) (ρe2 ++ ρs ++ ρ0)) V
-                      (ptyp_to_pskl B1) (ptyp_to_pskl B1'))
-      by (apply rel_pskl_restrict_l; [ exact HrB1' | exact HΞftB1 ]).
-    assert (HrQfin : rel_ptyp (ρef ++ ρ) V (ptyp_arrow A B1)
-                       (ptyp_arrow A' B1')).
-    { unfold rel_ptyp. simpl. constructor.
-      - eapply rel_pskl_mono;
-          [ exact HrAr | exact Hinclr | intros z Hz; exact Hz ].
-      - eapply rel_pskl_mono;
-          [ exact HrB1r | exact Hinclr | intros z Hz; exact Hz ]. }
-    assert (Hextfin : rel_ext ρef (ftvar_in_aenv Θa) S0).
-    { assert (Hcomb : rel_ext (ρe2 ++ ρs) (ftvar_in_aenv Θa) S0).
-      { eapply rel_ext_app;
-          [ exact Hexts | exact HextF
-          | clear - Hsc0 Hdm0 Hd1s; fsetdec
-          | exact Hgrs
-          | intros a b0 Hin; destruct (Hdoms _ _ Hin) as [Hd1 Hd2];
-            split; [ clear - Hd1 Hd1s; fsetdec
-                   | clear - Hd2 HdΘb'; fsetdec ] ]. }
-      unfold ρef. apply rel_ext_restrict_l; exact Hcomb. }
-    assert (Hagrfin : flex_agree_rel (ρef ++ ρ) V Θc Θc2').
-    { eapply rel_aenv_flex_agree_ext;
-        [ exact HrΘfin | exact Hinj | exact Hfun | exact Hextfin
-        | apply dom_subset_ftvar_in_aenv
-        | clear - Hscp Hsc0; fsetdec | exact Hcov | exact Hblk ]. }
-
-    (* ---- the rel_ext, combined then cut to the surviving sublist ---- *)
-
-    exists S2, ρef, Θc2', (ptyp_arrow A' B1').
-    split; [ exact Dc | ].
-    split; [ exact HrΘfin | ].
-    split; [ exact Hagrfin | ].
-    split; [ exact HrQfin | ].
-    split; [ exact Hextfin | ].
-    exact Hdomef.
+    exists S2, (restrict_l (dom Ξ) (ρe2 ++ ρs)), Θc2', (ptyp_arrow A' B1').
+    exact (conj Dc (conj HrΘfin (conj Hagrfin (conj HrQfin
+            (conj Hextfin Hdomef))))).
   - (* ⭐⭐ AT-AbsAnnoCheckStep — the landed S-ForallR row (prop_lift.v §10) at
        the typing level: [lift_typing_check_step_of_rule]. *)
     inversion HrE; subst.
@@ -1728,9 +1781,7 @@ Proof.
     assert (Hdmc : dom Θb [<=] dom Θc) by (exact (auc_dom_mono_consis Hcc)).
     pose proof (a_typing_dom_mono Ht) as Hdmb.
     pose proof Hxf as Hxf2. rewrite dom_app in Hxf2.
-    assert (HxΞ : x `notin` dom Ξ) by (clear - Hxf2; fsetdec).
     assert (HxΘc : x `notin` dom Θc) by (clear - Hxf2; fsetdec).
-    assert (HxΘd : x `notin` dom Θd) by (clear - Hxf2; fsetdec).
     assert (HxΘb : x `notin` dom Θb) by (clear - HxΘc Hdmc; fsetdec).
     assert (HxΘa : x `notin` dom Θa) by (clear - HxΘb Hdm0; fsetdec).
     assert (Hxfv : x `notin` fvar_in_exp ea) by (clear - Hxf2; fsetdec).
@@ -1783,9 +1834,6 @@ Proof.
     remember (restrict_l (dom Ξ) ρ) as ρ0 eqn:Eρ0.
     assert (Hρ0incl : forall a b, In (a, b) ρ0 -> In (a, b) ρ)
       by (subst ρ0; intros a b Hin; eapply restrict_l_incl; exact Hin).
-    assert (Hρ0in : forall a b, In (a, b) ρ -> a `notin` dom Ξ ->
-              In (a, b) ρ0)
-      by (subst ρ0; intros a b Hin Hn; apply restrict_l_in; assumption).
     assert (Hcl00 : cols_l ρ0 [<=] cols_l ρ)
       by (subst ρ0; apply cols_l_restrict_l).
     assert (Hcr00 : cols_r ρ0 [<=] cols_r ρ)
@@ -1901,8 +1949,6 @@ Proof.
                 Hdmc HdmcX Hgrc HdΘc')
       as (Hinj2 & Hfun2 & Hscp2 & Hcov2 & Hblk2c).
     (* ---- side 1's packages at Θc ---- *)
-    assert (Hd1sc : dom Θc [<=] ftvar_in_aenv Θc)
-      by (apply dom_subset_ftvar_in_aenv).
     assert (HwfAc : a_wf_ptyp Θc A)
       by (eapply a_wf_ptyp_isub; [ exact HwfAanb | exact Hlebc ]).
     assert (HwfXc : {{ ⊢ ((x ~ abind_var_typ A) ++ Θc) }}a)
@@ -1947,64 +1993,30 @@ Proof.
                 Hblk2c HdΘc' Hcov2 HcovPc)
       as (S2 & x2 & ρe2 & Ξ2 & Θd2' & B1' & Hx2S & De & HsufΞ2 & HrF
           & HrFΞ & HrFΘ & HagrF & HrB1' & HextF & HdomF & Hdm2).
-    (* ---- side 2's package at the body's output ---- *)
-    assert (Hx2Θc' : x2 `notin` dom Θc') by (clear - Hx2S HdΘc'; fsetdec).
-    assert (Huq2X : uniq ((x2 ~ abind_var_typ Aan2) ++ Θc'))
-      by (clear - Huqc' Hx2Θc'; solve_uniq).
-    assert (HcovDe : ftvar_in_aenv ((x2 ~ abind_var_typ Aan2) ++ Θc')
-                     ∪ ftvar_in_pskl (ptyp_to_pskl B0')
-                     ∪ fvar_in_exp (open_exp_wrt_exp eb2 (exp_var_f x2))
-                     ∪ ftvar_in_exp (open_exp_wrt_exp eb2 (exp_var_f x2))
-                     [<=] add x2 S1c).
-    { pose proof (ftvar_in_exp_open_exp_wrt_exp_upper eb2 (exp_var_f x2))
-        as Hu1.
-      pose proof (fvar_in_exp_open_exp_wrt_exp_upper eb2 (exp_var_f x2))
-        as Hu2.
-      simpl in Hu1, Hu2, HftAan2c. simpl.
-      clear - Hu1 Hu2 Hftvc HcovPc HftAan2c. fsetdec. }
-    destruct (e_typing_sound De Huq2X HcovDe)
-      as (HaDe & HuqOutDe & HftvOutDe & HftB1').
-    assert (Hinjcore : rel_inj (ρe2 ++ ρc ++ ρs ++ ρ0) V)
-      by (eapply rel_inj_app; [ exact Hinj2 | exact HextF | exact Hcov2 ]).
-    (* ---- side 2's junk is apart from the consis's output ---- *)
-    assert (HΞ2Θc' : forall b0, b0 `in` dom Ξ2 -> b0 `notin` dom Θc').
-    { intros b0 Hb0.
-      destruct (rel_aenv_dom_r_inv HrFΞ Hb0) as (a' & Ha' & Hat').
-      inversion Hat' as [ z0 y0 Hin | z0 HinV ]; subst.
-      - apply in_app_or in Hin. destruct Hin as [Hin | Hin].
-        + destruct HextF as [Hxfr _]. destruct (Hxfr _ _ Hin) as [_ Hnb].
-          clear - Hnb HdΘc'. fsetdec.
-        + apply in_app_or in Hin. destruct Hin as [Hin | Hin].
-          * exfalso. destruct (Hdomc _ _ Hin) as [Hd1 _].
-            assert (Hd : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
-            unfold disjoint in Hd. clear - Hd Ha' Hd1. fsetdec.
-          * apply in_app_or in Hin. destruct Hin as [Hin | Hin].
-            { exfalso. destruct (Hdoms _ _ Hin) as [Hd1 _].
-              assert (Hd : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
-              unfold disjoint in Hd. clear - Hd Ha' Hd1 Hdmc. fsetdec. }
-            { exfalso. apply (HΞcols a' Ha'). eapply cols_l_in. exact Hin. }
-      - exfalso.
-        assert (Had : b0 `in` dom Θa)
-          by (apply Hscp in HinV; clear - HinV Hsc0; fsetdec).
-        assert (Hd : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
-        unfold disjoint in Hd. clear - Hd Ha' Had Hdm0 Hdmc. fsetdec. }
-    assert (Huq2Ξ : uniq (Ξ2 ++ Θc')).
-    { apply uniq_app_4.
-      - clear - HuqOutDe. solve_uniq.
-      - exact Huqc'.
-      - apply disjoint_from_pointwise. exact HΞ2Θc'. }
-    (* ---- the γ-filter on the RESULT, via the correspondence ---- *)
-    assert (Hγ2 : forall γ, γ `in` dom Ξ2 -> γ `notin` ftvar_in_ptyp B1').
-    { intros γ Hγ Hc.
-      assert (HγB2 : γ `in` ftvar_in_pskl (ptyp_to_pskl B1')).
-      { pose proof (ftvar_ptyp_to_pskl B1') as He. clear - He Hc. fsetdec. }
-      destruct (rel_pskl_ftv_corr_r HrB1' HγB2) as (a & Ha & Hat).
-      destruct (rel_aenv_dom_r_inv HrFΞ Hγ) as (a' & Ha' & Hat').
-      assert (Ea : a' = a) by (exact (Hinjcore a' a γ Hat' Hat)).
-      subst a'.
-      assert (HaB1 : a `in` ftvar_in_ptyp B1).
-      { pose proof (ftvar_ptyp_to_pskl B1) as He. clear - He Ha. fsetdec. }
-      exact (Hgam a Ha' HaB1). }
+    (* ---- the junk strip, at the middle stage's pairs [ρc ++ ρs] ---- *)
+    assert (HwfQcX : {{ ((x ~ abind_var_typ A) ++ Θc) ⨟ empty ⊢ₚₛ
+                       (ptyp_to_pskl B0) }}a)
+      by (eapply a_wf_pskl_weaken;
+          [ intros z b1 Hb1; apply binds_app_3; exact Hb1 | exact HwfQc ]).
+    destruct (a_typing_sound Ht HwfXc HwfQcX (a_ty_mode_compat__tc B0) Hwfeo)
+      as [_ [HwfOutB _]].
+    destruct (lift_seq_ext Hexts Hextc Hdoms Hdomc Hwf Hdm0 Hdmc Hgrs HdΘb'
+                Hdmc2) as [Hextm Hdomm].
+    assert (Hgrm : S0 [<=] S1c) by (clear - Hgrs Hgrc; fsetdec).
+    assert (Hdm0c : dom Θa [<=] dom Θc) by (clear - Hdm0 Hdmc; fsetdec).
+    assert (HcovDe : ftvar_in_ptyp Aan2 ∪ ftvar_in_pskl (ptyp_to_pskl B0')
+                     ∪ ftvar_in_exp eb2 ∪ fvar_in_exp eb2 [<=] S1c)
+      by (simpl in HftAan2c; clear - HftAan2c HcovPc; fsetdec).
+    assert (HrApm : rel_ptyp ((ρc ++ ρs) ++ ρ0) V A' Ap')
+      by (unfold rel_ptyp; rewrite app_assoc; apply rel_pskl_widen; exact HrApw).
+    assert (HftAp : ftvar_in_ptyp A' [<=] dom Θc)
+      by (pose proof (a_wf_ptyp_ftv_dom HwfAp) as Hd; clear - Hd Hdmc; fsetdec).
+    rewrite <- (app_assoc _ ρc ρs ρ0) in HrFΞ, HrFΘ, HrB1', Hinj2, Hcov2.
+    destruct (lift_check_base_strip Hρ0incl HΞcols Hinj Hfun Hcov Hwf Hscp Hblk
+                Hextm Hdomm Hgrm HdΘc' Huqc' Hftvc Hdm0c Hdmout Huq Hinj2
+                Hcov2 HwfOutB Hx2S HcovDe De HrFΞ HrFΘ HrB1' HextF HdomF Hdm2
+                Hgam HrApm HftAp)
+      as (Huq2Ξ & Hγ2 & HrΘfin & Hagrfin & HrQfin & Hextfin & Hdomef).
     assert (Dc : {{ S0 ↝ S2 ⊨ Θ0' ⊢[ mode_tc ; (ptyp_to_pskl A0') ]
                     (exp_abs_anno Aan2 eb2) ⦂ (ptyp_arrow Ap' B1')
                     ⊣ Θd2' }}e).
@@ -2017,129 +2029,9 @@ Proof.
         | exact Hγ2
         | exact Hx2S
         | exact De ]. }
-    (* ---- THE JUNK STRIP: hand back at the CALLER's pair list ---- *)
-    set (ρef := restrict_l (dom Ξ) (ρe2 ++ ρc ++ ρs)).
-    assert (Hinclr : forall a b,
-      In (a, b) (restrict_l (dom Ξ) (ρe2 ++ ρc ++ ρs ++ ρ0)) -> In (a, b) (ρef ++ ρ)).
-    { unfold ρef. intros a b Hin. eapply restrict_l_app_restore;
-        [ exact Hρ0incl | rewrite !app_assoc; exact Hin ]. }
-    (* dom Ξ is apart from Θd (side 1's own output uniq) *)
-    assert (HwfQcX : {{ ((x ~ abind_var_typ A) ++ Θc) ⨟ empty ⊢ₚₛ
-                       (ptyp_to_pskl B0) }}a)
-      by (eapply a_wf_pskl_weaken;
-          [ intros z b1 Hb1; apply binds_app_3; exact Hb1 | exact HwfQc ]).
-    destruct (a_typing_sound Ht HwfXc HwfQcX (a_ty_mode_compat__tc B0) Hwfeo)
-      as [HleB [HwfOutB _]].
-    assert (HuqOutB : uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θd))
-      by (apply a_wf_aenv_uniq; exact HwfOutB).
-    assert (HΞΘd : dom Ξ ∩ dom Θd [=] empty).
-    { assert (Hd : disjoint Ξ ((x ~ abind_var_typ A) ++ Θd))
-        by (clear - HuqOutB; solve_uniq).
-      unfold disjoint in Hd. simpl in Hd. clear - Hd. fsetdec. }
-    assert (HwfΘd : {{ ⊢ Θd }}a).
-    { eapply a_wf_aenv_strip_prefix.
-      eapply a_wf_aenv_strip_prefix with (Ξ := Ξ). simpl_env. exact HwfOutB. }
-    assert (HftvΘd : ftvar_in_aenv Θd [<=] dom Θd)
-      by (apply a_wf_aenv_ftv_dom; exact HwfΘd).
-    assert (HΞfΘd : dom Ξ ∩ ftvar_in_aenv Θd [=] empty)
-      by (clear - HΞΘd HftvΘd; fsetdec).
-    (* the CONTEXT relation at (Θd, Θd2') *)
-    assert (HrΘfin : rel_aenv (ρef ++ ρ) V Θd Θd2').
-    { eapply rel_aenv_mono;
-        [ exact (rel_aenv_restrict_l HrFΘ HΞfΘd)
-        | exact Hinclr | intros z Hz; exact Hz ]. }
-    assert (Hdomef : forall a b, In (a, b) ρef ->
-      a `in` dom Θd /\ b `in` dom Θd2').
-    { unfold ρef. eapply rel_aenv_restrict_l_dom;
-        [ exact HrFΞ | exact Hinjcore
-        | intros a b Hin; repeat rewrite <- app_assoc in Hin;
-          repeat rewrite <- app_assoc;
-          apply in_or_app; auto | ].
-      intros a b Hin. apply in_app_or in Hin; destruct Hin as [Hin | Hin].
-      - exact (HdomF _ _ Hin).
-      - apply in_app_or in Hin; destruct Hin as [Hin | Hin].
-        + destruct (Hdomc _ _ Hin) as [Ha Hb].
-          split; [ rewrite dom_app; apply AtomSetImpl.union_3; apply Hdmout; exact Ha
-                 | apply Hdm2; exact Hb ].
-        + destruct (Hdoms _ _ Hin) as [Ha Hb].
-          split; [ rewrite dom_app; apply AtomSetImpl.union_3;
-                   apply Hdmout; apply Hdmc; exact Ha
-                 | apply Hdm2; apply Hdmc2; exact Hb ]. }
-    (* ---- the RESULT's relation, restricted off the junk ---- *)
-    assert (HΞftAp : dom Ξ ∩ ftvar_in_pskl (ptyp_to_pskl A') [=] empty).
-    { pose proof (ftvar_ptyp_to_pskl A') as He.
-      pose proof (a_wf_ptyp_ftv_dom HwfAp) as Hd.
-      assert (Hdisj : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
-      unfold disjoint in Hdisj. clear - He Hd Hdisj Hdmc. fsetdec. }
-    assert (HΞftB1 : dom Ξ ∩ ftvar_in_pskl (ptyp_to_pskl B1) [=] empty).
-    { pose proof (ftvar_ptyp_to_pskl B1) as He.
-      intros z. split; intros Hz; [ exfalso | exfalso; clear - Hz; fsetdec ].
-      assert (Hz1 : z `in` dom Ξ) by (clear - Hz; fsetdec).
-      assert (Hz2 : z `in` ftvar_in_pskl (ptyp_to_pskl B1))
-        by (clear - Hz; fsetdec).
-      assert (Hz3 : z `in` ftvar_in_ptyp B1) by (clear - He Hz2; fsetdec).
-      exact (Hgam z Hz1 Hz3). }
-    assert (HrApw2 : rel_pskl (ρe2 ++ ρc ++ ρs ++ ρ0) V (ptyp_to_pskl A')
-                       (ptyp_to_pskl Ap')).
-    { eapply rel_pskl_mono;
-        [ exact HrApw
-        | intros u v Hu; apply in_or_app; right; apply in_or_app; right;
-          exact Hu
-        | intros u Hu; exact Hu ]. }
-    assert (HrApr : rel_pskl (restrict_l (dom Ξ) (ρe2 ++ ρc ++ ρs ++ ρ0)) V
-                      (ptyp_to_pskl A') (ptyp_to_pskl Ap'))
-      by (apply rel_pskl_restrict_l; [ exact HrApw2 | exact HΞftAp ]).
-    assert (HrB1r : rel_pskl (restrict_l (dom Ξ) (ρe2 ++ ρc ++ ρs ++ ρ0)) V
-                      (ptyp_to_pskl B1) (ptyp_to_pskl B1'))
-      by (apply rel_pskl_restrict_l; [ exact HrB1' | exact HΞftB1 ]).
-    assert (HrQfin : rel_ptyp (ρef ++ ρ) V (ptyp_arrow A' B1)
-                       (ptyp_arrow Ap' B1')).
-    { unfold rel_ptyp. simpl. constructor.
-      - eapply rel_pskl_mono;
-          [ exact HrApr | exact Hinclr | intros z Hz; exact Hz ].
-      - eapply rel_pskl_mono;
-          [ exact HrB1r | exact Hinclr | intros z Hz; exact Hz ]. }
-    assert (Hextfin : rel_ext ρef (ftvar_in_aenv Θa) S0).
-    { assert (Hcomb1 : rel_ext (ρc ++ ρs) (ftvar_in_aenv Θa) S0).
-      { eapply rel_ext_app;
-          [ exact Hexts | exact Hextc
-          | clear - Hsc0 Hdm0 Hd1s; fsetdec
-          | exact Hgrs
-          | intros a b0 Hin; destruct (Hdoms _ _ Hin) as [Hd1 Hd2];
-            split; [ clear - Hd1 Hd1s; fsetdec
-                   | clear - Hd2 HdΘb'; fsetdec ] ]. }
-      assert (Hcomb : rel_ext (ρe2 ++ ρc ++ ρs) (ftvar_in_aenv Θa) S0).
-      { eapply rel_ext_app;
-          [ exact Hcomb1 | exact HextF
-          | clear - Hsc0 Hdm0 Hdmc Hd1sc; fsetdec
-          | clear - Hgrs Hgrc; fsetdec
-          | intros a b0 Hin; apply in_app_or in Hin;
-            destruct Hin as [Hin | Hin];
-            [ destruct (Hdomc _ _ Hin) as [Hd1 Hd2];
-              split; [ clear - Hd1 Hd1sc; fsetdec
-                     | clear - Hd2 HdΘc'; fsetdec ]
-            | destruct (Hdoms _ _ Hin) as [Hd1 Hd2];
-              split;
-              [ assert (Hd1c : a `in` dom Θc) by (apply Hdmc; exact Hd1);
-                clear - Hd1c Hd1sc; fsetdec
-              | assert (Hd2c : b0 `in` dom Θc') by (apply Hdmc2; exact Hd2);
-                clear - Hd2c HdΘc'; fsetdec ] ] ]. }
-      unfold ρef. apply rel_ext_restrict_l; exact Hcomb. }
-    assert (Hagrfin : flex_agree_rel (ρef ++ ρ) V Θd Θd2').
-    { eapply rel_aenv_flex_agree_ext;
-        [ exact HrΘfin | exact Hinj | exact Hfun | exact Hextfin
-        | apply dom_subset_ftvar_in_aenv
-        | clear - Hscp Hsc0; fsetdec | exact Hcov | exact Hblk ]. }
-
-    (* ---- the rel_ext: two appends, then cut to the sublist ---- *)
-
-    exists S2, ρef, Θd2', (ptyp_arrow Ap' B1').
-    split; [ exact Dc | ].
-    split; [ exact HrΘfin | ].
-    split; [ exact Hagrfin | ].
-    split; [ exact HrQfin | ].
-    split; [ exact Hextfin | ].
-    exact Hdomef.
+    exists S2, (restrict_l (dom Ξ) (ρe2 ++ ρc ++ ρs)), Θd2', (ptyp_arrow Ap' B1').
+    exact (conj Dc (conj HrΘfin (conj Hagrfin (conj HrQfin
+            (conj Hextfin Hdomef))))).
   - (* ⭐⭐ AT-App — THREE threaded calls: the argument's SKELETON pass
        (a_pat, via [a_pat_rel_e]), the function, then the argument's TYPE
        pass at the function's domain. *)

@@ -152,8 +152,6 @@ Proof.
     inversion HrP0 as [ | | ax α2 Hat | | | | ]; subst.
     destruct (atom_fresh S0) as [b2 Hb2].
     destruct (atom_fresh (add b2 S0)) as [a2 Ha2].
-    assert (Hsc : ftvar_in_aenv Θa [<=] dom Θa)
-      by (apply a_wf_aenv_ftv_dom; exact Hwf).
     pose proof (dom_subset_ftvar_in_aenv Θa) as Hds.
     assert (Hβnd : β `notin` dom Θa) by (clear - Hβf Hds; fsetdec).
     assert (Hα1nd : α1 `notin` dom Θa) by (clear - Hα1f Hds; fsetdec).

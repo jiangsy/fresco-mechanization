@@ -2089,8 +2089,6 @@ Proof.
       eapply rel_pskl_mono;
         [ exact HrQ1 | intros x y Hx; apply in_or_app; right; exact Hx
         | intros x Hx; exact Hx ]. }
-    assert (Hsc1 : ftvar_in_aenv Θ1 [<=] dom Θ1)
-      by (apply a_wf_aenv_ftv_dom; exact HwfΘ1).
     split.
     { eapply rel_ext_app;
         [ exact Hext1 | exact Hext2

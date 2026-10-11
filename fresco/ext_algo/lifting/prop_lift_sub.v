@@ -906,7 +906,6 @@ Proof.
     assert (Hα'Ξ : α' `notin` dom Ξ) by (clear - Hα'; solve_notin_auto).
     assert (Hα'cr : α' `notin` cols_r ρ) by (clear - Hα'S0 Hcov; fsetdec).
     assert (Hα'd0' : α' `notin` dom Θ0') by (clear - Hα'S0 HdΘ; fsetdec).
-    assert (Hα'V : α' `notin` V) by (clear - Hα'Θ0 Hscp; fsetdec).
 
     (* ---- the extract, at [add α' V] and [add α' S0] ---- *)
     assert (HrPo : rel_pskl ρ (add α' V)
@@ -1192,10 +1191,6 @@ Proof.
       by (apply Hblk; [ exact HαΘ1 | exact Hαnd ]).
     assert (Hβcl : β `notin` cols_l ρ)
       by (apply Hblk; [ exact HβΘ1 | exact Hβnd ]).
-    assert (Hρincl : forall a b, In (a, b) ρ -> In (a, b) ρ)
-      by (intros a b Hin; exact Hin).
-    assert (Hρin : forall a b, In (a, b) ρ -> In (a, b) ρ)
-      by (intros a b Hin; exact Hin).
     assert (Hcl00 : cols_l ρ [<=] cols_l ρ)
       by (clear; fsetdec).
     assert (Hcr00 : cols_r ρ [<=] cols_r ρ)
@@ -1210,7 +1205,6 @@ Proof.
     assert (Hinj0 : rel_inj ρ V) by (exact Hinj).
     assert (Hfun0 : rel_fun ρ V (dom (Ξ ++ (α0 ~ abind_flex_mono) ++ Θ0)))
       by (exact Hfun).
-    assert (Hcov0 : V ∪ cols_r ρ [<=] S0) by (exact Hcov).
     assert (Hαcl0 : α `notin` cols_l ρ) by (exact Hαcl).
     assert (Hβcl0 : β `notin` cols_l ρ) by (exact Hβcl).
     (* ---- the two pairs, and the extended relation ---- *)
