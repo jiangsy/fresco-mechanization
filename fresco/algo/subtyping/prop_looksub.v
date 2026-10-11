@@ -1348,7 +1348,8 @@ Proof.
   intros * Hp Hbα HbΘ HbΞ HbC.
   pick fresh δ for (add α (add b (L `union` ftvar_in_aenv Θ `union` ftvar_in_pskl P
                      `union` ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞))).
-  exists δ. split; [ clear - Fr; fsetdec | split; [ clear - Fr; fsetdec | ] ].
+  exists δ. split; [ clear - Fr; fsetdec | ].
+  split; [ clear - Fr; fsetdec | ].
   rewrite <- (@subst_cstrs_fresh_eq δ b 𝒞 HbC).
   apply (a_looksub_move_binder Hp Hbα HbΘ); clear - Fr; fsetdec.
 Qed.
@@ -1367,7 +1368,8 @@ Proof.
   intros * Hp Hbα HbΘ HbΞ HbC.
   pick fresh δ for (add α (add b (L `union` ftvar_in_aenv Θ `union` ftvar_in_pskl P
                      `union` ftvar_in_pskl P' `union` dom Ξ `union` ftvar_in_a_cstrs 𝒞))).
-  exists δ. split; [ clear - Fr; fsetdec | split; [ clear - Fr; fsetdec | ] ].
+  exists δ. split; [ clear - Fr; fsetdec | ].
+  split; [ clear - Fr; fsetdec | ].
   rewrite <- (@subst_cstrs_fresh_eq δ b 𝒞 HbC).
   apply (a_lookeq_move_binder Hp Hbα HbΘ); clear - Fr; fsetdec.
 Qed.

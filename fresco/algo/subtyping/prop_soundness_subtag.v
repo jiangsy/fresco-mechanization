@@ -2107,9 +2107,12 @@ Proof.
   exists Qt. split; [ exact HeQt | ].
   split; [ | exact Hfill ].
   exists (S nsub).
-  apply Hrule with (Ψg := Ψg) (ψg := ψg); [ clear - Hint0; fsetdec | clear - Hint0; fsetdec
-                               | exact Hsort | | exact Hsub ].
-  rewrite Herase. eapply a_wf_pskl_isub; eauto.
+  apply Hrule with (Ψg := Ψg) (ψg := ψg).
+  - clear - Hint0; fsetdec.
+  - clear - Hint0; fsetdec.
+  - exact Hsort.
+  - rewrite Herase. eapply a_wf_pskl_isub; eauto.
+  - exact Hsub.
 Qed.
 
 Theorem a_subtag_sound_bundle :
