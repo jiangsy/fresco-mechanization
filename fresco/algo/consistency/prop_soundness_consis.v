@@ -3833,6 +3833,206 @@ Lemma ftvar_in_pskl_uskl_to_pskl : forall R,
   ftvar_in_pskl (uskl_to_pskl R) [=] ftvar_in_uskl R.
 Proof. induction R; simpl; fsetdec. Qed.
 
+(** The conclusion of [a_consistag_sound_aux], named so that its four
+    binder rows (ForallInh / ForallSyn, each tagged and untagged) can share
+    one argument per input shape: the tagged and untagged rows differ only
+    in the declarative rule that re-binds the opened consistency. *)
+Definition consistag_sound_post (Δ1 Δ2 : atoms) (P0 : pskl) (Ψ : atoms)
+    (Θ0 : aenv) (R : uskl) (P' : pskl) (Θ1 : aenv) : Prop :=
+  Θ0 ⊴ Θ1 /\ {{ ⊢ Θ1 }}a /\
+  no_flex_dep (Δ1 `union` Δ2) Θ1 /\ flex_above_free (Δ1 `union` Δ2) Θ1 /\
+  (exists Qt, bskl_to_pskl Qt = P' /\
+     {{ Ψ ⨟ Θ1 ⊢ˢ R ∼ Qt }}ad /\
+     {{ Θ1 ⨟ Δ1 ⊢ᵣ (pskl_to_bskl_inh P0) ⊳ Qt }}ad) /\
+  {{ Θ1 ⨟ Δ2 ⊢ᵣₚ (uskl_to_pskl R) ⊳ P' }}ad.
+
+(** Decorated ForallInh (either tag): input [∀α.P0], subject [Rall]
+    erasing to [∀α.R]. *)
+Lemma consistag_sound_forall_inh : forall L Δ1 Δ2 Ψ Ψ' Θ0 Θ1 P0 R Rall Q,
+  (forall α, α `notin` L ->
+     {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a ->
+     lc_uskl (open_uskl_wrt_uskl R (uskl_var_f α)) ->
+     {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
+        ⊢ₚₛ (open_pskl_wrt_pskl P0 (pskl_var_f α)) }}a ->
+     {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
+        ⊢ₚₛ (uskl_to_pskl (open_uskl_wrt_uskl R (uskl_var_f α))) }}a ->
+     (forall α0, α0 `in` (add α Δ1 `union` add α Δ2) ->
+        binds α0 abind_tvar ((α ~ abind_tvar) ++ Θ0)) ->
+     no_flex_dep (add α Δ1 `union` add α Δ2) ((α ~ abind_tvar) ++ Θ0) ->
+     flex_above_free (add α Δ1 `union` add α Δ2) ((α ~ abind_tvar) ++ Θ0) ->
+     consistag_sound_post (add α Δ1) (add α Δ2)
+       (open_pskl_wrt_pskl P0 (pskl_var_f α)) Ψ' ((α ~ abind_tvar) ++ Θ0)
+       (open_uskl_wrt_uskl R (uskl_var_f α))
+       (open_pskl_wrt_pskl Q (pskl_var_f α)) ((α ~ abind_tvar) ++ Θ1)) ->
+  (forall Qb L',
+     (forall α, α `notin` L' ->
+        {{ Ψ' ⨟ ((α ~ abind_tvar) ++ Θ1) ⊢ˢ
+          (open_uskl_wrt_uskl R (uskl_var_f α)) ∼
+          (open_bskl_wrt_bskl Qb (bskl_var_f α)) }}ad) ->
+     {{ Ψ ⨟ Θ1 ⊢ˢ Rall ∼ (bskl_all_inh Qb) }}ad) ->
+  uskl_to_pskl Rall = pskl_all_syn (uskl_to_pskl R) ->
+  {{ ⊢ Θ0 }}a ->
+  (forall α, lc_uskl (open_uskl_wrt_uskl R (uskl_var_f α))) ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ (pskl_all_syn P0) }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ (pskl_all_syn (uskl_to_pskl R)) }}a ->
+  (forall α0, α0 `in` (Δ1 `union` Δ2) -> binds α0 abind_tvar Θ0) ->
+  no_flex_dep (Δ1 `union` Δ2) Θ0 -> flex_above_free (Δ1 `union` Δ2) Θ0 ->
+  consistag_sound_post Δ1 Δ2 (pskl_all_syn P0) Ψ Θ0 Rall (pskl_all_syn Q) Θ1.
+Proof.
+  intros L Δ1 Δ2 Ψ Ψ' Θ0 Θ1 P0 R Rall Q IH Hbuild HRall Hwf HlcSbody
+    HwfP0 HwfS Hrig Hnfd Hfaf.
+  inversion HwfP0 as [ | | | L0 Θa Δa P0a Hbody0 Heqa | | ]; subst.
+  inversion HwfS as [ | | | LS ΘbS ΔbS SbS HbodyS HeqS | | ]; subst.
+  pick fresh α for
+    (L `union` L0 `union` LS `union` dom Θ0 `union` dom Θ1
+     `union` ftvar_in_pskl P0 `union` ftvar_in_uskl R `union` ftvar_in_pskl Q
+     `union` Δ1 `union` Δ2).
+  assert (HαL : α `notin` L) by auto.
+  assert (HwfΘα : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
+    by (apply a_wf_aenv__tvar; auto).
+  assert (HwfP0α : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
+                     ⊢ₚₛ (open_pskl_wrt_pskl P0 (pskl_var_f α)) }}a).
+  { eapply a_wf_pskl_delta_mono;
+      [ apply Hbody0; auto
+      | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
+  assert (HwfSα : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
+                 ⊢ₚₛ (uskl_to_pskl (open_uskl_wrt_uskl R (uskl_var_f α))) }}a).
+  { rewrite uskl_to_pskl_open.
+    eapply a_wf_pskl_delta_mono;
+      [ apply HbodyS; auto
+      | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
+  destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (add α Δ1 `union` add α Δ2) α Θ0) as (Hrigα & Hnfdα & Hfafα);
+      [ auto | auto | clear; fsetdec | exact Hrig | auto | auto | ].
+  destruct (IH α HαL HwfΘα (HlcSbody α) HwfP0α HwfSα Hrigα Hnfdα Hfafα)
+    as [Hleα [Hwfα [Hnfdα1 [Hfafα1 [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
+  assert (Hwf1 : {{ ⊢ Θ1 }}a)
+    by (apply a_wf_aenv_tvar_inv in Hwfα; tauto).
+  assert (Hα1 : α `notin` dom Θ1) by auto.
+  split; [ eapply a_isub_strip_tvar; eauto | ].
+  split; [ exact Hwf1 | ].
+  split.
+  { apply no_flex_dep_strip with (α := α).
+    apply no_flex_dep_cong with (Δ := add α Δ1 `union` add α Δ2);
+      [ clear; fsetdec | exact Hnfdα1 ]. }
+  split.
+  { apply faf_strip with (α := α).
+    apply faf_cong with (Δ := add α Δ1 `union` add α Δ2);
+      [ clear; fsetdec | exact Hfafα1 ]. }
+  split.
+  - exists (bskl_all_inh (close_bskl_wrt_bskl α Qtα)). split.
+    { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
+      rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
+        [ reflexivity | clear - Fr; solve_notin_auto ]. }
+    split.
+    + apply (Hbuild _ (dom Θ1 `union` singleton α `union` ftvar_in_uskl R)).
+      intros α0 Hα0. eapply ad_pat_consis_close_open;
+        [exact Hwf1 | exact Hα1 | | ].
+      * clear - Fr; solve_notin_auto.
+      * exact Hconsα.
+    + change (pskl_to_bskl_inh (pskl_all_syn P0))
+        with (bskl_all_inh (pskl_to_bskl_inh P0)).
+      eapply ad_refine_syn_close_all with (α := α);
+        [exact Hwf1 | exact Hα1 | clear - Fr; solve_notin_auto | exact Hrsα].
+  - rewrite HRall. eapply ad_refine_pskl_close_all with (α := α);
+      [exact Hwf1 | exact Hα1 | | ].
+    + rewrite ftvar_in_pskl_uskl_to_pskl. clear - Fr; solve_notin_auto.
+    + rewrite <- uskl_to_pskl_open. exact Hrpα.
+Qed.
+
+(** Decorated ForallSyn (either tag): input [∀◇P0], subject [Rall]
+    erasing to [∀α.R]. *)
+Lemma consistag_sound_forall_syn : forall L Δ1 Δ2 Ψ Ψ' Θ0 Θ1 P0 R Rall Q,
+  (forall α, α `notin` L ->
+     {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a ->
+     lc_uskl (open_uskl_wrt_uskl R (uskl_var_f α)) ->
+     {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ (pskl_univ_ghost P0) }}a ->
+     {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
+        ⊢ₚₛ (uskl_to_pskl (open_uskl_wrt_uskl R (uskl_var_f α))) }}a ->
+     (forall α0, α0 `in` (Δ1 `union` add α Δ2) ->
+        binds α0 abind_tvar ((α ~ abind_tvar) ++ Θ0)) ->
+     no_flex_dep (Δ1 `union` add α Δ2) ((α ~ abind_tvar) ++ Θ0) ->
+     flex_above_free (Δ1 `union` add α Δ2) ((α ~ abind_tvar) ++ Θ0) ->
+     consistag_sound_post Δ1 (add α Δ2)
+       (pskl_univ_ghost P0) Ψ' ((α ~ abind_tvar) ++ Θ0)
+       (open_uskl_wrt_uskl R (uskl_var_f α))
+       (open_pskl_wrt_pskl Q (pskl_var_f α)) ((α ~ abind_tvar) ++ Θ1)) ->
+  (forall Qb L',
+     (forall α, α `notin` L' ->
+        {{ Ψ' ⨟ ((α ~ abind_tvar) ++ Θ1) ⊢ˢ
+          (open_uskl_wrt_uskl R (uskl_var_f α)) ∼
+          (open_bskl_wrt_bskl Qb (bskl_var_f α)) }}ad) ->
+     {{ Ψ ⨟ Θ1 ⊢ˢ Rall ∼ (bskl_all_syn Qb) }}ad) ->
+  uskl_to_pskl Rall = pskl_all_syn (uskl_to_pskl R) ->
+  {{ ⊢ Θ0 }}a ->
+  (forall α, lc_uskl (open_uskl_wrt_uskl R (uskl_var_f α))) ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ (pskl_univ_ghost P0) }}a ->
+  {{ Θ0 ⨟ empty ⊢ₚₛ (pskl_all_syn (uskl_to_pskl R)) }}a ->
+  (forall α0, α0 `in` (Δ1 `union` Δ2) -> binds α0 abind_tvar Θ0) ->
+  no_flex_dep (Δ1 `union` Δ2) Θ0 -> flex_above_free (Δ1 `union` Δ2) Θ0 ->
+  consistag_sound_post Δ1 Δ2 (pskl_univ_ghost P0) Ψ Θ0 Rall
+    (pskl_all_syn Q) Θ1.
+Proof.
+  intros L Δ1 Δ2 Ψ Ψ' Θ0 Θ1 P0 R Rall Q IH Hbuild HRall Hwf HlcSbody
+    HwfP0 HwfS Hrig Hnfd Hfaf.
+  inversion HwfP0 as [ | | | | | Θc Δc P0c Hg0 Hwf0c Heqc ]; subst.
+  try rewrite aenv_minus_empty in *.
+  inversion HwfS as [ | | | LS ΘbS ΔbS SbS HbodyS HeqS | | ]; subst.
+  pick fresh α for
+    (L `union` LS `union` dom Θ0 `union` dom Θ1
+     `union` ftvar_in_pskl P0 `union` ftvar_in_uskl R `union` ftvar_in_pskl Q
+     `union` Δ1 `union` Δ2).
+  assert (HαL : α `notin` L) by auto.
+  assert (HwfΘα : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
+    by (apply a_wf_aenv__tvar; auto).
+  assert (HwfP0α : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
+                     ⊢ₚₛ (pskl_univ_ghost P0) }}a).
+  { apply a_wf_pskl__univ_ghost; auto; rewrite aenv_minus_empty.
+    eapply a_wf_pskl_weaken; [ | exact Hwf0c ].
+    intros y b Hb. unfold binds; right; exact Hb. }
+  assert (HwfSα : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
+                 ⊢ₚₛ (uskl_to_pskl (open_uskl_wrt_uskl R (uskl_var_f α))) }}a).
+  { rewrite uskl_to_pskl_open.
+    eapply a_wf_pskl_delta_mono;
+      [ apply HbodyS; auto
+      | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
+  destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (Δ1 `union` add α Δ2) α Θ0) as (Hrigα & Hnfdα & Hfafα);
+      [ auto | auto | clear; fsetdec | exact Hrig | auto | auto | ].
+  destruct (IH α HαL HwfΘα (HlcSbody α) HwfP0α HwfSα Hrigα Hnfdα Hfafα)
+    as [Hleα [Hwfα [Hnfdα1 [Hfafα1 [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
+  assert (Hwf1 : {{ ⊢ Θ1 }}a)
+    by (apply a_wf_aenv_tvar_inv in Hwfα; tauto).
+  assert (Hα1 : α `notin` dom Θ1) by auto.
+  split; [ eapply a_isub_strip_tvar; eauto | ].
+  split; [ exact Hwf1 | ].
+  split.
+  { apply no_flex_dep_strip with (α := α).
+    apply no_flex_dep_cong with (Δ := Δ1 `union` add α Δ2);
+      [ clear; fsetdec | exact Hnfdα1 ]. }
+  split.
+  { apply faf_strip with (α := α).
+    apply faf_cong with (Δ := Δ1 `union` add α Δ2);
+      [ clear; fsetdec | exact Hfafα1 ]. }
+  split.
+  - exists (bskl_all_syn (close_bskl_wrt_bskl α Qtα)). split.
+    { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
+      rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
+        [ reflexivity | clear - Fr; solve_notin_auto ]. }
+    split.
+    + apply (Hbuild _ (dom Θ1 `union` singleton α `union` ftvar_in_uskl R)).
+      intros α0 Hα0. eapply ad_pat_consis_close_open;
+        [exact Hwf1 | exact Hα1 | | ].
+      * clear - Fr; solve_notin_auto.
+      * exact Hconsα.
+    + change (pskl_to_bskl_inh (pskl_univ_ghost P0))
+        with (bskl_univ_ghost (pskl_to_bskl_inh P0)).
+      eapply ad_refine_syn_close_univ_ghost with (α := α);
+        [exact Hwf1 | exact Hα1 | clear - Fr; solve_notin_auto | exact Hrsα].
+  - rewrite HRall. eapply ad_refine_pskl_close_all with (α := α);
+      [exact Hwf1 | exact Hα1 | | ].
+    + rewrite ftvar_in_pskl_uskl_to_pskl. clear - Fr; solve_notin_auto.
+    + rewrite <- uskl_to_pskl_open. exact Hrpα.
+Qed.
+
 Lemma a_consistag_sound_aux : forall Δ1 Δ2 P0 Ψ Θ0 R P' Θ1,
   {{ Θ0 ⊢[ Δ1 | Δ2 | P0 | Ψ ] R ∼ P' ⊣ Θ1 }}da ->
   {{ ⊢ Θ0 }}a ->
@@ -3940,261 +4140,21 @@ Proof.
     + simpl. apply ad_refine_pskl__arrow;
         [ eapply ad_refine_pskl_isub; eauto | exact Hrp2 ].
   - (* ForallInh tagged : decorated *)
-    simpl in HwfP0, HwfS.
-    inversion HwfP0 as [ | | | L0 Θa Δa P0a Hbody0 Heqa | | ]; subst.
-    inversion HwfS as [ | | | LS ΘbS ΔbS SbS HbodyS HeqS | | ]; subst.
     inversion HlcS; subst.
-    match goal with Hb : forall _, lc_uskl _ |- _ => rename Hb into HlcSbody end.
-    pick fresh α for
-      (L `union` L0 `union` LS `union` dom Θ0 `union` dom Θ1
-       `union` ftvar_in_pskl P0 `union` ftvar_in_uskl R `union` ftvar_in_pskl Q
-       `union` Δ1 `union` Δ2).
-    assert (HαL : α `notin` L) by auto.
-    assert (HwfΘα : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
-      by (apply a_wf_aenv__tvar; auto).
-    assert (HlcSα : lc_uskl (open_uskl_wrt_uskl R (uskl_var_f α)))
-      by (apply HlcSbody).
-    assert (HwfP0α : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
-                       ⊢ₚₛ (open_pskl_wrt_pskl P0 (pskl_var_f α)) }}a).
-    { eapply a_wf_pskl_delta_mono;
-        [ apply Hbody0; auto
-        | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
-    assert (HwfSα : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
-                   ⊢ₚₛ (uskl_to_pskl (open_uskl_wrt_uskl R (uskl_var_f α))) }}a).
-    { rewrite uskl_to_pskl_open.
-      eapply a_wf_pskl_delta_mono;
-        [ apply HbodyS; auto
-        | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
-    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (add α Δ1 `union` add α Δ2) α Θ0) as (Hrigα & Hnfdα & Hfafα);
-        [ auto | auto | clear; fsetdec | exact Hrig | auto | auto | ].
-    destruct (H0 α HαL HwfΘα HlcSα HwfP0α HwfSα Hrigα Hnfdα Hfafα)
-      as [Hleα [Hwfα [Hnfdα1 [Hfafα1 [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
-    assert (Hwf1 : {{ ⊢ Θ1 }}a)
-      by (apply a_wf_aenv_tvar_inv in Hwfα; tauto).
-    assert (Hα1 : α `notin` dom Θ1) by auto.
-    split; [ eapply a_isub_strip_tvar; eauto | ].
-    split; [ exact Hwf1 | ].
-    split.
-    { apply no_flex_dep_strip with (α := α).
-      apply no_flex_dep_cong with (Δ := add α Δ1 `union` add α Δ2);
-        [ clear; fsetdec | exact Hnfdα1 ]. }
-    split.
-    { apply faf_strip with (α := α).
-      apply faf_cong with (Δ := add α Δ1 `union` add α Δ2);
-        [ clear; fsetdec | exact Hfafα1 ]. }
-    split.
-    + exists (bskl_all_inh (close_bskl_wrt_bskl α Qtα)). split.
-      { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
-        rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-          [ reflexivity | clear - Fr; solve_notin_auto ]. }
-      split.
-      * simpl. apply ad_pat_consis__forall_inh_tagged
-          with (Ψ0 := Ψ0) (ε := ε)
-               (L := dom Θ1 `union` singleton α `union` ftvar_in_uskl R);
-          [ | exact H1 ].
-        intros α0 Hα0. eapply ad_pat_consis_close_open;
-          [exact Hwf1 | exact Hα1 | | ].
-        -- clear - Fr; solve_notin_auto.
-        -- exact Hconsα.
-      * change (pskl_to_bskl_inh (pskl_all_syn P0))
-          with (bskl_all_inh (pskl_to_bskl_inh P0)).
-        eapply ad_refine_syn_close_all with (α := α);
-          [exact Hwf1 | exact Hα1 | clear - Fr; solve_notin_auto | exact Hrsα].
-    + simpl. eapply ad_refine_pskl_close_all with (α := α);
-        [exact Hwf1 | exact Hα1 | | ].
-      * rewrite ftvar_in_pskl_uskl_to_pskl. clear - Fr; solve_notin_auto.
-      * rewrite <- uskl_to_pskl_open. exact Hrpα.
+    eapply consistag_sound_forall_inh with (R := R); eauto.
+    intros Qb L' Hb. eapply ad_pat_consis__forall_inh_tagged; eauto.
   - (* ForallInh untagged : decorated *)
-    simpl in HwfP0, HwfS.
-    inversion HwfP0 as [ | | | L0 Θa Δa P0a Hbody0 Heqa | | ]; subst.
-    inversion HwfS as [ | | | LS ΘbS ΔbS SbS HbodyS HeqS | | ]; subst.
     inversion HlcS; subst.
-    match goal with Hb : forall _, lc_uskl _ |- _ => rename Hb into HlcSbody end.
-    pick fresh α for
-      (L `union` L0 `union` LS `union` dom Θ0 `union` dom Θ1
-       `union` ftvar_in_pskl P0 `union` ftvar_in_uskl R `union` ftvar_in_pskl Q
-       `union` Δ1 `union` Δ2).
-    assert (HαL : α `notin` L) by auto.
-    assert (HwfΘα : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
-      by (apply a_wf_aenv__tvar; auto).
-    assert (HlcSα : lc_uskl (open_uskl_wrt_uskl R (uskl_var_f α)))
-      by (apply HlcSbody).
-    assert (HwfP0α : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
-                       ⊢ₚₛ (open_pskl_wrt_pskl P0 (pskl_var_f α)) }}a).
-    { eapply a_wf_pskl_delta_mono;
-        [ apply Hbody0; auto
-        | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
-    assert (HwfSα : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
-                   ⊢ₚₛ (uskl_to_pskl (open_uskl_wrt_uskl R (uskl_var_f α))) }}a).
-    { rewrite uskl_to_pskl_open.
-      eapply a_wf_pskl_delta_mono;
-        [ apply HbodyS; auto
-        | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
-    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (add α Δ1 `union` add α Δ2) α Θ0) as (Hrigα & Hnfdα & Hfafα);
-        [ auto | auto | clear; fsetdec | exact Hrig | auto | auto | ].
-    destruct (H0 α HαL HwfΘα HlcSα HwfP0α HwfSα Hrigα Hnfdα Hfafα)
-      as [Hleα [Hwfα [Hnfdα1 [Hfafα1 [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
-    assert (Hwf1 : {{ ⊢ Θ1 }}a)
-      by (apply a_wf_aenv_tvar_inv in Hwfα; tauto).
-    assert (Hα1 : α `notin` dom Θ1) by auto.
-    split; [ eapply a_isub_strip_tvar; eauto | ].
-    split; [ exact Hwf1 | ].
-    split.
-    { apply no_flex_dep_strip with (α := α).
-      apply no_flex_dep_cong with (Δ := add α Δ1 `union` add α Δ2);
-        [ clear; fsetdec | exact Hnfdα1 ]. }
-    split.
-    { apply faf_strip with (α := α).
-      apply faf_cong with (Δ := add α Δ1 `union` add α Δ2);
-        [ clear; fsetdec | exact Hfafα1 ]. }
-    split.
-    + exists (bskl_all_inh (close_bskl_wrt_bskl α Qtα)). split.
-      { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
-        rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-          [ reflexivity | clear - Fr; solve_notin_auto ]. }
-      split.
-      * simpl. apply ad_pat_consis__forall_inh_untagged
-          with (L := dom Θ1 `union` singleton α `union` ftvar_in_uskl R).
-        intros α0 Hα0. eapply ad_pat_consis_close_open;
-          [exact Hwf1 | exact Hα1 | | ].
-        -- clear - Fr; solve_notin_auto.
-        -- exact Hconsα.
-      * change (pskl_to_bskl_inh (pskl_all_syn P0))
-          with (bskl_all_inh (pskl_to_bskl_inh P0)).
-        eapply ad_refine_syn_close_all with (α := α);
-          [exact Hwf1 | exact Hα1 | clear - Fr; solve_notin_auto | exact Hrsα].
-    + simpl. eapply ad_refine_pskl_close_all with (α := α);
-        [exact Hwf1 | exact Hα1 | | ].
-      * rewrite ftvar_in_pskl_uskl_to_pskl. clear - Fr; solve_notin_auto.
-      * rewrite <- uskl_to_pskl_open. exact Hrpα.
+    eapply consistag_sound_forall_inh with (R := R); eauto.
+    intros Qb L' Hb. eapply ad_pat_consis__forall_inh_untagged; eauto.
   - (* ForallSyn tagged : decorated *)
-    simpl in HwfP0, HwfS.
-    inversion HwfP0 as [ | | | | | Θc Δc P0c Hg0 Hwf0c Heqc ]; subst.
-    try rewrite aenv_minus_empty in *.
-    inversion HwfS as [ | | | LS ΘbS ΔbS SbS HbodyS HeqS | | ]; subst.
     inversion HlcS; subst.
-    match goal with Hb : forall _, lc_uskl _ |- _ => rename Hb into HlcSbody end.
-    pick fresh α for
-      (L `union` LS `union` dom Θ0 `union` dom Θ1
-       `union` ftvar_in_pskl P0 `union` ftvar_in_uskl R `union` ftvar_in_pskl Q
-       `union` Δ1 `union` Δ2).
-    assert (HαL : α `notin` L) by auto.
-    assert (HwfΘα : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
-      by (apply a_wf_aenv__tvar; auto).
-    assert (HlcSα : lc_uskl (open_uskl_wrt_uskl R (uskl_var_f α)))
-      by (apply HlcSbody).
-    assert (HwfP0α : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
-                       ⊢ₚₛ (pskl_univ_ghost P0) }}a).
-    { apply a_wf_pskl__univ_ghost; auto; rewrite aenv_minus_empty.
-      eapply a_wf_pskl_weaken; [ | exact Hwf0c ].
-      intros y b Hb. unfold binds; right; exact Hb. }
-    assert (HwfSα : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
-                   ⊢ₚₛ (uskl_to_pskl (open_uskl_wrt_uskl R (uskl_var_f α))) }}a).
-    { rewrite uskl_to_pskl_open.
-      eapply a_wf_pskl_delta_mono;
-        [ apply HbodyS; auto
-        | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
-    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (Δ1 `union` add α Δ2) α Θ0) as (Hrigα & Hnfdα & Hfafα);
-        [ auto | auto | clear; fsetdec | exact Hrig | auto | auto | ].
-    destruct (H0 α HαL HwfΘα HlcSα HwfP0α HwfSα Hrigα Hnfdα Hfafα)
-      as [Hleα [Hwfα [Hnfdα1 [Hfafα1 [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
-    assert (Hwf1 : {{ ⊢ Θ1 }}a)
-      by (apply a_wf_aenv_tvar_inv in Hwfα; tauto).
-    assert (Hα1 : α `notin` dom Θ1) by auto.
-    split; [ eapply a_isub_strip_tvar; eauto | ].
-    split; [ exact Hwf1 | ].
-    split.
-    { apply no_flex_dep_strip with (α := α).
-      apply no_flex_dep_cong with (Δ := Δ1 `union` add α Δ2);
-        [ clear; fsetdec | exact Hnfdα1 ]. }
-    split.
-    { apply faf_strip with (α := α).
-      apply faf_cong with (Δ := Δ1 `union` add α Δ2);
-        [ clear; fsetdec | exact Hfafα1 ]. }
-    split.
-    + exists (bskl_all_syn (close_bskl_wrt_bskl α Qtα)). split.
-      { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
-        rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-          [ reflexivity | clear - Fr; solve_notin_auto ]. }
-      split.
-      * simpl. apply ad_pat_consis__forall_syn_tagged
-          with (ε := ε) (L := dom Θ1 `union` singleton α `union` ftvar_in_uskl R).
-        intros α0 Hα0. eapply ad_pat_consis_close_open;
-          [exact Hwf1 | exact Hα1 | | ].
-        -- clear - Fr; solve_notin_auto.
-        -- exact Hconsα.
-      * change (pskl_to_bskl_inh (pskl_univ_ghost P0))
-          with (bskl_univ_ghost (pskl_to_bskl_inh P0)).
-        eapply ad_refine_syn_close_univ_ghost with (α := α);
-          [exact Hwf1 | exact Hα1 | clear - Fr; solve_notin_auto | exact Hrsα].
-    + simpl. eapply ad_refine_pskl_close_all with (α := α);
-        [exact Hwf1 | exact Hα1 | | ].
-      * rewrite ftvar_in_pskl_uskl_to_pskl. clear - Fr; solve_notin_auto.
-      * rewrite <- uskl_to_pskl_open. exact Hrpα.
+    eapply consistag_sound_forall_syn with (R := R); eauto.
+    intros Qb L' Hb. eapply ad_pat_consis__forall_syn_tagged; eauto.
   - (* ForallSyn untagged : decorated *)
-    simpl in HwfP0, HwfS.
-    inversion HwfP0 as [ | | | | | Θc Δc P0c Hg0 Hwf0c Heqc ]; subst.
-    try rewrite aenv_minus_empty in *.
-    inversion HwfS as [ | | | LS ΘbS ΔbS SbS HbodyS HeqS | | ]; subst.
     inversion HlcS; subst.
-    match goal with Hb : forall _, lc_uskl _ |- _ => rename Hb into HlcSbody end.
-    pick fresh α for
-      (L `union` LS `union` dom Θ0 `union` dom Θ1
-       `union` ftvar_in_pskl P0 `union` ftvar_in_uskl R `union` ftvar_in_pskl Q
-       `union` Δ1 `union` Δ2).
-    assert (HαL : α `notin` L) by auto.
-    assert (HwfΘα : {{ ⊢ ((α ~ abind_tvar) ++ Θ0) }}a)
-      by (apply a_wf_aenv__tvar; auto).
-    assert (HlcSα : lc_uskl (open_uskl_wrt_uskl R (uskl_var_f α)))
-      by (apply HlcSbody).
-    assert (HwfP0α : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
-                       ⊢ₚₛ (pskl_univ_ghost P0) }}a).
-    { apply a_wf_pskl__univ_ghost; auto; rewrite aenv_minus_empty.
-      eapply a_wf_pskl_weaken; [ | exact Hwf0c ].
-      intros y b Hb. unfold binds; right; exact Hb. }
-    assert (HwfSα : {{ ((α ~ abind_tvar) ++ Θ0) ⨟ empty
-                   ⊢ₚₛ (uskl_to_pskl (open_uskl_wrt_uskl R (uskl_var_f α))) }}a).
-    { rewrite uskl_to_pskl_open.
-      eapply a_wf_pskl_delta_mono;
-        [ apply HbodyS; auto
-        | intros γ _ Hγ; clear - Hγ; fsetdec ]. }
-    destruct (@delta_inv_open_tvar (Δ1 `union` Δ2) (Δ1 `union` add α Δ2) α Θ0) as (Hrigα & Hnfdα & Hfafα);
-        [ auto | auto | clear; fsetdec | exact Hrig | auto | auto | ].
-    destruct (H0 α HαL HwfΘα HlcSα HwfP0α HwfSα Hrigα Hnfdα Hfafα)
-      as [Hleα [Hwfα [Hnfdα1 [Hfafα1 [[Qtα [HeQtα [Hconsα Hrsα]]] Hrpα]]]]].
-    assert (Hwf1 : {{ ⊢ Θ1 }}a)
-      by (apply a_wf_aenv_tvar_inv in Hwfα; tauto).
-    assert (Hα1 : α `notin` dom Θ1) by auto.
-    split; [ eapply a_isub_strip_tvar; eauto | ].
-    split; [ exact Hwf1 | ].
-    split.
-    { apply no_flex_dep_strip with (α := α).
-      apply no_flex_dep_cong with (Δ := Δ1 `union` add α Δ2);
-        [ clear; fsetdec | exact Hnfdα1 ]. }
-    split.
-    { apply faf_strip with (α := α).
-      apply faf_cong with (Δ := Δ1 `union` add α Δ2);
-        [ clear; fsetdec | exact Hfafα1 ]. }
-    split.
-    + exists (bskl_all_syn (close_bskl_wrt_bskl α Qtα)). split.
-      { simpl. rewrite bskl_to_pskl_close. rewrite HeQtα.
-        rewrite close_pskl_wrt_pskl_open_pskl_wrt_pskl;
-          [ reflexivity | clear - Fr; solve_notin_auto ]. }
-      split.
-      * simpl. apply ad_pat_consis__forall_syn
-          with (L := dom Θ1 `union` singleton α `union` ftvar_in_uskl R).
-        intros α0 Hα0. eapply ad_pat_consis_close_open;
-          [exact Hwf1 | exact Hα1 | | ].
-        -- clear - Fr; solve_notin_auto.
-        -- exact Hconsα.
-      * change (pskl_to_bskl_inh (pskl_univ_ghost P0))
-          with (bskl_univ_ghost (pskl_to_bskl_inh P0)).
-        eapply ad_refine_syn_close_univ_ghost with (α := α);
-          [exact Hwf1 | exact Hα1 | clear - Fr; solve_notin_auto | exact Hrsα].
-    + simpl. eapply ad_refine_pskl_close_all with (α := α);
-        [exact Hwf1 | exact Hα1 | | ].
-      * rewrite ftvar_in_pskl_uskl_to_pskl. clear - Fr; solve_notin_auto.
-      * rewrite <- uskl_to_pskl_open. exact Hrpα.
+    eapply consistag_sound_forall_syn with (R := R); eauto.
+    intros Qb L' Hb. eapply ad_pat_consis__forall_syn; eauto.
   - (* UnivGhost *)
     simpl in HwfP0, HwfS.
     inversion HlcS; subst.
