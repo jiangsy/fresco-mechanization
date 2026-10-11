@@ -182,6 +182,30 @@ them (PAPER-GAPS has the details):
 # Part 2: Progress log (most recent first)
 
 
+## 2026-10-11 — Share the complete forall lookup argument
+
+Consolidate the tagged and untagged forall branches of
+`a_lookeq_solve_complete_gen`. They previously repeated the recursive
+construction, output freshness arguments, binder stripping, and result
+assembly. The named lemma
+`a_lookeq_solve_complete_forall` now handles both, with explicit premises for
+the smaller-measure induction hypothesis and constructor-specific inversion
+at the call sites. The tagged case establishes
+the body's index bounds once, before entering the common proof; the inherited
+and synthesized refinement cases remain explicit inside it.
+
+Net reduction: **328 physical Coq lines / 293 nonblank, noncomment lines**.
+All 59 existing theorem statements in the module are unchanged. No new inline
+tactic terms; the number of existing inline tactic terms falls from 80 to 68.
+Following the user's preference, the shared argument is a standalone lemma,
+not a goal-capturing local assertion. The final rewrite is checked with focused
+compilation followed by a full build and assumption audit.
+
+Validation: `make coq` passed. All 34 headline assumption reports are
+closed under the global context, with no axiom reports or errors. Existing
+theorem statements are unchanged and `git diff --check` passes.
+
+
 ## 2026-10-11 — Reuse substitution and lookup arguments
 
 Replace the unit and monotype ghost-free substitution inductions with direct
