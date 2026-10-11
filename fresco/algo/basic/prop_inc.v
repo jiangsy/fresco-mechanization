@@ -229,6 +229,21 @@ Lemma a_inc_tvar_inv : forall α Θ κ Θ',
   exists Ξ Θ2, Θ' = Ξ ++ (α ~ abind_tvar) ++ Θ2 /\ a_suffix Ξ /\ κ ∷ Θ ⊑ Θ2.
 Proof. intros * H; inversion H; subst; eauto 6. Qed.
 
+(** Cancel the same rigid head on both sides; a flexible suffix cannot
+    precede that head in the target. *)
+Lemma a_inc_tvar_head_inv : forall α Θ0 κ Θ,
+  κ ∷ ((α ~ abind_tvar) ++ Θ0) ⊑ ((α ~ abind_tvar) ++ Θ) ->
+  κ ∷ Θ0 ⊑ Θ.
+Proof.
+  intros α Θ0 κ Θ Hinc.
+  destruct (a_inc_tvar_inv Hinc) as [Ξ [Θ2 [Heq [Hsuf Hrest]]]].
+  destruct Ξ as [ | [γ b] Ξ' ]; simpl_env in Heq.
+  - inversion Heq; subst. exact Hrest.
+  - inversion Heq; subst.
+    inversion Hsuf as [ | ? ? ? Hsuf' Hb ]; subst.
+    inversion Hb.
+Qed.
+
 Lemma a_inc_var_inv : forall x A Θ κ Θ',
   κ ∷ ((x ~ abind_var_typ A) ++ Θ) ⊑ Θ' ->
   exists Ξ A' Θ2,

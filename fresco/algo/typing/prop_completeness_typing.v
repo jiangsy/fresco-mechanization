@@ -2208,15 +2208,7 @@ Qed.
 Lemma a_inc_strip_tvar_head : forall α Θ0 κ Θ,
   κ ∷ ((α ~ abind_tvar) ++ Θ0) ⊑ ((α ~ abind_tvar) ++ Θ) ->
   κ ∷ Θ0 ⊑ Θ.
-Proof.
-  intros α Θ0 κ Θ Hinc.
-  destruct (a_inc_tvar_inv Hinc) as [Ξ [Θ2 [Heq [Hsuf Hrest]]]].
-  destruct Ξ as [ | [γ b] Ξ' ]; simpl_env in Heq.
-  - inversion Heq; subst. exact Hrest.
-  - inversion Heq; subst.
-    inversion Hsuf as [ | ? ? ? Hsuf' Hb ]; subst.
-    inversion Hb.
-Qed.
+Proof. intros; eapply a_inc_tvar_head_inv; eassumption. Qed.
 
 (** …and off a metasubstitution equivalence (mirror of
     [a_inc_equiv_strip_tm_head] for the rigid head; the κs pass
@@ -2224,19 +2216,7 @@ Qed.
 Lemma a_inc_equiv_strip_tvar_head : forall α Θ0 κ1 κ2 Θ,
   a_inc_equiv ((α ~ abind_tvar) ++ Θ0) κ1 κ2 ((α ~ abind_tvar) ++ Θ) ->
   a_inc_equiv Θ0 κ1 κ2 Θ.
-Proof.
-  intros α Θ0 κ1 κ2 Θ Hie.
-  inversion Hie; subst.
-  match goal with
-  | Hsuf : a_suffix ?ΞS, HeqT : ?l = ?r |- _ =>
-      first [ constr_eq l ((α ~ abind_tvar) ++ Θ); symmetry in HeqT | idtac ];
-      destruct ΞS as [ | [z bz] Ξ' ]; simpl_env in HeqT;
-      [ inversion HeqT; subst; assumption
-      | inversion HeqT; subst;
-        inversion Hsuf as [ | ? ? ? ? Hsb ]; subst;
-        inversion Hsb ]
-  end.
-Qed.
+Proof. intros; eapply a_inc_equiv_tvar_head_inv; eassumption. Qed.
 
 (* ===================================================================== *)
 (*  The two rows, discharging premise (2) with the §6.3#2 scoping         *)

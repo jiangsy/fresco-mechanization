@@ -759,6 +759,21 @@ Lemma a_inc_equiv_tvar_inv : forall α Θ0 κ1 κ2 Θ,
              /\ a_suffix Ξ /\ a_inc_equiv Θ0 κ1 κ2 Θ'.
 Proof. intros * H; inversion H; subst; eauto 8. Qed.
 
+(** Cancel the same rigid head on both sides; a flexible suffix cannot
+    precede that head in the target. *)
+Lemma a_inc_equiv_tvar_head_inv : forall α Θ0 κ1 κ2 Θ,
+  a_inc_equiv ((α ~ abind_tvar) ++ Θ0) κ1 κ2 ((α ~ abind_tvar) ++ Θ) ->
+  a_inc_equiv Θ0 κ1 κ2 Θ.
+Proof.
+  intros α Θ0 κ1 κ2 Θ Hie.
+  destruct (a_inc_equiv_tvar_inv Hie) as [Ξ [Θ2 [Heq [Hsuf Hrest]]]].
+  destruct Ξ as [ | [β b] Ξ' ]; simpl_env in Heq.
+  - inversion Heq; subst. exact Hrest.
+  - inversion Heq; subst.
+    inversion Hsuf as [ | ? ? ? Hsuf' Hb ]; subst.
+    inversion Hb.
+Qed.
+
 Lemma a_inc_equiv_var_typ_inv : forall x A Θ0 κ1 κ2 Θ,
   a_inc_equiv ((x ~ abind_var_typ A) ++ Θ0) κ1 κ2 Θ ->
   exists Ξ A' Θ', Θ = Ξ ++ (x ~ abind_var_typ A') ++ Θ'

@@ -181,6 +181,28 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share decorated binder preparation and rigid-head cancellation
+
+Share fresh-opener preparation and output context invariants for the tagged
+and untagged ForallInh/ForallSyn cases with explicit numbered selectors.
+Each decorated rule's final constructor remains separate.
+
+Put rigid-head cancellation in the basic increase and increase-equivalence
+modules. Consistency completeness now reuses these facts instead of six
+freshness-based impossible-suffix arguments; subtyping completeness and
+identity increase reuse them too. Preserve the existing typing-level lemma
+statements as short corollaries of the basic facts.
+
+Net reduction: **124 physical Coq lines / 132 nonblank, noncomment lines**.
+All 366 existing theorem statements across the six edited files are unchanged.
+Inline tactic terms decrease from 265 to 252; none were added.
+
+Validation: final `make coq` passed after correcting a call-site inference
+failure by supplying its named hypothesis explicitly. All 34 headline
+assumption reports are closed under the global context, with no axiom reports
+or errors. Statement comparison and `git diff --check` passed.
+
+
 ## 2026-10-11 — Share the ForallL recursive proof in lookup completeness
 
 Keep tagged and untagged rigid-substitution inversions explicit, then use

@@ -735,21 +735,9 @@ Proof.
     exists ζ.
     (* strip the rigid head off the algorithm-side increments *)
     assert (Hζ' : ζ ∷ Θ1 ⊑ Θ).
-    { destruct (a_inc_tvar_inv Hζ) as [Ξs [Θ2 [HeqT [Hsuf Hinc2]]]].
-      destruct Ξs as [ | [y b] Ξs' ]; simpl in HeqT.
-      - inversion HeqT; subst. exact Hinc2.
-      - injection HeqT. intros HeqΘtail Heqb Heqy. exfalso.
-        rewrite HeqΘtail in HαΘ.
-        repeat rewrite dom_app in HαΘ. simpl dom in HαΘ.
-        clear - HαΘ. fsetdec. }
+    { eapply a_inc_tvar_head_inv; exact Hζ. }
     assert (Hie' : a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ).
-    { destruct (a_inc_equiv_tvar_inv Hie) as [Ξs [Θ2 [HeqT [Hsuf Hie2]]]].
-      destruct Ξs as [ | [y b] Ξs' ]; simpl in HeqT.
-      - inversion HeqT; subst. exact Hie2.
-      - injection HeqT. intros HeqΘtail Heqb Heqy. exfalso.
-        rewrite HeqΘtail in HαΘ.
-        repeat rewrite dom_app in HαΘ. simpl dom in HαΘ.
-        clear - HαΘ. fsetdec. }
+    { eapply a_inc_equiv_tvar_head_inv; exact Hie. }
     split; [ exact Hζ' | ]. split; [ exact Hie' | ].
     (* precision : rebind the quantifier *)
     assert (Hlcζ : msubst_lc ζ) by (eapply a_inc_msubst_lc; exact Hζ').
@@ -998,21 +986,9 @@ Proof.
     destruct (Hopt' κ1 Hid Hinc1') as [ζ [Hζ [Hie Hprec]]].
     exists ζ.
     assert (Hζ' : ζ ∷ Θ1 ⊑ Θ).
-    { destruct (a_inc_tvar_inv Hζ) as [Ξs [Θ2 [HeqT [Hsuf Hinc2]]]].
-      destruct Ξs as [ | [y b] Ξs' ]; simpl in HeqT.
-      - inversion HeqT; subst. exact Hinc2.
-      - injection HeqT. intros HeqΘtail Heqb Heqy. exfalso.
-        rewrite HeqΘtail in HαΘ.
-        repeat rewrite dom_app in HαΘ. simpl dom in HαΘ.
-        clear - HαΘ. fsetdec. }
+    { eapply a_inc_tvar_head_inv; exact Hζ. }
     assert (Hie' : a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ).
-    { destruct (a_inc_equiv_tvar_inv Hie) as [Ξs [Θ2 [HeqT [Hsuf Hie2]]]].
-      destruct Ξs as [ | [y b] Ξs' ]; simpl in HeqT.
-      - inversion HeqT; subst. exact Hie2.
-      - injection HeqT. intros HeqΘtail Heqb Heqy. exfalso.
-        rewrite HeqΘtail in HαΘ.
-        repeat rewrite dom_app in HαΘ. simpl dom in HαΘ.
-        clear - HαΘ. fsetdec. }
+    { eapply a_inc_equiv_tvar_head_inv; exact Hie. }
     split; [ exact Hζ' | ]. split; [ exact Hie' | ].
     (* precision : rebind the quantifier *)
     assert (Hlcζ : msubst_lc ζ) by (eapply a_inc_msubst_lc; exact Hζ').
@@ -1445,21 +1421,9 @@ Proof.
     destruct (Hopt' κ1 Hid Hinc1') as [ζ [Hζ [Hie Hprec]]].
     exists ζ.
     assert (Hζ' : ζ ∷ Θ1 ⊑ Θ).
-    { destruct (a_inc_tvar_inv Hζ) as [Ξs [Θ2 [HeqT [Hsuf Hinc2]]]].
-      destruct Ξs as [ | [y b] Ξs' ]; simpl in HeqT.
-      - inversion HeqT; subst. exact Hinc2.
-      - injection HeqT. intros HeqΘtail Heqb Heqy. exfalso.
-        rewrite HeqΘtail in HαΘ.
-        repeat rewrite dom_app in HαΘ. simpl dom in HαΘ.
-        clear - HαΘ. fsetdec. }
+    { eapply a_inc_tvar_head_inv; exact Hζ. }
     assert (Hie' : a_inc_equiv Θ0 κ (msubst_compose ζ κ1) Θ).
-    { destruct (a_inc_equiv_tvar_inv Hie) as [Ξs [Θ2 [HeqT [Hsuf Hie2]]]].
-      destruct Ξs as [ | [y b] Ξs' ]; simpl in HeqT.
-      - inversion HeqT; subst. exact Hie2.
-      - injection HeqT. intros HeqΘtail Heqb Heqy. exfalso.
-        rewrite HeqΘtail in HαΘ.
-        repeat rewrite dom_app in HαΘ. simpl dom in HαΘ.
-        clear - HαΘ. fsetdec. }
+    { eapply a_inc_equiv_tvar_head_inv; exact Hie. }
     split; [ exact Hζ' | ]. split; [ exact Hie' | ].
     assert (Hlcζ : msubst_lc ζ) by (eapply a_inc_msubst_lc; exact Hζ').
     assert (Huq1' : uniq ((α ~ abind_tvar) ++ Θ1))

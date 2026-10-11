@@ -1776,20 +1776,10 @@ Proof.
   (* peel the junk rows off ζ' *)
   destruct (@a_inc_peel_suffix _ _ _ _ Hsufj Hζ')
     as [κa [ζ [-> [Hdomκa Hζmid]]]].
-  destruct (a_inc_tvar_inv Hζmid) as [Ξs [Θ2 [HeqT2 [HsufΞs Hζfin]]]].
-  destruct Ξs as [ | [y by_] Ξs' ]; simpl in HeqT2;
-    [ | exfalso; inversion HeqT2; subst;
-        inversion HsufΞs as [ | ? ? ? ? Hsb ]; subst;
-        inversion Hsb ].
-  inversion HeqT2; subst Θ2.
+  pose proof (a_inc_tvar_head_inv Hζmid) as Hζfin.
   exists ζ. split; [ exact Hζfin | ]. split.
   { (* the metasubstitution equivalence, at the stripped composite *)
-    destruct (a_inc_equiv_tvar_inv Hie') as [Ξs2 [Θ2' [HeqT3 [Hsuf2 Hie2]]]].
-    destruct Ξs2 as [ | [y2 by2] Ξs2' ]; simpl in HeqT3;
-      [ | exfalso; inversion HeqT3; subst;
-          inversion Hsuf2 as [ | ? ? ? ? Hsb2 ]; subst;
-          inversion Hsb2 ].
-    inversion HeqT3; subst Θ2'.
+    pose proof (a_inc_equiv_tvar_head_inv Hie') as Hie2.
     assert (Hcomp : msubst_compose (κa ++ ζ) κf = msubst_compose ζ κf).
     { apply msubst_compose_id_app_agree; [ exact Hidf | ].
       intros x Hx Hc.
