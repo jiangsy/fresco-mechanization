@@ -181,6 +181,31 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Automate context transport and the fuel mirror's structural maps
+
+Seven proofs in `algo_decl/prop_ctx_mono.v` now use bounded constructor
+search directly through `eauto ... using <judgement>`, without new hint
+databases or helper tactics. Well-formedness, joins, subtyping, and pattern
+context transport lose their routine case lists. Typing transport retains
+only its witness-sensitive application step; its other cases, including
+cofinite binders, are automated.
+
+Fuel monotonicity now handles all four successor-fuel cases together:
+destruct the target fuel once, reject zero by arithmetic, and reconstruct
+the constructor using the predecessor inequality. Fuel erasure is one
+induction line. Removed the obsolete comment claiming every proof must list
+constructors explicitly.
+
+**Reduction:** 95 nonblank, noncomment Coq lines. Proof bodies shrink:
+well-formedness 6→2, joins 3→2, subtyping 25→3, patterns 23→5, typing 29→7,
+fuel monotonicity 20→4, and fuel erasure 13→1. Every retained statement and
+computational definition is unchanged. Controlled whole-file compilation
+takes 0.58s versus 0.57s before the change; each rewritten proof constructs
+in at most 0.033s. Search depths are explicit (3–6).
+
+**Validation:** full `make coq`, all 34 flagship assumption checks closed,
+byte-identical extracted OCaml, and `git diff --check`.
+
 ## 2026-10-11 — Replace declarative structural case lists with bounded automation
 
 Both context-independent refinement proofs now consist of one induction line
