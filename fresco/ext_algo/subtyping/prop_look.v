@@ -511,83 +511,6 @@ Corollary e_looksub_sound : forall S0 Θ α m P P' S1 Ξ C,
 Proof. intros. eapply (proj1 e_looksub_lookeq_sound); eassumption. Qed.
 
 (* ===================================================================== *)
-(*  §5  SUPPLY RESPECT — the two supply indexes transport along [=]       *)
-(*                                                                        *)
-(*  ⚙ Here rather than in prop_look_pair.v because prop_solve.v and       *)
-(*  prop_completeness_extract.v need it for their own supply-respect statements, and    *)
-(*  they are BELOW prop_look_pair.v in the [Require] graph.               *)
-(* ===================================================================== *)
-
-Lemma e_looksub_lookeq_supply_respect :
-  (forall S0 Θ α m P P' S1 Ξ C,
-     {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
-     forall S0', S0' [=] S0 ->
-     exists S1', S1' [=] S1 /\
-       {{ S0' ↝ S1' ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e) /\
-  (forall S0 Θ α P P' S1 Ξ C,
-     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
-     forall S0', S0' [=] S0 ->
-     exists S1', S1' [=] S1 /\
-       {{ S0' ↝ S1' ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e).
-Proof.
-  apply (e_looksub_lookeq_mutind
-           (fun S0 Θ α m P P' S1 Ξ C _ =>
-              forall S0', S0' [=] S0 ->
-              exists S1', S1' [=] S1 /\
-                {{ S0' ↝ S1' ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e)
-           (fun S0 Θ α P P' S1 Ξ C _ =>
-              forall S0', S0' [=] S0 ->
-              exists S1', S1' [=] S1 /\
-                {{ S0' ↝ S1' ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e)).
-  all: try solve [
-    intros;
-    transport_supply_witnesses;
-    eexists; split; [ eassumption | econstructor; eauto 2 ] ].
-  - (* LS-ForallR *)
-    intros * Hgf Hβ Hocc Hnv Hd IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_looksub__forall_r with (β := β);
-      [ assumption | rewrite Heq; assumption | exact Hocc | exact Hnv
-      | exact Hd' ].
-  - (* LS-ForallL *)
-    intros * Hβ Hocc Hnh Hfr Hd IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_looksub__forall_l with (β := β);
-      [ rewrite Heq; assumption | exact Hocc | exact Hnh | exact Hfr
-      | exact Hd' ].
-  - (* LE-FlexR *)
-    intros * Hα1 Hflx Hne Hocc S0' Heq.
-    exists (add α1 S0'). split; [ rewrite Heq; reflexivity | ].
-    apply e_lookeq__flex_r;
-      [ rewrite Heq; assumption | assumption | assumption | assumption ].
-  - (* LE-ForallInh *)
-    intros * Hβ Hocc Hd IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_lookeq__forall_inh with (β := β);
-      [ rewrite Heq; assumption | exact Hocc | exact Hd' ].
-  - (* LE-ForallSyn *)
-    intros * Hβ Hocc Hd IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_lookeq__forall_syn with (β := β);
-      [ rewrite Heq; assumption | exact Hocc | exact Hd' ].
-  - (* LE-UnivGhost1 *)
-    intros * Hβ Hocc Hd IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [Heq1 Hd']].
-    exists S1'. split; [ exact Heq1 | ].
-    apply e_lookeq__univ_ghost1 with (β := β);
-      [ rewrite Heq; assumption | exact Hocc | exact Hd' ].
-Qed.
-
-(* ===================================================================== *)
 (*  §6  EQUIVARIANCE                                                      *)
 (*                                                                        *)
 (*  algo/basic/prop_swap.v §10's [a_looksub_lookeq_swap], rule for rule, in the  *)
@@ -764,6 +687,29 @@ Proof.
     exists S1'. split; [ exact HS1 | ].
     apply e_lookeq__univ_ghost_r;
       auto using swap_pskl_neq_var, guarded_pskl_swap.
+Qed.
+
+(** Supply equivalence is equivariance under the identity swap. *)
+Lemma e_looksub_lookeq_supply_respect :
+  (forall S0 Θ α m P P' S1 Ξ C,
+     {{ S0 ↝ S1 ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       {{ S0' ↝ S1' ⊨ Θ ⊢ P ≼[ α , m ] P' ⤳ Ξ ⨾ C }}e) /\
+  (forall S0 Θ α P P' S1 Ξ C,
+     {{ S0 ↝ S1 ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       {{ S0' ↝ S1' ⊨ Θ ⊢ P ∼[ α ] P' ⤳ Ξ ⨾ C }}e).
+Proof.
+  destruct (atom_fresh empty) as [a _].
+  pose proof (@e_looksub_lookeq_swap a a) as Hswap.
+  setoid_rewrite swap_aenv_same in Hswap.
+  setoid_rewrite swap_pskl_same in Hswap.
+  setoid_rewrite swap_cstrs_same in Hswap.
+  setoid_rewrite swap_atom_same in Hswap.
+  setoid_rewrite swap_atoms_same in Hswap.
+  exact Hswap.
 Qed.
 
 Corollary e_looksub_swap : forall a b S0 Θ α m P P' S1 Ξ C,

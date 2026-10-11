@@ -464,105 +464,6 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §4b  SUPPLY RESPECT — the supply indexes transport along [=]          *)
-(*                                                                        *)
-(*  prop_look.v §5's twin, and the base case §5's CHAINS need: a chain of *)
-(*  length zero moves nothing but the supply, and a supply is a SET, so    *)
-(*  the caller holds an [=]-variant rather than the term.                  *)
-(* ===================================================================== *)
-
-Lemma e_solve_sub_eq_supply_respect :
-  (forall S0 Θ m P Q S1 Ξ P',
-     {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
-     forall S0', S0' [=] S0 ->
-     exists S1', S1' [=] S1 /\
-       {{ S0' ↝ S1' ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e) /\
-  (forall S0 Θ P Q S1 Ξ P',
-     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
-     forall S0', S0' [=] S0 ->
-     exists S1', S1' [=] S1 /\
-       {{ S0' ↝ S1' ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e).
-Proof.
-  apply (e_solve_sub_eq_mutind
-    (fun S0 Θ m P Q S1 Ξ P' _ =>
-       forall S0', S0' [=] S0 ->
-       exists S1', S1' [=] S1 /\
-         {{ S0' ↝ S1' ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e)
-    (fun S0 Θ P Q S1 Ξ P' _ =>
-       forall S0', S0' [=] S0 ->
-       exists S1', S1' [=] S1 /\
-         {{ S0' ↝ S1' ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e)).
-
-  (* ------------------------ e_solve_sub ------------------------ *)
-  all: try solve [
-    intros;
-    transport_supply_witnesses;
-    eexists; split; [ eassumption | econstructor; eauto 2 ] ].
-  - intros S0 S1 Θ m P Q Ξ P' β Hβ Hs IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_solve_sub__forall_l with (β := β);
-      [ rewrite Heq; exact Hβ | exact Hd ].
-  - intros S0 S1 Θ P B Ξ P' β Hgf Hoff Hβ Hs IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_solve_sub__forall_r with (β := β);
-      [ exact Hgf | exact Hoff | rewrite Heq; exact Hβ | exact Hd ].
-  - intros S0 S1 Θ α P Ξ A Hft Hnf Hng Hg S0' Heq.
-    destruct (e_guess_mono_supply_respect Hg Heq) as [S1' [HS1 Hg']].
-    exists S1'. split; [ exact HS1 | apply e_solve_eq__flex_r; assumption ].
-  - intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_solve_eq__forall with (β := β);
-      [ rewrite Heq; exact Hβ | exact Hd ].
-  - intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_solve_eq__univ_ghost_l_all with (β := β);
-      [ rewrite Heq; exact Hβ | exact Hd ].
-  - intros S0 S1 Θ P Q Ξ P' β Hβ He IH S0' Heq.
-    destruct (IH (add β S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_solve_eq__all_l_univ_ghost with (β := β);
-      [ rewrite Heq; exact Hβ | exact Hd ].
-Qed.
-
-Corollary e_solve_sub_supply_respect : forall S0 Θ m P Q S1 Ξ P',
-  {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
-  forall S0', S0' [=] S0 ->
-  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e.
-Proof. apply e_solve_sub_eq_supply_respect. Qed.
-
-Corollary e_solve_eq_supply_respect : forall S0 Θ P Q S1 Ξ P',
-  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
-  forall S0', S0' [=] S0 ->
-  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e.
-Proof. apply e_solve_sub_eq_supply_respect. Qed.
-
-Lemma e_solve_cstr_supply_respect : forall S0 Θ C P S1 Ξ Q,
-  {{ S0 ↝ S1 ⊨ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q }}e ->
-  forall S0', S0' [=] S0 ->
-  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q }}e.
-Proof.
-  intros S0 Θ C P S1 Ξ Q H; induction H as
-    [ S Θ P | S0 S1 Θ m Q P Ξ P' Hs
-    | S0 S1 S2 Θ Q C P Ξ1 Ξ2 P' P'' He Hc IH ];
-    intros S0' Heq.
-  - exists S0'. split; [ exact Heq | apply e_solve_cstr__empty ].
-  - destruct (e_solve_sub_supply_respect Hs Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_solve_cstr__sub; exact Hd ].
-  - destruct (e_solve_eq_supply_respect He Heq) as [S1' [HS1 Hd1]].
-    destruct (IH _ HS1) as [S2' [HS2 Hd2]].
-    exists S2'. split; [ exact HS2 | eapply e_solve_cstr__eq; eassumption ].
-Qed.
-
-(* ===================================================================== *)
 (*  §5  EQUIVARIANCE                                                      *)
 (*                                                                        *)
 (*  algo/basic/prop_swap.v §10's [a_solve_sub_eq_swap] / [a_solve_cstr_swap] in  *)
@@ -766,4 +667,51 @@ Proof.
     rewrite swap_aenv_app.
     eapply e_solve_cstr__eq;
       [ exact Hd1 | rewrite <- swap_aenv_app; exact Hd2 ].
+Qed.
+
+(** Supply equivalence is equivariance under the identity swap. *)
+Lemma e_solve_sub_eq_supply_respect :
+  (forall S0 Θ m P Q S1 Ξ P',
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       {{ S0' ↝ S1' ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e) /\
+  (forall S0 Θ P Q S1 Ξ P',
+     {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       {{ S0' ↝ S1' ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e).
+Proof.
+  destruct (atom_fresh empty) as [a _].
+  pose proof (@e_solve_sub_eq_swap a a) as Hswap.
+  setoid_rewrite swap_aenv_same in Hswap.
+  setoid_rewrite swap_pskl_same in Hswap.
+  setoid_rewrite swap_atoms_same in Hswap.
+  exact Hswap.
+Qed.
+
+Corollary e_solve_sub_supply_respect : forall S0 Θ m P Q S1 Ξ P',
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ ⊢ₛ P ≼[ m ] Q ⤳ Ξ ⨾ P' }}e.
+Proof. apply e_solve_sub_eq_supply_respect. Qed.
+
+Corollary e_solve_eq_supply_respect : forall S0 Θ P Q S1 Ξ P',
+  {{ S0 ↝ S1 ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ ⊢ₑ P ∼ Q ⤳ Ξ ⨾ P' }}e.
+Proof. apply e_solve_sub_eq_supply_respect. Qed.
+
+Lemma e_solve_cstr_supply_respect : forall S0 Θ C P S1 Ξ Q,
+  {{ S0 ↝ S1 ⊨ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ ⊩ C ⨾ P ⤳ Ξ ⨾ Q }}e.
+Proof.
+  destruct (atom_fresh empty) as [a _].
+  pose proof (@e_solve_cstr_swap a a) as Hswap.
+  setoid_rewrite swap_aenv_same in Hswap.
+  setoid_rewrite swap_pskl_same in Hswap.
+  setoid_rewrite swap_cstrs_same in Hswap.
+  setoid_rewrite swap_atoms_same in Hswap.
+  exact Hswap.
 Qed.

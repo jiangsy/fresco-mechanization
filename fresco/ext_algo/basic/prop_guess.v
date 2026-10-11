@@ -349,58 +349,6 @@ Proof.
 Qed.
 
 (* ===================================================================== *)
-(*  §7  THE SUPPLY IS READ UP TO [=]                                      *)
-(*                                                                        *)
-(*  A supply is a SET, so a caller that has assembled one by a different  *)
-(*  route holds an [=]-variant, not the same term — and the judgement     *)
-(*  takes it as an INDEX, which no [rewrite] can move under.  Every       *)
-(*  consumer above therefore needs this transport; §8c.10's completeness  *)
-(*  level is the first, and prop_look_pair.v §1's look-side twin          *)
-(*  ([e_looksub_lookeq_supply_respect]) is the template, including the    *)
-(*  ∃-form: the OUTPUT supply moves too, and only up to [=].              *)
-(* ===================================================================== *)
-
-Lemma e_guess_mono_supply_respect : forall S0 P S1 Ξ A,
-  e_guess_mono S0 P S1 Ξ A ->
-  forall S0', S0' [=] S0 ->
-  exists S1', S1' [=] S1 /\ e_guess_mono S0' P S1' Ξ A.
-Proof.
-  induction 1; intros S0' Heq.
-  - (* ghost — the one row that INVENTS *)
-    exists (add α S0'). split; [ clear - Heq; fsetdec | ].
-    apply e_guess_mono__ghost. clear - H Heq. fsetdec.
-  - (* univ_ghost *)
-    destruct (IHe_guess_mono _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_guess_mono__univ_ghost; exact Hd ].
-  - (* var *)
-    exists S0'. split; [ exact Heq | apply e_guess_mono__var ].
-  - (* unit *)
-    exists S0'. split; [ exact Heq | apply e_guess_mono__unit ].
-  - (* arrow — threaded, so the two [=]-witnesses chain *)
-    destruct (IHe_guess_mono1 _ Heq) as [S1' [HS1 Hd1]].
-    destruct (IHe_guess_mono2 _ HS1) as [S2' [HS2 Hd2]].
-    exists S2'. split; [ exact HS2 | eapply e_guess_mono__arrow; eassumption ].
-  - (* forall — the witness is drawn FROM the supply *)
-    destruct (IHe_guess_mono (add β S0')) as [S1' [HS1 Hd]];
-      [ clear - Heq; fsetdec | ].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_guess_mono__forall with (β := β);
-      [ clear - H Heq; fsetdec | exact Hd ].
-Qed.
-
-(** The sort wrapper reads its supply up to [=] as well. *)
-Lemma e_guess_supply_respect : forall S0 NM Q S1 Ξ Q',
-  e_guess S0 NM Q S1 Ξ Q' ->
-  forall S0', S0' [=] S0 ->
-  exists S1', S1' [=] S1 /\ e_guess S0' NM Q S1' Ξ Q'.
-Proof.
-  intros * H. destruct H as [ S Q0 | S0' S1' Q0 Ξ0 A Hg ]; intros S0'' Heq.
-  - exists S0''. split; [ exact Heq | apply e_guess__sk ].
-  - destruct (e_guess_mono_supply_respect Hg Heq) as [S1'' [HS1 Hg']].
-    exists S1''. split; [ exact HS1 | apply e_guess__ty; exact Hg' ].
-Qed.
-
-(* ===================================================================== *)
 (*  §8  EQUIVARIANCE                                                      *)
 (*                                                                        *)
 (*  §8c.10's completeness level needs it because the RUNNER opens its     *)
@@ -460,6 +408,34 @@ Proof.
   - destruct (e_guess_mono_swap Hg Heq) as [S1'' [HS1 Hg']].
     exists S1''. split; [ exact HS1 | ].
     rewrite swap_pskl_ptyp_to_pskl. apply e_guess__ty. exact Hg'.
+Qed.
+
+(** Supply equivalence is equivariance under the identity swap. *)
+Lemma e_guess_mono_supply_respect : forall S0 P S1 Ξ A,
+  e_guess_mono S0 P S1 Ξ A ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ e_guess_mono S0' P S1' Ξ A.
+Proof.
+  destruct (atom_fresh empty) as [a _].
+  pose proof (@e_guess_mono_swap a a) as Hswap.
+  setoid_rewrite swap_aenv_same in Hswap.
+  setoid_rewrite swap_pskl_same in Hswap.
+  setoid_rewrite swap_ptyp_same in Hswap.
+  setoid_rewrite swap_atoms_same in Hswap.
+  exact Hswap.
+Qed.
+
+Lemma e_guess_supply_respect : forall S0 NM Q S1 Ξ Q',
+  e_guess S0 NM Q S1 Ξ Q' ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ e_guess S0' NM Q S1' Ξ Q'.
+Proof.
+  destruct (atom_fresh empty) as [a _].
+  pose proof (@e_guess_swap a a) as Hswap.
+  setoid_rewrite swap_aenv_same in Hswap.
+  setoid_rewrite swap_pskl_same in Hswap.
+  setoid_rewrite swap_atoms_same in Hswap.
+  exact Hswap.
 Qed.
 
 (* ===================================================================== *)

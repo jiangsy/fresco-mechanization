@@ -145,25 +145,6 @@ Proof.
     clear - Hcs Hq Hg2 Hfr3. fsetdec.
 Qed.
 
-(** SUPPLY RESPECT — the three clusters' own, composed.  What the chain
-    lemmas of prop_sub_complete.v §3 need at length zero. *)
-Lemma e_extract_supply_respect : forall S0 Θ0 NM α m P P' S1 Ξ Q,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}e ->
-  forall S0', S0' [=] S0 ->
-  exists S1', S1' [=] S1 /\
-    {{ S0' ↝ S1' ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}e.
-Proof.
-  intros S0 Θ0 NM α m P P' S1 Ξ Q H.
-  destruct H as [ S0 S1 S2 S3 Θ0 NM α m P P' Ξ Ξs Ξ' C Q Q' Hl Hc Hg ].
-  intros S0' Heq.
-  destruct ((proj1 e_looksub_lookeq_supply_respect) _ _ _ _ _ _ _ _ _ Hl _ Heq)
-    as [S1' [HS1 Hl']].
-  destruct (e_solve_cstr_supply_respect Hc HS1) as [S2' [HS2 Hc']].
-  destruct (e_guess_supply_respect Hg HS2) as [S3' [HS3 Hg']].
-  exists S3'. split; [ exact HS3 | ].
-  eapply e_extract__solve; eassumption.
-Qed.
-
 (* ===================================================================== *)
 (*  EQUIVARIANCE — algo/basic/prop_swap.v §10's [a_extract_swap], threaded       *)
 (*                                                                        *)
@@ -195,4 +176,20 @@ Proof.
   - exact Hl'.
   - rewrite <- swap_aenv_app. exact Hc'.
   - exact Hg'.
+Qed.
+
+(** Supply equivalence is equivariance under the identity swap. *)
+Lemma e_extract_supply_respect : forall S0 Θ0 NM α m P P' S1 Ξ Q,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\
+    {{ S0' ↝ S1' ⊨ Θ0 ⊢ P ⊳[ NM , α , m ] P' ⤳ Ξ ↪ Q }}e.
+Proof.
+  destruct (atom_fresh empty) as [a _].
+  pose proof (@e_extract_swap a a) as Hswap.
+  setoid_rewrite swap_aenv_same in Hswap.
+  setoid_rewrite swap_pskl_same in Hswap.
+  setoid_rewrite swap_atom_same in Hswap.
+  setoid_rewrite swap_atoms_same in Hswap.
+  exact Hswap.
 Qed.

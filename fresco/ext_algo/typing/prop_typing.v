@@ -458,93 +458,6 @@ Qed.
 (*  derivation is transposed onto them first.                            *)
 (* ##################################################################### *)
 
-Lemma e_typing_supply_respect : forall S0 m Θ0 P0 e B S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
-  forall S0', S0' [=] S0 ->
-  exists S1', S1' [=] S1 /\
-    {{ S0' ↝ S1' ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e.
-Proof.
-  intros S0 m Θ0 P0 e B S1 Θ1 H; induction H; intros S0' Heq.
-
-  - (* AT-Unit *)
-    destruct (e_sub_supply_respect H Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_typing__unit; exact Hd ].
-  - (* AT-Var *)
-    destruct (e_sub_supply_respect H0 Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | eapply e_typing__var; eassumption ].
-  - (* AT-Anno *)
-    destruct (IHe_typing _ Heq) as [S1' [HS1 Hd1]].
-    destruct (e_sub_supply_respect H0 HS1) as [S2' [HS2 Hd2]].
-    exists S2'. split; [ exact HS2 | eapply e_typing__anno; eassumption ].
-  - (* AT-Freeze *)
-    destruct (IHe_typing _ Heq) as [S1' [HS1 Hd1]].
-    destruct H0 as [Qc Hc].
-    destruct (e_consis_supply_respect Hc HS1) as [S2' [HS2 Hc']].
-    exists S2'. split; [ exact HS2 | ].
-    eapply e_typing__freeze; [ exact Hd1 | exists Qc; exact Hc' ].
-  - (* AT-Abs *)
-    destruct (e_split_supply_respect H0 Heq) as [S1' [HS1 Hsp]].
-    destruct (e_guess_mono_supply_respect H1 HS1) as [S2' [HS2 Hg]].
-    destruct (IHe_typing (add x S2') ltac:(rewrite HS2; reflexivity))
-      as [S3' [HS3 Hd]].
-    exists S3'. split; [ exact HS3 | ].
-    apply e_typing__abs with (x := x) (S1 := S1') (S2 := S2') (Θ1 := Θ1)
-      (Θ2 := Θ2) (P := P) (Q := Q) (αs := αs) (A := A);
-      [ assumption | exact Hsp | exact Hg | assumption
-      | rewrite HS2; assumption | exact Hd ].
-  - (* AT-AbsAnno *)
-    destruct (e_split_supply_respect H0 Heq) as [S1' [HS1 Hsp]].
-    destruct H1 as [Qc Hc].
-    destruct (e_consis_supply_respect Hc HS1) as [S2' [HS2 Hc']].
-    destruct (IHe_typing (add x S2') ltac:(rewrite HS2; reflexivity))
-      as [S3' [HS3 Hd]].
-    exists S3'. split; [ exact HS3 | ].
-    apply e_typing__abs_anno with (x := x) (S1 := S1') (S2 := S2')
-      (Θ1 := Θ1) (Θ2 := Θ2) (P := P) (Q := Q) (A := A);
-      [ assumption | exact Hsp | exists Qc; exact Hc' | assumption
-      | rewrite HS2; assumption | exact Hd ].
-  - (* AT-AbsCheck STEP *)
-    destruct (IHe_typing (add α S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_typing__abs_check_step with (α := α) (Ξ := Ξ) (A0 := A0);
-      [ assumption | assumption | assumption | assumption
-      | rewrite Heq; assumption | exact Hd ].
-  - (* AT-AbsCheck BASE *)
-    destruct (e_split_supply_respect H Heq) as [S1' [HS1 Hsp]].
-    destruct (IHe_typing (add x S1') ltac:(rewrite HS1; reflexivity))
-      as [S2' [HS2 Hd]].
-    exists S2'. split; [ exact HS2 | ].
-    apply e_typing__abs_check_base with (x := x) (S1 := S1') (Θ1 := Θ1)
-      (A := A) (B := B) (Ξ := Ξ);
-      [ exact Hsp | assumption | assumption | assumption
-      | rewrite HS1; assumption | exact Hd ].
-  - (* AT-AbsAnnoCheck STEP *)
-    destruct (IHe_typing (add α S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_typing__abs_anno_check_step with (α := α) (Ξ := Ξ) (A0 := A0);
-      [ assumption | assumption | assumption | assumption
-      | rewrite Heq; assumption | exact Hd ].
-  - (* AT-AbsAnnoCheck BASE *)
-    destruct (e_split_supply_respect H Heq) as [S1' [HS1 Hsp]].
-    destruct H0 as [Qc Hc].
-    destruct (e_consis_supply_respect Hc HS1) as [S2' [HS2 Hc']].
-    destruct (IHe_typing (add x S2') ltac:(rewrite HS2; reflexivity))
-      as [S3' [HS3 Hd]].
-    exists S3'. split; [ exact HS3 | ].
-    apply e_typing__abs_anno_check_base with (x := x) (S1 := S1') (S2 := S2')
-      (Θ1 := Θ1) (Θ2 := Θ2) (A0 := A0) (A' := A') (B := B) (Ξ := Ξ);
-      [ exact Hsp | exists Qc; exact Hc' | assumption | assumption
-      | assumption | rewrite HS2; assumption | exact Hd ].
-  - (* AT-App *)
-    destruct (e_pat_supply_respect H Heq) as [S1' [HS1 Hp]].
-    destruct (IHe_typing1 _ HS1) as [S2' [HS2 Hd1]].
-    destruct (IHe_typing2 _ HS2) as [S3' [HS3 Hd2]].
-    exists S3'. split; [ exact HS3 | ].
-    eapply e_typing__app; eassumption.
-Qed.
-
 Lemma e_typing_swap : forall a b S0 m Θ0 P0 e B S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
   forall S0', S0' [=] swap_atoms a b S0 ->
@@ -675,4 +588,21 @@ Proof.
     exists S3'. split; [ exact HS3 | ].
     eapply e_typing__app; [ exact Hp | | exact Hd2 ].
     simpl in Hd1. exact Hd1.
+Qed.
+
+(** Supply equivalence is equivariance under the identity swap. *)
+Lemma e_typing_supply_respect : forall S0 m Θ0 P0 e B S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\
+    {{ S0' ↝ S1' ⊨ Θ0 ⊢[ m ; P0 ] e ⦂ B ⊣ Θ1 }}e.
+Proof.
+  destruct (atom_fresh empty) as [a _].
+  pose proof (@e_typing_swap a a) as Hswap.
+  setoid_rewrite swap_aenv_same in Hswap.
+  setoid_rewrite swap_pskl_same in Hswap.
+  setoid_rewrite swap_ptyp_same in Hswap.
+  setoid_rewrite swap_exp_same in Hswap.
+  setoid_rewrite swap_atoms_same in Hswap.
+  exact Hswap.
 Qed.

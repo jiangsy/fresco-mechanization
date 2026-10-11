@@ -570,106 +570,6 @@ Qed.
 (*  and a transposition is the move (USER DIRECTIVE, swap kit).           *)
 (* ===================================================================== *)
 
-(** SUPPLY RESPECT.  A supply is a SET, so a caller that assembled one by a
-    different route holds an [=]-variant rather than the term — and the
-    judgement takes it as an INDEX, which no [rewrite] can move under.  This
-    is what prop_sub_complete.v §3's CHAIN needs at length zero. *)
-Lemma e_sub_sub_flex_supply_respect :
-  (forall S0 NM M P0 Θ0 P Q S1 Θ1,
-     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e ->
-     forall S0', S0' [=] S0 ->
-     exists S1', S1' [=] S1 /\
-       {{ S0' ↝ S1' ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e) /\
-  (forall S0 NM M P0 Θ0 Ξ α Q S1 Θ1,
-     e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1 ->
-     forall S0', S0' [=] S0 ->
-     exists S1', S1' [=] S1 /\
-       e_sub_flex S0' NM M P0 Θ0 Ξ α Q S1' Θ1).
-Proof.
-  apply (e_sub_sub_flex_mutind
-    (fun S0 NM M P0 Θ0 P Q S1 Θ1 _ =>
-       forall S0', S0' [=] S0 ->
-       exists S1', S1' [=] S1 /\
-         {{ S0' ↝ S1' ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e)
-    (fun S0 NM M P0 Θ0 Ξ α Q S1 Θ1 _ =>
-       forall S0', S0' [=] S0 ->
-       exists S1', S1' [=] S1 /\
-         e_sub_flex S0' NM M P0 Θ0 Ξ α Q S1' Θ1)).
-
-  (* --------------------------- e_sub --------------------------- *)
-  - intros S NM P Θ0 S0' Heq.
-    exists S0'. split; [ exact Heq | apply e_sub__infer ].
-  - intros S0 S1 Θ0 Θ1 A B HgfA HgfB HgdA HgdB [Q Hc] S0' Heq.
-    destruct (e_consis_supply_respect Hc Heq) as [S1' [HS1 Hc']].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_sub__check; try assumption. exists Q. exact Hc'.
-  - intros α S0 S1 Θ0 Θ1 Ξ A B Hgf Hsuf HuΞΘ Hnα Hs IH S0' Heq.
-    destruct (IH (add α S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_sub__forall_r with (α := α) (Ξ := Ξ);
-      solve [ assumption | rewrite Heq; assumption ].
-  - intros S Θ0 P Hgd S0' Heq.
-    exists S0'. split; [ exact Heq | apply e_sub__univ_ghost_r; assumption ].
-  - intros S0 S1 NM M P0 Θ0 Θ1 α Q Hf IH S0' Heq.
-    destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_sub__flex_mono; exact Hd ].
-  - intros S0 S1 S2 NM M Θ0 Θ1 Θ2 P0a P0b P1 P2 Q1 Q2 Hc Hs IH S0' Heq.
-    destruct (e_consis_supply_respect Hc Heq) as [S1' [HS1 Hc']].
-    destruct (IH _ HS1) as [S2' [HS2 Hd]].
-    exists S2'. split; [ exact HS2 | eapply e_sub__arrow; eassumption ].
-  - intros α S0 S1 S2 NM M P0 Θ0 Θ1 P Q Ξ P1 Hne Hgd Hnα Hex Hwf Hs IH S0' Heq.
-    assert (Heqα : add α S0' [=] add α S0) by (rewrite Heq; reflexivity).
-    destruct (e_extract_supply_respect Hex Heqα) as [S1' [HS1 Hex']].
-    destruct (IH _ HS1) as [S2' [HS2 Hd]].
-    exists S2'. split; [ exact HS2 | ].
-    eapply e_sub__forall_l with (α := α) (Ξ := Ξ) (P1 := P1).
-    + exact Hne.
-    + exact Hgd.
-    + rewrite Heq. exact Hnα.
-    + exact Hex'.
-    + exact Hwf.
-    + exact Hd.
-  - intros S M Θ0 P0 Hne S0' Heq.
-    exists S0'. split; [ exact Heq | apply e_sub__ghost; exact Hne ].
-  - intros S0 S1 M Θ0 Θ1 P0 P Q Hne Hs IH S0' Heq.
-    destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_sub__univ_ghost_l; assumption ].
-
-  (* ------------------------- e_sub_flex ------------------------ *)
-  - intros S0 S1 NM M P0 Θ0 Θ1 Ξ α0 α β Q Hnα Hnβ Hs IH S0' Heq.
-    destruct (IH (add β (add α S0')) ltac:(rewrite Heq; reflexivity))
-      as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_sub_flex__solve with (α := α) (β := β);
-      [ rewrite Heq; exact Hnα | rewrite Heq; exact Hnβ | exact Hd ].
-  - intros S0 S1 NM M P0 Θ0 Θ1 Ξ α β τ Q Hs IH S0' Heq.
-    destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_sub_flex__assign; exact Hd ].
-  - intros S0 S1 NM M P0 Θ0 Θ1 Ξ α β Q Hne Hin Hf IH S0' Heq.
-    destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_sub_flex__depend; assumption ].
-  - intros S0 S1 NM M P0 Θ0 Θ1 Ξ α β Q Hne Hni Hf IH S0' Heq.
-    destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_sub_flex__skip; assumption ].
-  - intros S0 S1 NM M P0 Θ0 Θ1 Ξ α β Q Hne Hni Hf IH S0' Heq.
-    destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_sub_flex__skip_rigid; assumption ].
-  - intros S0 S1 NM M P0 Θ0 Θ1 Ξ α x Apay Q Hf IH S0' Heq.
-    destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_sub_flex__skip_tm_var; exact Hd ].
-  - intros S0 S1 NM M P0 Θ0 Θ1 Ξ α x Qpay Q Hf IH S0' Heq.
-    destruct (IH _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_sub_flex__skip_tm_skl; exact Hd ].
-Qed.
-
-Corollary e_sub_supply_respect : forall S0 NM M P0 Θ0 P Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e ->
-  forall S0', S0' [=] S0 ->
-  exists S1', S1' [=] S1 /\
-    {{ S0' ↝ S1' ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e.
-Proof. apply e_sub_sub_flex_supply_respect. Qed.
-
 (** The output-suppressed consistency abbreviation along a swap — [Check]'s
     premise, and the shape [Arrow]'s first premise reduces to. *)
 Lemma e_consis_empty_swap : forall a b S0 Θ0 P0 P Q S1 Θ1,
@@ -843,6 +743,35 @@ Proof.
     destruct (IH _ Heq) as [S1' [HS1 Hd]].
     exists S1'. split; [ exact HS1 | apply e_sub_flex__skip_tm_skl; exact Hd ].
 Qed.
+
+(** Supply equivalence is equivariance under the identity swap. *)
+Lemma e_sub_sub_flex_supply_respect :
+  (forall S0 NM M P0 Θ0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       {{ S0' ↝ S1' ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e) /\
+  (forall S0 NM M P0 Θ0 Ξ α Q S1 Θ1,
+     e_sub_flex S0 NM M P0 Θ0 Ξ α Q S1 Θ1 ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       e_sub_flex S0' NM M P0 Θ0 Ξ α Q S1' Θ1).
+Proof.
+  destruct (atom_fresh empty) as [a _].
+  pose proof (@e_sub_sub_flex_swap a a) as Hswap.
+  setoid_rewrite swap_aenv_same in Hswap.
+  setoid_rewrite swap_pskl_same in Hswap.
+  setoid_rewrite swap_atom_same in Hswap.
+  setoid_rewrite swap_atoms_same in Hswap.
+  exact Hswap.
+Qed.
+
+Corollary e_sub_supply_respect : forall S0 NM M P0 Θ0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\
+    {{ S0' ↝ S1' ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e.
+Proof. apply e_sub_sub_flex_supply_respect. Qed.
 
 Corollary e_sub_swap : forall a b S0 NM M P0 Θ0 P Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ NM | M | P0 ] P ⩽ Q ⊣ Θ1 }}e ->

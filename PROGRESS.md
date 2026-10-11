@@ -181,6 +181,29 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Derive supply respect from identity equivariance
+
+Replace eleven supply-respect proofs with identity-swap instances of the
+existing equivariance theorems, covering guessing, lookup, solving, extraction,
+assignment/unification/consistency, subtyping, splitting, pattern inference and
+typing. Keep all public statements, including the bundled and projected forms.
+The consistency instance chooses the original two Δ sets explicitly.
+
+Add the identity equations for atoms, atom sets, syntax, contexts and constraints
+in the basic swap module. Remove the unused `transport_supply_witnesses` tactic
+and obsolete comments describing the deleted inductions. Supply transport now
+uses the same equivariance foundation as global fresh renaming.
+
+Net reduction: **351 physical Coq lines / 296 nonblank, noncomment lines**.
+All 258 existing theorem statements across the ten edited Coq files are unchanged.
+Inline tactic terms decrease from 83 to 61; none were added.
+
+Validation: `make coq` passed after using `setoid_rewrite` for equations under
+the swap theorems' quantifiers. All 34 headline assumption reports are closed
+under the global context, with no axioms or errors. Statement comparison and
+`git diff --check` passed.
+
+
 ## 2026-10-11 — Share ordinary consistency binder preparation
 
 Share opener freshness, output closing equations and output-context

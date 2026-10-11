@@ -2488,3 +2488,38 @@ Proof.
 Qed.
 
 Unset Implicit Arguments.
+
+(** Swapping an atom with itself is the identity. Supply-respect lemmas
+    specialize equivariance with these equations, avoiding another induction. *)
+Lemma swap_atom_same : forall a x, swap_atom a a x = x.
+Proof. intros a x; unfold swap_atom; destruct (x == a); subst; reflexivity. Qed.
+
+Lemma swap_atoms_same : forall a S, swap_atoms a a S [=] S.
+Proof. intros a S x; rewrite swap_atoms_spec, swap_atom_same; reflexivity. Qed.
+
+Lemma swap_ptyp_same : forall a A, swap_ptyp a a A = A.
+Proof. intros a A; induction A; simpl; f_equal; auto using swap_atom_same. Qed.
+
+Lemma swap_pskl_same : forall a P, swap_pskl a a P = P.
+Proof. intros a P; induction P; simpl; f_equal; auto using swap_atom_same. Qed.
+
+Lemma swap_abind_same : forall a bd, swap_abind a a bd = bd.
+Proof. intros a bd; destruct bd; simpl; f_equal; auto using swap_ptyp_same, swap_pskl_same. Qed.
+
+Lemma swap_aenv_same : forall a Θ, swap_aenv a a Θ = Θ.
+Proof.
+  intros a Θ; induction Θ as [|[x bd] Θ IH]; [reflexivity |].
+  rewrite swap_aenv_cons, swap_atom_same, swap_abind_same, IH. reflexivity.
+Qed.
+
+Lemma swap_cstrs_same : forall a C, swap_cstrs a a C = C.
+Proof.
+  intros a C; induction C as [|c C IH]; [reflexivity |].
+  rewrite swap_cstrs_cons, IH. destruct c; simpl; rewrite swap_pskl_same; reflexivity.
+Qed.
+
+Lemma swap_exp_same : forall a e, swap_exp a a e = e.
+Proof.
+  intros a e; induction e; simpl; f_equal;
+    auto using swap_atom_same, swap_ptyp_same.
+Qed.

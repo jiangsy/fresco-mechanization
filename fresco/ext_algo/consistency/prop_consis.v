@@ -369,7 +369,6 @@ Proof.
        end.
 Qed.
 
-
 (** [dom] and [ftvar_in_aenv] normalisation, in the one direction every case
     below wants: everything spelled out over [++] and a cons.  Exported:
     prop_sub.v, prop_pat.v and prop_typing.v use it too. *)
@@ -440,7 +439,6 @@ Proof.
          ∪ Δ1 ∪ Δ2 [<=] S0 ->
        {{ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}a
        /\ uniq Θ1 /\ ftvar_in_aenv Θ1 [<=] S1)).
-
 
   (* ---------------- assign ---------------- *)
   - (* Assign-UnivGhost-Id *)
@@ -1099,96 +1097,7 @@ Proof.
   - (* Flex-Flex-Assign — both are rule premises *) split; assumption.
 Qed.
 
-(* ===================================================================== *)
-(*  §9  THE SUPPLY IS READ UP TO [=], for the whole trio                   *)
-(*                                                                        *)
-(*  prop_guess.v §7's companion, and needed for the same reason: the      *)
-(*  supply is a SET carried as a judgement INDEX, so a caller holding an  *)
-(*  [=]-variant cannot [rewrite] it into place.  ∃-form, as               *)
-(*  prop_look_pair.v §1's look-side twin: the OUTPUT supply moves too,    *)
-(*  and only up to [=].                                                   *)
-(*                                                                        *)
-(*  ⭐ Only four rows do any work — [Assign-SolveM] (through [guess^TY])  *)
-(*  and the three ∀ rows (whose opener is drawn from the supply); the     *)
-(*  rest either keep the supply or thread it, and [U-Arrow] is the one    *)
-(*  row where the two ∃-witnesses have to CHAIN.                          *)
-(* ===================================================================== *)
-
-Lemma e_assign_unify_consis_supply_respect :
-  (forall S0 Θ0 Ξ α P S1 Θ1,
-     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
-     forall S0', S0' [=] S0 ->
-     exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e) /\
-  (forall S0 Θ0 α β S1 Θ1,
-     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
-     forall S0', S0' [=] S0 ->
-     exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e) /\
-  (forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
-     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
-     forall S0', S0' [=] S0 ->
-     exists S1', S1' [=] S1 /\
-       {{ S0' ↝ S1' ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e).
-Proof.
-  apply (e_assign_unify_consis_mutind
-           (fun S0 Θ0 Ξ α P S1 Θ1 _ =>
-              forall S0', S0' [=] S0 ->
-              exists S1', S1' [=] S1 /\
-                {{ S0' ↝ S1' ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e)
-           (fun S0 Θ0 α β S1 Θ1 _ =>
-              forall S0', S0' [=] S0 ->
-              exists S1', S1' [=] S1 /\
-                {{ S0' ↝ S1' ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e)
-           (fun Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 _ =>
-              forall S0', S0' [=] S0 ->
-              exists S1', S1' [=] S1 /\
-                {{ S0' ↝ S1' ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e)).
-  all: try solve [
-    intros;
-    transport_supply_witnesses;
-    eexists; split; [ eassumption | econstructor; eauto 2 ] ].
-  - (* Assign-SolveM — the supply moves through [guess^TY] *)
-    intros S0 S1 Θ0 Ξ α P βs τ Hocc Hg Hm S0' Heq.
-    destruct (e_guess_mono_supply_respect Hg Heq) as [S1' [HS1 Hg']].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_assign__solve_m with (βs := βs); assumption.
-  - (* ForallInh — the opener is drawn from the supply *)
-    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hα Hd IH S0' Heq.
-    destruct (IH (add α S0')) as [S1' [HS1 Hd']]; [ clear - Heq; fsetdec | ].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_consis__forall_inh with (α := α);
-      [ clear - Hα Heq; fsetdec | exact Hd' ].
-  - (* ForallSyn *)
-    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hα Hd IH S0' Heq.
-    destruct (IH (add α S0')) as [S1' [HS1 Hd']]; [ clear - Heq; fsetdec | ].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_consis__forall_syn with (α := α);
-      [ clear - Hα Heq; fsetdec | exact Hd' ].
-  - (* UnivGhost1 *)
-    intros Δ1 Δ2 S0 S1 Θ0 Θ1 P0 P Q α Hα Hd IH S0' Heq.
-    destruct (IH (add α S0')) as [S1' [HS1 Hd']]; [ clear - Heq; fsetdec | ].
-    exists S1'. split; [ exact HS1 | ].
-    apply e_consis__univ_ghost1 with (α := α);
-      [ clear - Hα Heq; fsetdec | exact Hd' ].
-Qed.
-
-Corollary e_consis_supply_respect : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
-  forall S0', S0' [=] S0 ->
-  exists S1', S1' [=] S1 /\
-    {{ S0' ↝ S1' ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e.
-Proof. apply e_assign_unify_consis_supply_respect. Qed.
-
-(** ⭐ AND THE SAME FOR THE TWO Δ-SLOTS, which are read as judgement
-    INDEXES exactly as the supply is.  ⚙ NO ∃-form here and no companion
-    on the other two judgements: [Δ1]/[Δ2] are pure INPUTS (the ∀ rows
-    grow them by an [add], nothing returns them), and [assign] /
-    [unifyvar] do not carry them at all — so the plain non-mutual
-    [e_consis] scheme suffices, and the four rows that read a Δ
-    ([Ghost], [GhostR] and the three ∀ openers) each close by [fsetdec].
-
-    §8c.10 consumes it twice: [U-Arrow] transports its second premise
-    along a CHAIN, which moves the Δ-slots only up to [=], and the chain
-    lemma's own base case is this. *)
+(** Consistency also respects the two Δ sets. *)
 Lemma e_consis_delta_respect : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
   forall Δ1' Δ2', Δ1' [=] Δ1 -> Δ2' [=] Δ2 ->
@@ -1384,6 +1293,41 @@ Proof.
     + eapply swap_notin_eq; eassumption.
     + rewrite !swap_pskl_open_var in Hd'. exact Hd'.
 Qed.
+
+(** Supply equivalence is equivariance under the identity swap. *)
+Lemma e_assign_unify_consis_supply_respect :
+  (forall S0 Θ0 Ξ α P S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲[ Ξ ] α ≔ P ⊣ Θ1 }}e) /\
+  (forall S0 Θ0 α β S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲ α ≈ᵘ β ⊣ Θ1 }}e) /\
+  (forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+     {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+     forall S0', S0' [=] S0 ->
+     exists S1', S1' [=] S1 /\
+       {{ S0' ↝ S1' ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e).
+Proof.
+  destruct (atom_fresh empty) as [a _].
+  pose proof (@e_assign_unify_consis_swap a a) as Hswap.
+  setoid_rewrite swap_aenv_same in Hswap.
+  setoid_rewrite swap_pskl_same in Hswap.
+  setoid_rewrite swap_atom_same in Hswap.
+  setoid_rewrite swap_atoms_same in Hswap.
+  destruct Hswap as [Ha [Hu Hc]].
+  split; [exact Ha |]. split; [exact Hu |].
+  intros Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1 Hd S0' Heq.
+  eapply Hc; [exact Hd | reflexivity | reflexivity | exact Heq].
+Qed.
+
+Corollary e_consis_supply_respect : forall Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\
+    {{ S0' ↝ S1' ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e.
+Proof. apply e_assign_unify_consis_supply_respect. Qed.
 
 Corollary e_consis_swap : forall a b Δ1 Δ2 S0 Θ0 P0 P Q S1 Θ1,
   {{ S0 ↝ S1 ⊨ Θ0 ⊢[ Δ1 | Δ2 | P0 ] P ∼ Q ⊣ Θ1 }}e ->

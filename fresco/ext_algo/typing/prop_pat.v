@@ -386,81 +386,6 @@ Qed.
     different route holds an [=]-variant rather than the term — and the
     judgement takes it as an INDEX, which no [rewrite] can move under.  This
     is what the completeness level's chain needs at length zero. *)
-Lemma e_split_supply_respect : forall S0 Θ0 P0 P Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}e ->
-  forall S0', S0' [=] S0 ->
-  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}e.
-Proof.
-  intros S0 Θ0 P0 P Q S1 Θ1 H; destruct H as
-    [ S Θ0 P Q | S Θ0 | S0 S1 Θ0 Θ1 α β α1 Q Hβ Hα1 Hc ]; intros S0' Heq.
-  - exists S0'. split; [ exact Heq | apply e_split__arrow ].
-  - exists S0'. split; [ exact Heq | apply e_split__ghost ].
-  - destruct (e_consis_supply_respect Hc (S0' := add α1 (add β S0')))
-      as [S1' [HS1 Hc']];
-      [ rewrite Heq; reflexivity | ].
-    exists S1'. split; [ exact HS1 | ].
-    eapply e_split__flex; [ rewrite Heq; exact Hβ | rewrite Heq; exact Hα1
-                          | exact Hc' ].
-Qed.
-
-Lemma e_pat_supply_respect : forall S0 m Θ0 P0 e Q S1 Θ1,
-  {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e ->
-  forall S0', S0' [=] S0 ->
-  exists S1', S1' [=] S1 /\
-    {{ S0' ↝ S1' ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e.
-Proof.
-  intros S0 m Θ0 P0 e Q S1 Θ1 H; induction H; intros S0' Heq.
-
-  - (* AP-Unit *)
-    destruct (e_sub_supply_respect H Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_pat__unit; exact Hd ].
-  - (* AP-Var, type payload *)
-    destruct (e_sub_supply_respect H0 Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | eapply e_pat__var; eassumption ].
-  - (* AP-Var, skeleton payload *)
-    destruct (e_sub_supply_respect H0 Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | eapply e_pat__var_skl; eassumption ].
-  - (* AP-Anno *)
-    destruct (e_sub_supply_respect H Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_pat__anno; exact Hd ].
-  - (* AP-Freeze *)
-    destruct (IHe_pat _ Heq) as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | apply e_pat__freeze; exact Hd ].
-  - (* AP-Abs *)
-    destruct (e_split_supply_respect H0 Heq) as [S1' [HS1 Hsp]].
-    destruct (IHe_pat (add x S1') ltac:(rewrite HS1; reflexivity))
-      as [S2' [HS2 Hd]].
-    exists S2'. split; [ exact HS2 | ].
-    apply e_pat__abs with (x := x) (S1 := S1') (Θ1 := Θ1) (P := P)
-      (Q0 := Q0);
-      [ assumption | exact Hsp | assumption | rewrite HS1; assumption
-      | exact Hd ].
-  - (* AP-AbsAnno *)
-    destruct (e_split_supply_respect H0 Heq) as [S1' [HS1 Hsp]].
-    destruct H1 as [Qc Hc].
-    destruct (e_consis_supply_respect Hc HS1) as [S2' [HS2 Hc']].
-    destruct (IHe_pat (add x S2') ltac:(rewrite HS2; reflexivity))
-      as [S3' [HS3 Hd]].
-    exists S3'. split; [ exact HS3 | ].
-    apply e_pat__abs_anno with (x := x) (S1 := S1') (S2 := S2')
-      (Θ1 := Θ1) (Θ2 := Θ2) (P := P) (Q0 := Q0) (A := A);
-      [ assumption | exact Hsp | exists Qc; exact Hc' | assumption
-      | rewrite HS2; assumption | exact Hd ].
-  - (* AP-AbsCheck *)
-    destruct (IHe_pat (add x S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | ].
-    eapply e_pat__abs_check; try eassumption; rewrite Heq; assumption.
-  - (* AP-AbsAnnoCheck *)
-    destruct (IHe_pat (add x S0') ltac:(rewrite Heq; reflexivity))
-      as [S1' [HS1 Hd]].
-    exists S1'. split; [ exact HS1 | ].
-    eapply e_pat__abs_anno_check; try eassumption; rewrite Heq; assumption.
-  - (* AP-App *)
-    destruct (IHe_pat1 _ Heq) as [S1' [HS1 Hd1]].
-    destruct (IHe_pat2 _ HS1) as [S2' [HS2 Hd2]].
-    exists S2'. split; [ exact HS2 | eapply e_pat__app; eassumption ].
-Qed.
 
 (** THE TRANSPOSITION.  ⚙ Every [Δ-drop] premise the a-side has to
     re-establish under the swap is GONE here (prop_sub.v §5's note); what
@@ -570,6 +495,35 @@ Proof.
     destruct (IHe_pat1 _ Heq) as [S1' [HS1 Hd1]].
     destruct (IHe_pat2 _ HS1) as [S2' [HS2 Hd2]].
     exists S2'. split; [ exact HS2 | eapply e_pat__app; eassumption ].
+Qed.
+
+(** Supply equivalence is equivariance under the identity swap. *)
+Lemma e_split_supply_respect : forall S0 Θ0 P0 P Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\ {{ S0' ↝ S1' ⊨ Θ0 ⊲ P0 ▹ P ⇢ Q ⊣ Θ1 }}e.
+Proof.
+  destruct (atom_fresh empty) as [a _].
+  pose proof (@e_split_swap a a) as Hswap.
+  setoid_rewrite swap_aenv_same in Hswap.
+  setoid_rewrite swap_pskl_same in Hswap.
+  setoid_rewrite swap_atoms_same in Hswap.
+  exact Hswap.
+Qed.
+
+Lemma e_pat_supply_respect : forall S0 m Θ0 P0 e Q S1 Θ1,
+  {{ S0 ↝ S1 ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e ->
+  forall S0', S0' [=] S0 ->
+  exists S1', S1' [=] S1 /\
+    {{ S0' ↝ S1' ⊨ Θ0 ⊢ˢ[ m ; P0 ] e ⦂ Q ⊣ Θ1 }}e.
+Proof.
+  destruct (atom_fresh empty) as [a _].
+  pose proof (@e_pat_swap a a) as Hswap.
+  setoid_rewrite swap_aenv_same in Hswap.
+  setoid_rewrite swap_pskl_same in Hswap.
+  setoid_rewrite swap_exp_same in Hswap.
+  setoid_rewrite swap_atoms_same in Hswap.
+  exact Hswap.
 Qed.
 
 (** A supply atom in the split output context was already in its input. *)
