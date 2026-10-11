@@ -182,6 +182,29 @@ them (PAPER-GAPS has the details):
 # Part 2: Progress log (most recent first)
 
 
+## 2026-10-11 — Explicit case selection and routine premise automation
+
+Following the user's proof-style corrections, replace the speculative
+`all: try solve` binder block in `ad_pat_consis_subst_flex_def` with explicit
+constructor applications at cases 4, 5, 6, 7, and 12, followed by a commented
+selector grouping their common binder argument. Use `auto` for the routine
+induction premises, leaving the visibility and definition-lookup obligations
+explicit.
+
+In `ad_pat_consis_subst_flex`, pass `Htransport` directly and use
+`auto using mono_ptyp`; only the empty-set obligation remains. Named facts
+should expose substantive reasoning, while routine premises use ordinary
+automation. Existing statements are unchanged; no inline tactic terms added.
+
+Workflow update requested by the user: batch related reductions before
+checking; use focused compilation during development and one full build plus
+assumption audit before committing the batch.
+
+Validation: `make coq` passed. All 34 headline assumption reports are
+closed under the global context, with no axiom reports or errors. Existing
+theorem statements are unchanged; `git diff --check` passes.
+
+
 ## 2026-10-11 — Derive undefined-flex substitution from the defined case
 
 Replace the separate induction for `ad_pat_consis_subst_flex` in

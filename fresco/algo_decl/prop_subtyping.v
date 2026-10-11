@@ -221,23 +221,22 @@ Lemma ad_pat_consis_subst_flex_def : forall Ψ Θ R Q,
 Proof.
   intros Ψ Θ R Q H; induction H;
     intros Θ1 β τ0 Θ2 Heqc Hfr Hm Hfrτ Hvis Hdefs; subst; simpl.
-  (* All binder rules commute substitution with opening and extend the
-     same context and visibility premises. *)
-  all: try solve [
-    match goal with
+  (* Binder cases: inherited tagged/untagged, synthesized tagged/untagged,
+     and an inherited quantifier over a universal ghost. *)
+  4: eapply ad_pat_consis__forall_inh_tagged
+       with (L := L `union` {{β}} `union` dom (Θ1 ++ Θ2)); [ | eassumption ].
+  5: apply ad_pat_consis__forall_inh_untagged
+       with (L := L `union` {{β}} `union` dom (Θ1 ++ Θ2)).
+  6: apply ad_pat_consis__forall_syn_tagged
+       with (L := L `union` {{β}} `union` dom (Θ1 ++ Θ2)).
+  7: apply ad_pat_consis__forall_syn
+       with (L := L `union` {{β}} `union` dom (Θ1 ++ Θ2)).
+  12: apply ad_pat_consis__univ_ghost_inh
+        with (L := L `union` {{β}} `union` dom (Θ1 ++ Θ2)).
+  (* The five binder premises share the opening/substitution argument. *)
+  4, 5, 6, 7, 12:
+    lazymatch goal with
     | IH : forall α, α `notin` ?L -> forall Θ1 : list _, _ |- _ =>
-      first
-        [ eapply ad_pat_consis__forall_inh_tagged
-            with (L := L `union` {{β}} `union` dom (Θ1 ++ Θ2));
-            [ | eassumption ]
-        | apply ad_pat_consis__forall_inh_untagged
-            with (L := L `union` {{β}} `union` dom (Θ1 ++ Θ2))
-        | apply ad_pat_consis__forall_syn_tagged
-            with (L := L `union` {{β}} `union` dom (Θ1 ++ Θ2))
-        | apply ad_pat_consis__forall_syn
-            with (L := L `union` {{β}} `union` dom (Θ1 ++ Θ2))
-        | apply ad_pat_consis__univ_ghost_inh
-            with (L := L `union` {{β}} `union` dom (Θ1 ++ Θ2)) ];
       intros α Hα;
       assert (Hβα : β <> α) by (clear - Hα; fsetdec);
       assert (HαL : α `notin` L) by (clear - Hα; solve_notin_auto);
@@ -246,16 +245,12 @@ Proof.
       rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var
         by (solve [exact Hβα | apply mono_ptyp_to_bskl_syn_lc; exact Hm]);
       specialize (IH α HαL ((α ~ abind_tvar) ++ Θ1) β τ0 Θ2);
-      simpl_env in IH; simpl_env; apply IH;
-        [ reflexivity
-        | clear - Hfr Hα; simpl_env in *; fsetdec
-        | exact Hm
-        | exact Hfrτ
-        | intros β0 Hβ0; apply a_binds_tvar_weaken_cons; auto
+      simpl_env in IH; simpl_env; apply IH; auto;
+        [ intros β0 Hβ0; apply a_binds_tvar_weaken_cons; auto
         | intros α1 τ Hb;
           destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[? Heqb] | Hb'];
           [ discriminate | eauto ] ]
-    end ].
+    end.
   - apply ad_pat_consis__unit; assumption.
   - repeat destruct_if; try contradiction.
     + eapply ad_pat_consis_psi_cong;
@@ -270,10 +265,6 @@ Proof.
           | intros τ1 He; inversion He; subst; exact (Hne eq_refl) ]
       end.
   - eapply ad_pat_consis__arrow; eauto.
-
-
-
-
   - apply ad_pat_consis__ghostg; assumption.
   - apply ad_pat_consis__dot_univ_ghost; eauto.
   - rewrite pskl_to_bskl_inh_subst_mono; [ | assumption ].
@@ -354,14 +345,9 @@ Proof.
       apply in_app_or in Hb. destruct Hb as [Hb | [Heq | Hb]];
         [apply in_or_app; left; exact Hb | discriminate
         |apply in_or_app; right; right; exact Hb]. }
-  eapply ad_pat_consis_subst_flex_def with (τ0 := ptyp_unit).
-  - exact Htransport.
-  - reflexivity.
-  - exact Hfr.
-  - constructor.
-  - simpl. clear; fsetdec.
-  - intros α Hα. simpl in Hα. clear - Hα; fsetdec.
-  - exact Hdefs.
+  eapply (ad_pat_consis_subst_flex_def Htransport) with (τ0 := ptyp_unit);
+    auto using mono_ptyp.
+  simpl; intros; fsetdec.
 Qed.
 
 (** Ghost-freeness is closed under substituting a ghost-free skeleton.  Its two
