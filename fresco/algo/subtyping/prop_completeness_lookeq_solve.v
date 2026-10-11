@@ -4405,6 +4405,26 @@ Proof.
     + (* P0 = ghost : excluded by HP0nh *) exfalso; apply HP0nh; reflexivity.
     + (* P0 = ∀◇P0s : LE-UnivGhost (ghost kept on both sides) *)
       destruct (a_wf_pskl_univ_ghost_inv HwfP0) as [HgP0s HwfP0s].
+      (* every surviving refinement row ends the same way: the IH at the
+         ghost bodies, rebuilt with LE-UnivGhost *)
+      assert (Hkeep : forall Q0,
+                {{ Ψsub ⨟ Θ ⊢ˢ Rsub0 ∼ Q0 }}ad -> lc_bskl Q0 ->
+                {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0s)) ⊳ Q0 }}ad ->
+                lookeq_solve_result Θ0 Θ Θw κ Δ Ψi Ψa ψa α
+                  (pskl_univ_ghost (uskl_to_pskl R0)) (pskl_univ_ghost P0s) Pi L).
+      { intros Q0 Hc0 HlcQ0 Href1.
+        destruct (IHn NM Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψsub ψa Q0
+                    (uskl_to_pskl R0) P0s Pi R0 α Θs Δρ Ψρ Rsub0
+                    (Hmeas0 P0s ltac:(cbn; lia))
+                    HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0s HwfPi Hκ Hκw Hψaw HαΘ HαΘ0
+                    eq_refl HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2
+                    Hc0 HlcQ0 HwfSub0 Href1 Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw
+                    ltac:(eapply rsubst_ftv_apart_mono;
+                          [ exact HΔρftv | cbn; clear; solve_notin_auto
+                          | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
+          as (𝒞 & Ξc & Ξs & Pa & κc & κs & HLK & Hrest).
+        exists 𝒞, Ξc, Ξs, Pa, κc, κs.
+        refine (conj _ Hrest). apply a_lookeq__univ_ghost; exact HLK. }
       assert (HgL : guarded_bskl (pskl_to_bskl_inh (msubst_pskl κ P0s)))
         by (apply guarded_pskl_to_bskl_inh;
             eapply guarded_pskl_msubst_inc; [ exact Hκ | exact HgP0s ]).
@@ -4425,21 +4445,7 @@ Proof.
         assert (Href2 : {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0s)) ⊳ Q0 }}ad)
           by (eapply ad_refine_syn_univ_ghost_guarded_inv;
                 [ exact HwfΘ | exact Href0 | exact HgQ0 ]).
-        edestruct (IHn NM Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψsub ψa Q0
-                     (uskl_to_pskl R0) P0s Pi R0 α Θs Δρ Ψρ Rsub0
-                     (Hmeas0 P0s ltac:(cbn; lia))
-                     HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0s HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
-                     HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 ltac:(lc_tgt) HwfSub0 Href2
-                     Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rsubst_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; solve_notin_auto
-                          | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
-          as (𝒞 & Ξc & Ξs & Pa & κc & κs
-              & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
-              & HwfPa & HwfΞ & HαΞ
-                & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
-        exists 𝒞, Ξc, Ξs, Pa, κc, κs.
-        repeat split; try assumption.
-        apply a_lookeq__univ_ghost; exact HLK.
+        exact (Hkeep Q0 Hc0 HlcQ0 Href2).
       * (* refinement __univ_ghost_fill: Q = ∀ˢ.Q0.  A ∀◇ subject can only meet a
            SYNTHESISED ∀ by dropping its ghost (C-UnivGhost2), and the residual
            subject is guarded (subject wf) — impossible against a ∀. *)
@@ -4466,22 +4472,9 @@ Proof.
            match goal with
              H : {{ _ ⨟ _ ⊢ˢ Rsub0 ∼ _ }}ad |- _ =>
                rename H into Hc0 end.
-           edestruct (IHn NM Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψsub ψa _
-                        (uskl_to_pskl R0) P0s Pi R0 α Θs Δρ Ψρ Rsub0
-                        (Hmeas0 P0s ltac:(cbn; lia))
-                        HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0s HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
-                        HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2
-                        Hc0 ltac:(lc_tgt) HwfSub0 Href1
-                        Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rsubst_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; solve_notin_auto
-                          | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
-             as (𝒞 & Ξc & Ξs & Pa & κc & κs
-              & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
-              & HwfPa & HwfΞ & HαΞ
-                   & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
-           exists 𝒞, Ξc, Ξs, Pa, κc, κs.
-           repeat split; try assumption.
-           apply a_lookeq__univ_ghost; exact HLK.
+           apply (Hkeep _ Hc0).
+           ++ lc_tgt.
+           ++ exact Href1.
         -- (* C-UnivGhost2 : impossible against a ∀◇ target *)
            exfalso.
            pose proof (guarded_uskl_head
@@ -4506,21 +4499,7 @@ Proof.
         assert (Href2 : {{ Θ ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (msubst_pskl κ P0s)) ⊳ Q0 }}ad)
           by (eapply ad_refine_syn_univ_ghost_guarded_inv;
                 [ exact HwfΘ | exact Href0 | exact HgQ0 ]).
-        edestruct (IHn NM Θ0 Θ Θw κ Δ Ψ' Ψi Ψa Ψsub ψa Q0
-                     (uskl_to_pskl R0) P0s Pi R0 α Θs Δρ Ψρ Rsub0
-                     (Hmeas0 P0s ltac:(cbn; lia))
-                     HwfΘ HwfΘ0 HwfΘw Hmon Hnr HwfP0s HwfPi Hκ Hκw Hψaw HαΘ HαΘ0 eq_refl
-                     HscopeS HlcS0 Htags Hdisj Hsub Hdfresh Hpre HΨs1 HΨs2 Hc0 ltac:(lc_tgt) HwfSub0 Href2
-                     Hrhobody HΘs HΨρ Hrfr HΔρΔ HΔρw ltac:(eapply rsubst_ftv_apart_mono;
-                          [ exact HΔρftv | cbn; clear; solve_notin_auto
-                          | cbn; clear; solve_notin_auto ]) HΔρPi Hψaap L HL)
-          as (𝒞 & Ξc & Ξs & Pa & κc & κs
-              & HLK & HSolve & Hfms & Hus & Hks & Hfrs & HFs
-              & HwfPa & HwfΞ & HαΞ
-                & Hmapfst & Himg & HftvC & Hinc & Hinceq & Hκfresh & Hprec & Hapart).
-        exists 𝒞, Ξc, Ξs, Pa, κc, κs.
-        repeat split; try assumption.
-        apply a_lookeq__univ_ghost; exact HLK.
+        exact (Hkeep Q0 Hc0 HlcQ0 Href2).
   - (* R' = dot_ghost : α ∈ ∅ absurd *) clear - HαR; fsetdec.
   - (* R' = dot_univ_ghost R0 : C-UnivGhostG → LE-UnivGhost.
        [⌊∀◈R0⌋ = ∀◇⌊R0⌋], the consistency target is [∀◇Q0] (up to the
