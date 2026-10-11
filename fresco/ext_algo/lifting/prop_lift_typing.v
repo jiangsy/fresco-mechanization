@@ -452,32 +452,15 @@ Proof.
                          ∪ ftvar_in_exp t) [=] empty).
   { assert (Hdisj : disjoint Ξ Θa) by (clear - Huq; solve_uniq).
     unfold disjoint in Hdisj. clear - Hdisj Hfve Hfte. fsetdec. }
-  remember (restrict_l (dom Ξ) ρ) as ρ0 eqn:Eρ0.
-  assert (Hρ0incl : forall a b, In (a, b) ρ0 -> In (a, b) ρ)
-    by (subst ρ0; intros a b Hin; eapply restrict_l_incl; exact Hin).
-  assert (Hcl00 : cols_l ρ0 [<=] cols_l ρ)
-    by (subst ρ0; apply cols_l_restrict_l).
-  assert (Hcr00 : cols_r ρ0 [<=] cols_r ρ)
-    by (subst ρ0; apply cols_r_restrict_l).
-  assert (HΞcols : forall a, a `in` dom Ξ -> a `notin` cols_l ρ0)
-    by (subst ρ0; intros a Ha; apply restrict_l_notin; exact Ha).
-  assert (HrΘ0 : rel_aenv ρ0 V Θa Θ0')
-    by (subst ρ0; apply rel_aenv_restrict_l; [ exact HrΘ | exact HΞΘa ]).
-  assert (HrA00 : rel_pskl ρ0 V (ptyp_to_pskl A0) (ptyp_to_pskl A0')).
-  { subst ρ0. apply rel_pskl_restrict_l; [ exact HrA0 | ].
+  destruct (lift_restrict_junk HΞΘa HrΘ Hagr Hinj Hfun Hcov)
+    as (Hρ0incl & Hρ0in & Hcl00 & Hcr00 & HΞcols & HrΘ0 & Hagr0 & Hinj0
+        & Hfun0 & Hcov0).
+  assert (HrA00 : rel_pskl (restrict_l (dom Ξ) ρ) V (ptyp_to_pskl A0) (ptyp_to_pskl A0')).
+  { apply rel_pskl_restrict_l; [ exact HrA0 | ].
     simpl in HΞP0. clear - HΞP0. fsetdec. }
-  assert (HrE0 : rel_exp ρ0 V t t')
-    by (subst ρ0; apply rel_exp_restrict_l; [ exact HrE | exact HΞe ]).
-  assert (Hagr0 : flex_agree_rel ρ0 V Θa Θ0')
-    by (eapply flex_agree_rel_weaken;
-        [ exact Hagr | exact Hρ0incl | intros z Hz; exact Hz ]).
-  assert (Hinj0 : rel_inj ρ0 V)
-    by (eapply rel_inj_sub; [ exact Hinj | exact Hρ0incl ]).
-  assert (Hfun0 : rel_fun ρ0 V (dom Θa))
-    by (eapply rel_fun_weaken;
-        [ exact Hfun | exact Hρ0incl | intros z Hz; exact Hz ]).
-  assert (Hcov0 : V ∪ cols_r ρ0 [<=] S0) by (clear - Hcov Hcr00; fsetdec).
-  clear Eρ0.
+  assert (HrE0 : rel_exp (restrict_l (dom Ξ) ρ) V t t')
+    by (apply rel_exp_restrict_l; [ exact HrE | exact HΞe ]).
+  set (ρ0 := restrict_l (dom Ξ) ρ) in *. clearbody ρ0.
   (* ---- the pair restriction and the PUSH ---- *)
   assert (Hcl0 : cols_l (restrict_pairs α α2 ρ0) [<=] cols_l ρ0)
     by apply cols_l_restrict_pairs.
@@ -1598,34 +1581,14 @@ Proof.
     assert (HΞeb : dom Ξ ∩ (fvar_in_exp ea ∪ ftvar_in_exp ea) [=] empty).
     { assert (Hdisj : disjoint Ξ Θb) by (clear - Huq; solve_uniq).
       unfold disjoint in Hdisj. clear - Hdisj Hfvb Hfte Hdm0. fsetdec. }
-    remember (restrict_l (dom Ξ) ρ) as ρ0 eqn:Eρ0.
-    assert (Hρ0incl : forall a b, In (a, b) ρ0 -> In (a, b) ρ)
-      by (subst ρ0; intros a b Hin; eapply restrict_l_incl; exact Hin).
-    assert (Hρ0in : forall a b, In (a, b) ρ -> a `notin` dom Ξ ->
-              In (a, b) ρ0)
-      by (subst ρ0; intros a b Hin Hn; apply restrict_l_in; assumption).
-    assert (Hcl00 : cols_l ρ0 [<=] cols_l ρ)
-      by (subst ρ0; apply cols_l_restrict_l).
-    assert (Hcr00 : cols_r ρ0 [<=] cols_r ρ)
-      by (subst ρ0; apply cols_r_restrict_l).
-    assert (HΞcols : forall a, a `in` dom Ξ -> a `notin` cols_l ρ0)
-      by (subst ρ0; intros a Ha; apply restrict_l_notin; exact Ha).
-    assert (HrΘ0 : rel_aenv ρ0 V Θa Θ0')
-      by (subst ρ0; apply rel_aenv_restrict_l; [ exact HrΘ | exact HΞΘa ]).
-    assert (HrA00 : rel_pskl ρ0 V (ptyp_to_pskl A0) (ptyp_to_pskl A0'))
-      by (subst ρ0; apply rel_pskl_restrict_l; [ exact HrA0 | exact HΞP0 ]).
-    assert (HrEb0 : rel_exp ρ0 V ea eb2)
-      by (subst ρ0; apply rel_exp_restrict_l; [ exact HrEb | exact HΞeb ]).
-    assert (Hagr0 : flex_agree_rel ρ0 V Θa Θ0')
-      by (eapply flex_agree_rel_weaken;
-          [ exact Hagr | exact Hρ0incl | intros z Hz; exact Hz ]).
-    assert (Hinj0 : rel_inj ρ0 V)
-      by (eapply rel_inj_sub; [ exact Hinj | exact Hρ0incl ]).
-    assert (Hfun0 : rel_fun ρ0 V (dom Θa))
-      by (eapply rel_fun_weaken;
-          [ exact Hfun | exact Hρ0incl | intros z Hz; exact Hz ]).
-    assert (Hcov0 : V ∪ cols_r ρ0 [<=] S0) by (clear - Hcov Hcr00; fsetdec).
-    clear Eρ0.
+    destruct (lift_restrict_junk HΞΘa HrΘ Hagr Hinj Hfun Hcov)
+      as (Hρ0incl & Hρ0in & Hcl00 & Hcr00 & HΞcols & HrΘ0 & Hagr0 & Hinj0
+          & Hfun0 & Hcov0).
+    assert (HrA00 : rel_pskl (restrict_l (dom Ξ) ρ) V (ptyp_to_pskl A0) (ptyp_to_pskl A0'))
+      by (apply rel_pskl_restrict_l; [ exact HrA0 | exact HΞP0 ]).
+    assert (HrEb0 : rel_exp (restrict_l (dom Ξ) ρ) V ea eb2)
+      by (apply rel_exp_restrict_l; [ exact HrEb | exact HΞeb ]).
+    set (ρ0 := restrict_l (dom Ξ) ρ) in *. clearbody ρ0.
     assert (Hblksp0 : forall a, a `in` dom Θb -> a `notin` dom Θa ->
                       a `notin` cols_l ρ0)
       by (intros a Ha Hn; pose proof (Hblksp a Ha Hn) as Hc;
@@ -1831,33 +1794,16 @@ Proof.
     { pose proof (ftvar_ptyp_to_pskl A) as He.
       assert (Hdisj : disjoint Ξ Θc) by (clear - Huq; solve_uniq).
       unfold disjoint in Hdisj. clear - He Hdisj HftAan Hdm0 Hdmc. fsetdec. }
-    remember (restrict_l (dom Ξ) ρ) as ρ0 eqn:Eρ0.
-    assert (Hρ0incl : forall a b, In (a, b) ρ0 -> In (a, b) ρ)
-      by (subst ρ0; intros a b Hin; eapply restrict_l_incl; exact Hin).
-    assert (Hcl00 : cols_l ρ0 [<=] cols_l ρ)
-      by (subst ρ0; apply cols_l_restrict_l).
-    assert (Hcr00 : cols_r ρ0 [<=] cols_r ρ)
-      by (subst ρ0; apply cols_r_restrict_l).
-    assert (HΞcols : forall a, a `in` dom Ξ -> a `notin` cols_l ρ0)
-      by (subst ρ0; intros a Ha; apply restrict_l_notin; exact Ha).
-    assert (HrΘ0 : rel_aenv ρ0 V Θa Θ0')
-      by (subst ρ0; apply rel_aenv_restrict_l; [ exact HrΘ | exact HΞΘa ]).
-    assert (HrA00 : rel_pskl ρ0 V (ptyp_to_pskl A0) (ptyp_to_pskl A0'))
-      by (subst ρ0; apply rel_pskl_restrict_l; [ exact HrA0 | exact HΞP0 ]).
-    assert (HrEb0 : rel_exp ρ0 V ea eb2)
-      by (subst ρ0; apply rel_exp_restrict_l; [ exact HrEb | exact HΞeb ]).
-    assert (HrAan0 : rel_pskl ρ0 V (ptyp_to_pskl A) (ptyp_to_pskl Aan2))
-      by (subst ρ0; apply rel_pskl_restrict_l; [ exact HrAan | exact HΞAan ]).
-    assert (Hagr0 : flex_agree_rel ρ0 V Θa Θ0')
-      by (eapply flex_agree_rel_weaken;
-          [ exact Hagr | exact Hρ0incl | intros z Hz; exact Hz ]).
-    assert (Hinj0 : rel_inj ρ0 V)
-      by (eapply rel_inj_sub; [ exact Hinj | exact Hρ0incl ]).
-    assert (Hfun0 : rel_fun ρ0 V (dom Θa))
-      by (eapply rel_fun_weaken;
-          [ exact Hfun | exact Hρ0incl | intros z Hz; exact Hz ]).
-    assert (Hcov0 : V ∪ cols_r ρ0 [<=] S0) by (clear - Hcov Hcr00; fsetdec).
-    clear Eρ0.
+    destruct (lift_restrict_junk HΞΘa HrΘ Hagr Hinj Hfun Hcov)
+      as (Hρ0incl & Hρ0in & Hcl00 & Hcr00 & HΞcols & HrΘ0 & Hagr0 & Hinj0
+          & Hfun0 & Hcov0).
+    assert (HrA00 : rel_pskl (restrict_l (dom Ξ) ρ) V (ptyp_to_pskl A0) (ptyp_to_pskl A0'))
+      by (apply rel_pskl_restrict_l; [ exact HrA0 | exact HΞP0 ]).
+    assert (HrEb0 : rel_exp (restrict_l (dom Ξ) ρ) V ea eb2)
+      by (apply rel_exp_restrict_l; [ exact HrEb | exact HΞeb ]).
+    assert (HrAan0 : rel_pskl (restrict_l (dom Ξ) ρ) V (ptyp_to_pskl A) (ptyp_to_pskl Aan2))
+      by (apply rel_pskl_restrict_l; [ exact HrAan | exact HΞAan ]).
+    set (ρ0 := restrict_l (dom Ξ) ρ) in *. clearbody ρ0.
     assert (Hblksp0 : forall a, a `in` dom Θb -> a `notin` dom Θa ->
                       a `notin` cols_l ρ0)
       by (intros a Ha Hn; pose proof (Hblksp a Ha Hn) as Hc;

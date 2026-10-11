@@ -487,34 +487,17 @@ Proof.
       { intros x Hx. apply a_binds_tvar_in_dom; exact (a_wf_pskl_ftv_binds Hwfp Hx). }
       assert (Hdisj : disjoint Ξ Θ0) by (clear - Huq; solve_uniq).
       unfold disjoint in Hdisj. clear - Hdisj Hsub. fsetdec. }
-    remember (restrict_l (dom Ξ) ρ) as ρ0 eqn:Eρ0.
-    assert (Hρ0incl : forall a b, In (a, b) ρ0 -> In (a, b) ρ)
-      by (subst ρ0; intros a b Hin; eapply restrict_l_incl; exact Hin).
-    assert (Hcl00 : cols_l ρ0 [<=] cols_l ρ)
-      by (subst ρ0; apply cols_l_restrict_l).
-    assert (Hcr00 : cols_r ρ0 [<=] cols_r ρ)
-      by (subst ρ0; apply cols_r_restrict_l).
-    assert (HΞcols : forall a, a `in` dom Ξ -> a `notin` cols_l ρ0)
-      by (subst ρ0; intros a Ha; apply restrict_l_notin; exact Ha).
-    assert (HrΘ0 : rel_aenv ρ0 V Θ0 Θ0')
-      by (subst ρ0; apply rel_aenv_restrict_l; [ exact HrΘ | exact HΞΘ0 ]).
-    assert (HrB0 : rel_pskl ρ0 V B B2).
-    { subst ρ0. apply rel_pskl_restrict_l; [ exact HrB | ].
+    destruct (lift_restrict_junk HΞΘ0 HrΘ Hagr Hinj Hfun Hcov)
+      as (Hρ0incl & Hρ0in & Hcl00 & Hcr00 & HΞcols & HrΘ0 & Hagr0 & Hinj0
+          & Hfun0 & Hcov0).
+    assert (HrB0 : rel_pskl (restrict_l (dom Ξ) ρ) V B B2).
+    { apply rel_pskl_restrict_l; [ exact HrB | ].
       simpl in HΞB. clear - HΞB. fsetdec. }
-    assert (HrA0 : rel_pskl ρ0 V A P')
-      by (subst ρ0; apply rel_pskl_restrict_l; [ exact HrP | exact HΞA ]).
-    assert (Hagr0 : flex_agree_rel ρ0 V Θ0 Θ0')
-      by (eapply flex_agree_rel_weaken;
-          [ exact Hagr | exact Hρ0incl | intros x Hx; exact Hx ]).
-    assert (Hinj0 : rel_inj ρ0 V)
-      by (eapply rel_inj_sub; [ exact Hinj | exact Hρ0incl ]).
-    assert (Hfun0 : rel_fun ρ0 V (dom Θ0))
-      by (eapply rel_fun_weaken;
-          [ exact Hfun | exact Hρ0incl | intros x Hx; exact Hx ]).
-    assert (Hcov0 : V ∪ cols_r ρ0 [<=] S0) by (clear - Hcov Hcr00; fsetdec).
-    (* ⚠️ ρ0 must survive the row's later bare [subst]s, so drop its defining
-       equation now — every fact about it is already an assert above. *)
-    clear Eρ0.
+    assert (HrA0 : rel_pskl (restrict_l (dom Ξ) ρ) V A P')
+      by (apply rel_pskl_restrict_l; [ exact HrP | exact HΞA ]).
+    (* ⚠️ ρ0 must survive the row's later bare [subst]s, so make it opaque
+       now — every fact about it is already stated above. *)
+    set (ρ0 := restrict_l (dom Ξ) ρ) in *. clearbody ρ0.
     assert (Hcl0 : cols_l (restrict_pairs α α2 ρ0) [<=] cols_l ρ0)
       by apply cols_l_restrict_pairs.
     assert (Hcr0 : cols_r (restrict_pairs α α2 ρ0) [<=] cols_r ρ0)

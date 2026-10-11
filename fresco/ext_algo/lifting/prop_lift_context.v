@@ -2354,3 +2354,45 @@ Proof.
       [ exact Hr | intros x y Hx; right; exact Hx | intros x Hx; exact Hx ].
 Qed.
 
+
+(** ⭐ RESTRICTION AT A JUNK SUFFIX'S DOMAIN.  A rule that freshens a
+    suffix [Ξ] only against the CONTEXT lets its names collide with [ρ]'s
+    left column; the rows that discard [Ξ] therefore first delete every
+    pair at [dom Ξ], and the context-level relations survive that. *)
+Lemma lift_restrict_junk : forall {D ρ V Θ Θ' S0},
+  D ∩ ftvar_in_aenv Θ [=] empty ->
+  rel_aenv ρ V Θ Θ' ->
+  flex_agree_rel ρ V Θ Θ' ->
+  rel_inj ρ V ->
+  rel_fun ρ V (dom Θ) ->
+  V ∪ cols_r ρ [<=] S0 ->
+  (forall a b, In (a, b) (restrict_l D ρ) -> In (a, b) ρ)
+  /\ (forall a b, In (a, b) ρ -> a `notin` D -> In (a, b) (restrict_l D ρ))
+  /\ cols_l (restrict_l D ρ) [<=] cols_l ρ
+  /\ cols_r (restrict_l D ρ) [<=] cols_r ρ
+  /\ (forall a, a `in` D -> a `notin` cols_l (restrict_l D ρ))
+  /\ rel_aenv (restrict_l D ρ) V Θ Θ'
+  /\ flex_agree_rel (restrict_l D ρ) V Θ Θ'
+  /\ rel_inj (restrict_l D ρ) V
+  /\ rel_fun (restrict_l D ρ) V (dom Θ)
+  /\ V ∪ cols_r (restrict_l D ρ) [<=] S0.
+Proof.
+  intros D ρ V Θ Θ' S0 HDΘ HrΘ Hagr Hinj Hfun Hcov.
+  assert (Hincl : forall a b, In (a, b) (restrict_l D ρ) -> In (a, b) ρ)
+    by (intros a b Hin; eapply restrict_l_incl; exact Hin).
+  pose proof (cols_r_restrict_l D ρ) as Hcr.
+  split; [ exact Hincl | ].
+  split; [ intros a b Hin Hn; apply restrict_l_in; assumption | ].
+  split; [ apply cols_l_restrict_l | ].
+  split; [ exact Hcr | ].
+  split; [ intros a Ha; apply restrict_l_notin; exact Ha | ].
+  split; [ apply rel_aenv_restrict_l; [ exact HrΘ | exact HDΘ ] | ].
+  split.
+  { eapply flex_agree_rel_weaken;
+      [ exact Hagr | exact Hincl | intros z Hz; exact Hz ]. }
+  split; [ eapply rel_inj_sub; [ exact Hinj | exact Hincl ] | ].
+  split.
+  { eapply rel_fun_weaken;
+      [ exact Hfun | exact Hincl | intros z Hz; exact Hz ]. }
+  clear - Hcov Hcr; fsetdec.
+Qed.
