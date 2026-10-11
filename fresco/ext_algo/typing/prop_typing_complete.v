@@ -1875,8 +1875,7 @@ Proof.
           clear - Hka Hkb Hgr2; fsetdec.
       * destruct (Hav3 _ _ Hin) as [Hka Hkb]. split;
           clear - Hka Hkb Hgr1 Hgr2; fsetdec.
-    + cbn [ty_supply]. rewrite swaps_atoms_app. rewrite <- HS3.
-      apply swaps_atoms_cong. symmetry. exact HSd3.
+    + exact (swaps_atoms_app_transport HSd3 HS3).
     + cbn [ty_ctx]. rewrite ! swaps_aenv_app. exact HT3.
     + cbn [ty_out].
       assert (Hfix3 : swaps_ptyp ps3 (swaps_ptyp ps2 (swaps_ptyp ps1 Bd))
@@ -1930,8 +1929,7 @@ Proof.
     split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
     repeat apply conj.
     + apply (swaps_dodge_app Hav1 Hav2); clear - Hgr1; fsetdec.
-    + cbn [ty_supply]. rewrite swaps_atoms_app. rewrite <- HS2.
-      apply swaps_atoms_cong. symmetry. exact HSd2.
+    + exact (swaps_atoms_app_transport HSd2 HS2).
     + cbn [ty_ctx]. rewrite swaps_aenv_app. exact HT2.
     + cbn [ty_out]. rewrite swaps_ptyp_app. reflexivity.
 
@@ -1993,8 +1991,7 @@ Proof.
     split; [ cbn [typing_answer proj1_sig]; reflexivity | ].
     repeat apply conj.
     + apply (swaps_dodge_app Hav1 Hav2); clear - Hgr1; fsetdec.
-    + cbn [ty_supply]. rewrite swaps_atoms_app. rewrite <- HS2.
-      apply swaps_atoms_cong. symmetry. exact HSc1.
+    + exact (swaps_atoms_app_transport HSc1 HS2).
     + cbn [ty_ctx]. rewrite swaps_aenv_app. exact HT2.
     + cbn [ty_out]. rewrite swaps_ptyp_app, HfixBd.
       apply swaps_ptyp_fresh_id. intros a0 b0 Hin.

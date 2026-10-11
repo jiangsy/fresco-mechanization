@@ -1173,8 +1173,7 @@ Proof.
            destruct Hin as [Hin | Hin]; [ exact (Hav1 a0 b0 Hin) | ].
            destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0].
            split; clear - Ha0 Hb0 Hgr1; fsetdec.
-        ++ cbn [sb_supply]. rewrite swaps_atoms_app. rewrite <- HS2.
-           apply swaps_atoms_cong. symmetry. exact HS2t.
+        ++ exact (swaps_atoms_app_transport HS2t HS2).
         ++ cbn [sb_ctx]. rewrite swaps_aenv_app. exact HT2.
         ++ cbn [sb_out]. rewrite swaps_pskl_app, ! swaps_pskl_arrow.
            rewrite HQ1 in *. f_equal; [ | exact HQ2 ].
