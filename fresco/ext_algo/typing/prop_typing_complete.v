@@ -785,15 +785,7 @@ Proof.
         assert (Hcovsp : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 [<=] S0)
           by (clear - Hcov; simpl in *; fsetdec).
         rewrite <- HP0eq in Dsp.
-        destruct (e_split_impl_complete Dsp HD Hu Hcovsp)
-          as [rs0 [ps1 [Hxs [Hav1 [HS1 [HT1 [HP1 HQ1]]]]]]].
-        destruct (e_split_impl S0 Θ0 P0) as [ [rs Hrs] | ] eqn:Hcls;
-          try rewrite Hcls in Hxs; [ | discriminate ].
-        assert (Heqrs : rs0 = exist (split_spec S0 Θ0 P0) rs Hrs)
-          by congruence.
-        subst rs0. cbn [proj1_sig] in HS1, HT1, HP1, HQ1.
-        clear Hxs Hcls. cbv beta iota.
-        unfold split_spec in Hrs.
+        kill_split Dsp HD Hu Hcovsp rs Hrs ps1 Hav1 HS1 HT1 HP1 HQ1.
         destruct (e_split_sound Hrs Hu Hcovsp) as [Hsa [Hus [Hcvs Hpqs]]].
         pose proof (e_split_defs_mono Hrs HD) as HDs.
         pose proof (e_split_env_lc Hrs HΘ) as HΘs.
@@ -948,16 +940,7 @@ Proof.
       (* the SPLIT, at the runner's own call *)
       assert (Hcovsp : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 [<=] S0)
         by (clear - Hcov; simpl in *; fsetdec);
-      destruct (e_split_impl_complete Dsp HD Hu Hcovsp)
-        as [rs0 [ps1 [Hxs [Hav1 [HS1 [HT1 [HP1 HQ1]]]]]]];
-      destruct (e_split_impl S0 Θ0 P0) as [ [rs Hrs] | ] eqn:Hcls;
-      try rewrite Hcls in Hxs;
-      [ | discriminate ];
-      assert (Heqrs : rs0 = exist (split_spec S0 Θ0 P0) rs Hrs)
-        by congruence;
-      subst rs0; cbn [proj1_sig] in HS1, HT1, HP1, HQ1;
-      clear Hxs Hcls; cbv beta iota;
-      unfold split_spec in Hrs;
+      kill_split Dsp HD Hu Hcovsp rs Hrs ps1 Hav1 HS1 HT1 HP1 HQ1;
       destruct (e_split_sound Hrs Hu Hcovsp) as [Hsa [Hus [Hcvs Hpqs]]];
       pose proof (e_split_defs_mono Hrs HD) as HDs;
       pose proof (e_split_env_lc Hrs HΘ) as HΘs;
@@ -1222,15 +1205,7 @@ Proof.
         assert (Hcovsp : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 [<=] S0)
           by (clear - Hcov; simpl in *; fsetdec).
         rewrite <- HP0eq in Dsp.
-        destruct (e_split_impl_complete Dsp HD Hu Hcovsp)
-          as [rs0 [ps1 [Hxs [Hav1 [HS1 [HT1 [HP1 HQ1]]]]]]].
-        destruct (e_split_impl S0 Θ0 P0) as [ [rs Hrs] | ] eqn:Hcls;
-          try rewrite Hcls in Hxs; [ | discriminate ].
-        assert (Heqrs : rs0 = exist (split_spec S0 Θ0 P0) rs Hrs)
-          by congruence.
-        subst rs0. cbn [proj1_sig] in HS1, HT1, HP1, HQ1.
-        clear Hxs Hcls. cbv beta iota.
-        unfold split_spec in Hrs.
+        kill_split Dsp HD Hu Hcovsp rs Hrs ps1 Hav1 HS1 HT1 HP1 HQ1.
         destruct (e_split_sound Hrs Hu Hcovsp) as [Hsa [Hus [Hcvs Hpqs]]].
         pose proof (e_split_defs_mono Hrs HD) as HDs.
         pose proof (e_split_env_lc Hrs HΘ) as HΘs.
@@ -1463,16 +1438,7 @@ Proof.
       destruct Dch as [Qc Dc];
       assert (Hcovsp : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 [<=] S0)
         by (clear - Hcov; simpl in *; fsetdec);
-      destruct (e_split_impl_complete Dsp HD Hu Hcovsp)
-        as [rs0 [ps1 [Hxs [Hav1 [HS1 [HT1 [HP1 HQ1]]]]]]];
-      destruct (e_split_impl S0 Θ0 P0) as [ [rs Hrs] | ] eqn:Hcls;
-      try rewrite Hcls in Hxs;
-      [ | discriminate ];
-      assert (Heqrs : rs0 = exist (split_spec S0 Θ0 P0) rs Hrs)
-        by congruence;
-      subst rs0; cbn [proj1_sig] in HS1, HT1, HP1, HQ1;
-      clear Hxs Hcls; cbv beta iota;
-      unfold split_spec in Hrs;
+      kill_split Dsp HD Hu Hcovsp rs Hrs ps1 Hav1 HS1 HT1 HP1 HQ1;
       destruct (e_split_sound Hrs Hu Hcovsp) as [Hsa [Hus [Hcvs Hpqs]]];
       pose proof (e_split_defs_mono Hrs HD) as HDs;
       pose proof (e_split_env_lc Hrs HΘ) as HΘs;

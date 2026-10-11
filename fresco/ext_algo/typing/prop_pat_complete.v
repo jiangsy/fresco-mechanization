@@ -788,6 +788,25 @@ Ltac kill_dec Hcomp t Ht :=
       | discriminate ]
   end.
 
+(** Run the SPLIT's completeness at the runner's own call and read the
+    answer off that call — the opening of every abs row.  [e_split_impl]
+    takes no order proof, but its answer is still DESTRUCTED, never
+    rewritten (the branch's obligation mentions it).  Exported:
+    prop_typing_complete.v uses it too. *)
+Ltac kill_split Dsp HD Hu Hcovsp rs Hrs ps1 Hav1 HS1 HT1 HP1 HQ1 :=
+  let rs0 := fresh "rs0" in let Hxs := fresh "Hxs" in
+  let Hcls := fresh "Hcls" in let Heqrs := fresh "Heqrs" in
+  destruct (e_split_impl_complete Dsp HD Hu Hcovsp)
+    as [rs0 [ps1 [Hxs [Hav1 [HS1 [HT1 [HP1 HQ1]]]]]]];
+  match goal with
+  | |- context [ e_split_impl ?S ?T ?P ] =>
+      destruct (e_split_impl S T P) as [ [rs Hrs] | ] eqn:Hcls;
+      try rewrite Hcls in Hxs; try discriminate;
+      assert (Heqrs : rs0 = exist (split_spec S T P) rs Hrs) by congruence;
+      subst rs0; cbn [proj1_sig] in HS1, HT1, HP1, HQ1;
+      clear Hxs Hcls; cbv beta iota; unfold split_spec in Hrs
+  end.
+
 (** A row that answers from its inputs alone: the EMPTY chain. *)
 Lemma e_pat_impl_complete_ind : forall S0 m Θ0 P0 e,
   e_pat_order S0 m Θ0 P0 e -> pat_complete S0 m Θ0 P0 e.
@@ -943,16 +962,7 @@ Proof.
       (* the SPLIT, at the runner's own call *)
       assert (Hcovsp : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 [<=] S0)
         by (clear - Hcov; simpl in *; fsetdec);
-      destruct (e_split_impl_complete Dsp HD Hu Hcovsp)
-        as [rs0 [ps1 [Hxs [Hav1 [HS1 [HT1 [HP1 HQ1]]]]]]];
-      destruct (e_split_impl S0 Θ0 P0) as [ [rs Hrs] | ] eqn:Hcls;
-      try rewrite Hcls in Hxs;
-      [ | discriminate ];
-      assert (Heqrs : rs0 = exist (split_spec S0 Θ0 P0) rs Hrs)
-        by congruence;
-      subst rs0; cbn [proj1_sig] in HS1, HT1, HP1, HQ1;
-      clear Hxs Hcls; cbv beta iota;
-      unfold split_spec in Hrs;
+      kill_split Dsp HD Hu Hcovsp rs Hrs ps1 Hav1 HS1 HT1 HP1 HQ1;
       (* the split's own output invariants *)
       destruct (e_split_sound Hrs Hu Hcovsp) as [Hsa [Hus [Hcvs Hpqs]]];
       pose proof (e_split_defs_mono Hrs HD) as HDs;
@@ -1130,16 +1140,7 @@ Proof.
       (* the SPLIT *)
       assert (Hcovsp : ftvar_in_aenv Θ0 ∪ ftvar_in_pskl P0 [<=] S0)
         by (clear - Hcov; simpl in *; fsetdec);
-      destruct (e_split_impl_complete Dsp HD Hu Hcovsp)
-        as [rs0 [ps1 [Hxs [Hav1 [HS1 [HT1 [HP1 HQ1]]]]]]];
-      destruct (e_split_impl S0 Θ0 P0) as [ [rs Hrs] | ] eqn:Hcls;
-      try rewrite Hcls in Hxs;
-      [ | discriminate ];
-      assert (Heqrs : rs0 = exist (split_spec S0 Θ0 P0) rs Hrs)
-        by congruence;
-      subst rs0; cbn [proj1_sig] in HS1, HT1, HP1, HQ1;
-      clear Hxs Hcls; cbv beta iota;
-      unfold split_spec in Hrs;
+      kill_split Dsp HD Hu Hcovsp rs Hrs ps1 Hav1 HS1 HT1 HP1 HQ1;
       destruct (e_split_sound Hrs Hu Hcovsp) as [Hsa [Hus [Hcvs Hpqs]]];
       pose proof (e_split_defs_mono Hrs HD) as HDs;
       pose proof (e_split_env_lc Hrs HΘ) as HΘs;
