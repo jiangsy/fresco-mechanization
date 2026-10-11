@@ -1963,19 +1963,11 @@ Proof.
       by (rewrite Htr_r; exact Href2).
     (* the right component's ftvs miss BOTH generated blocks *)
     assert (HfrΞ1 : (ftvar_in_pskl P02) ∩ (dom Ξc1) [=] empty).
-    { pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd.
-      intros x; split; intros Hx; [ exfalso | clear - Hx; fsetdec ].
-      assert (Hx1 : x `in` ftvar_in_pskl P02) by (clear - Hx; fsetdec).
-      assert (Hx2 : x `in` dom Ξc1) by (clear - Hx; fsetdec).
-      rewrite <- Hd1 in Hx2. specialize (Hκf1 x Hx2).
-      clear - Hκf1 Hfd Hx1; fsetdec. }
+    { apply inter_dom_empty_of_forall. intros x Hx. rewrite <- Hd1 in Hx.
+      specialize (Hκf1 x Hx). clear - Hκf1 Hfd02; fsetdec. }
     assert (HfrΞs1 : (ftvar_in_pskl P02) ∩ (dom Ξs1) [=] empty).
-    { pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd.
-      intros x; split; intros Hx; [ exfalso | clear - Hx; fsetdec ].
-      assert (Hx1 : x `in` ftvar_in_pskl P02) by (clear - Hx; fsetdec).
-      assert (Hx2 : x `in` dom Ξs1) by (clear - Hx; fsetdec).
-      pose proof (Hfrs1 x Hx2) as Hf.
-      clear - Hf Hfd HLav Hdf0 Hx1; fsetdec. }
+    { apply inter_dom_empty_of_forall. intros x Hx.
+      pose proof (Hfrs1 x Hx) as Hf. clear - Hf Hfd02 HLav Hdf0; fsetdec. }
     assert (HsubR : (Ψi `union` (Ψ1 ∩ Ψ')) `union` (Ψ2 ∩ Ψ') [=] Ψ')
       by (clear - Hsub HΨa; fsetdec).
     assert (HΨs1R : Ψ2 [<=] union (ftag_in_uskl Rb) (union Ψρ2 (Ψ2 ∩ Ψ')))

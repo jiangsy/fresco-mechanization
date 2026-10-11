@@ -3795,22 +3795,11 @@ Proof.
         (* P02 is Θ0-scoped and Ξc1's names are fresh for Θ0, so the collected
            block misses it. *)
         assert (HfrP02Ξ : (ftvar_in_pskl P02) ∩ (dom Ξc1) [=] empty).
-        { pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd.
-          intros α0; split; intros Hmem; [ | clear - Hmem; fsetdec ].
-          exfalso.
-          assert (Hm1 : α0 `in` dom Ξc1) by (clear - Hmem; fsetdec).
-          assert (Hmκ : α0 `in` dom κc1) by (clear - Hm1 Hd1'; fsetdec).
-          specialize (Hκf1 α0 Hmκ).
-          assert (Hm2 : α0 `in` ftvar_in_pskl P02) by (clear - Hmem; fsetdec).
-          clear - Hfd Hκf1 Hm2; fsetdec. }
+        { apply inter_dom_empty_of_forall. intros x Hx. rewrite <- Hd1' in Hx.
+          specialize (Hκf1 x Hx). clear - Hκf1 Hfd02; fsetdec. }
         assert (HfrP02Ξs : (ftvar_in_pskl P02) ∩ (dom Ξs1) [=] empty).
-        { pose proof (a_wf_pskl_ftv_dom HwfP02) as Hfd.
-          intros α0; split; intros Hmem; [ | clear - Hmem; fsetdec ].
-          exfalso.
-          assert (Hm1 : α0 `in` dom Ξs1) by (clear - Hmem; fsetdec).
-          pose proof (Hfrs1 α0 Hm1) as Hf.
-          assert (Hm2 : α0 `in` ftvar_in_pskl P02) by (clear - Hmem; fsetdec).
-          clear - Hfd Hf Hm2 Hdf0 HL; fsetdec. }
+        { apply inter_dom_empty_of_forall. intros x Hx.
+          pose proof (Hfrs1 x Hx) as Hf. clear - Hf Hfd02 HL Hdf0; fsetdec. }
         (* ⭐ THE ARROW MERGE (2026-08-04, the SolE-FlexR repair).
 
            ⚠️ THE RIGHT IH DOES NOT RUN AT [Ξc1 ++ Θ0].  [Pa1] is the LEFT
