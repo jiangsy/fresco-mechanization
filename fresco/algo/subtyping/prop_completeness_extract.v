@@ -939,7 +939,6 @@ Proof.
       unfold ad_precise. exact (ad_refine_syn_refl_inh_gen HwfX Θ Δ).
     + (* ------------------------------ ∀◇ -------------------------------- *)
       cbn in Hsz.
-      assert (Hguard : guarded_pskl Ps0) by (inversion HwfPs; subst; assumption).
       assert (HwfPs0 : {{ (aenv_minus Θ0 Δ0) ⨟ empty ⊢ₚₛ Ps0 }}a)
         by (inversion HwfPs; subst; assumption).
       assert (Hpre' : {{ Θ ⨟ Δ ⊢ᵣ
@@ -1085,9 +1084,6 @@ Proof.
                 Hfms Hks Hincc) as [_ HincC].
     destruct (@a_inc_flex_prefix_split Ξc κc Θ0 κ Θ HfmΞc Hkeysc HincC)
       as [Hw _]; exact Hw. }
-  assert (HwmΞs : Forall (fun p => a_wf_ptyp Θ (snd p) /\ mono_ptyp (snd p)) κs)
-    by (destruct (@a_inc_flex_prefix_split Ξs κs (Ξc ++ Θ0) (κc ++ κ) Θ
-                    Hfms Hks Hincc) as [Hw _]; exact Hw).
   assert (HuqΞc : uniq (Ξc ++ Θ0)) by (apply a_wf_aenv_uniq; exact HwfΞc).
   (* the SOLVE block dodges everything its own context MENTIONS — the Ξ
      scoping kit's master invariant, and what makes [Ξs ++ Ξc ++ Θ0] wf *)

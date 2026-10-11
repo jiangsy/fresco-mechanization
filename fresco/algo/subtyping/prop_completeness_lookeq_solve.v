@@ -2343,9 +2343,6 @@ Proof.
 (* flexible β0 : κβ0 = τ0 mono, wf in Θ *)
 set (τ0 := msubst_lookup κ β0) in *.
 assert (Hτ0mono : mono_ptyp τ0) by (eapply a_inc_lookup_mono; eauto).
-assert (Hτ0wf : a_wf_ptyp Θ τ0)
-  by (eapply a_inc_lookup_wf;
-        [ exact Hκ | exact HwfΘ0 | right; exact Hflx ]).
 assert (Hmsβ : msubst_pskl κ (pskl_var_f β0) = ptyp_to_pskl τ0)
   by reflexivity.
 rewrite Hmsβ in Hrefine.
@@ -2939,9 +2936,6 @@ Proof.
     Hlcbody Hsbody Hrhobody Hcof HlcQ0 Hrefs.
   assert (Hακdom : α `notin` dom κ)
     by (intro Hc; apply (a_inc_dom_sub Hκ) in Hc; contradiction).
-  assert (HΘsdom : dom Θs [<=] dom Θ).
-  { intros x Hx. apply binds_In_inv in Hx. destruct Hx as [b Hb].
-    apply HΘs in Hb. eapply binds_In; exact Hb. }
   assert (HΔρΘ : Δρ [<=] dom Θ).
   { intros x Hx. destruct (Hrfr x Hx) as (Hb & _ & _).
     eapply binds_In; exact Hb. }
@@ -3019,7 +3013,6 @@ Proof.
                    (msubst_uskl_syn κ (open_uskl_wrt_uskl R0 (uskl_var_f β))))).
       { rewrite (@subst_msubst_uskl_syn_open Θ0 κ Θ ψa α R0 β Hκ Hακdom Hβκ Hβα Hlcψa).
         apply Hrhobody; auto. }
-      assert (HβΘs : β `notin` dom Θs) by (clear - HβΘ HΘsdom; fsetdec).
       assert (HΘsβ : forall x b, binds x b Θs -> binds x b ((β ~ abind_tvar) ++ Θ))
         by (intros x b Hb; apply binds_app_3; apply HΘs; exact Hb).
       assert (Hrfrβ : rsubst_fresh Δρ ((β ~ abind_tvar) ++ Θ) κ)
@@ -3187,8 +3180,7 @@ Proof.
                       (msubst_uskl_syn κ (open_uskl_wrt_uskl R0 (uskl_var_f β))))).
          { rewrite (@subst_msubst_uskl_syn_open Θ0 κ Θ ψa α R0 β Hκ Hακdom Hβκ Hβα Hlcψa).
            apply Hrhobody; auto. }
-         assert (HβΘs : β `notin` dom Θs) by (clear - HβΘ HΘsdom; fsetdec).
-         assert (HΘsβ : forall x b, binds x b Θs -> binds x b ((β ~ abind_tvar) ++ Θ))
+            assert (HΘsβ : forall x b, binds x b Θs -> binds x b ((β ~ abind_tvar) ++ Θ))
            by (intros x b Hb; apply binds_app_3; apply HΘs; exact Hb).
          assert (Hrfrβ : rsubst_fresh Δρ ((β ~ abind_tvar) ++ Θ) κ)
            by (apply rsubst_fresh_weaken_tvar; exact Hrfr).
