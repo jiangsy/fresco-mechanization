@@ -2211,3 +2211,93 @@ Proof.
   assert (Ebd : bd2 = bd') by (eapply binds_unique; eauto).
   subst bd2. exists Ξ', Θ'; auto.
 Qed.
+
+(* ===================================================================== *)
+(*  ⭐ SEQUENTIAL COMPOSITION — two threaded calls in a row.                *)
+(*                                                                        *)
+(*  The first call [Θa ↦ Θb] (side 2: [Θa' ↦ Θb'], supply [S0 ↦ S1])      *)
+(*  hands back new pairs [ρe1]; the second runs at [ρe1 ++ ρ] from [Θb]   *)
+(*  and ends at [Θc].  [lift_seq_widen] is the second call's relation      *)
+(*  premises; [lift_seq_ext] composes the two calls' new pairs.            *)
+(* ===================================================================== *)
+
+Lemma lift_seq_widen : forall {ρe1 ρ V} {Θa Θb Θc Θb' : aenv} {S0 S1},
+  rel_inj ρ V ->
+  rel_fun ρ V (dom Θa) ->
+  rel_ext ρe1 (ftvar_in_aenv Θa) S0 ->
+  (forall a b, In (a, b) ρe1 -> a `in` dom Θb /\ b `in` dom Θb') ->
+  {{ ⊢ Θa }}a ->
+  V [<=] ftvar_in_aenv Θa ->
+  V ∪ cols_r ρ [<=] S0 ->
+  (forall a, a `in` dom Θc -> a `notin` dom Θa -> a `notin` cols_l ρ) ->
+  dom Θa [<=] dom Θb ->
+  dom Θb [<=] dom Θc ->
+  S0 [<=] S1 ->
+  dom Θb' [<=] S1 ->
+  rel_inj (ρe1 ++ ρ) V
+  /\ rel_fun (ρe1 ++ ρ) V (dom Θb)
+  /\ V [<=] ftvar_in_aenv Θb
+  /\ V ∪ cols_r (ρe1 ++ ρ) [<=] S1
+  /\ (forall a, a `in` dom Θc -> a `notin` dom Θb ->
+        a `notin` cols_l (ρe1 ++ ρ)).
+Proof.
+  intros ρe1 ρ V Θa Θb Θc Θb' S0 S1 Hinj Hfun Hext1 Hdom1 Hwf Hscp Hcov
+    Hblk Hdm0 Hdm1 Hgr1 HdΘ1.
+  assert (Hsc0 : ftvar_in_aenv Θa [<=] dom Θa)
+    by (apply a_wf_aenv_ftv_dom; exact Hwf).
+  assert (Hd1s : dom Θb [<=] ftvar_in_aenv Θb)
+    by (apply dom_subset_ftvar_in_aenv).
+  assert (HVdom0 : V [<=] dom Θa) by (clear - Hscp Hsc0; fsetdec).
+  split; [ eapply rel_inj_app; [ exact Hinj | exact Hext1 | exact Hcov ] | ].
+  split.
+  { eapply rel_fun_app;
+      [ exact Hfun | exact Hext1 | apply dom_subset_ftvar_in_aenv
+      | intros a Ha Hn; apply Hblk; [ clear - Ha Hdm1; fsetdec | exact Hn ]
+      | intros a Ha Hn; clear - HVdom0 Hn; fsetdec ]. }
+  split; [ clear - Hscp Hsc0 Hdm0 Hd1s; fsetdec | ].
+  split.
+  { assert (Hc1r : cols_r ρe1 [<=] S1).
+    { intros y Hy. destruct (cols_r_in_inv _ _ Hy) as (a & Hin).
+      destruct (Hdom1 _ _ Hin) as [_ Hd2]. clear - Hd2 HdΘ1. fsetdec. }
+    rewrite cols_r_app. clear - Hcov Hc1r Hgr1. fsetdec. }
+  intros a Ha Hn. rewrite cols_l_app.
+  assert (Hc1 : a `notin` cols_l ρe1).
+  { intros Hy. destruct (cols_l_in_inv _ _ Hy) as (y & Hin).
+    destruct (Hdom1 _ _ Hin) as [Hd1 _]. contradiction. }
+  assert (Hc2 : a `notin` cols_l ρ)
+    by (apply Hblk; [ exact Ha | clear - Hn Hdm0; fsetdec ]).
+  clear - Hc1 Hc2. fsetdec.
+Qed.
+
+Lemma lift_seq_ext : forall {ρe1 ρe2} {Θa Θb Θc Θb' Θc' : aenv} {S0 S1},
+  rel_ext ρe1 (ftvar_in_aenv Θa) S0 ->
+  rel_ext ρe2 (ftvar_in_aenv Θb) S1 ->
+  (forall a b, In (a, b) ρe1 -> a `in` dom Θb /\ b `in` dom Θb') ->
+  (forall a b, In (a, b) ρe2 -> a `in` dom Θc /\ b `in` dom Θc') ->
+  {{ ⊢ Θa }}a ->
+  dom Θa [<=] dom Θb ->
+  dom Θb [<=] dom Θc ->
+  S0 [<=] S1 ->
+  dom Θb' [<=] S1 ->
+  dom Θb' [<=] dom Θc' ->
+  rel_ext (ρe2 ++ ρe1) (ftvar_in_aenv Θa) S0
+  /\ (forall a b, In (a, b) (ρe2 ++ ρe1) -> a `in` dom Θc /\ b `in` dom Θc').
+Proof.
+  intros ρe1 ρe2 Θa Θb Θc Θb' Θc' S0 S1 Hext1 Hext2 Hdom1 Hdom2 Hwf Hdm0
+    Hdm1 Hgr1 HdΘ1 Hdm2.
+  assert (Hsc0 : ftvar_in_aenv Θa [<=] dom Θa)
+    by (apply a_wf_aenv_ftv_dom; exact Hwf).
+  assert (Hd1s : dom Θb [<=] ftvar_in_aenv Θb)
+    by (apply dom_subset_ftvar_in_aenv).
+  split.
+  { eapply rel_ext_app;
+      [ exact Hext1 | exact Hext2
+      | clear - Hsc0 Hdm0 Hd1s; fsetdec
+      | exact Hgr1
+      | intros a b Hin; destruct (Hdom1 _ _ Hin) as [Hd1 Hd2];
+        split; [ clear - Hd1 Hd1s; fsetdec | clear - Hd2 HdΘ1; fsetdec ] ]. }
+  intros a b Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
+  - exact (Hdom2 _ _ Hin).
+  - destruct (Hdom1 _ _ Hin) as [Hd1 Hd2].
+    split; [ clear - Hd1 Hdm1; fsetdec | clear - Hd2 Hdm2; fsetdec ].
+Qed.

@@ -220,6 +220,67 @@ Proof.
   - (* Δ ⊆ ftvar_in_aenv Θ0 *) clear; fsetdec.
 Qed.
 
+(** [lift_consis_nil] together with what every caller derives next: the
+    supply growth and side 2's output package, and side 1's output
+    ([⊴] and wf) — so the caller can go straight on to a second call. *)
+Lemma lift_consis_nil_out : forall Θ0 P0 P Q Θ1,
+  {{ Θ0 ⊢[ P0 ] P ∼ Q ⊣ Θ1 }}a ->
+  forall S0 Θ0' P0' P' ρ V,
+    rel_aenv ρ V Θ0 Θ0' ->
+    rel_pskl ρ V P0 P0' ->
+    rel_pskl ρ V P P' ->
+    flex_agree_rel ρ V Θ0 Θ0' ->
+    rel_inj ρ V ->
+    rel_fun ρ V (dom Θ0) ->
+    {{ ⊢ Θ0 }}a ->
+    uniq Θ0' ->
+    ftvar_in_aenv Θ0' [<=] S0 ->
+    V [<=] ftvar_in_aenv Θ0 ->
+    (forall a, a `in` dom Θ1 -> a `notin` dom Θ0 -> a `notin` cols_l ρ) ->
+    dom Θ0' [<=] S0 ->
+    V ∪ cols_r ρ [<=] S0 ->
+    ftvar_in_pskl P0' ∪ ftvar_in_pskl P' [<=] S0 ->
+    {{ Θ0 ⨟ empty ⊢ₚₛ P0 }}a ->
+    {{ Θ0 ⨟ empty ⊢ₚₛ P }}a ->
+    exists S1 ρe Θ1' Q',
+      {{ S0 ↝ S1 ⊨ Θ0' ⊢[ empty | empty | P0' ] P' ∼ Q' ⊣ Θ1' }}e
+      /\ rel_aenv (ρe ++ ρ) V Θ1 Θ1'
+      /\ flex_agree_rel (ρe ++ ρ) V Θ1 Θ1'
+      /\ rel_pskl (ρe ++ ρ) V Q Q'
+      /\ rel_ext ρe (ftvar_in_aenv Θ0) S0
+      /\ (forall a b, In (a, b) ρe -> a `in` dom Θ1 /\ b `in` dom Θ1')
+      /\ S0 [<=] S1
+      /\ dom Θ1' [<=] S1
+      /\ ftvar_in_aenv Θ1' [<=] S1
+      /\ uniq Θ1'
+      /\ Θ0 ⊴ Θ1
+      /\ {{ ⊢ Θ1 }}a.
+Proof.
+  intros Θ0 P0 P Q Θ1 Hc S0 Θ0' P0' P' ρ V HrΘ HrP0 HrP Hagr Hinj Hfun
+    Hwf Huq2p Hftv2 Hscp Hblk HdΘ Hcov HcovP Hwfp0 Hwfp.
+  destruct (lift_consis_nil Hc HrΘ HrP0 HrP Hagr Hinj Hfun Hwf Huq2p
+              Hftv2 Hscp Hblk HdΘ Hcov HcovP Hwfp0 Hwfp)
+    as (S1 & ρe & Θ1' & Q' & De & HrΘ1 & Hagr1 & HrQ & Hext & Hdom).
+  pose proof (e_consis_supply_grows De) as Hgr.
+  assert (HcovE : ftvar_in_aenv Θ0' ∪ ftvar_in_pskl P0'
+                  ∪ ftvar_in_pskl P' ∪ empty ∪ empty [<=] S0)
+    by (clear - Hftv2 HcovP; fsetdec).
+  destruct (a_consis_isub_wf_nil Hc Hwf Hwfp0 Hwfp) as [Hle HwfΘ1].
+  assert (HdΘ1 : dom Θ1' [<=] S1).
+  { pose proof ((proj2 (proj2 e_assign_unify_consis_dom_upper))
+                  _ _ _ _ _ _ _ _ _ De) as Hup.
+    clear - Hup HdΘ Hgr. fsetdec. }
+  assert (Hftv1 : ftvar_in_aenv Θ1' [<=] S1)
+    by (eapply (proj2 (proj2 e_assign_unify_consis_ctx_ftvar));
+        [ exact De | clear - HcovE; fsetdec ]).
+  assert (Huq1 : uniq Θ1')
+    by (exact ((proj2 (proj2 a_assign_unify_consis_uniq)) _ _ _ _ _ _ _
+                 (e_consis_sound De Huq2p HcovE) Huq2p)).
+  exists S1, ρe, Θ1', Q'.
+  exact (conj De (conj HrΘ1 (conj Hagr1 (conj HrQ (conj Hext (conj Hdom
+          (conj Hgr (conj HdΘ1 (conj Hftv1 (conj Huq1 (conj Hle HwfΘ1))))))))))).
+Qed.
+
 (* ===================================================================== *)
 (*  ⭐⭐ THE WALK'S SHARED PEEL                                             *)
 (*                                                                        *)
@@ -850,8 +911,6 @@ Proof.
     inversion Hwfp as [ Θy Δy | Θy Δy αy Hby | Θy Δy Ya Yb Hw1a Hw1b
                       | Ly Θy Δy Yp Hally | Θy Δy
                       | Θy Δy Yp Hgy Hwiy ]; subst.
-    assert (Hsc0 : ftvar_in_aenv Θ0 [<=] dom Θ0)
-      by (apply a_wf_aenv_ftv_dom; exact Hwf).
     assert (Hdm0 : dom Θ0 [<=] dom Θ1) by (exact (auc_dom_mono_consis Hc)).
     assert (Hdm1 : dom Θ1 [<=] dom Θ2)
       by (exact ((proj1 a_sub_sub_flex_dom_mono) _ _ _ _ _ _ _ Hs)).
@@ -860,64 +919,21 @@ Proof.
       by (intros a Ha Hn; apply Hblk; [ clear - Ha Hdm1; fsetdec | exact Hn ]).
     assert (HcovP1 : ftvar_in_pskl P0a2 ∪ ftvar_in_pskl P12 [<=] S0)
       by (simpl in HcovP; clear - HcovP; fsetdec).
-    destruct (lift_consis_nil Hc HrΘ HrP0a HrP1 Hagr Hinj Hfun Hwf Huq2p
+    destruct (lift_consis_nil_out Hc HrΘ HrP0a HrP1 Hagr Hinj Hfun Hwf Huq2p
                 Hftv2 Hscp Hblk1 HdΘ Hcov HcovP1 Hw0a Hw1a)
-      as (S1 & ρe1 & Θ1' & Q1' & D1e & HrΘ1 & Hagr1 & HrQ1 & Hext1 & Hdom1).
-    pose proof (e_consis_supply_grows D1e) as Hgr1.
-    assert (HdΘ1 : dom Θ1' [<=] S1).
-    { pose proof ((proj2 (proj2 e_assign_unify_consis_dom_upper))
-                    _ _ _ _ _ _ _ _ _ D1e) as Hup.
-      clear - Hup HdΘ Hgr1. fsetdec. }
-    assert (HcovE : ftvar_in_aenv Θ0' ∪ ftvar_in_pskl P0a2
-                    ∪ ftvar_in_pskl P12 [<=] S0)
-      by (clear - Hftv2 HcovP1; fsetdec).
-    assert (Hftv1 : ftvar_in_aenv Θ1' [<=] S1)
-      by (eapply (proj2 (proj2 e_assign_unify_consis_ctx_ftvar));
-          [ exact D1e | exact HcovE ]).
-    assert (HcovE2 : ftvar_in_aenv Θ0' ∪ ftvar_in_pskl P0a2
-                     ∪ ftvar_in_pskl P12 ∪ empty ∪ empty [<=] S0)
-      by (clear - HcovE; fsetdec).
-    assert (Huq1' : uniq Θ1').
-    { pose proof (e_consis_sound D1e Huq2p HcovE2) as Ha1.
-      exact ((proj2 (proj2 a_assign_unify_consis_uniq)) _ _ _ _ _ _ _ Ha1
-               Huq2p). }
-    (* ---- side 1's context at the first half's output ---- *)
-    destruct (a_consis_isub_wf_nil Hc Hwf Hw0a Hw1a) as [Hle01 HwfΘ1].
-    assert (Hd1s : dom Θ1 [<=] ftvar_in_aenv Θ1)
-      by (apply dom_subset_ftvar_in_aenv).
-    assert (Hscp1 : V [<=] ftvar_in_aenv Θ1)
-      by (clear - Hscp Hsc0 Hdm0 Hd1s; fsetdec).
+      as (S1 & ρe1 & Θ1' & Q1' & D1e & HrΘ1 & Hagr1 & HrQ1 & Hext1 & Hdom1
+          & Hgr1 & HdΘ1 & Hftv1 & Huq1' & Hle01 & HwfΘ1).
+    destruct (lift_seq_widen Hinj Hfun Hext1 Hdom1 Hwf Hscp Hcov Hblk Hdm0
+                Hdm1 Hgr1 HdΘ1)
+      as (Hinj1 & Hfun1 & Hscp1 & Hcov1 & Hblk2).
     assert (Hwfp0b1 : {{ Θ1 ⨟ empty ⊢ₚₛ P0b }}a)
       by (eapply a_isub_wf_pskl; [ exact Hle01 | exact Hw0b ]).
     assert (Hwfp21 : {{ Θ1 ⨟ empty ⊢ₚₛ P2 }}a)
       by (eapply a_isub_wf_pskl; [ exact Hle01 | exact Hw1b ]).
-    (* ---- the relation, widened by the first half's new pairs ---- *)
-    assert (Hinj1 : rel_inj (ρe1 ++ ρ) V)
-      by (eapply rel_inj_app; [ exact Hinj | exact Hext1 | exact Hcov ]).
-    assert (HVdom0 : V [<=] dom Θ0) by (clear - Hscp Hsc0; fsetdec).
-    assert (Hfun1 : rel_fun (ρe1 ++ ρ) V (dom Θ1)).
-    { eapply rel_fun_app;
-        [ exact Hfun | exact Hext1 | apply dom_subset_ftvar_in_aenv
-        | intros a Ha Hn; exact (Hblk1 a Ha Hn)
-        | intros a Ha Hn; clear - HVdom0 Hn; fsetdec ]. }
     assert (HrP0b' : rel_pskl (ρe1 ++ ρ) V P0b P0b2)
       by (apply rel_pskl_widen; exact HrP0b).
     assert (HrP2' : rel_pskl (ρe1 ++ ρ) V P2 P22)
       by (apply rel_pskl_widen; exact HrP2).
-    assert (Hc1r : cols_r ρe1 [<=] S1).
-    { intros y Hy. destruct (cols_r_in_inv _ _ Hy) as (a & Hin).
-      destruct (Hdom1 _ _ Hin) as [_ Hd2]. clear - Hd2 HdΘ1. fsetdec. }
-    assert (Hcov1 : V ∪ cols_r (ρe1 ++ ρ) [<=] S1).
-    { rewrite cols_r_app. clear - Hcov Hc1r Hgr1. fsetdec. }
-    assert (Hblk2 : forall a, a `in` dom Θ2 -> a `notin` dom Θ1 ->
-                    a `notin` cols_l (ρe1 ++ ρ)).
-    { intros a Ha Hn. rewrite cols_l_app.
-      assert (Hc1 : a `notin` cols_l ρe1).
-      { intros Hy. destruct (cols_l_in_inv _ _ Hy) as (y & Hin).
-        destruct (Hdom1 _ _ Hin) as [Hd1 _]. contradiction. }
-      assert (Hc2 : a `notin` cols_l ρ)
-        by (apply Hblk; [ exact Ha | clear - Hn Hdm0; fsetdec ]).
-      clear - Hc1 Hc2. fsetdec. }
     assert (HcovP2 : ftvar_in_pskl P0b2 ∪ ftvar_in_pskl P22 [<=] S1)
       by (simpl in HcovP; clear - HcovP Hgr1; fsetdec).
     destruct (IHs S1 Θ1' P0b2 P22 (ρe1 ++ ρ) V HrΘ1 HrP0b' HrP2' Hagr1
@@ -940,17 +956,8 @@ Proof.
       eapply rel_pskl_mono;
         [ exact HrQ1 | intros x y Hx; apply in_or_app; right; exact Hx
         | intros x Hx; exact Hx ]. }
-    split.
-    { eapply rel_ext_app;
-        [ exact Hext1 | exact Hext2
-        | clear - Hsc0 Hdm0 Hd1s; fsetdec
-        | exact Hgr1
-        | intros a b Hin; destruct (Hdom1 _ _ Hin) as [Hd1 Hd2];
-          split; [ clear - Hd1 Hd1s; fsetdec | clear - Hd2 HdΘ1; fsetdec ] ]. }
-    intros a b Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
-    + destruct (Hdom2 _ _ Hin) as [Hd1 Hd2]. split; [ exact Hd1 | exact Hd2 ].
-    + destruct (Hdom1 _ _ Hin) as [Hd1 Hd2].
-      split; [ clear - Hd1 Hdm1; fsetdec | clear - Hd2 Hdm2'; fsetdec ].
+    exact (lift_seq_ext Hext1 Hext2 Hdom1 Hdom2 Hwf Hdm0 Hdm1 Hgr1 HdΘ1
+             Hdm2').
   - (* ⭐⭐ S-ForallL — the COMMON opener, and the extract is NOT inductive.
        [a_extract_family_of_instance] moves side 1's opener to any fresh
        atom with the SAME [Ξ ↪ P1], and side 2's is ours to pick subject
