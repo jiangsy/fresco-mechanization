@@ -1136,27 +1136,11 @@ Proof.
       by (apply Hblk; [ exact HαΘ1 | exact Hαnd ]).
     assert (Hβcl : β `notin` cols_l ρ)
       by (apply Hblk; [ exact HβΘ1 | exact Hβnd ]).
-    assert (Hcl00 : cols_l ρ [<=] cols_l ρ)
-      by (clear; fsetdec).
-    assert (Hcr00 : cols_r ρ [<=] cols_r ρ)
-      by (clear; fsetdec).
-    assert (HrΘ00 : rel_aenv ρ V Θ0 Θ0'') by (exact Hrest).
-    assert (HrΞ0 : rel_aenv ρ V Ξ Ξ') by (exact HrΞ).
-    assert (HrP00 : rel_pskl ρ V P0 P0') by (exact HrP0).
-    assert (Hrα0 : rel_atom ρ V α0 b0) by (exact Hab0).
-    assert (Hagr0 : flex_agree_rel ρ V (Ξ ++ (α0 ~ abind_flex_mono) ++ Θ0)
-                      (Ξ' ++ (b0 ~ abind_flex_mono) ++ Θ0''))
-      by (exact Hagr).
-    assert (Hinj0 : rel_inj ρ V) by (exact Hinj).
-    assert (Hfun0 : rel_fun ρ V (dom (Ξ ++ (α0 ~ abind_flex_mono) ++ Θ0)))
-      by (exact Hfun).
-    assert (Hαcl0 : α `notin` cols_l ρ) by (exact Hαcl).
-    assert (Hβcl0 : β `notin` cols_l ρ) by (exact Hβcl).
     (* ---- the two pairs, and the extended relation ---- *)
     assert (Ha2V : a2 `notin` V) by (clear - Ha2 Hcov; fsetdec).
     assert (Hb2V : b2 `notin` V) by (clear - Hb2 Hcov; fsetdec).
-    assert (Ha2cr : a2 `notin` cols_r ρ) by (clear - Ha2 Hcov Hcr00; fsetdec).
-    assert (Hb2cr : b2 `notin` cols_r ρ) by (clear - Hb2 Hcov Hcr00; fsetdec).
+    assert (Ha2cr : a2 `notin` cols_r ρ) by (clear - Ha2 Hcov; fsetdec).
+    assert (Hb2cr : b2 `notin` cols_r ρ) by (clear - Hb2 Hcov; fsetdec).
     assert (Hab2 : a2 <> b2) by (clear - Hb2; fsetdec).
     assert (HαV : α `notin` V)
       by (intros Hin; apply Hαnd; apply Hscp in Hin; clear - Hin Hsc; fsetdec).
@@ -1167,7 +1151,7 @@ Proof.
       by (subst ρ1; intros a b Hin; right; right; exact Hin).
     assert (Hinj1 : rel_inj ρ1 V).
     { subst ρ1. apply rel_inj_push;
-        [ apply rel_inj_push; [ exact Hinj0 | exact Hb2V | exact Hb2cr ]
+        [ apply rel_inj_push; [ exact Hinj | exact Hb2V | exact Hb2cr ]
         | exact Ha2V | simpl; clear - Ha2cr Hab2; fsetdec ]. }
     assert (Hfun1 : rel_fun ρ1 V
               (dom (Ξ ++ (α0 ~ abind_flex_mono_def
@@ -1176,8 +1160,8 @@ Proof.
                       ++ Θ0))).
     { subst ρ1. eapply rel_fun_weaken;
         [ apply rel_fun_push;
-            [ apply rel_fun_push; [ exact Hfun0 | exact HβV | exact Hβcl0 ]
-            | exact HαV | simpl; clear - Hαcl0 Hne; fsetdec ]
+            [ apply rel_fun_push; [ exact Hfun | exact HβV | exact Hβcl ]
+            | exact HαV | simpl; clear - Hαcl Hne; fsetdec ]
         | intros x y Hx; exact Hx
         | repeat rewrite dom_app; simpl; clear; fsetdec ]. }
     assert (HrΘ1 : rel_aenv ρ1 V
@@ -1190,9 +1174,9 @@ Proof.
                   ++ Θ0'')).
     { apply rel_aenv_app.
       - eapply rel_aenv_mono;
-          [ exact HrΞ0 | exact Hρ1incl | intros x Hx; exact Hx ].
+          [ exact HrΞ | exact Hρ1incl | intros x Hx; exact Hx ].
       - apply rel_aenv__cons.
-        + eapply rel_atom_incl; [ exact Hrα0 | exact Hρ1incl ].
+        + eapply rel_atom_incl; [ exact Hab0 | exact Hρ1incl ].
         + constructor. unfold rel_ptyp. simpl. constructor;
             apply rel_pskl__var_f; apply rel_atom__pair; subst ρ1;
             [ left; reflexivity | right; left; reflexivity ].
@@ -1203,7 +1187,7 @@ Proof.
             [ apply rel_atom__pair; subst ρ1; left; reflexivity
             | constructor | ].
           eapply rel_aenv_mono;
-            [ exact HrΘ00 | exact Hρ1incl | intros x Hx; exact Hx ]. }
+            [ exact Hrest | exact Hρ1incl | intros x Hx; exact Hx ]. }
     assert (Hagr1 : flex_agree_rel ρ1 V
               (Ξ ++ (α0 ~ abind_flex_mono_def
                        (ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)))
@@ -1220,7 +1204,7 @@ Proof.
         assert (Hxb2 : x <> b2) by (intros ->; contradiction).
         rewrite (a_flex_tvar_solve_shape Ξ _ _ Θ0 Hxα Hxβ).
         rewrite (a_flex_tvar_solve_shape Ξ' _ _ Θ0'' Hxa2 Hxb2).
-        exact (proj1 Hagr0 x HxV).
+        exact (proj1 Hagr x HxV).
       - intros x y Hin. subst ρ1.
         destruct Hin as [E1 | [E2 | Hin]].
         + injection E1 as -> ->. split; intros _; left; unfold binds;
@@ -1228,16 +1212,16 @@ Proof.
         + injection E2 as -> ->. split; intros _; left; unfold binds;
             apply in_or_app; right; right; left; reflexivity.
         + assert (Hxα : x <> α)
-            by (intros ->; apply Hαcl0; eapply cols_l_in; exact Hin).
+            by (intros ->; apply Hαcl; eapply cols_l_in; exact Hin).
           assert (Hxβ : x <> β)
-            by (intros ->; apply Hβcl0; eapply cols_l_in; exact Hin).
+            by (intros ->; apply Hβcl; eapply cols_l_in; exact Hin).
           assert (Hya2 : y <> a2)
             by (intros ->; apply Ha2cr; eapply cols_r_in; exact Hin).
           assert (Hyb2 : y <> b2)
             by (intros ->; apply Hb2cr; eapply cols_r_in; exact Hin).
           rewrite (a_flex_tvar_solve_shape Ξ _ _ Θ0 Hxα Hxβ).
           rewrite (a_flex_tvar_solve_shape Ξ' _ _ Θ0'' Hya2 Hyb2).
-          exact (proj2 Hagr0 x y Hin). }
+          exact (proj2 Hagr x y Hin). }
     (* ---- the premise's wf package ---- *)
     assert (Huq1 : uniq (Ξ ++ (α0 ~ abind_flex_mono) ++ Θ0))
       by (apply a_wf_aenv_uniq; exact Hwf).
@@ -1359,7 +1343,7 @@ Proof.
       assert (Hc : a `notin` cols_l ρ).
       { apply Hblk; [ exact Ha | ].
         repeat rewrite dom_app. simpl. clear - Hn. fsetdec. }
-      clear - Hc Hnα Hnβ Hcl00. fsetdec. }
+      clear - Hc Hnα Hnβ. fsetdec. }
     assert (HdΘ1 : dom (Ξ' ++ (b0 ~ abind_flex_mono_def
                  (ptyp_arrow (ptyp_var_f a2) (ptyp_var_f b2)))
             ++ (b2 ~ abind_flex_mono) ++ (a2 ~ abind_flex_mono)
@@ -1379,7 +1363,7 @@ Proof.
             ++ Θ0'') P0'
                 (pskl_arrow (pskl_var_f a2) (pskl_var_f b2)) ρ1 V
                 HrΘ1 (ltac:(subst ρ1; eapply rel_pskl_mono;
-                            [ exact HrP00 | intros x y Hx; right; right;
+                            [ exact HrP0 | intros x y Hx; right; right;
                               exact Hx | intros x Hx; exact Hx ]))
                 (ltac:(subst ρ1; constructor; apply rel_pskl__var_f;
                        apply rel_atom__pair;
