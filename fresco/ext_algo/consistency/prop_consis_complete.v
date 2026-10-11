@@ -273,9 +273,8 @@ Proof.
     destruct (IH1 Sa Xa Aa D1 ltac:(clear - Hcov; fsetdec))
       as [ps1 [Hav1 [HS1 [HX1 HA1]]]].
     assert (HP2 : swaps_pskl ps1 P2 = P2)
-      by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-          destruct (Hav1 a0 b0 Hin) as [Ha0 Hb0]; split;
-          clear - Ha0 Hb0 Hcov; fsetdec).
+      by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
+          clear - Hcov; fsetdec).
     assert (Heq2 : Sa' [=] swaps_atoms ps1 Sa) by (symmetry; exact HS1).
     destruct (e_guess_mono_swaps ps1 D2 Heq2) as [S2t [HS2t D2t]].
     rewrite HP2 in D2t.
@@ -288,13 +287,11 @@ Proof.
     pose proof (e_guess_mono_generated_ftvar D1') as Hftv1'.
     pose proof (e_guess_mono_ftv D1') as HftA1'.
     assert (HX1' : swaps_aenv ps2 Xa' = Xa')
-      by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-          destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0]; split;
-          clear - Ha0 Hb0 Hdom1' Hftv1'; fsetdec).
+      by (apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav2);
+          clear - Hdom1' Hftv1'; fsetdec).
     assert (HA1' : swaps_ptyp ps2 Aa' = Aa')
-      by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-          destruct (Hav2 a0 b0 Hin) as [Ha0 Hb0]; split;
-          clear - Ha0 Hb0 Hdom1' HftA1' Hcov Hgr1'; fsetdec).
+      by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2);
+          clear - Hdom1' HftA1' Hcov Hgr1'; fsetdec).
     exists (ps1 ++ ps2). repeat apply conj.
     + intros a0 b0 Hin. apply in_app_or in Hin. destruct Hin as [Hin | Hin].
       * exact (Hav1 a0 b0 Hin).

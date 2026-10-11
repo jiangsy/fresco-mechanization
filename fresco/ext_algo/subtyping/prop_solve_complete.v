@@ -214,17 +214,14 @@ Proof.
         unfold solve_eq_spec in Hr;
         destruct (e_solve_eq_rel D1 Hr Hcov1) as (ps & Hav & HS & HX & HY);
         assert (HΘ : swaps_aenv ps T = T)
-          by (apply swaps_aenv_fresh_id; intros a b Hin;
-              destruct (Hav a b Hin) as [Ha Hb]; split;
-              clear - Ha Hb Hcov; fsetdec);
+          by (apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav);
+              clear - Hcov; fsetdec);
         assert (HP2 : swaps_pskl ps p2 = p2)
-          by (apply swaps_pskl_fresh_id; intros a b Hin;
-              destruct (Hav a b Hin) as [Ha Hb]; split;
-              clear - Ha Hb Hcov; simpl in *; fsetdec);
+          by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav);
+              clear - Hcov; simpl in *; fsetdec);
         assert (HQ2 : swaps_pskl ps q2 = q2)
-          by (apply swaps_pskl_fresh_id; intros a b Hin;
-              destruct (Hav a b Hin) as [Ha Hb]; split;
-              clear - Ha Hb Hcov; simpl in *; fsetdec);
+          by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav);
+              clear - Hcov; simpl in *; fsetdec);
         symmetry in HS;
         destruct (e_solve_sub_swaps ps D2 HS) as (Sf & _ & Htail');
         rewrite swaps_aenv_app_dist, HX, HΘ, HP2, HQ2 in Htail';

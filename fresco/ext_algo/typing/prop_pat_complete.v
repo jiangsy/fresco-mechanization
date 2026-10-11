@@ -934,9 +934,8 @@ Proof.
         by (apply swaps_atom_dodge with (S := S0);
             [ exact Hav1 | clear - Hxd Hgrd; fsetdec ]);
       assert (Hfixe1 : swaps_exp ps1 e1 = e1)
-        by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-            destruct (Hav1 a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb Hcov; simpl in *; fsetdec);
+        by (apply swaps_exp_fresh_id, (swaps_dodge_sub Hav1);
+            clear - Hcov; simpl in *; fsetdec);
       destruct (e_pat_swaps ps1 Db
                   (S0' := add (swaps_atom ps1 xd) (sp_supply rs)))
         as [Sd1 [HSd1 Db1]];
@@ -1030,9 +1029,8 @@ Proof.
             split; intro Heq0; [ apply Hka | apply Hkb ];
             rewrite <- Heq0; clear; fsetdec);
       assert (Hfix2P : swaps_pskl ps2 (sp_dom rs) = sp_dom rs)
-        by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-            destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb Hpqs; fsetdec);
+        by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav2);
+            clear - Hpqs; fsetdec);
       (* the answer's context, split at the runner's own marker *)
       assert (Hctx : pt_ctx r
                 = swaps_aenv ps2 (swaps_aenv ((swaps_atom ps1 xd,
@@ -1101,17 +1099,14 @@ Proof.
         by (cbn [swaps_atom]; unfold swap_atom;
             destruct (xd == xd); [ reflexivity | congruence ]).
       assert (HfixΘ : swaps_aenv ((xd, supply_fresh S0) :: nil) Θ0 = Θ0)
-        by (apply swaps_aenv_fresh_id; intros a0 b0 Hin;
-            destruct (Hav0 a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb Hcov; simpl in *; fsetdec).
+        by (apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav0);
+            clear - Hcov; simpl in *; fsetdec).
       assert (HfixA : swaps_ptyp ((xd, supply_fresh S0) :: nil) A = A)
-        by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-            destruct (Hav0 a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb Hcov; simpl in *; fsetdec).
+        by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav0);
+            clear - Hcov; simpl in *; fsetdec).
       assert (Hfixe : swaps_exp ((xd, supply_fresh S0) :: nil) e1 = e1)
-        by (apply swaps_exp_fresh_id; intros a0 b0 Hin;
-            destruct (Hav0 a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb Hcov; simpl in *; fsetdec).
+        by (apply swaps_exp_fresh_id, (swaps_dodge_sub Hav0);
+            clear - Hcov; simpl in *; fsetdec).
       destruct (e_pat_swaps ((xd, supply_fresh S0) :: nil) Db
                   (S0' := add (supply_fresh S0) S0)) as [Sd1 [HSd1 Db1]].
       { cbn [swaps_atoms]. rewrite swap_atoms_add.
@@ -1223,9 +1218,8 @@ Proof.
       (* the ANNOTATION's consistency run, transported onto the split's
          answer and then run through level 5's headline *)
       assert (HfixA1 : swaps_pskl ps1 (ptyp_to_pskl A) = ptyp_to_pskl A)
-        by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-            destruct (Hav1 a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb Hcov HAe; simpl in *; fsetdec);
+        by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
+            clear - Hcov HAe; simpl in *; fsetdec);
       destruct (e_consis_swaps ps1 Dc (Δ1' := empty) (Δ2' := empty)
                   (S0' := sp_supply rs)) as [Sc1 [HSc1 Dc1]];
       [ symmetry; apply swaps_atoms_empty
@@ -1287,9 +1281,8 @@ Proof.
             | destruct (Havc a0 b0 Hin) as [Hka Hkb] ];
             split; clear - Hka Hkb Hcov Hgrs; simpl in *; fsetdec);
       assert (HfixQ0 : swaps_pskl psc (sp_cod rs) = sp_cod rs)
-        by (apply swaps_pskl_fresh_id; intros a0 b0 Hin;
-            destruct (Havc a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb Hpqs; fsetdec);
+        by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Havc);
+            clear - Hpqs; fsetdec);
       destruct (e_pat_swaps (ps1 ++ psc) Db
                   (S0' := add (swaps_atom psc (swaps_atom ps1 xd))
                             (cs_supply rc))) as [Sd1 [HSd1 Db1]];
@@ -1396,9 +1389,8 @@ Proof.
             split; intro Heq0; [ apply Hka | apply Hkb ];
             rewrite <- Heq0; clear; fsetdec);
       assert (Hfix2A : swaps_ptyp ps2 A = A)
-        by (apply swaps_ptyp_fresh_id; intros a0 b0 Hin;
-            destruct (Hav2 a0 b0 Hin) as [Hka Hkb];
-            split; clear - Hka Hkb Hcov Hgrs Hgrc; simpl in *; fsetdec);
+        by (apply swaps_ptyp_fresh_id, (swaps_dodge_sub Hav2);
+            clear - Hcov Hgrs Hgrc; simpl in *; fsetdec);
       assert (Hctx : pt_ctx r
                 = swaps_aenv ps2 (swaps_aenv
                     ((swaps_atom psc (swaps_atom ps1 xd),
