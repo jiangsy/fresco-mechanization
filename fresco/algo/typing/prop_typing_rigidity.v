@@ -884,6 +884,39 @@ Lemma a_typing_ty_core : forall M Θ0 P0 e A' Θ1,
   ptyp_ty_core M A' C.
 Proof.
   intros M Θ0 P0 e A' Θ1 H; induction H; intros C Hcore Hr.
+  (* Cases 7 and 9: both check-step rules open the same rigid binder.
+     Selecting them together groups the two remaining goals as 7 and 8. *)
+  7,9: inversion Hcore; subst.
+  7,8: match goal with
+    | Heq : ptyp_to_pskl ?CC = pskl_all_syn _ |- _ =>
+        destruct CC as [ | | | | C0 ]; simpl in Heq; try discriminate;
+        inversion Heq as [Heq0];
+        apply ptyp_to_pskl_inj in Heq0; subst
+    end.
+  7,8: assert (Hbody : ptyp_ty_core mode_tc
+                       (open_ptyp_wrt_ptyp A (ptyp_var_f α))
+                       (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))) by
+    (apply IHa_typing; [ apply pskl_ty_core__tc | ];
+     intros β' Hβ';
+     pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0 (ptyp_var_f α))
+       as Hup;
+     simpl in Hup;
+     destruct (β' == α) as [-> | Hne];
+       [ split; [ unfold binds; simpl; auto | ];
+         split; [ intros Hcb | intros τ Hcb ];
+         destruct (binds_cons_1 _ _ _ _ _ _ Hcb) as [[_ Heqb] | Hcb'];
+         try discriminate;
+         apply binds_In in Hcb'; clear - H2 Hcb';
+         rewrite dom_app in H2; fsetdec
+       | apply a_rigid_only_cons_nonsuffix; [ intros Hb; inversion Hb | ];
+         apply Hr; simpl; clear - Hβ' Hup Hne; fsetdec ]).
+  7,8: inversion Hbody; subst.
+  7,8: match goal with
+    | Heq : open_ptyp_wrt_ptyp _ _ = open_ptyp_wrt_ptyp _ _ |- _ =>
+        apply open_ptyp_wrt_ptyp_inj in Heq;
+          [ | clear - H2; fsetdec | clear - H2; fsetdec ]
+    end.
+  7,8: subst; apply ptyp_ty_core__tc.
   - (* AT-Unit *)
     apply pskl_ty_core_of_painting.
     eapply a_sub_ty_core; [ exact H | reflexivity | exact Hcore | exact Hr ].
@@ -931,39 +964,6 @@ Proof.
     intros α Hα.
     apply a_rigid_only_cons_nonsuffix; [ intros Hb; inversion Hb | ].
     eapply a_consis_rigid_only; [ exact Hc | apply Hr; exact Hα ].
-  - (* AT-AbsCheckStep : the rule's own α; the body IH pins A = A0 *)
-    inversion Hcore; subst.
-    match goal with
-    | Heq : ptyp_to_pskl ?CC = pskl_all_syn _ |- _ =>
-        destruct CC as [ | | | | C0 ]; simpl in Heq; try discriminate;
-        inversion Heq as [Heq0];
-        apply ptyp_to_pskl_inj in Heq0; subst
-    end.
-    assert (Hbody : ptyp_ty_core mode_tc
-                      (open_ptyp_wrt_ptyp A (ptyp_var_f α))
-                      (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))).
-    { apply IHa_typing; [ apply pskl_ty_core__tc | ].
-      intros β' Hβ'.
-      pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0 (ptyp_var_f α))
-        as Hup.
-      simpl in Hup.
-      destruct (β' == α) as [-> | Hne].
-      - split; [ unfold binds; simpl; auto | ].
-        split;
-          [ intros Hcb | intros τ Hcb ];
-          destruct (binds_cons_1 _ _ _ _ _ _ Hcb) as [[_ Heqb] | Hcb'];
-          try discriminate;
-          apply binds_In in Hcb'; clear - H2 Hcb';
-          rewrite dom_app in H2; fsetdec.
-      - apply a_rigid_only_cons_nonsuffix; [ intros Hb; inversion Hb | ].
-        apply Hr. simpl. clear - Hβ' Hup Hne. fsetdec. }
-    inversion Hbody; subst.
-    match goal with
-    | Heq : open_ptyp_wrt_ptyp _ _ = open_ptyp_wrt_ptyp _ _ |- _ =>
-        apply open_ptyp_wrt_ptyp_inj in Heq;
-          [ | clear - H2; fsetdec | clear - H2; fsetdec ]
-    end.
-    subst. apply ptyp_ty_core__tc.
   - (* AT-AbsCheckBase : the body IH pins B1 = the split codomain *)
     inversion Hcore; subst.
     match goal with
@@ -994,39 +994,6 @@ Proof.
       inversion Hbody; subst.
       apply ptyp_ty_core__tc.
     + inversion H.
-  - (* AT-AbsAnnoCheckStep *)
-    inversion Hcore; subst.
-    match goal with
-    | Heq : ptyp_to_pskl ?CC = pskl_all_syn _ |- _ =>
-        destruct CC as [ | | | | C0 ]; simpl in Heq; try discriminate;
-        inversion Heq as [Heq0];
-        apply ptyp_to_pskl_inj in Heq0; subst
-    end.
-    assert (Hbody : ptyp_ty_core mode_tc
-                      (open_ptyp_wrt_ptyp A (ptyp_var_f α))
-                      (open_ptyp_wrt_ptyp A0 (ptyp_var_f α))).
-    { apply IHa_typing; [ apply pskl_ty_core__tc | ].
-      intros β' Hβ'.
-      pose proof (ftvar_in_ptyp_open_ptyp_wrt_ptyp_upper A0 (ptyp_var_f α))
-        as Hup.
-      simpl in Hup.
-      destruct (β' == α) as [-> | Hne].
-      - split; [ unfold binds; simpl; auto | ].
-        split;
-          [ intros Hcb | intros τ Hcb ];
-          destruct (binds_cons_1 _ _ _ _ _ _ Hcb) as [[_ Heqb] | Hcb'];
-          try discriminate;
-          apply binds_In in Hcb'; clear - H2 Hcb';
-          rewrite dom_app in H2; fsetdec.
-      - apply a_rigid_only_cons_nonsuffix; [ intros Hb; inversion Hb | ].
-        apply Hr. simpl. clear - Hβ' Hup Hne. fsetdec. }
-    inversion Hbody; subst.
-    match goal with
-    | Heq : open_ptyp_wrt_ptyp _ _ = open_ptyp_wrt_ptyp _ _ |- _ =>
-        apply open_ptyp_wrt_ptyp_inj in Heq;
-          [ | clear - H2; fsetdec | clear - H2; fsetdec ]
-    end.
-    subst. apply ptyp_ty_core__tc.
   - (* AT-AbsAnnoCheckBase *)
     inversion Hcore; subst.
     match goal with

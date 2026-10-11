@@ -181,6 +181,22 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share typing rigidity check-step cases
+
+Consolidate the identical `AT-AbsCheckStep` and `AT-AbsAnnoCheckStep`
+arguments in `a_typing_ty_core`. Explicit numbered selectors and a case
+comment share the rigid-binder opening, body induction hypothesis, and
+opening cancellation without introducing a tactic wrapper.
+
+Net reduction: **33 physical Coq lines / 35 nonblank, noncomment lines**.
+All 29 existing theorem statements in the edited file are unchanged; the
+file still contains no inline tactic terms.
+
+Validation: focused compilation and `make coq` passed, with all 34 headline
+assumption reports closed under the global context, no axioms and no errors.
+Statement comparison and `git diff --check` passed.
+
+
 
 ## 2026-10-11 — Share Flex-Assign well-formed substitution
 
