@@ -1020,16 +1020,10 @@ Proof.
       destruct (e_typing_swaps (ps1 ++ psg) Db
                   (S0' := add (swaps_atom psg (swaps_atom ps1 xd))
                             (gr_supply rg))) as [Sd1 [HSd1 Db1]];
-      [ rewrite swaps_atoms_app;
-        assert (Heq2 : swaps_atoms psg (swaps_atoms ps1 (add xd S2))
-                       [=] swaps_atoms psg
-                             (add (swaps_atom ps1 xd) (swaps_atoms ps1 S2)))
-          by (apply swaps_atoms_cong; apply swaps_atoms_add);
-        rewrite Heq2, swaps_atoms_add;
-        assert (Heq3 : swaps_atoms psg (swaps_atoms ps1 S2)
-                       [=] gr_supply rg)
+      [ assert (Heq3 : swaps_atoms psg (swaps_atoms ps1 S2) [=] gr_supply rg)
           by (rewrite <- HSg; apply swaps_atoms_cong; symmetry; exact HSg1);
-        rewrite Heq3; reflexivity
+        rewrite swaps_atoms_add, swaps_atom_app, swaps_atoms_app, Heq3;
+        reflexivity
       | ];
       rewrite ! swaps_aenv_app_dist in Db1;
       rewrite ! swaps_aenv_one_var_typ in Db1;
@@ -1344,13 +1338,8 @@ Proof.
         destruct (e_typing_swaps (ps1 ++ psc) Db
                     (S0' := add (swaps_atom psc (swaps_atom ps1 xd))
                               (cs_supply rc))) as [Sd1 [HSd1 Db1]];
-          [ rewrite swaps_atoms_app;
-            assert (Heq2 : swaps_atoms psc (swaps_atoms ps1 (add xd S2))
-                           [=] swaps_atoms psc
-                                 (add (swaps_atom ps1 xd)
-                                    (swaps_atoms ps1 S2)))
-              by (apply swaps_atoms_cong; apply swaps_atoms_add);
-            rewrite Heq2, swaps_atoms_add, HScc; reflexivity
+          [ rewrite swaps_atoms_add, swaps_atom_app, swaps_atoms_app, HScc;
+            reflexivity
           | ].
         rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ in Db1.
         rewrite ! swaps_exp_open_var, ! swaps_pskl_ptyp_to_pskl in Db1.
@@ -1580,12 +1569,8 @@ Proof.
       destruct (e_typing_swaps (ps1 ++ psc) Db
                   (S0' := add (swaps_atom psc (swaps_atom ps1 xd))
                             (cs_supply rc))) as [Sd1 [HSd1 Db1]];
-      [ rewrite swaps_atoms_app;
-        assert (Heq2 : swaps_atoms psc (swaps_atoms ps1 (add xd S2))
-                       [=] swaps_atoms psc
-                             (add (swaps_atom ps1 xd) (swaps_atoms ps1 S2)))
-          by (apply swaps_atoms_cong; apply swaps_atoms_add);
-        rewrite Heq2, swaps_atoms_add, HScc; reflexivity
+      [ rewrite swaps_atoms_add, swaps_atom_app, swaps_atoms_app, HScc;
+        reflexivity
       | ];
       rewrite ! swaps_aenv_app_dist, ! swaps_aenv_one_var_typ in Db1;
       rewrite ! swaps_exp_open_var in Db1;

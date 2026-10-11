@@ -1238,12 +1238,8 @@ Proof.
       destruct (e_pat_swaps (ps1 ++ psc) Db
                   (S0' := add (swaps_atom psc (swaps_atom ps1 xd))
                             (cs_supply rc))) as [Sd1 [HSd1 Db1]];
-      [ rewrite swaps_atoms_app;
-        assert (Heq2 : swaps_atoms psc (swaps_atoms ps1 (add xd S2))
-                       [=] swaps_atoms psc
-                             (add (swaps_atom ps1 xd) (swaps_atoms ps1 S2)))
-          by (apply swaps_atoms_cong; apply swaps_atoms_add);
-        rewrite Heq2, swaps_atoms_add, HScc; reflexivity
+      [ rewrite swaps_atoms_add, swaps_atom_app, swaps_atoms_app, HScc;
+        reflexivity
       | ];
       rewrite ! swaps_aenv_app_dist in Db1;
       rewrite ! swaps_aenv_one_var_typ in Db1;
