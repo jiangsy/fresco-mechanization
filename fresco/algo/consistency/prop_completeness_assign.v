@@ -1116,8 +1116,7 @@ Proof.
     pose proof (a_wf_pskl_mid_tm_notin Huqf I HwfP) as Hγfr.
     assert (HwfP' : {{ (Ξ ++ Θ0') ⨟ empty ⊢ₚₛ P }}a)
       by (eapply a_wf_pskl_strip_mid; [ exact HwfP | exact Hγfr ]).
-    pose proof (proj1 (a_flex_tvar_cons_nonflex _ _ _
-      (abind_is_tm_nonflex (abind_var_typ A) I)) Hfα) as Hfα0.
+    pose proof (a_flex_tvar_cons_tm Hfα I) as Hfα0.
     pose proof (a_non_flex_strip_mid Hnf) as Hnf'.
     (* competing: strip Ξ, invert the α1-var middle *)
     destruct (@a_inc_strip_decls_prefix Ξ ((α1 ~ abind_var_typ A) ++ Θ0')
@@ -1257,8 +1256,7 @@ Proof.
     pose proof (a_wf_pskl_mid_tm_notin Huqf I HwfP) as Hγfr.
     assert (HwfP' : {{ (Ξ ++ Θ0') ⨟ empty ⊢ₚₛ P }}a)
       by (eapply a_wf_pskl_strip_mid; [ exact HwfP | exact Hγfr ]).
-    pose proof (proj1 (a_flex_tvar_cons_nonflex _ _ _
-      (abind_is_tm_nonflex (abind_var_skl Q) I)) Hfα) as Hfα0.
+    pose proof (a_flex_tvar_cons_tm Hfα I) as Hfα0.
     pose proof (a_non_flex_strip_mid Hnf) as Hnf'.
     (* competing: strip Ξ, invert the α1-var middle *)
     destruct (@a_inc_strip_decls_prefix Ξ ((α1 ~ abind_var_skl Q) ++ Θ0')

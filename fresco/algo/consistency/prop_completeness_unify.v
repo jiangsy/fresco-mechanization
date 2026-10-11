@@ -100,12 +100,8 @@ Proof.
   destruct b as [ | A | Q | | τdef ].
   - (* head [α1 ~ tvar] : Flex-Flex-Skip' (rigid). *)
     inversion Hwf as [ | | | | | γh Θh Hnd Hwf0 ]; subst.
-    assert (Hnonflex : abind_nonflex abind_tvar)
-      by (unfold abind_nonflex; split; intros; discriminate).
-    assert (Hfα0 : a_flex_tvar Θ0' α).
-    { apply a_flex_tvar_cons_nonflex in Hfα; assumption. }
-    assert (Hfβ0 : a_flex_tvar Θ0' β).
-    { apply a_flex_tvar_cons_nonflex in Hfβ; assumption. }
+    pose proof (a_flex_tvar_strip_tvar Hfα) as Hfα0.
+    pose proof (a_flex_tvar_strip_tvar Hfβ) as Hfβ0.
     apply a_inc_tvar_inv in Hinc as [Ξ [Θ2 [-> [HΞ Hinc']]]].
     destruct (@unify_skip_strengthen Θ0' Ξ α1 abind_tvar abind_tvar Θ2 κ α β
                 Hwf0 Hwfth Hinc' Hfα0 Hfβ0 Heq)
@@ -128,12 +124,8 @@ Proof.
     + apply a_inc_equiv__tvar; [ exact Hie' | exact HΞ ].
   - (* head [x ~ var_typ A] : Flex-Flex-Skip' (semantic type middle). *)
     destruct (a_wf_aenv_var_typ_inv Hwf) as [Hnd [HwfA Hwf0]].
-    assert (Hnonflex : abind_nonflex (abind_var_typ A))
-      by (apply abind_is_tm_nonflex; simpl; exact I).
-    assert (Hfα0 : a_flex_tvar Θ0' α).
-    { apply a_flex_tvar_cons_nonflex in Hfα; assumption. }
-    assert (Hfβ0 : a_flex_tvar Θ0' β).
-    { apply a_flex_tvar_cons_nonflex in Hfβ; assumption. }
+    pose proof (a_flex_tvar_cons_tm Hfα I) as Hfα0.
+    pose proof (a_flex_tvar_cons_tm Hfβ I) as Hfβ0.
     apply a_inc_var_inv in Hinc as [Ξ [A' [Θ2 [-> [HA'eq [HΞ Hinc']]]]]].
     destruct (@unify_skip_strengthen Θ0' Ξ α1 (abind_var_typ A) (abind_var_typ A') Θ2 κ α β
                 Hwf0 Hwfth Hinc' Hfα0 Hfβ0 Heq)
@@ -168,12 +160,8 @@ Proof.
     + apply a_inc_equiv__var; [ exact Hie' | exact HA'eq | exact HΞ ].
   - (* head [x ~ var_skl Q] : Flex-Flex-Skip' (semantic skeleton middle). *)
     destruct (a_wf_aenv_var_skl_inv Hwf) as [Hnd [HwfQ Hwf0]].
-    assert (Hnonflex : abind_nonflex (abind_var_skl Q))
-      by (apply abind_is_tm_nonflex; simpl; exact I).
-    assert (Hfα0 : a_flex_tvar Θ0' α).
-    { apply a_flex_tvar_cons_nonflex in Hfα; assumption. }
-    assert (Hfβ0 : a_flex_tvar Θ0' β).
-    { apply a_flex_tvar_cons_nonflex in Hfβ; assumption. }
+    pose proof (a_flex_tvar_cons_tm Hfα I) as Hfα0.
+    pose proof (a_flex_tvar_cons_tm Hfβ I) as Hfβ0.
     apply a_inc_var_skl_inv in Hinc as [Ξ [P' [Θ2 [-> [HP'eq [HΞ Hinc']]]]]].
     destruct (@unify_skip_strengthen Θ0' Ξ α1 (abind_var_skl Q) (abind_var_skl P') Θ2 κ α β
                 Hwf0 Hwfth Hinc' Hfα0 Hfβ0 Heq)

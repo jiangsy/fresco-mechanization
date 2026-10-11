@@ -1366,6 +1366,15 @@ Proof.
   intros Θ α [Hb | [τ Hb]]; [ right; left | right; right; exists τ ]; exact Hb.
 Qed.
 
+(** A term-variable head hides no flexible variable. *)
+Lemma a_flex_tvar_cons_tm : forall (x : atom) b Θ α,
+  a_flex_tvar ((x ~ b) ++ Θ) α -> abind_is_tm b -> a_flex_tvar Θ α.
+Proof.
+  intros x b Θ α Hf Htm.
+  exact (proj1 (a_flex_tvar_cons_nonflex x Θ α (abind_is_tm_nonflex b Htm)) Hf).
+Qed.
+Arguments a_flex_tvar_cons_tm {x b Θ α}.
+
 (** A flexible variable of the input stays bound in an increased context. *)
 Lemma a_isub_flex_binds_tvar : forall Θ Θ' α,
   Θ ⊴ Θ' ->
