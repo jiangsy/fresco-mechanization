@@ -181,6 +181,24 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Share consistency binder context invariants
+
+Use `lift_consis_open_pair` to share context relation, flex agreement,
+injectivity, and functionality after restricting and pushing a rigid pair.
+Use `lift_consis_open_scope` for the accompanying well-formedness, uniqueness,
+scope, and fresh-output conditions. All three consistency binder lifting
+lemmas now obtain these invariants through the shared proofs; their distinct
+skeleton-opening and variable-set arguments remain explicit.
+
+Net reduction: **68 physical Coq lines / 73 nonblank, noncomment lines**.
+All 9 existing theorem statements are unchanged; no inline tactic terms
+added.
+
+Validation: focused compilation and final `make coq` passed. All 34
+headline assumption reports are closed under the global context, with no
+axiom reports or errors. Statement comparison and `git diff --check` passed.
+
+
 ## 2026-10-11 — Share binder context preparation in solving lifts
 
 Add `solve_lift_open_context` and use it in five binder cases across
