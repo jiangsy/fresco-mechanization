@@ -629,17 +629,11 @@ Proof.
         [ pose proof (a_wf_pskl_ftv_dom HwfPi) as Hfi;
           clear - Hl Hfi HβC HβΘ0 HβΞs; fsetdec
         | apply Hr; repeat rewrite dom_app; simpl; clear; fsetdec ]. }
-    assert (Hβκc : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κc).
-    { rewrite Forall_forall in Himg |- *. intros p Hp.
-      specialize (Himg p Hp). clear - Himg Hβψa; fsetdec. }
     assert (Hfmc : all_flex_mono Ξc)
       by (eapply a_looksub_all_flex_mono; exact HLK).
-    (* ⭐ the SOLVE BLOCK's payloads dodge β because they are well-formed in
-       the FIXED [Θw], which predates the binder *)
-    assert (Hβκs : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κs).
-    { rewrite Forall_forall. intros p Hp0.
-      pose proof (forall_wf_mono_images_dom HFs p Hp0) as Hb.
-      clear - Hb HβΘw; fsetdec. }
+    destruct (solve_outputs_strip_tvar Hfms Hfmc Hks Hmapfst HFs Himg
+                HβΘw Hβψa HβΘ HβPa HwfPa HwfΞ Hinc)
+      as (HwfPa' & HwfΞ' & Hinc').
     destruct (pskl_ghost_dec P0) as [HP0h | HP0nh].
     { (* ⭐⭐ GHOST TARGET.  [ForallL]'s guard is [guarded P0 ∨ P0 = ◇], so
          this cell is reachable — and there the runner answers LS-Vacuous
@@ -722,29 +716,12 @@ Proof.
     -- (* dom Ξs ∩ Lav = ∅ *)
        intros α0 Hα0; pose proof (Hfrs α0 Hα0) as Hf; clear - Hf; fsetdec.
     -- (* the SOLVE block's payloads — at the FIXED Θw *) exact HFs.
-    -- (* wf Pa *)
-       rewrite <- (aenv_app_assoc Ξs Ξc Θ0).
-       apply (@a_wf_pskl_strip_tvar (Ξs ++ Ξc) β Θ0 empty Pa);
-         [ rewrite (aenv_app_assoc Ξs Ξc ((β ~ abind_tvar) ++ Θ0));
-           exact HwfPa
-         | exact HβPa ].
-    -- (* a_wf_aenv *)
-       eapply a_wf_aenv_strip_mid;
-         [ apply all_flex_mono_decls; exact Hfmc | exact HwfΞ ].
+    -- (* wf Pa *) exact HwfPa'.
+    -- (* a_wf_aenv *) exact HwfΞ'.
     -- (* α ∉ dom Ξc *) exact HαΞ.
     -- (* keys *) exact Hmapfst.
     -- (* κc images ⊆ ftv ψa *) exact Himg.
-    -- (* a_inc — the strip peels BOTH blocks at once *)
-       rewrite <- (aenv_app_assoc Ξs Ξc Θ0).
-       rewrite <- (list_app_assoc κs κc κ).
-       eapply a_inc_strip_tvar_mid;
-         [ apply all_flex_mono_app; [ exact Hfms | exact Hfmc ]
-         | rewrite !keys_app; rewrite Hks, Hmapfst; reflexivity
-         | apply Forall_app; split; [ exact Hβκs | exact Hβκc ]
-         | exact HβΘ
-         | rewrite (list_app_assoc κs κc κ);
-           rewrite (aenv_app_assoc Ξs Ξc ((β ~ abind_tvar) ++ Θ0));
-           exact Hinc ].
+    -- (* a_inc — the strip peels BOTH blocks at once *) exact Hinc'.
     -- (* a_inc_equiv *) apply a_inc_equiv_refl; exact Hκ.
     -- (* κc fresh *)
        intros α0 Hα0. specialize (Hκfresh α0 Hα0). simpl in Hκfresh.
@@ -1413,8 +1390,7 @@ Proof.
       - apply guarded_pskl__unit.
       - inversion HwfP0.
       - apply guarded_pskl__var.
-      - pose proof (a_wf_pskl_lc HwfP0) as Hlc; inversion Hlc; subst.
-        apply guarded_pskl__arrow; assumption.
+      - exact (a_wf_pskl_arrow_guarded HwfP0).
       - (* ∀ : its inherited painting is a [bskl_all_inh], and the target is
            the inherited painting of a GUARDED B — which is never one *)
         exfalso.
@@ -1541,39 +1517,15 @@ Proof.
     destruct A as [ | nA | αA | A1 A2 | A0 ];
       cbn [ptyp_to_pskl] in HwfP0, Hrefine, Hpre, HΔρftv |- *.
     + (* ⟨⟩ : guarded *)
-      exfalso;
-        assert (Hbad : guarded_bskl (bskl_all_inh B));
-        [ eapply ad_refine_syn_guarded_r_all;
-            [ exact HwfΘ | exact Hrefine
-            | apply guarded_pskl_to_bskl_inh;
-              eapply guarded_pskl_msubst_inc;
-                [ exact Hκ | apply guarded_pskl__unit ]
-            | eexists; left; reflexivity ]
-        | inversion Hbad ].
+      exfalso; exact (proj1 (ad_refine_syn_msubst_guarded_not_all
+                               HwfΘ Hκ guarded_pskl__unit Hrefine B) eq_refl).
     + (* a bound variable is not well-formed *) inversion HwfP0.
     + (* a variable : guarded *)
-      exfalso;
-        assert (Hbad : guarded_bskl (bskl_all_inh B));
-        [ eapply ad_refine_syn_guarded_r_all;
-            [ exact HwfΘ | exact Hrefine
-            | apply guarded_pskl_to_bskl_inh;
-              eapply guarded_pskl_msubst_inc;
-                [ exact Hκ | apply guarded_pskl__var ]
-            | eexists; left; reflexivity ]
-        | inversion Hbad ].
+      exfalso; exact (proj1 (ad_refine_syn_msubst_guarded_not_all
+                               HwfΘ Hκ (guarded_pskl__var _) Hrefine B) eq_refl).
     + (* an arrow : guarded *)
-      exfalso.
-      assert (Hg : guarded_pskl
-                     (pskl_arrow (ptyp_to_pskl A1) (ptyp_to_pskl A2))).
-      { pose proof (a_wf_pskl_lc HwfP0) as Hlc; inversion Hlc; subst.
-        apply guarded_pskl__arrow; assumption. }
-      assert (Hbad : guarded_bskl (bskl_all_inh B));
-        [ eapply ad_refine_syn_guarded_r_all;
-            [ exact HwfΘ | exact Hrefine
-            | apply guarded_pskl_to_bskl_inh;
-              eapply guarded_pskl_msubst_inc; [ exact Hκ | exact Hg ]
-            | eexists; left; reflexivity ]
-        | inversion Hbad ].
+      exfalso; exact (proj1 (ad_refine_syn_msubst_guarded_not_all HwfΘ Hκ
+                               (a_wf_pskl_arrow_guarded HwfP0) Hrefine B) eq_refl).
     + (* P0 = ∀.P0' : the real row *)
       cbn [msubst_pskl pskl_to_bskl_inh] in Hrefine.
       inversion Hrefine; subst.
@@ -1683,21 +1635,12 @@ Proof.
             & Hprec & HftvC & HapartR).
       assert (HβΞs : β `notin` dom Ξs)
         by (intro Hc; pose proof (Hfrs β Hc) as Hf; clear - Hf; fsetdec).
-      assert (Hβκs : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κs).
-      { rewrite Forall_forall. intros p Hp0.
-        pose proof (forall_wf_mono_images_dom HFs p Hp0) as Hb.
-        clear - Hb HβΘw; fsetdec. }
-      assert (HβR : β `notin` ftvar_in_pskl ⌊ R' ⌋ˢ).
-      { rewrite ftvar_in_pskl_uskl_to_pskl. clear - Fr; solve_notin. }
       pose proof (@keys_eq_dom _ _ κc Ξc Hmapfst) as Hdκ.
       assert (HβΞc : β `notin` dom Ξc).
       { intro Hc. rewrite <- Hdκ in Hc. specialize (Hκfresh β Hc).
         apply Hκfresh. simpl; clear; fsetdec. }
       assert (Hfmc : all_flex_mono Ξc)
         by (eapply a_looksub_all_flex_mono; exact HLK).
-      assert (Hβκc : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κc).
-      { rewrite Forall_forall in Himg |- *. intros p Hp.
-        specialize (Himg p Hp). clear - Himg Hβψa; fsetdec. }
       (* ---------------------------------------------------------------- *)
       (* THE CASE SPLIT.  The IH's own ftv-𝒞 disjunct decides which rule    *)
       (* the lookup side takes — no decidability of [alpha_stack] needed.   *)
@@ -1723,6 +1666,9 @@ Proof.
             [ pose proof (a_wf_pskl_ftv_dom HwfPi) as Hfi;
               clear - Hl Hfi HβC HβΘ0 HβΞs; fsetdec
             | apply Hr; repeat rewrite dom_app; simpl; clear; fsetdec ]. }
+        destruct (solve_outputs_strip_tvar Hfms Hfmc Hks Hmapfst HFs Himg
+                    HβΘw Hβψa HβΘ HβPa HwfPa HwfΞ Hinc)
+          as (HwfPa' & HwfΞ' & Hinc').
         exists 𝒞, Ξc, Ξs, Pa, κc, κs.
         repeat split.
         -- (* a_looksub : LS-ForallR, the single β-instance renamed into the
@@ -1740,29 +1686,12 @@ Proof.
         -- (* dom Ξs ∩ Lav = ∅ *)
            intros α0 Hα0; pose proof (Hfrs α0 Hα0) as Hf; clear - Hf; fsetdec.
         -- (* the SOLVE block's payloads — at the FIXED Θw *) exact HFs.
-        -- (* wf Pa *)
-           rewrite <- (aenv_app_assoc Ξs Ξc Θ0).
-           apply (@a_wf_pskl_strip_tvar (Ξs ++ Ξc) β Θ0 empty Pa);
-             [ rewrite (aenv_app_assoc Ξs Ξc ((β ~ abind_tvar) ++ Θ0));
-               exact HwfPa
-             | exact HβPa ].
-        -- (* a_wf_aenv *)
-           eapply a_wf_aenv_strip_mid;
-             [ apply all_flex_mono_decls; exact Hfmc | exact HwfΞ ].
+        -- (* wf Pa *) exact HwfPa'.
+        -- (* a_wf_aenv *) exact HwfΞ'.
         -- (* α ∉ dom Ξc *) exact HαΞ.
         -- (* keys *) exact Hmapfst.
         -- (* κc images ⊆ ftv ψa *) exact Himg.
-        -- (* a_inc — the strip peels BOTH blocks at once *)
-           rewrite <- (aenv_app_assoc Ξs Ξc Θ0).
-           rewrite <- (list_app_assoc κs κc κ).
-           eapply a_inc_strip_tvar_mid;
-             [ apply all_flex_mono_app; [ exact Hfms | exact Hfmc ]
-             | rewrite !keys_app; rewrite Hks, Hmapfst; reflexivity
-             | apply Forall_app; split; [ exact Hβκs | exact Hβκc ]
-             | exact HβΘ
-             | rewrite (list_app_assoc κs κc κ);
-               rewrite (aenv_app_assoc Ξs Ξc ((β ~ abind_tvar) ++ Θ0));
-               exact Hinc ].
+        -- (* a_inc — the strip peels BOTH blocks at once *) exact Hinc'.
         -- (* a_inc_equiv *) apply a_inc_equiv_refl; exact Hκ.
         -- (* κc fresh *)
            intros α0 Hα0. specialize (Hκfresh α0 Hα0). simpl in Hκfresh.

@@ -970,6 +970,53 @@ Proof.
       apply binds_weaken; eassumption.
 Qed.
 
+(* (iv) the WHOLE solve-side package of a run under a fresh rigid β loses β
+   at once: the result's scope, the collection block's context and the
+   increase.  The SOLVE block's payloads dodge β because they are well-formed
+   in a context [Θw] that predates the binder, the collection block's because
+   they live in [ψa]. *)
+Lemma solve_outputs_strip_tvar : forall {Ξs Ξc Θ0 Θ Θw κs κc κ Pa ψa β},
+  all_flex_mono Ξs -> all_flex_mono Ξc ->
+  keys κs = keys Ξs -> keys κc = keys Ξc ->
+  Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs ->
+  Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc ->
+  β `notin` dom Θw -> β `notin` ftvar_in_uskl ψa -> β `notin` dom Θ ->
+  β `notin` ftvar_in_pskl Pa ->
+  {{ (Ξs ++ Ξc ++ (β ~ abind_tvar) ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a ->
+  {{ ⊢ (Ξc ++ (β ~ abind_tvar) ++ Θ0) }}a ->
+  (κs ++ κc ++ κ) ∷ (Ξs ++ Ξc ++ (β ~ abind_tvar) ++ Θ0)
+    ⊑ ((β ~ abind_tvar) ++ Θ) ->
+  {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
+  {{ ⊢ (Ξc ++ Θ0) }}a /\
+  (κs ++ κc ++ κ) ∷ (Ξs ++ Ξc ++ Θ0) ⊑ Θ.
+Proof.
+  intros Ξs Ξc Θ0 Θ Θw κs κc κ Pa ψa β Hfms Hfmc Hks Hkc HFs Himg
+    HβΘw Hβψa HβΘ HβPa HwfPa HwfΞ Hinc.
+  assert (Hβκs : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κs).
+  { rewrite Forall_forall. intros p Hp.
+    pose proof (forall_wf_mono_images_dom HFs p Hp) as Hb.
+    clear - Hb HβΘw; fsetdec. }
+  assert (Hβκc : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κc).
+  { rewrite Forall_forall in Himg |- *. intros p Hp.
+    specialize (Himg p Hp). clear - Himg Hβψa; fsetdec. }
+  refine (conj _ (conj _ _)).
+  - rewrite <- (aenv_app_assoc Ξs Ξc Θ0).
+    apply (@a_wf_pskl_strip_tvar (Ξs ++ Ξc) β Θ0 empty Pa); [ | exact HβPa ].
+    rewrite (aenv_app_assoc Ξs Ξc ((β ~ abind_tvar) ++ Θ0)); exact HwfPa.
+  - eapply a_wf_aenv_strip_mid; [ apply all_flex_mono_decls; exact Hfmc | exact HwfΞ ].
+  - (* the strip peels BOTH blocks at once *)
+    rewrite <- (aenv_app_assoc Ξs Ξc Θ0).
+    rewrite <- (list_app_assoc κs κc κ).
+    apply a_inc_strip_tvar_mid with (β := β).
+    + apply all_flex_mono_app; [ exact Hfms | exact Hfmc ].
+    + rewrite !keys_app; rewrite Hks, Hkc; reflexivity.
+    + apply Forall_app; split; [ exact Hβκs | exact Hβκc ].
+    + exact HβΘ.
+    + rewrite (list_app_assoc κs κc κ).
+      rewrite (aenv_app_assoc Ξs Ξc ((β ~ abind_tvar) ++ Θ0)).
+      exact Hinc.
+Qed.
+
 (* ===================================================================== *)
 (*  ⭐⭐ THE ForallR-PRIORITY REORDER (2026-08-18)                          *)
 (*                                                                        *)
@@ -2504,14 +2551,10 @@ Proof.
   { pose proof (a_solve_cstr_ftv_eq HSolve (a_lookeq_cstr_eq HLK)) as Hpf.
     pose proof (a_wf_pskl_ftv_dom HwfPi) as Hfi.
     clear - Hpf Hfi HβC HβΘ0 HβΞs; fsetdec. }
-  assert (Hβκc : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κc).
-  { rewrite Forall_forall in Himg |- *. intros p Hp.
-    specialize (Himg p Hp). clear - Himg Hβψa; fsetdec. }
-  assert (Hβκs : Forall (fun p => β `notin` ftvar_in_ptyp (snd p)) κs).
-  { rewrite Forall_forall. intros p Hp.
-    pose proof (forall_wf_mono_images_dom HFs p Hp) as Hb.
-    clear - Hb HβΘw; fsetdec. }
   assert (Hfmc : all_flex_mono Ξc) by (eapply a_lookeq_all_flex_mono; exact HLK).
+  destruct (solve_outputs_strip_tvar Hfms Hfmc Hks Hmapfst HFs Himg
+              HβΘw Hβψa HβΘ HβPa HwfPa HwfΞ Hinc)
+    as (HwfPa' & HwfΞ' & Hinc').
   exists 𝒞, Ξc, Ξs, Pa, κc, κs.
   repeat split.
   - (* a_lookeq : the row's own rule, fired at β *) exact (Hlook _ _ HLK).
@@ -2523,30 +2566,13 @@ Proof.
     intros α0 Hα0; pose proof (Hfrs α0 Hα0) as Hf; clear - Hf; fsetdec.
   - (* the SOLVE block's payloads — at the FIXED Θw, so unchanged *)
     exact HFs.
-  - (* wf Pa *)
-    rewrite <- (aenv_app_assoc Ξs Ξc Θ0).
-    apply (@a_wf_pskl_strip_tvar (Ξs ++ Ξc) β Θ0 empty Pa);
-      [ rewrite (aenv_app_assoc Ξs Ξc ((β ~ abind_tvar) ++ Θ0));
-        exact HwfPa
-      | exact HβPa ].
-  - (* a_wf_aenv *)
-    eapply a_wf_aenv_strip_mid;
-      [ apply all_flex_mono_decls; exact Hfmc | exact HwfΞ ].
+  - exact HwfPa'.
+  - exact HwfΞ'.
   - (* α ∉ dom Ξc *) exact HαΞ.
   - (* keys *) exact Hmapfst.
   - (* κc images *) exact Himg.
   - (* ftv 𝒞 *) exact HftvC.
-  - (* a_inc — the strip peels BOTH blocks at once *)
-    rewrite <- (aenv_app_assoc Ξs Ξc Θ0).
-    rewrite <- (list_app_assoc κs κc κ).
-    eapply a_inc_strip_tvar_mid;
-      [ apply all_flex_mono_app; [ exact Hfms | exact Hfmc ]
-      | rewrite !keys_app; rewrite Hks, Hmapfst; reflexivity
-      | apply Forall_app; split; [ exact Hβκs | exact Hβκc ]
-      | exact HβΘ
-      | rewrite (list_app_assoc κs κc κ);
-        rewrite (aenv_app_assoc Ξs Ξc ((β ~ abind_tvar) ++ Θ0));
-        exact Hinc ].
+  - exact Hinc'.
   - (* a_inc_equiv *) apply a_inc_equiv_refl; exact Hκ.
   - (* κc fresh *)
     intros α0 Hα0. specialize (Hκfresh α0 Hα0). simpl in Hκfresh.
