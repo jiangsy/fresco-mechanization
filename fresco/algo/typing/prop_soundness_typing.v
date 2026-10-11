@@ -1635,6 +1635,93 @@ Qed.
 (*  §13  thm:sound-type-inference                                        *)
 (* ===================================================================== *)
 
+(** The body stage of the two [_check_base] rows (AT-AbsCheck (→) and
+    AT-AbsAnnoCheck (→)), from the context [Θc] the body is checked in, given
+    the body's IH: the discarded suffix [Ξ] and the term binder strip off the
+    body run's increase, its derivation and its codomain refinement
+    (Barendregt premises (1) and (2)), and at TC the body's colouring is the
+    inherited painting of its result [B1]. *)
+Lemma a_typing_sound_check_base_body :
+  forall {x Θc A B B1 e} {Ξ Θo : aenv},
+  {{ ⊢ Θc }}a -> a_wf_ptyp Θc A -> a_wf_ptyp Θc B ->
+  {{ Θc ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a ->
+  a_suffix Ξ -> uniq (Ξ ++ Θc) ->
+  (forall γ, γ `in` dom Ξ -> γ `notin` ftvar_in_ptyp B1) ->
+  x `notin` dom (Ξ ++ Θc) `union` dom Θo `union` fvar_in_exp e ->
+  ({{ ⊢ ((x ~ abind_var_typ A) ++ Θc) }}a ->
+   {{ ((x ~ abind_var_typ A) ++ Θc) ⨟ empty ⊢ₚₛ (ptyp_to_pskl B) }}a ->
+   a_ty_mode_compat mode_tc (ptyp_to_pskl B) ->
+   {{ ((x ~ abind_var_typ A) ++ Θc) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a ->
+   ((x ~ abind_var_typ A) ++ Θc) ⊴ (Ξ ++ (x ~ abind_var_typ A) ++ Θo) /\
+   {{ ⊢ (Ξ ++ (x ~ abind_var_typ A) ++ Θo) }}a /\
+   a_wf_ptyp (Ξ ++ (x ~ abind_var_typ A) ++ Θo) B1 /\
+   exists Bt, btyp_to_ptyp Bt = B1 /\
+     ({{ (Ξ ++ (x ~ abind_var_typ A) ++ Θo) ⊢ˢᵈ[ mode_tc ]
+         (open_exp_wrt_exp e (exp_var_f x)) ⦂ Bt }}ad) /\
+     ({{ (Ξ ++ (x ~ abind_var_typ A) ++ Θo) ⨟ empty
+         ⊢ᵣ (pskl_to_bskl_inh (ptyp_to_pskl B)) ⊳ (btyp_to_bskl Bt) }}ad)) ->
+  Θc ⊴ Θo /\ ({{ ⊢ Θo }}a) /\ a_wf_ptyp Θo B1 /\
+  (forall y,
+     {{ ((y ~ abind_var_typ A) ++ Θo) ⊢ˢᵈ[ mode_tc ]
+       (open_exp_wrt_exp e (exp_var_f y)) ⦂ (ptyp_to_btyp_inh B1) }}ad) /\
+  ({{ Θo ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (ptyp_to_pskl B))
+       ⊳ (btyp_to_bskl (ptyp_to_btyp_inh B1)) }}ad).
+Proof.
+  intros x Θc A B B1 e Ξ Θo Hwfc HwfA HwfB Hexpx Hsuf Huq HΞ Hfr IH.
+  assert (Hx : x `notin` dom Θc `union` dom Ξ `union` dom Θo
+                 `union` fvar_in_exp e)
+    by (clear - Hfr; rewrite !dom_app in Hfr; fsetdec).
+  assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θc) }}a)
+    by (apply a_wf_aenv__var_typ;
+        [ clear - Hx; fsetdec | exact HwfA | exact Hwfc ]).
+  destruct (IH Hwfx
+              (a_wf_pskl_weaken_cons x (abind_var_typ A)
+                 (a_wf_ptyp_to_wf_pskl empty HwfB))
+              (a_ty_mode_compat__tc B)
+              (a_wf_exp_weaken_cons x (abind_var_typ A) Hexpx))
+    as [Hle [Hwfout [HwfBout [Bt [HeBt [Hdb Hrefb]]]]]].
+  assert (HBt : Bt = ptyp_to_btyp_inh B1).
+  { apply btyp_check_colouring; [ | exact HeBt ].
+    apply mod_comp_ty_tc_inv. eapply ad_sd_typing_mod_comp_ty; eassumption. }
+  subst Bt.
+  assert (Huniq2 : uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θo))
+    by (apply a_wf_aenv_uniq; exact Hwfout).
+  assert (HΞΘc : forall γ, γ `in` dom Ξ -> γ `notin` dom Θc)
+    by (intros γ Hγ; clear - Huq Hγ; destruct_uniq;
+        unfold disjoint in *; fsetdec).
+  split.
+  { eapply a_isub_strip_var_typ_mid; [ exact Huniq2 | exact Huq | exact Hle ]. }
+  split.
+  { eapply a_wf_aenv_strip_prefix.
+    eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []. }
+  split.
+  { eapply a_wf_ptyp_strip_prefix; [ | exact HΞ ].
+    eapply a_wf_ptyp_mono;
+      [ exact HwfBout | apply aenv_tbinds_le_strip_tm; intros [] ]. }
+  split.
+  { intros y. apply ad_sd_typing_rename_tm with (x := x);
+      [ eapply ad_sd_typing_strip_suffix;
+          [ exact Hsuf | simpl_env; exact Hwfout | | simpl_env; exact Hdb ]
+      | exact I
+      | clear - Hx; fsetdec ].
+    intros γ Hγ.
+    rewrite ftvar_ptyp_to_btyp_inh.
+    pose proof (HΞ γ Hγ) as Hn. pose proof (HΞΘc γ Hγ) as Hd1.
+    pose proof (a_wf_exp_ftv_dom Hexpx) as Hfv.
+    clear - Hn Hd1 Hfv; fsetdec. }
+  { pose proof (a_wf_ptyp_ftv_dom HwfB) as HftvB.
+    eapply ad_refine_syn_strip_suffix with (Ξ := Ξ);
+      [ exact Hsuf
+      | eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []
+      | intros γ Hγ;
+        rewrite btyp_to_bskl_ptyp_to_btyp_inh;
+        rewrite !ftvar_in_bskl_inh_ptyp;
+        pose proof (HΞ γ Hγ) as Hn;
+        pose proof (HΞΘc γ Hγ) as Hd1;
+        clear - Hn Hd1 HftvB; fsetdec
+      | eapply ad_refine_syn_strip_tm_typ; exact Hrefb ]. }
+Qed.
+
 (** ⭐ THEOREM 2, the mirror of [a_pat_sound] (prop_soundness_pat.v §5) one
     layer up: an [a_typing] run yields a solution to its type-inference
     problem.  The two extra hypotheses are theorem 1's ([a_wf_exp] and the
@@ -1935,65 +2022,12 @@ Proof.
       by (apply a_wf_ptyp_of_wf_pskl_empty; exact HwfPA).
     assert (HwfBs : a_wf_ptyp Θ1 B)
       by (apply a_wf_ptyp_of_wf_pskl_empty; exact HwfPB).
-    assert (Hx : x `notin` dom Θ1 `union` dom Ξ `union` dom Θ2
-                   `union` fvar_in_exp e)
-      by (clear - H3; rewrite !dom_app in H3; fsetdec).
-    assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ1) }}a)
-      by (apply a_wf_aenv__var_typ;
-          [ clear - Hx; fsetdec | exact HwfAs | exact Hwfs ]).
     assert (Hexpx : {{ Θ1 ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a)
       by (apply (a_wf_exp_isub (a_wf_exp_abs_pick x Hexp) Hles)).
-    destruct (IHa_typing Hwfx
-                (a_wf_pskl_weaken_cons x (abind_var_typ A) HwfPB)
-                (a_ty_mode_compat__tc B)
-                (a_wf_exp_weaken_cons x (abind_var_typ A) Hexpx))
-      as [Hle [Hwfout [HwfBout [Bt [HeBt [Hdb Hrefb]]]]]].
-    assert (HBt : Bt = ptyp_to_btyp_inh B1).
-    { apply btyp_check_colouring; [ | exact HeBt ].
-      apply mod_comp_ty_tc_inv. eapply ad_sd_typing_mod_comp_ty; eassumption. }
-    subst Bt.
-    assert (Huniq2 : uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θ2))
-      by (apply a_wf_aenv_uniq; exact Hwfout).
-    assert (Hisub1 : Θ1 ⊴ Θ2)
-      by (eapply a_isub_strip_var_typ_mid;
-          [ exact Huniq2 | exact H1 | exact Hle ]).
+    destruct (a_typing_sound_check_base_body Hwfs HwfAs HwfBs Hexpx
+                H0 H1 H2 H3 IHa_typing)
+      as [Hisub1 [Hwf2 [HwfB2 [Hbody Hrefb2]]]].
     assert (Hisub : Θ0 ⊴ Θ2) by (eapply a_isub_trans; eassumption).
-    assert (Hwf2 : {{ ⊢ Θ2 }}a).
-    { eapply a_wf_aenv_strip_prefix.
-      eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []. }
-    assert (HΞΘ1 : forall γ, γ `in` dom Ξ -> γ `notin` dom Θ1)
-      by (intros γ Hγ; clear - H1 Hγ; destruct_uniq;
-          unfold disjoint in *; fsetdec).
-    assert (HwfB2 : a_wf_ptyp Θ2 B1).
-    { eapply a_wf_ptyp_strip_prefix; [ | exact H2 ].
-      eapply a_wf_ptyp_mono;
-        [ exact HwfBout | apply aenv_tbinds_le_strip_tm; intros [] ]. }
-    assert (Hbody : forall y,
-              {{ ((y ~ abind_var_typ A) ++ Θ2) ⊢ˢᵈ[ mode_tc ]
-                (open_exp_wrt_exp e (exp_var_f y)) ⦂ (ptyp_to_btyp_inh B1) }}ad).
-    { intros y. apply ad_sd_typing_rename_tm with (x := x);
-        [ eapply ad_sd_typing_strip_suffix;
-            [ exact H0 | simpl_env; exact Hwfout | | simpl_env; exact Hdb ]
-        | exact I
-        | clear - Hx; fsetdec ].
-      intros γ Hγ.
-      rewrite ftvar_ptyp_to_btyp_inh.
-      pose proof (H2 γ Hγ) as Hn. pose proof (HΞΘ1 γ Hγ) as Hd1.
-      pose proof (a_wf_exp_ftv_dom Hexpx) as Hfv.
-      clear - Hn Hd1 Hfv; fsetdec. }
-    assert (Hrefb2 : {{ Θ2 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (ptyp_to_pskl B))
-                       ⊳ (btyp_to_bskl (ptyp_to_btyp_inh B1)) }}ad).
-    { pose proof (a_wf_ptyp_ftv_dom HwfBs) as HftvB.
-      eapply ad_refine_syn_strip_suffix with (Ξ := Ξ);
-        [ exact H0
-        | eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []
-        | intros γ Hγ;
-          rewrite btyp_to_bskl_ptyp_to_btyp_inh;
-          rewrite !ftvar_in_bskl_inh_ptyp;
-          pose proof (H2 γ Hγ) as Hn;
-          pose proof (HΞΘ1 γ Hγ) as Hd1;
-          clear - Hn Hd1 HftvB; fsetdec
-        | eapply ad_refine_syn_strip_tm_typ; exact Hrefb ]. }
     split; [ exact Hisub | ]. split; [ exact Hwf2 | ].
     split;
       [ apply a_wf_ptyp__arrow;
@@ -2036,77 +2070,17 @@ Proof.
       by (eapply a_isub_trans; [ exact Hles | exact Hlec ]).
     assert (HwfAan2 : a_wf_ptyp Θ2 A)
       by (eapply a_wf_ptyp_isub; [ exact HwfAan1 | exact Hlec ]).
-    assert (Hx : x `notin` dom Θ2 `union` dom Ξ `union` dom Θ3
-                   `union` fvar_in_exp e)
-      by (clear - H4; rewrite !dom_app in H4; fsetdec).
-    assert (Hwfx : {{ ⊢ ((x ~ abind_var_typ A) ++ Θ2) }}a)
-      by (apply a_wf_aenv__var_typ;
-          [ clear - Hx; fsetdec | exact HwfAan2 | exact Hwfc ]).
     assert (Hexpx : {{ Θ2 ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a)
       by (apply (a_wf_exp_isub (a_wf_exp_abs_anno_pick x Hexp) Hle02)).
-    destruct (IHa_typing Hwfx
-                (a_wf_pskl_weaken_cons x (abind_var_typ A)
-                   ltac:(eapply a_wf_pskl_isub; [ exact HwfPB | exact Hlec ]))
-                (a_ty_mode_compat__tc B)
-                (a_wf_exp_weaken_cons x (abind_var_typ A) Hexpx))
-      as [Hle [Hwfout [HwfBout [Bt [HeBt [Hdb Hrefb]]]]]].
-    assert (HBt : Bt = ptyp_to_btyp_inh B1).
-    { apply btyp_check_colouring; [ | exact HeBt ].
-      apply mod_comp_ty_tc_inv. eapply ad_sd_typing_mod_comp_ty; eassumption. }
-    subst Bt.
-    assert (Huniq3 : uniq (Ξ ++ (x ~ abind_var_typ A) ++ Θ3))
-      by (apply a_wf_aenv_uniq; exact Hwfout).
-    assert (Hisub2 : Θ2 ⊴ Θ3)
-      by (eapply a_isub_strip_var_typ_mid;
-          [ exact Huniq3 | exact H2 | exact Hle ]).
+    destruct (a_typing_sound_check_base_body Hwfc HwfAan2
+                (a_wf_ptyp_isub HwfBs Hlec) Hexpx H1 H2 H3 H4 IHa_typing)
+      as [Hisub2 [Hwf3 [HwfB3 [Hbody Hrefb2]]]].
     assert (Hisub : Θ0 ⊴ Θ3)
       by (eapply a_isub_trans; [ exact Hle02 | exact Hisub2 ]).
-    assert (Hwf3 : {{ ⊢ Θ3 }}a).
-    { eapply a_wf_aenv_strip_prefix.
-      eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []. }
-    assert (HΞΘ2 : forall γ, γ `in` dom Ξ -> γ `notin` dom Θ2)
-      by (intros γ Hγ; clear - H2 Hγ; destruct_uniq;
-          unfold disjoint in *; fsetdec).
-    assert (HwfB3 : a_wf_ptyp Θ3 B1).
-    { eapply a_wf_ptyp_strip_prefix; [ | exact H3 ].
-      eapply a_wf_ptyp_mono;
-        [ exact HwfBout | apply aenv_tbinds_le_strip_tm; intros [] ]. }
     assert (Hle13 : Θ1 ⊴ Θ3)
       by (eapply a_isub_trans; [ exact Hlec | exact Hisub2 ]).
     assert (HwfA3 : a_wf_ptyp Θ3 A')
       by (eapply a_wf_ptyp_isub; [ exact HwfAs | exact Hle13 ]).
-    assert (Hbody : forall y,
-              {{ ((y ~ abind_var_typ A) ++ Θ3) ⊢ˢᵈ[ mode_tc ]
-                (open_exp_wrt_exp e (exp_var_f y)) ⦂ (ptyp_to_btyp_inh B1) }}ad).
-    { intros y. apply ad_sd_typing_rename_tm with (x := x);
-        [ eapply ad_sd_typing_strip_suffix;
-            [ exact H1 | simpl_env; exact Hwfout | | simpl_env; exact Hdb ]
-        | exact I
-        | clear - Hx; fsetdec ].
-      intros γ Hγ.
-      rewrite ftvar_ptyp_to_btyp_inh.
-      pose proof (H3 γ Hγ) as Hn. pose proof (HΞΘ2 γ Hγ) as Hd2.
-      pose proof (a_wf_exp_ftv_dom Hexpx) as Hfv.
-      clear - Hn Hd2 Hfv; fsetdec. }
-    assert (Hrefb2 : {{ Θ3 ⨟ empty ⊢ᵣ (pskl_to_bskl_inh (ptyp_to_pskl B))
-                       ⊳ (btyp_to_bskl (ptyp_to_btyp_inh B1)) }}ad).
-    { assert (HftvB2 : forall γ, γ `in` ftvar_in_ptyp B -> γ `in` dom Θ2).
-      { intros γ Hγ.
-        apply a_binds_tvar_in_dom.
-        eapply a_isub_binds_tvarish; [ exact Hlec | ].
-        eapply a_wf_ptyp_ftv_tvarish; [ exact HwfBs | exact Hγ ]. }
-      eapply ad_refine_syn_strip_suffix with (Ξ := Ξ);
-        [ exact H1
-        | eapply a_wf_aenv_strip_tm_mid; [ | exact Hwfout ]; intros []
-        | intros γ Hγ;
-          rewrite btyp_to_bskl_ptyp_to_btyp_inh;
-          rewrite !ftvar_in_bskl_inh_ptyp;
-          pose proof (H3 γ Hγ) as Hn;
-          pose proof (HΞΘ2 γ Hγ) as Hd2;
-          assert (HγB : γ `notin` ftvar_in_ptyp B)
-            by (intros Hc; apply Hd2; apply HftvB2; exact Hc);
-          clear - Hn HγB; fsetdec
-        | eapply ad_refine_syn_strip_tm_typ; exact Hrefb ]. }
     split; [ exact Hisub | ]. split; [ exact Hwf3 | ].
     split; [ apply a_wf_ptyp__arrow; [ exact HwfA3 | exact HwfB3 ] | ].
     exists (btyp_arrow (ptyp_to_btyp_inh A') (ptyp_to_btyp_inh B1)).
