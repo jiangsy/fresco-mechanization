@@ -117,11 +117,10 @@ Lemma e_typing_swaps : forall ps S0 m Θ0 P0 e B S1 Θ1,
 Proof.
   induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
   - exact (e_typing_supply_respect Hd Heq).
-  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
-    destruct (e_typing_swap (a := a) (b := b) Hd Hr) as [S1a [HS1a Hda]].
+  - destruct (e_typing_swap (a := a) (b := b) Hd (reflexivity _))
+      as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
-    exists S1'. split; [ | exact Hd' ].
-    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
+    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
 Qed.
 
 (* Use the shared embedding's injectivity with the equation explicit. *)

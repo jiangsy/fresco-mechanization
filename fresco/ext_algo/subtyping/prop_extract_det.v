@@ -103,12 +103,11 @@ Proof.
   induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
   - exact ((proj1 e_looksub_lookeq_supply_respect)
              _ _ _ _ _ _ _ _ _ Hd _ Heq).
-  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
-    destruct ((proj1 (e_looksub_lookeq_swap a b))
-                _ _ _ _ _ _ _ _ _ Hd _ Hr) as [S1a [HS1a Hda]].
+  - destruct ((proj1 (e_looksub_lookeq_swap a b))
+                _ _ _ _ _ _ _ _ _ Hd _ (reflexivity _))
+      as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
-    exists S1'. split; [ | exact Hd' ].
-    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
+    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
 Qed.
 
 Lemma e_lookeq_swaps : forall ps S0 Θ α P P' S1 Ξ C,
@@ -122,12 +121,11 @@ Proof.
   induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
   - exact ((proj2 e_looksub_lookeq_supply_respect)
              _ _ _ _ _ _ _ _ Hd _ Heq).
-  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
-    destruct ((proj2 (e_looksub_lookeq_swap a b))
-                _ _ _ _ _ _ _ _ Hd _ Hr) as [S1a [HS1a Hda]].
+  - destruct ((proj2 (e_looksub_lookeq_swap a b))
+                _ _ _ _ _ _ _ _ Hd _ (reflexivity _))
+      as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
-    exists S1'. split; [ | exact Hd' ].
-    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
+    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
 Qed.
 
 Lemma e_solve_sub_swaps : forall ps S0 Θ m P Q S1 Ξ P',
@@ -139,11 +137,10 @@ Lemma e_solve_sub_swaps : forall ps S0 Θ m P Q S1 Ξ P',
 Proof.
   induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
   - exact (e_solve_sub_supply_respect Hd Heq).
-  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
-    destruct (e_solve_sub_swap Hd Hr) as [S1a [HS1a Hda]].
+  - destruct (e_solve_sub_swap (a := a) (b := b) Hd (reflexivity _))
+      as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
-    exists S1'. split; [ | exact Hd' ].
-    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
+    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
 Qed.
 
 Lemma e_solve_eq_swaps : forall ps S0 Θ P Q S1 Ξ P',
@@ -155,11 +152,10 @@ Lemma e_solve_eq_swaps : forall ps S0 Θ P Q S1 Ξ P',
 Proof.
   induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
   - exact (e_solve_eq_supply_respect Hd Heq).
-  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
-    destruct (e_solve_eq_swap Hd Hr) as [S1a [HS1a Hda]].
+  - destruct (e_solve_eq_swap (a := a) (b := b) Hd (reflexivity _))
+      as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
-    exists S1'. split; [ | exact Hd' ].
-    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
+    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
 Qed.
 
 Lemma e_solve_cstr_swaps : forall ps S0 Θ C P S1 Ξ Q,
@@ -171,11 +167,10 @@ Lemma e_solve_cstr_swaps : forall ps S0 Θ C P S1 Ξ Q,
 Proof.
   induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
   - exact (e_solve_cstr_supply_respect Hd Heq).
-  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
-    destruct (e_solve_cstr_swap Hd Hr) as [S1a [HS1a Hda]].
+  - destruct (e_solve_cstr_swap (a := a) (b := b) Hd (reflexivity _))
+      as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
-    exists S1'. split; [ | exact Hd' ].
-    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
+    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
 Qed.
 
 Lemma e_guess_swaps : forall ps S0 NM Q S1 Ξ Q',
@@ -187,11 +182,10 @@ Lemma e_guess_swaps : forall ps S0 NM Q S1 Ξ Q',
 Proof.
   induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
   - exact (e_guess_supply_respect Hd Heq).
-  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
-    destruct (e_guess_swap Hd Hr) as [S1a [HS1a Hda]].
+  - destruct (e_guess_swap (a := a) (b := b) Hd (reflexivity _))
+      as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
-    exists S1'. split; [ | exact Hd' ].
-    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
+    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
 Qed.
 
 Lemma e_extract_swaps : forall ps S0 Θ0 NM α m P P' S1 Ξ Q,
@@ -204,11 +198,10 @@ Lemma e_extract_swaps : forall ps S0 Θ0 NM α m P P' S1 Ξ Q,
 Proof.
   induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
   - exact (e_extract_supply_respect Hd Heq).
-  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
-    destruct (e_extract_swap Hd Hr) as [S1a [HS1a Hda]].
+  - destruct (e_extract_swap (a := a) (b := b) Hd (reflexivity _))
+      as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
-    exists S1'. split; [ | exact Hd' ].
-    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
+    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
 Qed.
 
 (* --------------------------------------------------------------------- *)
@@ -520,8 +513,7 @@ Proof.
     assert (HPb' : swaps_pskl ps1 Pb' = Pb')
       by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
           clear - Hcov; fsetdec).
-    assert (Heq2 : Sm' [=] swaps_atoms ps1 Sm) by (symmetry; exact HS1).
-    destruct (e_lookeq_swaps ps1 D1b Heq2) as [S2t [HS2t D1bt]].
+    destruct (e_lookeq_swaps ps1 D1b (symmetry HS1)) as [S2t [HS2t D1bt]].
     rewrite HΘ1, Hα1, HPb, HPb' in D1bt.
     (* --- the SECOND halves, now at the SAME input supply --- *)
     pose proof (e_lookeq_supply_grows D2a) as Hgr1'.
@@ -872,8 +864,7 @@ Proof.
     assert (HPb' : swaps_pskl ps1 Pb' = Pb')
       by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
           clear - Hcov; fsetdec).
-    assert (Heq2 : Sm' [=] swaps_atoms ps1 Sm) by (symmetry; exact HS1).
-    destruct (e_looksub_swaps ps1 D1b Heq2) as [S2t [HS2t D1bt]].
+    destruct (e_looksub_swaps ps1 D1b (symmetry HS1)) as [S2t [HS2t D1bt]].
     rewrite HΘ1, Hα1, HPb, HPb' in D1bt.
     pose proof (e_lookeq_supply_grows D2a) as Hgr1'.
     destruct (IH D2b _ _ _ D1bt
@@ -1154,8 +1145,7 @@ Proof.
     assert (HQb : swaps_pskl ps1 Qb = Qb)
       by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
           clear - Hcov; fsetdec).
-    assert (Heq2 : Sm' [=] swaps_atoms ps1 Sm) by (symmetry; exact HS1).
-    destruct (e_solve_eq_swaps ps1 D1b Heq2) as [S2t [HS2t D1bt]].
+    destruct (e_solve_eq_swaps ps1 D1b (symmetry HS1)) as [S2t [HS2t D1bt]].
     rewrite swaps_aenv_app_dist, HX1, HΘ1, HPb, HQb in D1bt.
     pose proof (e_solve_eq_supply_grows D2a) as Hgr1'.
     pose proof (e_solve_eq_block_in_supply D2a) as Hdom1'.
@@ -1681,8 +1671,7 @@ Proof.
     assert (HQb : swaps_pskl ps1 Qb = Qb)
       by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
           clear - Hcov; fsetdec).
-    assert (Heq2 : Sm' [=] swaps_atoms ps1 Sm) by (symmetry; exact HS1).
-    destruct (e_solve_sub_swaps ps1 D1b Heq2) as [S2t [HS2t D1bt]].
+    destruct (e_solve_sub_swaps ps1 D1b (symmetry HS1)) as [S2t [HS2t D1bt]].
     rewrite swaps_aenv_app_dist, HX1, HΘ1, HPb, HQb in D1bt.
     pose proof (e_solve_eq_supply_grows D2a) as Hgr1'.
     pose proof (e_solve_eq_block_in_supply D2a) as Hdom1'.
@@ -1726,8 +1715,7 @@ Proof.
     assert (HQb : swaps_pskl ps1 Qb = Qb)
       by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
           clear - Hcov; fsetdec).
-    assert (Heq2 : Sm' [=] swaps_atoms ps1 Sm) by (symmetry; exact HS1).
-    destruct (e_solve_sub_swaps ps1 D1b Heq2) as [S2t [HS2t D1bt]].
+    destruct (e_solve_sub_swaps ps1 D1b (symmetry HS1)) as [S2t [HS2t D1bt]].
     rewrite swaps_aenv_app_dist, HX1, HΘ1, HQb in D1bt.
     rewrite swaps_pskl_ghost in D1bt.
     pose proof (e_solve_eq_supply_grows D2a) as Hgr1'.
@@ -1851,8 +1839,8 @@ Proof.
       assert (HC1 : swaps_cstrs ps1 C = C)
         by (apply swaps_cstrs_fresh_id, (swaps_dodge_sub Hav1);
             clear - Hcov; fsetdec).
-      assert (Heq2 : Sm' [=] swaps_atoms ps1 Sm) by (symmetry; exact HS1).
-      destruct (e_solve_cstr_swaps ps1 D1b Heq2) as [S2t [HS2t D1bt]].
+      destruct (e_solve_cstr_swaps ps1 D1b (symmetry HS1))
+        as [S2t [HS2t D1bt]].
       rewrite swaps_aenv_app_dist, HX1, HΘ1, HC1, HY1 in D1bt.
       pose proof (e_solve_eq_supply_grows D2a) as Hgr1'.
       pose proof (e_solve_eq_block_in_supply D2a) as Hdom1'.
@@ -1934,8 +1922,7 @@ Proof.
   assert (HΘ0 : swaps_aenv ps1 Θ0 = Θ0)
     by (apply swaps_aenv_fresh_id, (swaps_dodge_sub Hav1);
         clear - Hcov; fsetdec).
-  assert (Heq2 : S1b [=] swaps_atoms ps1 S1a) by (symmetry; exact HS1).
-  destruct (e_solve_cstr_swaps ps1 F1 Heq2) as [S2t [HS2t F1t]].
+  destruct (e_solve_cstr_swaps ps1 F1 (symmetry HS1)) as [S2t [HS2t F1t]].
   rewrite swaps_aenv_app_dist, HX1, HΘ0, HC1, swaps_pskl_ghost in F1t.
   destruct (e_solve_cstr_rel F1t
               ltac:(rewrite ftvar_in_aenv_app;
@@ -1948,8 +1935,7 @@ Proof.
   pose proof (e_solve_cstr_out_ftvar F2) as HoutF.
   (* ---- STAGE 3: move side 1's guess along BOTH chains ---- *)
   destruct (e_guess_swaps ps1 G1 HS2t) as [S3t1 [HS3t1 G1t]].
-  assert (Heq3 : S2b [=] swaps_atoms ps2 S2t) by (symmetry; exact HS2).
-  destruct (e_guess_swaps ps2 G1t Heq3) as [S3t2 [HS3t2 G1tt]].
+  destruct (e_guess_swaps ps2 G1t (symmetry HS2)) as [S3t2 [HS3t2 G1tt]].
   rewrite HY2 in G1tt.
   destruct (e_guess_rel G1tt G2
               ltac:(clear - HoutF HcsL HgrF HgrL Hcov; simpl in *; fsetdec))

@@ -174,14 +174,12 @@ Proof.
   - destruct (e_consis_supply_respect Hd HS) as [S1' [HS1 Hd']].
     exists S1'. split; [ exact HS1 | ].
     eapply e_consis_delta_respect; eassumption.
-  - assert (H1 : swap_atoms a b Δ1 [=] swap_atoms a b Δ1) by reflexivity.
-    assert (H2 : swap_atoms a b Δ2 [=] swap_atoms a b Δ2) by reflexivity.
-    assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
-    destruct (e_consis_swap Hd H1 H2 Hr) as [S1a [HS1a Hda]].
+  - destruct (e_consis_swap (a := a) (b := b) Hd
+                (reflexivity _) (reflexivity _) (reflexivity _))
+      as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ _ _ _ _ Hda _ _ _ HD1 HD2 HS)
       as [S1' [HS1' Hd']].
-    exists S1'. split; [ | exact Hd' ].
-    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
+    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
 Qed.
 
 (** [guess^TY] along a chain — the same iteration, on the judgement
@@ -195,11 +193,10 @@ Lemma e_guess_mono_swaps : forall ps S0 P S1 Ξ τ,
 Proof.
   induction ps as [ | [a b] ps IH ]; intros * Hd S0' Heq; simpl in *.
   - exact (e_guess_mono_supply_respect Hd Heq).
-  - assert (Hr : swap_atoms a b S0 [=] swap_atoms a b S0) by reflexivity.
-    destruct (e_guess_mono_swap Hd Hr) as [S1a [HS1a Hda]].
+  - destruct (e_guess_mono_swap (a := a) (b := b) Hd (reflexivity _))
+      as [S1a [HS1a Hda]].
     destruct (IH _ _ _ _ _ Hda _ Heq) as [S1' [HS1' Hd']].
-    exists S1'. split; [ | exact Hd' ].
-    rewrite HS1'. apply swaps_atoms_cong. exact HS1a.
+    exists S1'. exact (conj (swaps_atoms_cons_step HS1a HS1') Hd').
 Qed.
 
 (* --------------------------------------------------------------------- *)
@@ -275,8 +272,7 @@ Proof.
     assert (HP2 : swaps_pskl ps1 P2 = P2)
       by (apply swaps_pskl_fresh_id, (swaps_dodge_sub Hav1);
           clear - Hcov; fsetdec).
-    assert (Heq2 : Sa' [=] swaps_atoms ps1 Sa) by (symmetry; exact HS1).
-    destruct (e_guess_mono_swaps ps1 D2 Heq2) as [S2t [HS2t D2t]].
+    destruct (e_guess_mono_swaps ps1 D2 (symmetry HS1)) as [S2t [HS2t D2t]].
     rewrite HP2 in D2t.
     pose proof (e_guess_mono_supply_grows D1') as Hgr1'.
     destruct (IH2 S2t (swaps_aenv ps1 Xb) (swaps_ptyp ps1 Ab)

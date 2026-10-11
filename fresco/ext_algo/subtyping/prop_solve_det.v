@@ -733,6 +733,16 @@ Proof.
   apply swaps_atoms_cong. symmetry; exact HSt.
 Qed.
 
+(** The step of every [_swaps] iteration: one transposition, then the
+    rest of the chain, read off the two supply equations. *)
+Lemma swaps_atoms_cons_step {a b ps} {S St S' : atoms} :
+  St [=] swap_atoms a b S -> S' [=] swaps_atoms ps St ->
+  S' [=] swaps_atoms ((a, b) :: ps) S.
+Proof.
+  intros HSt HS. cbn [swaps_atoms]. rewrite HS.
+  apply swaps_atoms_cong. exact HSt.
+Qed.
+
 (** The same transport along a chain that runs [ps1] and then [ps2]: the
     shape of every threading row's supply obligation. *)
 Lemma swaps_atoms_app_transport {ps1 ps2} {S St S' : atoms} :
