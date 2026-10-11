@@ -156,6 +156,34 @@ Proof.
     rewrite Heqb in Hb; [ discriminate | inversion Hb; reflexivity ].
 Qed.
 
+(** Opening commutes with the eliminating substitution at a fresh binder. *)
+Lemma solves_flex_open_subst_uskl : forall {τs α0 b Θ0 X β},
+  solves_flex τs α0 b Θ0 -> α0 <> β ->
+  open_uskl_wrt_uskl (subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0 X) (uskl_var_f β)
+  = subst_uskl_in_uskl (ptyp_to_uskl_syn τs) α0 (open_uskl_wrt_uskl X (uskl_var_f β)).
+Proof.
+  intros * Hs Hβ. apply subst_uskl_in_uskl_open_uskl_wrt_uskl_var; [ exact Hβ | ].
+  apply mono_ptyp_to_uskl_syn_lc; eapply solves_flex_mono; eassumption.
+Qed.
+
+Lemma solves_flex_open_subst_bskl : forall {τs α0 b Θ0 X β},
+  solves_flex τs α0 b Θ0 -> α0 <> β ->
+  open_bskl_wrt_bskl (subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 X) (bskl_var_f β)
+  = subst_bskl_in_bskl (ptyp_to_bskl_syn τs) α0 (open_bskl_wrt_bskl X (bskl_var_f β)).
+Proof.
+  intros * Hs Hβ. apply subst_bskl_in_bskl_open_bskl_wrt_bskl_var; [ exact Hβ | ].
+  apply mono_ptyp_to_bskl_syn_lc; eapply solves_flex_mono; eassumption.
+Qed.
+
+Lemma solves_flex_open_subst_pskl : forall {τs α0 b Θ0 X β},
+  solves_flex τs α0 b Θ0 -> α0 <> β ->
+  open_pskl_wrt_pskl (subst_pskl_in_pskl (ptyp_to_pskl τs) α0 X) (pskl_var_f β)
+  = subst_pskl_in_pskl (ptyp_to_pskl τs) α0 (open_pskl_wrt_pskl X (pskl_var_f β)).
+Proof.
+  intros * Hs Hβ. apply subst_pskl_in_pskl_open_pskl_wrt_pskl_var; [ exact Hβ | ].
+  apply ptyp_to_pskl_lc; eapply solves_flex_lc; eassumption.
+Qed.
+
 (** ⚙ THE SUBSTITUTION IS APPLIED TO THE WHOLE REMAINING CONTEXT, not just
     to the prefix above [α].  Leaving the tail alone would be sound — its
     payloads are scoped below [α] — but only after an "α does not occur in
@@ -306,9 +334,7 @@ Proof.
   - apply a_wf_pskl__arrow; eauto.
   - apply a_wf_pskl__all
       with (L := L `union` singleton α0 `union` ftvar_in_ptyp τ). intros β Hβ.
-    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-      [ | clear - Hβ; fsetdec
-      | apply ptyp_to_pskl_lc; eapply solves_flex_lc; eassumption ].
+    rewrite (solves_flex_open_subst_pskl Hs) by (clear - Hβ; fsetdec).
     change ((β ~ abind_tvar) ++ subst_aenv τ α0 (Θa ++ Θ0))
       with (subst_aenv τ α0 (((β ~ abind_tvar) ++ Θa) ++ Θ0)).
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τ α0 b
@@ -419,10 +445,7 @@ Proof.
     apply ad_refine_syn_all_intro
       with (L := L `union` singleton α0 `union` ftvar_in_ptyp τs
                  `union` dom Θa `union` dom Θ0). intros β Hβ.
-    repeat rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
-      try solve [ clear - Hβ; fsetdec
-                | apply mono_ptyp_to_bskl_syn_lc;
-                  eapply solves_flex_mono; eassumption ].
+    repeat rewrite (solves_flex_open_subst_bskl Hs) by (clear - Hβ; fsetdec).
     apply (H1 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b
              ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ | clear - Hα0 Hβ; fsetdec
@@ -438,10 +461,7 @@ Proof.
     apply ad_refine_syn_univ_ghost_fill_intro
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
-    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
-      [ | clear - Hβ; fsetdec
-        | apply mono_ptyp_to_bskl_syn_lc; eapply solves_flex_mono;
-          eassumption ].
+    rewrite (solves_flex_open_subst_bskl Hs) by (clear - Hβ; fsetdec).
     apply (H1 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ | exact Hα0 | exact Hd ].
   - (* univ_ghost_keep *)
@@ -518,9 +538,7 @@ Proof.
     apply ad_refine_pskl__all
       with (L := L `union` singleton α0 `union` ftvar_in_ptyp τs
                  `union` dom Θa `union` dom Θ0). intros β Hβ.
-    repeat rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-      try solve [ clear - Hβ; fsetdec
-                | apply ptyp_to_pskl_lc; eapply solves_flex_lc; eassumption ].
+    repeat rewrite (solves_flex_open_subst_pskl Hs) by (clear - Hβ; fsetdec).
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b
              ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ | clear - Hα0 Hβ; fsetdec
@@ -536,9 +554,7 @@ Proof.
     apply ad_refine_pskl__univ_ghost_fill
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
-    rewrite subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-      [ | clear - Hβ; fsetdec
-        | apply ptyp_to_pskl_lc; eapply solves_flex_lc; eassumption ].
+    rewrite (solves_flex_open_subst_pskl Hs) by (clear - Hβ; fsetdec).
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ | exact Hα0 | exact Hd ].
   - (* univ_ghost_keep *)
@@ -628,56 +644,32 @@ Proof.
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0);
       [ | eassumption ].
     intros β Hβ.
-    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
-      [ | clear - Hβ; fsetdec
-        | apply mono_ptyp_to_uskl_syn_lc; eapply solves_flex_mono;
-          eassumption ].
-    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
-      [ | clear - Hβ; fsetdec
-        | apply mono_ptyp_to_bskl_syn_lc; eapply solves_flex_mono;
-          eassumption ].
+    rewrite (solves_flex_open_subst_uskl Hs) by (clear - Hβ; fsetdec).
+    rewrite (solves_flex_open_subst_bskl Hs) by (clear - Hβ; fsetdec).
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* forall_inh_untagged *)
     eapply ad_pat_consis__forall_inh_untagged
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
-    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
-      [ | clear - Hβ; fsetdec
-        | apply mono_ptyp_to_uskl_syn_lc; eapply solves_flex_mono;
-          eassumption ].
-    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
-      [ | clear - Hβ; fsetdec
-        | apply mono_ptyp_to_bskl_syn_lc; eapply solves_flex_mono;
-          eassumption ].
+    rewrite (solves_flex_open_subst_uskl Hs) by (clear - Hβ; fsetdec).
+    rewrite (solves_flex_open_subst_bskl Hs) by (clear - Hβ; fsetdec).
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* forall_syn_tagged *)
     eapply ad_pat_consis__forall_syn_tagged
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
-    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
-      [ | clear - Hβ; fsetdec
-        | apply mono_ptyp_to_uskl_syn_lc; eapply solves_flex_mono;
-          eassumption ].
-    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
-      [ | clear - Hβ; fsetdec
-        | apply mono_ptyp_to_bskl_syn_lc; eapply solves_flex_mono;
-          eassumption ].
+    rewrite (solves_flex_open_subst_uskl Hs) by (clear - Hβ; fsetdec).
+    rewrite (solves_flex_open_subst_bskl Hs) by (clear - Hβ; fsetdec).
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* forall_syn *)
     eapply ad_pat_consis__forall_syn
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
-    rewrite subst_uskl_in_uskl_open_uskl_wrt_uskl_var;
-      [ | clear - Hβ; fsetdec
-        | apply mono_ptyp_to_uskl_syn_lc; eapply solves_flex_mono;
-          eassumption ].
-    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
-      [ | clear - Hβ; fsetdec
-        | apply mono_ptyp_to_bskl_syn_lc; eapply solves_flex_mono;
-          eassumption ].
+    rewrite (solves_flex_open_subst_uskl Hs) by (clear - Hβ; fsetdec).
+    rewrite (solves_flex_open_subst_bskl Hs) by (clear - Hβ; fsetdec).
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* ghostg *) apply ad_pat_consis__ghostg; assumption.
@@ -691,10 +683,7 @@ Proof.
     eapply ad_pat_consis__univ_ghost_inh
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
-    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
-      [ | clear - Hβ; fsetdec
-        | apply mono_ptyp_to_bskl_syn_lc; eapply solves_flex_mono;
-          eassumption ].
+    rewrite (solves_flex_open_subst_bskl Hs) by (clear - Hβ; fsetdec).
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* univ_ghost_drop *) apply ad_pat_consis__univ_ghost_drop; eauto.
@@ -865,8 +854,7 @@ Proof.
     apply ad_pat_sub__forall_r
       with (L := L `union` singleton α0 `union` dom Θa `union` dom Θ0).
     intros β Hβ.
-    rewrite subst_bskl_in_bskl_open_bskl_wrt_bskl_var;
-      [ | clear - Hβ; fsetdec | apply mono_ptyp_to_bskl_syn_lc; assumption ].
+    rewrite (solves_flex_open_subst_bskl Hs) by (clear - Hβ; fsetdec).
     apply (H0 β ltac:(clear - Hβ; solve_notin_auto) τs α0 b ((β ~ abind_tvar) ++ Θa) Θ0);
       [ reflexivity | exact Hs | push_uniq Hu Hβ ].
   - (* univ_ghost_r (SK) *)
