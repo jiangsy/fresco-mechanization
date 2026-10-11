@@ -1047,6 +1047,30 @@ Proof.
   - eapply a_wf_aenv_notin_ftv_tm_below. exact Hwf1.
 Qed.
 
+(** The opened body of a term binder [x : b] stays tvar-ish: its free type
+    variables are the body's, all rigid in the context below the binder —
+    which is the IH's rigidity side condition, and makes the body
+    well-formed there. *)
+Lemma a_wf_exp_open_tm_binder : forall {Θ x} (b : abind) {e},
+  lc_exp (open_exp_wrt_exp e (exp_var_f x)) ->
+  (forall α, α `in` ftvar_in_exp e -> binds α abind_tvar Θ) ->
+  (forall α, α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
+     binds α abind_tvar ((x ~ b) ++ Θ)) /\
+  {{ ((x ~ b) ++ Θ) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a.
+Proof.
+  intros Θ x b e Hlc Hrig.
+  assert (Hrigx : forall α,
+             α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
+             binds α abind_tvar ((x ~ b) ++ Θ)).
+  { intros α Hα.
+    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
+    simpl in Hup.
+    apply binds_cons_3. apply Hrig. clear - Hα Hup; fsetdec. }
+  split; [ exact Hrigx | ].
+  apply a_wf_exp_of_tvarish; [ exact Hlc | ].
+  intros α Hα. left. apply Hrigx. exact Hα.
+Qed.
+
 (* ===================================================================== *)
 (*  P-AbsCheck, the step lemma.                                           *)
 (* ===================================================================== *)
@@ -1086,13 +1110,9 @@ Proof.
       | apply a_suffix__nil ]. }
   assert (Hlcbody : lc_exp (open_exp_wrt_exp e (exp_var_f x)))
     by (inversion Hlc; auto).
-  assert (Hrigx : forall α,
-             α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-             binds α abind_tvar ((x ~ bx) ++ Θ0)).
-  { intros α Hα.
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
-    simpl in Hup.
-    apply binds_cons_3. apply Hrig. clear - Hα Hup; fsetdec. }
+  destruct (a_wf_exp_open_tm_binder bx Hlcbody
+              Hrig)
+    as [Hrigx Hexpx].
   (* ---- 2. the IH, once ---- *)
   destruct (IH x mode_tc ((x ~ bx) ++ Θ0) pskl_ghost κ ((x ~ bx) ++ Θ)
               (pskl_to_bskl_syn P)
@@ -1104,9 +1124,6 @@ Proof.
               ltac:(apply ad_refine_syn__ghost; clear; fsetdec))
     as [Q' [Θ1' [Hrun Hopt]]].
   (* ---- 3. the run's identity increase shapes the output, x stays fresh ---- *)
-  assert (Hexpx : {{ ((x ~ bx) ++ Θ0) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
-  { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
-    intros α Hα. left. apply Hrigx. exact Hα. }
   destruct (a_pat_run_under_tm_binder Hrun Hwf0x (a_wf_pskl__ghost _ _)
               a_sk_mode_compat__tc Hexpx I)
     as [κid [Ξ [Θ2 [-> [Hidκ [Hincid' [Hsuf [Hwf1' [HxΞ HxΘ2]]]]]]]]].
@@ -1210,13 +1227,9 @@ Proof.
       | apply a_suffix__nil ]. }
   assert (Hlcbody : lc_exp (open_exp_wrt_exp e (exp_var_f x)))
     by (inversion Hlc; auto).
-  assert (Hrigx : forall α,
-             α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-             binds α abind_tvar ((x ~ bx) ++ Θ0)).
-  { intros α Hα.
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
-    simpl in Hup.
-    apply binds_cons_3. apply Hrig. clear - Hα Hup; fsetdec. }
+  destruct (a_wf_exp_open_tm_binder bx Hlcbody
+              (fun α Hα => Hrig α (union_3 _ Hα)))
+    as [Hrigx Hexpx].
   (* ---- 2. the IH, once ---- *)
   destruct (IH x mode_tc ((x ~ bx) ++ Θ0) pskl_ghost κ ((x ~ bx) ++ Θ)
               (pskl_to_bskl_syn P)
@@ -1228,9 +1241,6 @@ Proof.
               ltac:(apply ad_refine_syn__ghost; clear; fsetdec))
     as [Q' [Θ1' [Hrun Hopt]]].
   (* ---- 3. the run's identity increase shapes the output, x stays fresh ---- *)
-  assert (Hexpx : {{ ((x ~ bx) ++ Θ0) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
-  { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
-    intros α Hα. left. apply Hrigx. exact Hα. }
   destruct (a_pat_run_under_tm_binder Hrun Hwf0x (a_wf_pskl__ghost _ _)
               a_sk_mode_compat__tc Hexpx I)
     as [κid [Ξ [Θ2 [-> [Hidκ [Hincid' [Hsuf [Hwf1' [HxΞ HxΘ2]]]]]]]]].
@@ -1457,13 +1467,9 @@ Proof.
       | apply a_suffix__nil ]. }
   assert (Hlcbody : lc_exp (open_exp_wrt_exp e (exp_var_f x)))
     by (inversion Hlc; auto).
-  assert (Hrigx : forall α,
-             α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-             binds α abind_tvar ((x ~ bq) ++ Θ0)).
-  { intros α Hα.
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
-    simpl in Hup.
-    apply binds_cons_3. apply Hrig. clear - Hα Hup; fsetdec. }
+  destruct (a_wf_exp_open_tm_binder bq Hlcbody
+              Hrig)
+    as [Hrigx Hexpx].
   (* ---- 4. move the body derivation to the precise context (§5) ---- *)
   assert (Hctx : {{ ((x ~ bs) ++ Θ) ⪯ᶜᵗˣ ((x ~ abind_var_skl P) ++ Θ) }}ad).
   { eapply ad_ctx_precise__tm
@@ -1485,9 +1491,6 @@ Proof.
                     | intros α c Hty Hc; apply binds_cons_3; exact Hc ]))
     as [Q' [Θ1' [Hrun Hopt]]].
   (* ---- 6. the run's identity increase shapes the output, x stays fresh ---- *)
-  assert (Hexpx : {{ ((x ~ bq) ++ Θ0) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
-  { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
-    intros α Hα. left. apply Hrigx. exact Hα. }
   assert (HwfQ1x : {{ ((x ~ bq) ++ Θ0) ⨟ empty ⊢ₚₛ Q1 }}a)
     by (eapply a_wf_pskl_mono;
         [ exact HwfQ1
@@ -1767,14 +1770,9 @@ Proof.
   pose proof (ad_refine_msubst_compose_id Hwf0 Hwfmid HwfΘ HwfQ1 Hinc Hidc
                 Hincc Hζc0 Heqvc HwfQb Href14) as Href14σ.
   (* ---- 6. the extended side data and the IH ---- *)
-  assert (Hrigx : forall α,
-             α `in` ftvar_in_exp (open_exp_wrt_exp e (exp_var_f x)) ->
-             binds α abind_tvar ((x ~ bA) ++ Θmid)).
-  { intros α Hα.
-    pose proof (ftvar_in_exp_open_exp_wrt_exp_upper e (exp_var_f x)) as Hup.
-    simpl in Hup.
-    apply binds_cons_3. eapply a_inc_binds_tvar;
-      [ exact Hincc | apply Hrig; clear - Hα Hup; fsetdec ]. }
+  destruct (a_wf_exp_open_tm_binder bA Hlcbody
+              (fun α Hα => a_inc_binds_tvar α Hincc (Hrig α (union_3 _ Hα))))
+    as [Hrigx Hexpx].
   assert (HwfQ1mid : {{ Θmid ⨟ empty ⊢ₚₛ Q1 }}a).
   { pose proof (a_wf_pskl_msubst_inc Hincc Hwf0 HwfQ1
                   ltac:(intros α Hα; clear - Hα; solve_notin_auto)
@@ -1792,9 +1790,6 @@ Proof.
                     | intros α c Hty Hc; apply binds_cons_3; exact Hc ]))
     as [Q' [Θ1' [HrunB HoptB]]].
   (* ---- 7. the body run's identity increase shapes the output, x stays fresh ---- *)
-  assert (Hexpx : {{ ((x ~ bA) ++ Θmid) ⊢ᵉ (open_exp_wrt_exp e (exp_var_f x)) }}a).
-  { apply a_wf_exp_of_tvarish; [ exact Hlcbody | ].
-    intros α Hα. left. apply Hrigx. exact Hα. }
   assert (HwfQ1midx : {{ ((x ~ bA) ++ Θmid) ⨟ empty ⊢ₚₛ Q1 }}a)
     by (eapply a_wf_pskl_mono;
         [ exact HwfQ1mid
