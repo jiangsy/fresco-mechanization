@@ -654,6 +654,32 @@ Definition rel_ext (ρe : list (atom * atom)) (W S : atoms) : Prop :=
   /\ (forall a1 a2 b, In (a1, b) ρe -> In (a2, b) ρe -> a1 = a2)
   /\ (forall a b1 b2, In (a, b1) ρe -> In (a, b2) ρe -> b1 = b2).
 
+(** Restrict the new pairs and shrink the scopes they must avoid. *)
+Lemma rel_ext_mono : forall ρ ρ' W S W' S',
+  rel_ext ρ W S ->
+  (forall a b, In (a, b) ρ' -> In (a, b) ρ) ->
+  W' [<=] W -> S' [<=] S -> rel_ext ρ' W' S'.
+Proof.
+  intros * (Hfresh & Hinj & Hfun) Hincl HW HS.
+  split; [ | split ].
+  - intros a b Hin. destruct (Hfresh _ _ (Hincl _ _ Hin)) as [Ha Hb].
+    split; clear - Ha Hb HW HS; fsetdec.
+  - intros a1 a2 b H1 H2. eapply Hinj; apply Hincl; eassumption.
+  - intros a b1 b2 H1 H2. eapply Hfun; apply Hincl; eassumption.
+Qed.
+
+(** Reattaching an entry enlarges the left scope only by its name. *)
+Lemma rel_ext_add_scope_l : forall ρ W S W' x,
+  rel_ext ρ W S -> W' [<=] add x W ->
+  (forall a b, In (a, b) ρ -> a <> x) -> rel_ext ρ W' S.
+Proof.
+  intros * (Hfresh & Hinj & Hfun) HW Hx.
+  split; [ | split; assumption ].
+  intros a b Hin. destruct (Hfresh _ _ Hin) as [Ha Hb].
+  split; [ | exact Hb ].
+  pose proof (Hx _ _ Hin) as Hne. clear - Ha HW Hne; fsetdec.
+Qed.
+
 Lemma rel_atom_app_inv : forall ρe ρ V a b,
   rel_atom (ρe ++ ρ) V a b -> In (a, b) ρe \/ rel_atom ρ V a b.
 Proof.
@@ -1506,12 +1532,9 @@ Qed.
 Lemma rel_ext_restrict_l : forall D ρ W S,
   rel_ext ρ W S -> rel_ext (restrict_l D ρ) W S.
 Proof.
-  intros * (Hfresh & Hinj & Hfun). split; [ | split ].
-  - intros a b Hin. apply Hfresh. eapply restrict_l_incl; exact Hin.
-  - intros a1 a2 b H1 H2. eapply Hinj;
-      eapply restrict_l_incl; eassumption.
-  - intros a b1 b2 H1 H2. eapply Hfun;
-      eapply restrict_l_incl; eassumption.
+  intros * Hext. eapply rel_ext_mono;
+    [ exact Hext | intros a b Hin; eapply restrict_l_incl; exact Hin
+    | intros a Ha; exact Ha | intros a Ha; exact Ha ].
 Qed.
 
 (** Injectivity makes left-suffix removal discard the corresponding right

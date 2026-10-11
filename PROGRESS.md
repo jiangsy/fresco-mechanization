@@ -182,6 +182,29 @@ them (PAPER-GAPS has the details):
 # Part 2: Progress log (most recent first)
 
 
+## 2026-10-11 — Share relation-extension transport across lifting
+
+Add `rel_ext_mono` for restricting pairs and shrinking their avoided scopes,
+and `rel_ext_add_scope_l` for reattaching a context entry whose name is absent
+from the new pairs. Use them across consistency, subtyping, skeleton inference
+and typing lifting, including the existing restriction lemma.
+
+Replace three manual freshness/injectivity proofs for generated pair lists
+with the existing `rel_ext_flex_pairs` theorem. Strengthen one intermediate
+scope bound using the already available binding-payload scoping fact, so it
+uses the same reattachment lemma as the other cases.
+
+Net reduction: **55 physical Coq lines / 61 nonblank, noncomment lines**.
+All 146 existing theorem statements across the six edited Coq files are
+unchanged; inline tactic terms remain at 41, with none added.
+
+Validation: `make coq` passed with all 34 headline assumption reports closed
+under the global context, no axioms, and no errors. Statement comparison and
+`git diff --check` passed. Initial caller failures were resolved with distinct
+local names and explicit pointwise disjointness via `prop_atom_sets`.
+
+
+
 ## 2026-10-11 — Share fresh binder swap composition
 
 Factor the repeated binder-swap algebra out of extraction determinism:

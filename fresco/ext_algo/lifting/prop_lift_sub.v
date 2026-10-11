@@ -440,21 +440,15 @@ Proof.
             (eapply a_flex_tvar_head_tail;
                [ exact Hf | discriminate | intros ?; discriminate ]) ] ]. }
   assert (Hftsub : ftvar_in_aenv (Ξ ++ (β ~ bd) ++ Θ0)
-                   [<=] add β (ftvar_in_abind bd ∪ ftvar_in_aenv (Ξ ++ Θ0))).
-  { repeat rewrite ftvar_in_aenv_app. simpl. clear; fsetdec. }
+                   [<=] add β (ftvar_in_aenv (Ξ ++ Θ0))).
+  { repeat rewrite ftvar_in_aenv_app. simpl. clear - Hbdftv Hds0; fsetdec. }
   split.
   { eapply rel_pskl_mono;
       [ exact HrQ | intros x y Hx; exact Hx | exact HVS ]. }
   split.
-  { destruct Hext1 as [Hfr1 [Hri1 Hlf1]]. unfold rel_ext.
-    split; [ | split; [ exact Hri1 | exact Hlf1 ] ].
-    intros a0 b0 Hin. destruct (Hfr1 _ _ Hin) as [Ha0 Hb0].
-    split; [ | exact Hb0 ].
-    destruct (Hdom1 _ _ Hin) as [Hd1 _].
-    assert (Hne0 : a0 <> β)
-      by (intros Ex; rewrite Ex in Hd1; contradiction).
-    repeat rewrite ftvar_in_aenv_app in Ha0 |- *. simpl.
-    clear - Ha0 Hne0 Hbdftv Hds0. fsetdec. }
+  { eapply rel_ext_add_scope_l; [ exact Hext1 | exact Hftsub | ].
+    intros a_new b_new Hin_new Heq_new. destruct (Hdom1 _ _ Hin_new) as [Hd_new _].
+    subst a_new; contradiction. }
   intros a0 b0 Hin. destruct (Hdom1 _ _ Hin) as [Hd1 Hd2].
   split; [ clear - Hd1; simpl_env; fsetdec | clear - Hd2; simpl_env; fsetdec ].
 Qed.
@@ -785,14 +779,9 @@ Proof.
       - intros z Hz; exact Hz. }
     split; [ exact HrΘfin | ].
     assert (Hextfin : rel_ext ρeo (ftvar_in_aenv Θ0) S0).
-    { destruct Hext as [Hxfr [Hri Hlf]]. unfold rel_ext.
-      split; [ | split ].
-      - intros a b0 Hin. destruct (Hxfr _ _ (Hρeoincl _ _ Hin)) as [Hna Hnb].
-        simpl in Hna. split; [ clear - Hna; fsetdec | clear - Hnb; fsetdec ].
-      - intros a1 a2' b0 H1 H2.
-        exact (Hri a1 a2' b0 (Hρeoincl _ _ H1) (Hρeoincl _ _ H2)).
-      - intros a b1 b2 H1 H2.
-        exact (Hlf a b1 b2 (Hρeoincl _ _ H1) (Hρeoincl _ _ H2)). }
+    { eapply rel_ext_mono;
+        [ exact Hext | exact Hρeoincl
+        | simpl; clear; fsetdec | clear; fsetdec ]. }
     assert (Hagrfin : flex_agree_rel (ρeo ++ ρ) V Θ1 Θ1').
     { eapply rel_aenv_flex_agree_ext;
         [ exact HrΘfin | exact Hinj | exact Hfun | exact Hextfin
@@ -1604,19 +1593,12 @@ Proof.
       simpl ftvar_in_aenv. simpl ftvar_in_abind. clear; fsetdec. }
     assert (Hnew : rel_ext ((α, a2) :: (β, b2) :: nil)
                      (ftvar_in_aenv (Ξ ++ (α0 ~ abind_flex_mono) ++ Θ0)) S0).
-    { unfold rel_ext. split; [ | split ].
-      - intros a b Hin. destruct Hin as [E1 | [E2 | []]];
-          [ inversion E1 | inversion E2 ]; subst;
-          split; solve [ exact Hαft | exact Hβft | exact Ha2
-                       | clear - Hb2; fsetdec ].
-      - intros a1 a3 b H1 H2.
-        destruct H1 as [E1 | [E1 | []]]; destruct H2 as [E2 | [E2 | []]];
-          inversion E1; inversion E2; subst; try reflexivity;
-          exfalso; clear - Hb2; fsetdec.
-      - intros a b1 b3 H1 H2.
-        destruct H1 as [E1 | [E1 | []]]; destruct H2 as [E2 | [E2 | []]];
-          inversion E1; inversion E2; subst; try reflexivity;
-          exfalso; apply Hne; reflexivity. }
+    { apply rel_ext_flex_pairs; simpl.
+      - clear - Hne; solve_uniq.
+      - clear - Hb2; solve_uniq.
+      - clear - Hαft Hβft; fsetdec.
+      - clear - Ha2 Hb2; fsetdec. }
+
     (* ---- assemble: the row's TWO pairs join what the premise invented ---- *)
     exists S1, (ρe ++ ((α, a2) :: (β, b2) :: nil)), Θ1', Q'.
     split; [ apply e_sub_flex__solve with (α := a2) (β := b2);
@@ -1846,13 +1828,9 @@ Proof.
       pose proof (dom_subset_ftvar_in_aenv Θ0) as Hds.
       clear - Hτdom Hds. fsetdec. }
     split.
-    { destruct Hext1 as [Hfr1 [Hri1 Hlf1]]. unfold rel_ext.
-      split; [ | split; [ exact Hri1 | exact Hlf1 ] ].
-      intros a0 b0 Hin. destruct (Hfr1 _ _ Hin) as [Ha0 Hb0].
-      split; [ | exact Hb0 ].
-      destruct (Hdom1 _ _ Hin) as [Hd1 _].
-      assert (Hne : a0 <> β) by (intros Ex; rewrite Ex in Hd1; contradiction).
-      clear - Ha0 Hne Hftsub. fsetdec. }
+    { eapply rel_ext_add_scope_l; [ exact Hext1 | exact Hftsub | ].
+      intros a_new b_new Hin_new Heq_new. destruct (Hdom1 _ _ Hin_new) as [Hd_new _].
+      subst a_new; contradiction. }
     intros a0 b0 Hin. destruct (Hdom1 _ _ Hin) as [Hd1 Hd2].
     split; [ clear - Hd1; simpl_env; fsetdec
            | clear - Hd2; simpl_env; fsetdec ].

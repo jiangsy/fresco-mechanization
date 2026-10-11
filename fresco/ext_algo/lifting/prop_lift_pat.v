@@ -377,13 +377,9 @@ Proof.
   assert (HrQfin : rel_pskl (ρe ++ ρ) V Q Q').
   { eapply rel_pskl_restore_pairs; eassumption. }
   assert (Hextfin : rel_ext ρe (ftvar_in_aenv Θb) S0).
-  { destruct Hexto as [Hxfr [Hri Hlf]]. unfold rel_ext.
-    split; [ | split ].
-    - intros a b0 Hin. destruct (Hxfr _ _ Hin) as [Hna Hnb].
-      simpl in Hna.
-      split; [ clear - Hna; fsetdec | clear - Hnb; fsetdec ].
-    - exact Hri.
-    - exact Hlf. }
+  { eapply rel_ext_mono;
+      [ exact Hexto | intros a b Hin; exact Hin
+      | simpl; clear; fsetdec | clear; fsetdec ]. }
   assert (Hagrfin : flex_agree_rel (ρe ++ ρ) V (Ξ ++ Θc) (Ξ2 ++ Θc2')).
   { eapply rel_aenv_flex_agree_ext;
       [ exact HrFinal | exact Hinj | exact Hfun | exact Hextfin

@@ -314,20 +314,11 @@ Proof.
     split.
     { eapply rel_ext_app;
         [ | exact Hexto | | | ].
-      - (* the two-pair rel_ext *)
-        unfold rel_ext. split; [ | split ].
-        + intros a b Hin. destruct Hin as [E | [E | []]];
-            injection E as -> ->;
-            [ split; [ clear - Hα1f; fsetdec | clear - Ha2; fsetdec ]
-            | split; [ clear - Hβf; fsetdec | clear - Hb2; fsetdec ] ].
-        + intros a1 a3 b Hin1 Hin2.
-          destruct Hin1 as [E1 | [E1 | []]]; destruct Hin2 as [E2 | [E2 | []]];
-            inversion E1; inversion E2; subst;
-            solve [ reflexivity | exfalso; congruence ].
-        + intros a b1 b3 Hin1 Hin2.
-          destruct Hin1 as [E1 | [E1 | []]]; destruct Hin2 as [E2 | [E2 | []]];
-            inversion E1; inversion E2; subst;
-            solve [ reflexivity | exfalso; congruence ].
+      - apply rel_ext_flex_pairs; simpl.
+        + clear - Hα1β; solve_uniq.
+        + clear - Ha2b2; solve_uniq.
+        + clear - Hα1f Hβf; fsetdec.
+        + clear - Ha2 Hb2; fsetdec.
       - simpl. clear; fsetdec.
       - clear; fsetdec.
       - intros a b Hin. destruct Hin as [E | [E | []]];
