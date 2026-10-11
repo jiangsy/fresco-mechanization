@@ -717,6 +717,76 @@ Definition auc_subject_unify  := proj1 (proj2 a_assign_unify_subject_flex).
 
 (* ===================================================================== *)
 (*  §8  L9: renaming a rigid mid entry under an all-rigid prefix          *)
+(** The binder rows (ForallInh / ForallSyn / UnivGhost1) of the rename:
+    the rule's own binder [α0] against the lemma's [β0] and the renamed
+    [α].  [α0] avoids [α] (it is fresh for the context, which binds [α]),
+    and the avoid-set handed back makes [β0] avoid [α0]. *)
+Lemma rn_binder_fresh : forall α α0 β0 L Θ0 Ξr Θb P0 P Δ1 Δ2 Q,
+  β0 `notin` L `union` singleton α0 ->
+  Θ0 = Ξr ++ (α ~ abind_tvar) ++ Θb ->
+  α0 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
+    `union` ftvar_in_pskl P `union` Δ1 `union` Δ2 ->
+  β0 `notin` ftvar_in_pskl (close_pskl_wrt_pskl α0 Q) ->
+  α0 <> β0 /\ β0 <> α0 /\ α <> α0 /\ α0 `notin` dom Θ0 /\
+  β0 `notin` ftvar_in_pskl Q.
+Proof.
+  intros α α0 β0 L Θ0 Ξr Θb P0 P Δ1 Δ2 Q HL Heq Hfr HYQ.
+  assert (Hα0β0 : α0 <> β0) by (clear - HL; fsetdec).
+  assert (HinΘ0 : α `in` ftvar_in_aenv Θ0)
+    by (rewrite Heq; rewrite ftvar_in_aenv_app; simpl; clear; fsetdec).
+  split; [ exact Hα0β0 | ]. split; [ congruence | ].
+  split; [ intro Hbad; subst; clear - Hfr HinΘ0; fsetdec | ].
+  split.
+  - pose proof (dom_subset_ftvar_in_aenv Θ0). clear - Hfr H; fsetdec.
+  - rewrite ftvar_in_pskl_close_pskl_wrt_pskl in HYQ.
+    clear - HYQ Hα0β0. fsetdec.
+Qed.
+Arguments rn_binder_fresh {α α0 β0 L Θ0 Ξr Θb P0 P Δ1 Δ2 Q}.
+
+(** The binder rows' side condition, transported across the rename. *)
+Lemma rn_binder_side_condition : forall α α0 β0 Θ0 Ξr Θb P0 P Δ1 Δ2,
+  Θ0 = Ξr ++ (α ~ abind_tvar) ++ Θb ->
+  α0 `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
+    `union` ftvar_in_pskl P `union` Δ1 `union` Δ2 ->
+  α0 <> β0 ->
+  α0 `notin` ftvar_in_aenv (Ξr ++ (β0 ~ abind_tvar) ++ Θb)
+    `union` ftvar_in_pskl (subst_pskl_in_pskl (pskl_var_f β0) α P0)
+    `union` ftvar_in_pskl (subst_pskl_in_pskl (pskl_var_f β0) α P)
+    `union` rn_set β0 α Δ1 `union` rn_set β0 α Δ2.
+Proof.
+  intros α α0 β0 Θ0 Ξr Θb P0 P Δ1 Δ2 Heq Hfr Hα0β0.
+  pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P0 (pskl_var_f β0) α)
+    as Hu0.
+  pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (pskl_var_f β0) α)
+    as Hu1.
+  simpl in Hu0, Hu1.
+  pose proof (rn_set_upper β0 α Δ1) as Hr1.
+  pose proof (rn_set_upper β0 α Δ2) as Hr2.
+  assert (HfrA : α0 `notin` ftvar_in_aenv (Ξr ++ (β0 ~ abind_tvar) ++ Θb)).
+  { rewrite Heq in Hfr.
+    repeat rewrite ftvar_in_aenv_app in Hfr |- *.
+    simpl in Hfr |- *. clear - Hfr Hα0β0. fsetdec. }
+  repeat apply notin_union_3.
+  - exact HfrA.
+  - clear - Hfr Hu0 Hα0β0. fsetdec.
+  - clear - Hfr Hu1 Hα0β0. fsetdec.
+  - clear - Hfr Hr1 Hα0β0. fsetdec.
+  - clear - Hfr Hr2 Hα0β0. fsetdec.
+Qed.
+Arguments rn_binder_side_condition {α α0 β0 Θ0 Ξr Θb P0 P Δ1 Δ2}.
+
+(** Renaming [α] commutes with opening at a different variable. *)
+Lemma subst_pskl_open_var_comm : forall α α0,
+  α <> α0 -> forall β0 P,
+  subst_pskl_in_pskl (pskl_var_f β0) α (open_pskl_wrt_pskl P (pskl_var_f α0))
+  = open_pskl_wrt_pskl (subst_pskl_in_pskl (pskl_var_f β0) α P)
+      (pskl_var_f α0).
+Proof.
+  intros α α0 Hαα0 β0 P. symmetry.
+  apply subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
+    [ exact Hαα0 | apply lc_pskl_var_f ].
+Qed.
+
 (* ===================================================================== *)
 
 Lemma a_assign_unify_consis_rename_tvar : forall (α : atom),
@@ -939,18 +1009,9 @@ Proof.
     exists (Lih `union` singleton α0).
     intros β0 HL Ξr Θb Heq Htv Hu HYi HYo HYP0 HYP HYQ Hβ0Δ1 Hβ0Δ2.
     simpl in HYP0, HYP, HYQ.
-    assert (Hα0β0 : α0 <> β0) by (clear - HL; fsetdec).
-    assert (Hβ0α0 : β0 <> α0) by (clear - Hα0β0; congruence).
-    assert (HinΘ0 : α `in` ftvar_in_aenv Θ0)
-      by (rewrite Heq; rewrite ftvar_in_aenv_app; simpl; clear; fsetdec).
-    assert (Hαα0 : α <> α0)
-      by (intro Hbad; subst; clear - Hfr HinΘ0; fsetdec).
-    assert (Hα0Θ0 : α0 `notin` dom Θ0)
-      by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - Hfr H; fsetdec).
     (* the conclusion's output is [close α0 Q], so [β0] misses [Q] itself *)
-    assert (HYQ' : β0 `notin` ftvar_in_pskl Q).
-    { rewrite ftvar_in_pskl_close_pskl_wrt_pskl in HYQ.
-      clear - HYQ Hβ0α0. fsetdec. }
+    destruct (rn_binder_fresh HL Heq Hfr HYQ)
+      as (Hα0β0 & Hβ0α0 & Hαα0 & Hα0Θ0 & HYQ').
     destruct (IH β0 ltac:(clear - HL; solve_notin_auto)
                 ((α0, abind_tvar) :: Ξr) Θb
                 ltac:(rewrite Heq; reflexivity)
@@ -970,21 +1031,7 @@ Proof.
     exists Θt.
     split; [ solve [ exact HeqO' | reflexivity | simpl_env; reflexivity ] | ].
     (* normalize the IH's substituted opens and renamed Δs *)
-    assert (Ho0 : subst_pskl_in_pskl (pskl_var_f β0) α
-                    (open_pskl_wrt_pskl P0 (pskl_var_f α0))
-                  = open_pskl_wrt_pskl
-                      (subst_pskl_in_pskl (pskl_var_f β0) α P0)
-                      (pskl_var_f α0))
-      by (symmetry; apply subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-          [ exact Hαα0 | apply lc_pskl_var_f ]).
-    assert (Ho1 : subst_pskl_in_pskl (pskl_var_f β0) α
-                    (open_pskl_wrt_pskl P (pskl_var_f α0))
-                  = open_pskl_wrt_pskl
-                      (subst_pskl_in_pskl (pskl_var_f β0) α P)
-                      (pskl_var_f α0))
-      by (symmetry; apply subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-          [ exact Hαα0 | apply lc_pskl_var_f ]).
-    rewrite Ho0, Ho1 in Hren.
+    rewrite !(subst_pskl_open_var_comm Hαα0) in Hren.
     simpl.
     rewrite (subst_pskl_in_pskl_close_pskl_wrt_pskl Q (pskl_var_f β0) α α0
                (lc_pskl_var_f β0) Hαα0
@@ -992,23 +1039,7 @@ Proof.
     simpl_env in Hren. simpl_env.
     apply a_consis__forall_inh with (α := α0).
     + (* the rule's side condition, transported across the rename *)
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P0 (pskl_var_f β0) α)
-        as Hu0.
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (pskl_var_f β0) α)
-        as Hu1.
-      simpl in Hu0, Hu1.
-      pose proof (rn_set_upper β0 α Δ1) as Hr1.
-      pose proof (rn_set_upper β0 α Δ2) as Hr2.
-      assert (HfrA : α0 `notin` ftvar_in_aenv (Ξr ++ (β0 ~ abind_tvar) ++ Θb)).
-      { rewrite Heq in Hfr.
-        repeat rewrite ftvar_in_aenv_app in Hfr |- *.
-        simpl in Hfr |- *. clear - Hfr Hα0β0. fsetdec. }
-      repeat apply notin_union_3.
-      * exact HfrA.
-      * clear - Hfr Hu0 Hα0β0. fsetdec.
-      * clear - Hfr Hu1 Hα0β0. fsetdec.
-      * clear - Hfr Hr1 Hα0β0. fsetdec.
-      * clear - Hfr Hr2 Hα0β0. fsetdec.
+      exact (rn_binder_side_condition Heq Hfr Hα0β0).
     + eapply auc_delta_consis;
         [ exact Hren
         | apply rn_set_add_other; clear - Hαα0; congruence
@@ -1024,18 +1055,9 @@ Proof.
     exists (Lih `union` singleton α0).
     intros β0 HL Ξr Θb Heq Htv Hu HYi HYo HYP0 HYP HYQ Hβ0Δ1 Hβ0Δ2.
     simpl in HYP0, HYP, HYQ.
-    assert (Hα0β0 : α0 <> β0) by (clear - HL; fsetdec).
-    assert (Hβ0α0 : β0 <> α0) by (clear - Hα0β0; congruence).
-    assert (HinΘ0 : α `in` ftvar_in_aenv Θ0)
-      by (rewrite Heq; rewrite ftvar_in_aenv_app; simpl; clear; fsetdec).
-    assert (Hαα0 : α <> α0)
-      by (intro Hbad; subst; clear - Hfr HinΘ0; fsetdec).
-    assert (Hα0Θ0 : α0 `notin` dom Θ0)
-      by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - Hfr H; fsetdec).
     (* the conclusion's output is [close α0 Q], so [β0] misses [Q] itself *)
-    assert (HYQ' : β0 `notin` ftvar_in_pskl Q).
-    { rewrite ftvar_in_pskl_close_pskl_wrt_pskl in HYQ.
-      clear - HYQ Hβ0α0. fsetdec. }
+    destruct (rn_binder_fresh HL Heq Hfr HYQ)
+      as (Hα0β0 & Hβ0α0 & Hαα0 & Hα0Θ0 & HYQ').
     destruct (IH β0 ltac:(clear - HL; solve_notin_auto)
                 ((α0, abind_tvar) :: Ξr) Θb
                 ltac:(rewrite Heq; reflexivity)
@@ -1053,14 +1075,7 @@ Proof.
     simpl in HeqO. inversion HeqO as [HeqO'].
     exists Θt.
     split; [ solve [ exact HeqO' | reflexivity | simpl_env; reflexivity ] | ].
-    assert (Ho1 : subst_pskl_in_pskl (pskl_var_f β0) α
-                    (open_pskl_wrt_pskl P (pskl_var_f α0))
-                  = open_pskl_wrt_pskl
-                      (subst_pskl_in_pskl (pskl_var_f β0) α P)
-                      (pskl_var_f α0))
-      by (symmetry; apply subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-          [ exact Hαα0 | apply lc_pskl_var_f ]).
-    rewrite Ho1 in Hren.
+    rewrite !(subst_pskl_open_var_comm Hαα0) in Hren.
     simpl.
     rewrite (subst_pskl_in_pskl_close_pskl_wrt_pskl Q (pskl_var_f β0) α α0
                (lc_pskl_var_f β0) Hαα0
@@ -1068,23 +1083,7 @@ Proof.
     simpl_env in Hren. simpl_env.
     apply a_consis__forall_syn with (α := α0).
     + (* the rule's side condition, transported across the rename *)
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P0 (pskl_var_f β0) α)
-        as Hu0.
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (pskl_var_f β0) α)
-        as Hu1.
-      simpl in Hu0, Hu1.
-      pose proof (rn_set_upper β0 α Δ1) as Hr1.
-      pose proof (rn_set_upper β0 α Δ2) as Hr2.
-      assert (HfrA : α0 `notin` ftvar_in_aenv (Ξr ++ (β0 ~ abind_tvar) ++ Θb)).
-      { rewrite Heq in Hfr.
-        repeat rewrite ftvar_in_aenv_app in Hfr |- *.
-        simpl in Hfr |- *. clear - Hfr Hα0β0. fsetdec. }
-      repeat apply notin_union_3.
-      * exact HfrA.
-      * clear - Hfr Hu0 Hα0β0. fsetdec.
-      * clear - Hfr Hu1 Hα0β0. fsetdec.
-      * clear - Hfr Hr1 Hα0β0. fsetdec.
-      * clear - Hfr Hr2 Hα0β0. fsetdec.
+      exact (rn_binder_side_condition Heq Hfr Hα0β0).
     + eapply auc_delta_consis;
         [ exact Hren
         | reflexivity
@@ -1109,18 +1108,9 @@ Proof.
     exists (Lih `union` singleton α0).
     intros β0 HL Ξr Θb Heq Htv Hu HYi HYo HYP0 HYP HYQ Hβ0Δ1 Hβ0Δ2.
     simpl in HYP0, HYP, HYQ.
-    assert (Hα0β0 : α0 <> β0) by (clear - HL; fsetdec).
-    assert (Hβ0α0 : β0 <> α0) by (clear - Hα0β0; congruence).
-    assert (HinΘ0 : α `in` ftvar_in_aenv Θ0)
-      by (rewrite Heq; rewrite ftvar_in_aenv_app; simpl; clear; fsetdec).
-    assert (Hαα0 : α <> α0)
-      by (intro Hbad; subst; clear - Hfr HinΘ0; fsetdec).
-    assert (Hα0Θ0 : α0 `notin` dom Θ0)
-      by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - Hfr H; fsetdec).
     (* the conclusion's output is [close α0 Q], so [β0] misses [Q] itself *)
-    assert (HYQ' : β0 `notin` ftvar_in_pskl Q).
-    { rewrite ftvar_in_pskl_close_pskl_wrt_pskl in HYQ.
-      clear - HYQ Hβ0α0. fsetdec. }
+    destruct (rn_binder_fresh HL Heq Hfr HYQ)
+      as (Hα0β0 & Hβ0α0 & Hαα0 & Hα0Θ0 & HYQ').
     destruct (IH β0 ltac:(clear - HL; solve_notin_auto)
                 ((α0, abind_tvar) :: Ξr) Θb
                 ltac:(rewrite Heq; reflexivity)
@@ -1138,14 +1128,7 @@ Proof.
     simpl in HeqO. inversion HeqO as [HeqO'].
     exists Θt.
     split; [ solve [ exact HeqO' | reflexivity | simpl_env; reflexivity ] | ].
-    assert (Ho0 : subst_pskl_in_pskl (pskl_var_f β0) α
-                    (open_pskl_wrt_pskl P0 (pskl_var_f α0))
-                  = open_pskl_wrt_pskl
-                      (subst_pskl_in_pskl (pskl_var_f β0) α P0)
-                      (pskl_var_f α0))
-      by (symmetry; apply subst_pskl_in_pskl_open_pskl_wrt_pskl_var;
-          [ exact Hαα0 | apply lc_pskl_var_f ]).
-    rewrite Ho0 in Hren.
+    rewrite !(subst_pskl_open_var_comm Hαα0) in Hren.
     simpl.
     rewrite (subst_pskl_in_pskl_close_pskl_wrt_pskl Q (pskl_var_f β0) α α0
                (lc_pskl_var_f β0) Hαα0
@@ -1153,23 +1136,7 @@ Proof.
     simpl_env in Hren. simpl_env.
     apply a_consis__univ_ghost1 with (α := α0).
     + (* the rule's side condition, transported across the rename *)
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P0 (pskl_var_f β0) α)
-        as Hu0.
-      pose proof (ftvar_in_pskl_subst_pskl_in_pskl_upper P (pskl_var_f β0) α)
-        as Hu1.
-      simpl in Hu0, Hu1.
-      pose proof (rn_set_upper β0 α Δ1) as Hr1.
-      pose proof (rn_set_upper β0 α Δ2) as Hr2.
-      assert (HfrA : α0 `notin` ftvar_in_aenv (Ξr ++ (β0 ~ abind_tvar) ++ Θb)).
-      { rewrite Heq in Hfr.
-        repeat rewrite ftvar_in_aenv_app in Hfr |- *.
-        simpl in Hfr |- *. clear - Hfr Hα0β0. fsetdec. }
-      repeat apply notin_union_3.
-      * exact HfrA.
-      * clear - Hfr Hu0 Hα0β0. fsetdec.
-      * clear - Hfr Hu1 Hα0β0. fsetdec.
-      * clear - Hfr Hr1 Hα0β0. fsetdec.
-      * clear - Hfr Hr2 Hα0β0. fsetdec.
+      exact (rn_binder_side_condition Heq Hfr Hα0β0).
     + eapply auc_delta_consis;
         [ exact Hren
         | apply rn_set_add_other; clear - Hαα0; congruence
@@ -1332,6 +1299,26 @@ Qed.
 (*  §10  Lemma [Decorating algorithmic consistency]                       *)
 (* ===================================================================== *)
 
+(** The binder rows of the decoration rebuild the cofinite family at a
+    [β] fresh for the rename's avoid-set and everything in sight; the
+    rule's own binder [α] is fresh for the input. *)
+Lemma rn_decorate_fresh : forall α β Lrn Θ0 Θ1 P0 P Q Δ1 Δ2,
+  α `notin` ftvar_in_aenv Θ0 `union` ftvar_in_pskl P0
+    `union` ftvar_in_pskl P `union` Δ1 `union` Δ2 ->
+  β `notin` Lrn `union` singleton α `union` dom Θ0 `union` dom Θ1
+    `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
+    `union` ftvar_in_pskl Q `union` Δ1 `union` Δ2 ->
+  β <> α /\ α `notin` ftvar_in_pskl P0 /\ α `notin` ftvar_in_pskl P /\
+  α `notin` Δ1 /\ α `notin` Δ2 /\ α `notin` dom Θ0 /\
+  β `notin` dom ((α ~ abind_tvar) ++ Θ0) /\
+  β `notin` dom ((α ~ abind_tvar) ++ Θ1) /\ β `notin` ftvar_in_pskl Q.
+Proof.
+  intros α β Lrn Θ0 Θ1 P0 P Q Δ1 Δ2 Hfr Hβ.
+  pose proof (dom_subset_ftvar_in_aenv Θ0) as Hd.
+  simpl. repeat split; clear - Hfr Hβ Hd; fsetdec.
+Qed.
+Arguments rn_decorate_fresh {α β Lrn Θ0 Θ1 P0 P Q Δ1 Δ2}.
+
 (** If [aconsis[Δ1|Δ2][P0]{Θ0}{P}{Q}{Θ1}] then
     [aconsistag[Δ1|Δ2][P0][·]{Θ0}{P}{Q}{Θ1}]
     (consistency-proofs.tex, lemma:decorating-algorithmic-consistency).
@@ -1399,18 +1386,9 @@ Proof.
             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
             `union` ftvar_in_pskl Q `union` Δ1 `union` Δ2).
     intros β Hβ.
-    assert (Hβα : β <> α) by (apply notin_singleton_1; clear - Hβ; fsetdec).
-    assert (HαP0 : α `notin` ftvar_in_pskl P0) by (clear - Hfr; fsetdec).
-    assert (HαP : α `notin` ftvar_in_pskl P) by (clear - Hfr; fsetdec).
-    assert (HαΔ1 : α `notin` Δ1) by (clear - Hfr; fsetdec).
-    assert (HαΔ2 : α `notin` Δ2) by (clear - Hfr; fsetdec).
-    assert (HαΘ0 : α `notin` dom Θ0)
-      by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - Hfr H; fsetdec).
+    destruct (rn_decorate_fresh Hfr Hβ)
+      as (Hβα & HαP0 & HαP & HαΔ1 & HαΔ2 & HαΘ0 & Hb1 & Hb2 & Hb5).
     assert (HuΘ : uniq ((α ~ abind_tvar) ++ Θ0)) by solve_uniq.
-    assert (Hb1 : β `notin` dom ((α ~ abind_tvar) ++ Θ0))
-      by (simpl; clear - Hβ; fsetdec).
-    assert (Hb2 : β `notin` dom ((α ~ abind_tvar) ++ Θ1))
-      by (simpl; clear - Hβ; fsetdec).
     assert (Hb3 : β `notin`
               ftvar_in_pskl (open_pskl_wrt_pskl P0 (pskl_var_f α)))
       by (apply notin_ftvar_open_pskl_var;
@@ -1419,7 +1397,6 @@ Proof.
               ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α)))
       by (apply notin_ftvar_open_pskl_var;
           [ exact Hβα | clear - Hβ; fsetdec ]).
-    assert (Hb5 : β `notin` ftvar_in_pskl Q) by (clear - Hβ; fsetdec).
     assert (Hb6 : β `notin` add α Δ1) by (clear - Hβ Hβα; fsetdec).
     assert (Hb7 : β `notin` add α Δ2) by (clear - Hβ Hβα; fsetdec).
     destruct (Hrn β ltac:(clear - Hβ; solve_notin_auto) nil Θ0 eq_refl
@@ -1444,25 +1421,15 @@ Proof.
             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
             `union` ftvar_in_pskl Q `union` Δ1 `union` Δ2).
     intros β Hβ.
-    assert (Hβα : β <> α) by (apply notin_singleton_1; clear - Hβ; fsetdec).
-    assert (HαP0 : α `notin` ftvar_in_pskl P0) by (clear - Hfr; fsetdec).
-    assert (HαP : α `notin` ftvar_in_pskl P) by (clear - Hfr; fsetdec).
-    assert (HαΔ1 : α `notin` Δ1) by (clear - Hfr; fsetdec).
-    assert (HαΔ2 : α `notin` Δ2) by (clear - Hfr; fsetdec).
-    assert (HαΘ0 : α `notin` dom Θ0)
-      by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - Hfr H; fsetdec).
+    destruct (rn_decorate_fresh Hfr Hβ)
+      as (Hβα & HαP0 & HαP & HαΔ1 & HαΔ2 & HαΘ0 & Hb1 & Hb2 & Hb5).
     assert (HuΘ : uniq ((α ~ abind_tvar) ++ Θ0)) by solve_uniq.
-    assert (Hb1 : β `notin` dom ((α ~ abind_tvar) ++ Θ0))
-      by (simpl; clear - Hβ; fsetdec).
-    assert (Hb2 : β `notin` dom ((α ~ abind_tvar) ++ Θ1))
-      by (simpl; clear - Hβ; fsetdec).
     assert (Hb3 : β `notin` ftvar_in_pskl (pskl_univ_ghost P0))
       by (simpl; clear - Hβ; fsetdec).
     assert (Hb4 : β `notin`
               ftvar_in_pskl (open_pskl_wrt_pskl P (pskl_var_f α)))
       by (apply notin_ftvar_open_pskl_var;
           [ exact Hβα | clear - Hβ; fsetdec ]).
-    assert (Hb5 : β `notin` ftvar_in_pskl Q) by (clear - Hβ; fsetdec).
     assert (Hb6 : β `notin` Δ1) by (clear - Hβ; fsetdec).
     assert (Hb7 : β `notin` add α Δ2) by (clear - Hβ Hβα; fsetdec).
     destruct (Hrn β ltac:(clear - Hβ; solve_notin_auto) nil Θ0 eq_refl
@@ -1490,25 +1457,15 @@ Proof.
             `union` ftvar_in_pskl P0 `union` ftvar_in_pskl P
             `union` ftvar_in_pskl Q `union` Δ1 `union` Δ2).
     intros β Hβ.
-    assert (Hβα : β <> α) by (apply notin_singleton_1; clear - Hβ; fsetdec).
-    assert (HαP0 : α `notin` ftvar_in_pskl P0) by (clear - Hfr; fsetdec).
-    assert (HαP : α `notin` ftvar_in_pskl P) by (clear - Hfr; fsetdec).
-    assert (HαΔ1 : α `notin` Δ1) by (clear - Hfr; fsetdec).
-    assert (HαΔ2 : α `notin` Δ2) by (clear - Hfr; fsetdec).
-    assert (HαΘ0 : α `notin` dom Θ0)
-      by (pose proof (dom_subset_ftvar_in_aenv Θ0); clear - Hfr H; fsetdec).
+    destruct (rn_decorate_fresh Hfr Hβ)
+      as (Hβα & HαP0 & HαP & HαΔ1 & HαΔ2 & HαΘ0 & Hb1 & Hb2 & Hb5).
     assert (HuΘ : uniq ((α ~ abind_tvar) ++ Θ0)) by solve_uniq.
-    assert (Hb1 : β `notin` dom ((α ~ abind_tvar) ++ Θ0))
-      by (simpl; clear - Hβ; fsetdec).
-    assert (Hb2 : β `notin` dom ((α ~ abind_tvar) ++ Θ1))
-      by (simpl; clear - Hβ; fsetdec).
     assert (Hb3 : β `notin`
               ftvar_in_pskl (open_pskl_wrt_pskl P0 (pskl_var_f α)))
       by (apply notin_ftvar_open_pskl_var;
           [ exact Hβα | clear - Hβ; fsetdec ]).
     assert (Hb4 : β `notin` ftvar_in_pskl (pskl_univ_ghost P))
       by (simpl; clear - Hβ; fsetdec).
-    assert (Hb5 : β `notin` ftvar_in_pskl Q) by (clear - Hβ; fsetdec).
     assert (Hb6 : β `notin` add α Δ1) by (clear - Hβ Hβα; fsetdec).
     assert (Hb7 : β `notin` Δ2) by (clear - Hβ; fsetdec).
     destruct (Hrn β ltac:(clear - Hβ; solve_notin_auto) nil Θ0 eq_refl

@@ -162,47 +162,22 @@ Proof.
     destruct Hflex as [Hb | [τ Hb]]; inversion Hb.
   - (* flex head *)
     simpl. destruct (α0 == α) as [->|Hne]; [ exact H0 | ].
-    apply IHa_inc_equiv.
-    destruct Hflex as [Hb | [τ Hb]].
-    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqα _] | Hb'];
-        [ congruence | left; exact Hb' ].
-    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
-        [ discriminate | right; exists τ; exact Hb' ].
+    exact (IHa_inc_equiv α0 (proj1 (a_flex_tvar_cons_other _ _ Hne) Hflex)).
   - (* flex_def head *)
     simpl. destruct (α0 == α) as [->|Hne]; [ exact H0 | ].
-    apply IHa_inc_equiv.
-    destruct Hflex as [Hb | [τ0 Hb]].
-    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
-        [ discriminate | left; exact Hb' ].
-    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[Heqα _] | Hb'];
-        [ congruence | right; exists τ0; exact Hb' ].
+    exact (IHa_inc_equiv α0 (proj1 (a_flex_tvar_cons_other _ _ Hne) Hflex)).
   - (* var_typ head : κ1/κ2 unchanged, target grows — weaken *)
     eapply a_tyequiv_weaken;
       [ intros y b Hby; unfold binds; apply in_or_app; right; simpl; right; exact Hby | ].
-    apply IHa_inc_equiv.
-    destruct Hflex as [Hb | [τ Hb]].
-    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
-        [ discriminate | left; exact Hb' ].
-    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
-        [ discriminate | right; exists τ; exact Hb' ].
+    exact (IHa_inc_equiv α0 (a_flex_tvar_cons_tm Hflex I)).
   - (* var_skl head *)
     eapply a_tyequiv_weaken;
       [ intros y b Hby; unfold binds; apply in_or_app; right; simpl; right; exact Hby | ].
-    apply IHa_inc_equiv.
-    destruct Hflex as [Hb | [τ Hb]].
-    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
-        [ discriminate | left; exact Hb' ].
-    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
-        [ discriminate | right; exists τ; exact Hb' ].
+    exact (IHa_inc_equiv α0 (a_flex_tvar_cons_tm Hflex I)).
   - (* tvar head *)
     eapply a_tyequiv_weaken;
       [ intros y b Hby; unfold binds; apply in_or_app; right; simpl; right; exact Hby | ].
-    apply IHa_inc_equiv.
-    destruct Hflex as [Hb | [τ Hb]].
-    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
-        [ discriminate | left; exact Hb' ].
-    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Heqb] | Hb'];
-        [ discriminate | right; exists τ; exact Hb' ].
+    exact (IHa_inc_equiv α0 (a_flex_tvar_strip_tvar Hflex)).
 Qed.
 
 (** The factoring [κ ≡ ζ∘κ₁], evaluated at the still-live flexible [α̂]:

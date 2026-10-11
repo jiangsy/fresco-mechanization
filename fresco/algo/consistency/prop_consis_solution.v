@@ -1440,6 +1440,56 @@ Proof.
     eapply IH; [ exact Hdec' | exact Hid' | exact Hinc' ].
 Qed.
 
+(** Peel the head flexible of a factored [a_inc_equiv] whose left blocks
+    [κ1] / [σ1] cover the declaration prefix: both blocks start at that
+    flexible, and the remainder is again a factoring of the tail.  The step
+    shared by the mid-insertion lemmas below. *)
+Lemma a_inc_equiv_decls_cons_inv : forall a Ξ' Θ0 Θ' κ1 κ2 σ1 σ2,
+  uniq (((a ~ abind_flex_mono) ++ Ξ') ++ Θ0) ->
+  dom κ1 [=] dom ((a ~ abind_flex_mono) ++ Ξ') ->
+  dom σ1 [=] dom ((a ~ abind_flex_mono) ++ Ξ') ->
+  a_inc_equiv (((a ~ abind_flex_mono) ++ Ξ') ++ Θ0) (κ1 ++ κ2) (σ1 ++ σ2) Θ' ->
+  exists τ1 τ2 κ1' σ1',
+    κ1 = (a, τ1) :: κ1' /\ σ1 = (a, τ2) :: σ1' /\
+    uniq (Ξ' ++ Θ0) /\ dom κ1' [=] dom Ξ' /\ dom σ1' [=] dom Ξ' /\
+    a_inc_equiv (Ξ' ++ Θ0) (κ1' ++ κ2) (σ1' ++ σ2) Θ' /\
+    {{ Θ' ⊢ τ1 ≡ᵗ τ2 }}a.
+Proof.
+  intros a Ξ' Θ0 Θ' κ1 κ2 σ1 σ2 Huq Hdκ Hdσ Hie.
+  assert (Huκ : uniq (κ1 ++ κ2))
+    by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
+  assert (Huσ : uniq (σ1 ++ σ2))
+    by (eapply a_inc_equiv_uniq_r; [ exact Hie | exact Huq ]).
+  assert (HaΞ : a `notin` dom Ξ')
+    by (clear - Huq; simpl_env in Huq; solve_uniq).
+  assert (Huq' : uniq (Ξ' ++ Θ0))
+    by (clear - Huq; simpl_env in Huq; solve_uniq).
+  destruct κ1 as [ | [ar tr] κ1' ];
+    [ exfalso; rewrite dom_nil in Hdκ;
+      assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
+        by (simpl; fsetdec);
+      rewrite <- Hdκ in Hin; clear - Hin; fsetdec | ].
+  destruct σ1 as [ | [asg ts] σ1' ];
+    [ exfalso; rewrite dom_nil in Hdσ;
+      assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
+        by (simpl; fsetdec);
+      rewrite <- Hdσ in Hin; clear - Hin; fsetdec | ].
+  assert (Harκ : ar `notin` dom κ1')
+    by (clear - Huκ; simpl_env in Huκ; solve_uniq).
+  assert (Hasσ : asg `notin` dom σ1')
+    by (clear - Huσ; simpl_env in Huσ; solve_uniq).
+  simpl in Hie.
+  inversion Hie as [ | R q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
+  simpl_env in Hdκ; simpl_env in Hdσ.
+  exists tr, ts, κ1', σ1'.
+  split; [ reflexivity | ]. split; [ reflexivity | ].
+  split; [ exact Huq' | ].
+  split; [ clear - Hdκ Harκ HaΞ; fsetdec | ].
+  split; [ clear - Hdσ Hasσ HaΞ; fsetdec | ].
+  split; [ exact Hie' | exact Hequ ].
+Qed.
+Arguments a_inc_equiv_decls_cons_inv {a Ξ' Θ0 Θ' κ1 κ2 σ1 σ2}.
+
 Lemma a_inc_equiv_mid_insert_var_skl :
   forall Ξ x Θ0 Θ' Ξv κ1 κ2 σ1 σ2 Pm Pm',
   a_decls Ξ ->
@@ -1461,37 +1511,12 @@ Proof.
     simpl in Hie |- *.
     apply a_inc_equiv__var_skl; [ exact Hie | exact Heqm | exact Hsuf ].
   - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
-    assert (Huκ : uniq (κ1 ++ κ2))
-      by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
-    assert (Huσ : uniq (σ1 ++ σ2))
-      by (eapply a_inc_equiv_uniq_r; [ exact Hie | exact Huq ]).
-    assert (HaΞ : a `notin` dom Ξ')
-      by (clear - Huq; simpl_env in Huq; solve_uniq).
-    assert (Huq' : uniq (Ξ' ++ Θ0))
-      by (clear - Huq; simpl_env in Huq; solve_uniq).
-    destruct κ1 as [ | [ar tr] κ1' ];
-      [ exfalso; rewrite dom_nil in Hdκ;
-        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
-          by (simpl; fsetdec);
-        rewrite <- Hdκ in Hin; clear - Hin; fsetdec | ].
-    destruct σ1 as [ | [asg ts] σ1' ];
-      [ exfalso; rewrite dom_nil in Hdσ;
-        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
-          by (simpl; fsetdec);
-        rewrite <- Hdσ in Hin; clear - Hin; fsetdec | ].
-    assert (Harκ : ar `notin` dom κ1')
-      by (clear - Huκ; simpl_env in Huκ; solve_uniq).
-    assert (Hasσ : asg `notin` dom σ1')
-      by (clear - Huσ; simpl_env in Huσ; solve_uniq).
-    simpl in Hie.
-    inversion Hie as [ | R q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
-    simpl_env in Hdκ; simpl_env in Hdσ.
+    destruct (a_inc_equiv_decls_cons_inv Huq Hdκ Hdσ Hie)
+      as (τa & τb & κ1' & σ1' & -> & -> & Huq' & Hdκ' & Hdσ' & Hie' & Hequ).
     simpl. apply a_inc_equiv__flex.
     2:{ apply a_tyequiv_weaken with (Θ := Θ');
         [ intros y b Hb; simpl_env; auto | exact Hequ ]. }
     apply IH; auto.
-    + clear - Hdκ Harκ HaΞ. simpl_env in *. fsetdec.
-    + clear - Hdσ Hasσ HaΞ. simpl_env in *. fsetdec.
 Qed.
 
 Lemma a_inc_equiv_mid_insert_tvar :
@@ -1514,37 +1539,12 @@ Proof.
     simpl in Hie |- *.
     apply a_inc_equiv__tvar; [ exact Hie | exact Hsuf ].
   - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
-    assert (Huκ : uniq (κ1 ++ κ2))
-      by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
-    assert (Huσ : uniq (σ1 ++ σ2))
-      by (eapply a_inc_equiv_uniq_r; [ exact Hie | exact Huq ]).
-    assert (HaΞ : a `notin` dom Ξ')
-      by (clear - Huq; simpl_env in Huq; solve_uniq).
-    assert (Huq' : uniq (Ξ' ++ Θ0))
-      by (clear - Huq; simpl_env in Huq; solve_uniq).
-    destruct κ1 as [ | [ar tr] κ1' ];
-      [ exfalso; rewrite dom_nil in Hdκ;
-        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
-          by (simpl; fsetdec);
-        rewrite <- Hdκ in Hin; clear - Hin; fsetdec | ].
-    destruct σ1 as [ | [asg ts] σ1' ];
-      [ exfalso; rewrite dom_nil in Hdσ;
-        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
-          by (simpl; fsetdec);
-        rewrite <- Hdσ in Hin; clear - Hin; fsetdec | ].
-    assert (Harκ : ar `notin` dom κ1')
-      by (clear - Huκ; simpl_env in Huκ; solve_uniq).
-    assert (Hasσ : asg `notin` dom σ1')
-      by (clear - Huσ; simpl_env in Huσ; solve_uniq).
-    simpl in Hie.
-    inversion Hie as [ | R q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
-    simpl_env in Hdκ; simpl_env in Hdσ.
+    destruct (a_inc_equiv_decls_cons_inv Huq Hdκ Hdσ Hie)
+      as (τa & τb & κ1' & σ1' & -> & -> & Huq' & Hdκ' & Hdσ' & Hie' & Hequ).
     simpl. apply a_inc_equiv__flex.
     2:{ apply a_tyequiv_weaken with (Θ := Θ');
         [ intros y b Hb; simpl_env; auto | exact Hequ ]. }
     apply IH; auto.
-    + clear - Hdκ Harκ HaΞ. simpl_env in *. fsetdec.
-    + clear - Hdσ Hasσ HaΞ. simpl_env in *. fsetdec.
 Qed.
 
 (** Strip a DEFINED flexible mid off a competing increment (the
@@ -1612,35 +1612,10 @@ Proof.
     apply a_inc_equiv__flex_def;
       [ exact Hie | exact Heqτ | exact Heqd ].
   - inversion Hdec as [ | α1 Ξ'' Hdec' [Heqγ HeqΞ] ]; subst.
-    assert (Huκ : uniq (κ1 ++ κ2))
-      by (eapply a_inc_equiv_uniq_l; [ exact Hie | exact Huq ]).
-    assert (Huσ : uniq (σ1 ++ σ2))
-      by (eapply a_inc_equiv_uniq_r; [ exact Hie | exact Huq ]).
-    assert (HaΞ : a `notin` dom Ξ')
-      by (clear - Huq; simpl_env in Huq; solve_uniq).
-    assert (Huq' : uniq (Ξ' ++ Θ0))
-      by (clear - Huq; simpl_env in Huq; solve_uniq).
-    destruct κ1 as [ | [ar tr] κ1' ];
-      [ exfalso; rewrite dom_nil in Hdκ;
-        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
-          by (simpl; fsetdec);
-        rewrite <- Hdκ in Hin; clear - Hin; fsetdec | ].
-    destruct σ1 as [ | [asg ts] σ1' ];
-      [ exfalso; rewrite dom_nil in Hdσ;
-        assert (Hin : a `in` dom ((a ~ abind_flex_mono) ++ Ξ'))
-          by (simpl; fsetdec);
-        rewrite <- Hdσ in Hin; clear - Hin; fsetdec | ].
-    assert (Harκ : ar `notin` dom κ1')
-      by (clear - Huκ; simpl_env in Huκ; solve_uniq).
-    assert (Hasσ : asg `notin` dom σ1')
-      by (clear - Huσ; simpl_env in Huσ; solve_uniq).
-    simpl in Hie.
-    inversion Hie as [ | R q1 q2 T aa u1 u2 Hie' Hequ | | | | ]; subst.
-    simpl_env in Hdκ; simpl_env in Hdσ.
+    destruct (a_inc_equiv_decls_cons_inv Huq Hdκ Hdσ Hie)
+      as (τa & τb & κ1' & σ1' & -> & -> & Huq' & Hdκ' & Hdσ' & Hie' & Hequ).
     simpl. apply a_inc_equiv__flex; [ | exact Hequ ].
     apply IH; auto.
-    + clear - Hdκ Harκ HaΞ. simpl_env in *. fsetdec.
-    + clear - Hdσ Hasσ HaΞ. simpl_env in *. fsetdec.
 Qed.
 
 Lemma a_inc_tvar_mid_strip_id : forall Ξ c Θ0 κ Θ1,
@@ -1956,6 +1931,55 @@ Qed.
     absent from the (painted) subject.  Drives GhostR's side condition. *)
 
 
+(** The binder step of the scoped join ftv-survival below: open at a fresh
+    rigid [β], which joins both the context and the scope [D]; [Rβ] is the
+    subject at [β], whose free variables include the subject's own. *)
+Lemma ad_pat_consis_rigid_ftv_rev_scoped_open :
+  forall L Θ α' D Q R (Rβ : atom -> uskl),
+  {{ ⊢ Θ }}a ->
+  binds α' abind_tvar Θ ->
+  α' `notin` D ->
+  (forall α1 τ, binds α1 (abind_flex_mono_def τ) Θ -> α1 `in` D ->
+               ftvar_in_ptyp τ [<=] D) ->
+  (forall β, β `notin` L ->
+     {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a ->
+     binds α' abind_tvar ((β ~ abind_tvar) ++ Θ) ->
+     forall D', α' `notin` D' ->
+     (forall α1 τ, binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
+                  α1 `in` D' -> ftvar_in_ptyp τ [<=] D') ->
+     ftvar_in_bskl (open_bskl_wrt_bskl Q (bskl_var_f β)) [<=] D' ->
+     α' `notin` ftvar_in_uskl (Rβ β)) ->
+  (forall β, ftvar_in_uskl R [<=] ftvar_in_uskl (Rβ β)) ->
+  ftvar_in_bskl Q [<=] D ->
+  α' `notin` ftvar_in_uskl R.
+Proof.
+  intros L Θ α' D Q R Rβ Hwf HbX HXD Hdefs IH Hlo Hout.
+  pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
+                      `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
+  assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
+    by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
+  assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
+    by (apply binds_cons_3; exact HbX).
+  assert (HdefsY' : forall α1 τ,
+            binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
+            α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
+  { intros α1 τ Hb HγD.
+    apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
+      [ discriminate Heqb | ].
+    assert (Hγne : α1 <> β).
+    { intro Heq; subst α1. apply binds_In in Hb.
+      clear - Hb Fr. fsetdec. }
+    assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
+    pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
+  assert (HnS : α' `notin` ftvar_in_uskl (Rβ β)).
+  { assert (HβL : β `notin` L) by (clear - Fr; solve_notin_auto).
+    assert (HαD : α' `notin` add β D) by (clear - HXD Fr; solve_notin_auto).
+    apply (IH β HβL HwfY HbXY (add β D) HαD HdefsY').
+    pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
+      as Hup.
+    simpl in Hup. clear - Hout Hup. fsetdec. }
+  pose proof (Hlo β) as Hlo'. clear - HnS Hlo'. fsetdec.
+Qed.
 (** SCOPED variant of the join ftv-survival: the definition side condition
     only holds for definitions REACHABLE from the target's scope [D] (the
     truncated context of the SkipRigid stuck-check).  A rigid [α] outside
@@ -1982,151 +2006,29 @@ Proof.
       by (apply (IHHc2 Hwf HbX D HXD Hdefs); clear - Hout; fsetdec).
     clear - Hn1 Hn2; fsetdec.
   - (* forall_inh_tagged (cofinite; Θ and D grow by the fresh β) *)
-    pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
-                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
-    assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
-      by (apply binds_cons_3; exact HbX).
-    assert (HdefsY' : forall α1 τ,
-              binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
-              α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
-    { intros α1 τ Hb HγD.
-      apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
-        [ discriminate Heqb | ].
-      assert (Hγne : α1 <> β).
-      { intro Heq; subst α1. apply binds_In in Hb.
-        clear - Hb Fr. fsetdec. }
-      assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
-      pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
-    assert (HnS : α' `notin`
-              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β))).
-    { assert (HβL : β `notin` L) by (clear - Fr; solve_notin_auto).
-      assert (HαD : α' `notin` add β D) by (clear - HXD Fr; solve_notin_auto).
-      apply (H0 β HβL HwfY HbXY (add β D) HαD HdefsY').
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup.
-      simpl in Hup. clear - Hout Hup. fsetdec. }
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
-      as Hlo.
-    clear - HnS Hlo. fsetdec.
+    eapply ad_pat_consis_rigid_ftv_rev_scoped_open
+      with (Rβ := fun β => open_uskl_wrt_uskl R (uskl_var_f β));
+      eauto using ftvar_in_uskl_open_uskl_wrt_uskl_lower.
   - (* forall_inh_untagged *)
-    pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
-                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
-    assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
-      by (apply binds_cons_3; exact HbX).
-    assert (HdefsY' : forall α1 τ,
-              binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
-              α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
-    { intros α1 τ Hb HγD.
-      apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
-        [ discriminate Heqb | ].
-      assert (Hγne : α1 <> β).
-      { intro Heq; subst α1. apply binds_In in Hb.
-        clear - Hb Fr. fsetdec. }
-      assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
-      pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
-    assert (HnS : α' `notin`
-              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β))).
-    { assert (HβL : β `notin` L) by (clear - Fr; solve_notin_auto).
-      assert (HαD : α' `notin` add β D) by (clear - HXD Fr; solve_notin_auto).
-      apply (H0 β HβL HwfY HbXY (add β D) HαD HdefsY').
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup.
-      simpl in Hup. clear - Hout Hup. fsetdec. }
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
-      as Hlo.
-    clear - HnS Hlo. fsetdec.
+    eapply ad_pat_consis_rigid_ftv_rev_scoped_open
+      with (Rβ := fun β => open_uskl_wrt_uskl R (uskl_var_f β));
+      eauto using ftvar_in_uskl_open_uskl_wrt_uskl_lower.
   - (* forall_syn_tagged *)
-    pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
-                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
-    assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
-      by (apply binds_cons_3; exact HbX).
-    assert (HdefsY' : forall α1 τ,
-              binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
-              α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
-    { intros α1 τ Hb HγD.
-      apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
-        [ discriminate Heqb | ].
-      assert (Hγne : α1 <> β).
-      { intro Heq; subst α1. apply binds_In in Hb.
-        clear - Hb Fr. fsetdec. }
-      assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
-      pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
-    assert (HnS : α' `notin`
-              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β))).
-    { assert (HβL : β `notin` L) by (clear - Fr; solve_notin_auto).
-      assert (HαD : α' `notin` add β D) by (clear - HXD Fr; solve_notin_auto).
-      apply (H0 β HβL HwfY HbXY (add β D) HαD HdefsY').
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup.
-      simpl in Hup. clear - Hout Hup. fsetdec. }
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
-      as Hlo.
-    clear - HnS Hlo. fsetdec.
+    eapply ad_pat_consis_rigid_ftv_rev_scoped_open
+      with (Rβ := fun β => open_uskl_wrt_uskl R (uskl_var_f β));
+      eauto using ftvar_in_uskl_open_uskl_wrt_uskl_lower.
   - (* forall_syn *)
-    pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
-                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
-    assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
-      by (apply binds_cons_3; exact HbX).
-    assert (HdefsY' : forall α1 τ,
-              binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
-              α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
-    { intros α1 τ Hb HγD.
-      apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
-        [ discriminate Heqb | ].
-      assert (Hγne : α1 <> β).
-      { intro Heq; subst α1. apply binds_In in Hb.
-        clear - Hb Fr. fsetdec. }
-      assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
-      pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
-    assert (HnS : α' `notin`
-              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β))).
-    { assert (HβL : β `notin` L) by (clear - Fr; solve_notin_auto).
-      assert (HαD : α' `notin` add β D) by (clear - HXD Fr; solve_notin_auto).
-      apply (H0 β HβL HwfY HbXY (add β D) HαD HdefsY').
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup.
-      simpl in Hup. clear - Hout Hup. fsetdec. }
-    pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R (uskl_var_f β))
-      as Hlo.
-    clear - HnS Hlo. fsetdec.
+    eapply ad_pat_consis_rigid_ftv_rev_scoped_open
+      with (Rβ := fun β => open_uskl_wrt_uskl R (uskl_var_f β));
+      eauto using ftvar_in_uskl_open_uskl_wrt_uskl_lower.
   - (* ghostg *) clear; fsetdec.
   - (* dot_univ_ghost *) apply (IHHc Hwf HbX D HXD Hdefs Hout).
   - (* ghost *) clear; fsetdec.
   - (* univ_ghost *) apply (IHHc Hwf HbX D HXD Hdefs Hout).
   - (* univ_ghost_inh *)
-    pick fresh β for (L `union` dom Θ `union` singleton α' `union` D
-                        `union` ftvar_in_uskl R `union` ftvar_in_bskl Q).
-    assert (HwfY : {{ ⊢ ((β ~ abind_tvar) ++ Θ) }}a)
-      by (apply a_wf_aenv__tvar; [ clear - Fr; solve_notin_auto | exact Hwf ]).
-    assert (HbXY : binds α' abind_tvar ((β ~ abind_tvar) ++ Θ))
-      by (apply binds_cons_3; exact HbX).
-    assert (HdefsY' : forall α1 τ,
-              binds α1 (abind_flex_mono_def τ) ((β ~ abind_tvar) ++ Θ) ->
-              α1 `in` (add β D) -> ftvar_in_ptyp τ [<=] (add β D)).
-    { intros α1 τ Hb HγD.
-      apply binds_cons_1 in Hb as [[_ Heqb] | Hb];
-        [ discriminate Heqb | ].
-      assert (Hγne : α1 <> β).
-      { intro Heq; subst α1. apply binds_In in Hb.
-        clear - Hb Fr. fsetdec. }
-      assert (HγD' : α1 `in` D) by (clear - HγD Hγne; fsetdec).
-      pose proof (Hdefs _ _ Hb HγD') as Hs. clear - Hs. fsetdec. }
-    assert (HnS : α' `notin` ftvar_in_uskl (uskl_univ_ghost R)).
-    { assert (HβL : β `notin` L) by (clear - Fr; solve_notin_auto).
-      assert (HαD : α' `notin` add β D) by (clear - HXD Fr; solve_notin_auto).
-      apply (H0 β HβL HwfY HbXY (add β D) HαD HdefsY').
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q (bskl_var_f β))
-        as Hup.
-      simpl in Hup. clear - Hout Hup. fsetdec. }
-    simpl in HnS. clear - HnS. fsetdec.
+    eapply ad_pat_consis_rigid_ftv_rev_scoped_open
+      with (Rβ := fun _ => uskl_univ_ghost R); eauto.
+    intros _. simpl. clear. fsetdec.
   - (* univ_ghost_drop *) apply (IHHc Hwf HbX D HXD Hdefs Hout).
   - (* flex_l : the subject is a defined flexible, never the rigid α' *)
     assert (Hne : α' <> α).
