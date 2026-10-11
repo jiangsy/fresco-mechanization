@@ -3238,60 +3238,8 @@ Proof.
     set (τab := ptyp_arrow (ptyp_var_f α) (ptyp_var_f β)).
     set (Θmid := (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0).
     set (Θ' := Ξw ++ (α0 ~ abind_flex_mono_def τab) ++ Θmid).
-    assert (Huq : uniq (Ξw ++ (α0 ~ abind_flex_mono) ++ Θ0))
-      by (apply a_wf_aenv_uniq; exact HwfΞ).
-    assert (Hwf0 : {{ ⊢ Θ0 }}a).
-    { eapply a_wf_aenv_strip_prefix with (Ξ := Ξw ++ (α0 ~ abind_flex_mono)).
-      simpl_env. exact HwfΞ. }
-    assert (Hbα : binds α abind_flex_mono Θmid)
-      by (unfold Θmid; unfold binds; simpl; right; left; reflexivity).
-    assert (Hbβ : binds β abind_flex_mono Θmid)
-      by (unfold Θmid; unfold binds; simpl; left; reflexivity).
-    assert (Hwfmid : {{ ⊢ Θmid }}a).
-    { unfold Θmid. apply a_wf_aenv__flex.
-      { simpl. clear - Hβ Hne. simpl_env in *. fsetdec. }
-      apply a_wf_aenv__flex;
-        [ clear - Hα; simpl_env in *; fsetdec | exact Hwf0 ]. }
-    assert (Hwfdef : {{ ⊢ ((α0 ~ abind_flex_mono_def τab) ++ Θmid) }}a).
-    { apply a_wf_aenv__flex_def.
-      - unfold Θmid. simpl. clear - Hα Hβ Huq. simpl_env in *. solve_uniq.
-      - apply a_wf_ptyp__arrow; apply a_wf_ptyp__var;
-          [ right; left; exact Hbα | right; left; exact Hbβ ].
-      - repeat constructor.
-      - exact Hwfmid. }
-    assert (HwfΘ' : {{ ⊢ Θ' }}a).
-    { unfold Θ'. apply a_wf_aenv_prepend_decls; auto.
-      - clear - Huq. solve_uniq.
-      - intros α1 Hα1. unfold Θmid. simpl_env.
-        clear - Huq Hα Hβ Hα1. destruct_uniq.
-        unfold disjoint in *. simpl_env in *. destruct_notin. fsetdec. }
-    assert (Hbase : Θ0 ⊴ Θ').
-    { unfold Θ', Θmid.
-      replace (Ξw ++ (α0 ~ abind_flex_mono_def τab)
-                 ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono) ++ Θ0)
-        with ((Ξw ++ (α0 ~ abind_flex_mono_def τab)
-                 ++ (β ~ abind_flex_mono) ++ (α ~ abind_flex_mono)) ++ Θ0)
-        by (simpl_env; reflexivity).
-      apply a_isub_weaken_suffix;
-        [ apply a_wf_aenv_lc_aenv; exact Hwf0 | ].
-      apply a_suffix_app; [ auto using a_decls_suffix | ].
-      apply (a_suffix__cons α0);
-        [ apply (a_suffix__cons β);
-            [ apply (a_suffix__cons α);
-                [ apply a_suffix__nil | constructor ]
-            | constructor ]
-        | constructor ]. }
-    assert (Hbα0' : binds α0 (abind_flex_mono_def τab) Θ').
-    { unfold Θ'. unfold binds. apply in_or_app. right. left. reflexivity. }
-    assert (Hlift : (Ξw ++ (α0 ~ abind_flex_mono) ++ Θ0) ⊴ Θ').
-    { apply a_isub_prepend_decls_src; auto.
-      { intros α1 Hb. right; left.
-        unfold Θ'. unfold binds. apply in_or_app. left. exact Hb. }
-      apply a_isub_prepend_decls_src;
-        [ apply (a_decls__cons α0); apply a_decls__nil | | exact Hbase ].
-      intros α1 Hb.
-      destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[-> _] | Hb'];
-        [ right; right; exists τab; exact Hbα0' | inversion Hb' ]. }
+    destruct (@a_flex_arrow_context Ξw Θ0 α0 α β
+                HwfΞ Hsuf Hne Hα Hβ) as [HwfΘ' Hlift].
     assert (HwfP0' : {{ Θ' ⨟ empty ⊢ₚₛ P0 }}a)
       by (eapply a_wf_pskl_isub; eauto).
     assert (Hwfarr : {{ Θ' ⨟ empty ⊢ₚₛ

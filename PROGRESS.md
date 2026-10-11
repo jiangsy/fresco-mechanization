@@ -182,6 +182,28 @@ them (PAPER-GAPS has the details):
 # Part 2: Progress log (most recent first)
 
 
+## 2026-10-11 — Share the Flex-Solve context construction
+
+Add `a_flex_arrow_context`: replacing a flexible declaration with an arrow
+definition over two fresh flexible variables produces a well-formed context
+that extends the original one, including its pending declarations.
+
+Replace the repeated construction in decorated subtyping soundness, its
+bridge, output well-formedness, and typing scope preservation. The four
+callers retain their judgment-specific induction steps and only the local
+binding or uniqueness facts that their remaining arguments need.
+
+Net reduction: **131 physical Coq lines / 134 nonblank, noncomment lines**.
+All 139 existing theorem statements across the four edited Coq files are
+unchanged; inline tactic terms remain at 268, with none added.
+
+Validation: after making the context parameters explicit at the helper's
+call sites, `make coq` passed with all 34 headline assumption reports closed
+under the global context, no axioms, and no errors. Statement comparison and
+`git diff --check` passed.
+
+
+
 ## 2026-10-11 — Share relation-extension transport across lifting
 
 Add `rel_ext_mono` for restricting pairs and shrinking their avoided scopes,
