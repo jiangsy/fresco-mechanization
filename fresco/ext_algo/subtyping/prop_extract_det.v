@@ -562,8 +562,7 @@ Proof.
     destruct (e_lookeq_inv_forall_inh D1 HαP) as (β1 & Hβ1 & Dp).
     simpl in Hcov, HαP.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
-    { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
-      unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
+    { apply swap_atoms_fresh_add; assumption. }
     destruct (e_lookeq_swap Dp Heqs) as [S1t [HS1t Dpt]].
     rewrite swap_aenv_app, swap_aenv_one_tvar in Dpt.
     rewrite (@swap_aenv_fresh_id β1 β2 Θ) in Dpt
@@ -587,12 +586,8 @@ Proof.
 )
       as [ps' [Hav' [HS' [HX' HC']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
-    + intros a0 b0 [Heqp | Hin];
-        [ inversion Heqp; subst; split; assumption | ].
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; clear - Ha0 Hb0; fsetdec.
-    + cbn [swaps_atoms]. rewrite <- HS'.
-      apply swaps_atoms_cong. symmetry. exact HS1t.
+    + eapply swaps_fresh_cons; eassumption.
+    + eapply swaps_atoms_cons_transport; eassumption.
     + cbn [swaps_aenv]. exact HX'.
     + cbn [swaps_cstrs]. exact HC'.
 
@@ -600,8 +595,7 @@ Proof.
     destruct (e_lookeq_inv_forall_syn D1 HαP) as (β1 & Hβ1 & Dp).
     simpl in Hcov, HαP.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
-    { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
-      unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
+    { apply swap_atoms_fresh_add; assumption. }
     destruct (e_lookeq_swap Dp Heqs) as [S1t [HS1t Dpt]].
     rewrite swap_aenv_app, swap_aenv_one_tvar in Dpt.
     rewrite (@swap_aenv_fresh_id β1 β2 Θ) in Dpt
@@ -623,12 +617,8 @@ Proof.
 )
       as [ps' [Hav' [HS' [HX' HC']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
-    + intros a0 b0 [Heqp | Hin];
-        [ inversion Heqp; subst; split; assumption | ].
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; clear - Ha0 Hb0; fsetdec.
-    + cbn [swaps_atoms]. rewrite <- HS'.
-      apply swaps_atoms_cong. symmetry. exact HS1t.
+    + eapply swaps_fresh_cons; eassumption.
+    + eapply swaps_atoms_cons_transport; eassumption.
     + cbn [swaps_aenv]. exact HX'.
     + cbn [swaps_cstrs]. exact HC'.
 
@@ -644,8 +634,7 @@ Proof.
     destruct (e_lookeq_inv_ug1 D1 Hα') as (β1 & Hβ1 & Dp).
     simpl in Hcov, HαP.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
-    { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
-      unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
+    { apply swap_atoms_fresh_add; assumption. }
     destruct (e_lookeq_swap Dp Heqs) as [S1t [HS1t Dpt]].
     rewrite swap_aenv_app, swap_aenv_one_tvar in Dpt.
     rewrite (@swap_aenv_fresh_id β1 β2 Θ) in Dpt
@@ -667,12 +656,8 @@ Proof.
 )
       as [ps' [Hav' [HS' [HX' HC']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
-    + intros a0 b0 [Heqp | Hin];
-        [ inversion Heqp; subst; split; assumption | ].
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; clear - Ha0 Hb0; fsetdec.
-    + cbn [swaps_atoms]. rewrite <- HS'.
-      apply swaps_atoms_cong. symmetry. exact HS1t.
+    + eapply swaps_fresh_cons; eassumption.
+    + eapply swaps_atoms_cons_transport; eassumption.
     + cbn [swaps_aenv]. exact HX'.
     + cbn [swaps_cstrs]. exact HC'.
 
@@ -884,8 +869,7 @@ Proof.
     destruct (e_looksub_inv_forall_r D1 Hghf Hnev HαP) as (β1 & Hβ1 & Dp).
     simpl in Hcov.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
-    { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
-      unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
+    { apply swap_atoms_fresh_add; assumption. }
     destruct (e_looksub_swap Dp Heqs) as [S1t [HS1t Dpt]].
     rewrite swap_aenv_app, swap_aenv_one_tvar in Dpt.
     rewrite (@swap_aenv_fresh_id β1 β2 Θ) in Dpt
@@ -907,12 +891,8 @@ Proof.
 )
       as [ps' [Hav' [HS' [HX' HC']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
-    + intros a0 b0 [Heqp | Hin];
-        [ inversion Heqp; subst; split; assumption | ].
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; clear - Ha0 Hb0; fsetdec.
-    + cbn [swaps_atoms]. rewrite <- HS'.
-      apply swaps_atoms_cong. symmetry. exact HS1t.
+    + eapply swaps_fresh_cons; eassumption.
+    + eapply swaps_atoms_cons_transport; eassumption.
     + cbn [swaps_aenv]. exact HX'.
     + cbn [swaps_cstrs]. exact HC'.
 
@@ -973,8 +953,7 @@ Proof.
     destruct (e_looksub_inv_forall_l D1 Hnhl Hoff HαP) as (β1 & Hβ1 & Dp).
     simpl in Hcov, HαP.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
-    { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
-      unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
+    { apply swap_atoms_fresh_add; assumption. }
     destruct (e_looksub_swap Dp Heqs) as [S1t [HS1t Dpt]].
     rewrite swap_aenv_app, swap_aenv_one_tvar in Dpt.
     rewrite (@swap_aenv_fresh_id β1 β2 Θ) in Dpt
@@ -996,12 +975,8 @@ Proof.
 )
       as [ps' [Hav' [HS' [HX' HC']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
-    + intros a0 b0 [Heqp | Hin];
-        [ inversion Heqp; subst; split; assumption | ].
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; clear - Ha0 Hb0; fsetdec.
-    + cbn [swaps_atoms]. rewrite <- HS'.
-      apply swaps_atoms_cong. symmetry. exact HS1t.
+    + eapply swaps_fresh_cons; eassumption.
+    + eapply swaps_atoms_cons_transport; eassumption.
     + cbn [swaps_aenv]. exact HX'.
     + cbn [swaps_cstrs]. exact HC'.
 
@@ -1284,8 +1259,7 @@ Proof.
     destruct (e_solve_eq_inv_forall D2) as (β2 & Y2 & Hβ2 & -> & Dp').
     simpl in Hsz, Hcov.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
-    { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
-      unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
+    { apply swap_atoms_fresh_add; assumption. }
     destruct (e_solve_eq_swap Dp Heqs) as [S1t [HS1t Dpt]].
     rewrite swap_aenv_app, swap_aenv_one_tvar in Dpt.
     rewrite (@swap_aenv_fresh_id β1 β2 Θ) in Dpt
@@ -1308,21 +1282,10 @@ Proof.
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
-    + intros a0 b0 [Heqp | Hin];
-        [ inversion Heqp; subst; split; assumption | ].
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; clear - Ha0 Hb0; fsetdec.
-    + cbn [swaps_atoms]. rewrite <- HS'.
-      apply swaps_atoms_cong. symmetry. exact HS1t.
+    + eapply swaps_fresh_cons; eassumption.
+    + eapply swaps_atoms_cons_transport; eassumption.
     + cbn [swaps_aenv]. exact HX'.
-    + cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close.
-      replace (swap_atom β1 β2 β1) with β2
-        by (unfold swap_atom; destruct (β1 == β1); congruence).
-      rewrite swaps_pskl_all_syn, swaps_pskl_close, HY'.
-      f_equal. f_equal.
-      apply swaps_atom_notin. intros a0 b0 Hin.
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; [ clear - Ha0 | clear - Hb0 ]; fsetdec.
+    + eapply swaps_pskl_close_binder; eassumption.
 
   - (* SE-UnivGhost — both ⫯s vanish and reappear on the output *)
     match type of D1 with
@@ -1347,8 +1310,7 @@ Proof.
     destruct (e_solve_eq_inv_ghost_forall D2) as (β2 & Y2 & Hβ2 & -> & Dp').
     simpl in Hsz, Hcov.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
-    { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
-      unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
+    { apply swap_atoms_fresh_add; assumption. }
     destruct (e_solve_eq_swap Dp Heqs) as [S1t [HS1t Dpt]].
     rewrite swap_aenv_app, swap_aenv_one_tvar in Dpt.
     rewrite (@swap_aenv_fresh_id β1 β2 Θ) in Dpt
@@ -1369,21 +1331,10 @@ Proof.
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
-    + intros a0 b0 [Heqp | Hin];
-        [ inversion Heqp; subst; split; assumption | ].
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; clear - Ha0 Hb0; fsetdec.
-    + cbn [swaps_atoms]. rewrite <- HS'.
-      apply swaps_atoms_cong. symmetry. exact HS1t.
+    + eapply swaps_fresh_cons; eassumption.
+    + eapply swaps_atoms_cons_transport; eassumption.
     + cbn [swaps_aenv]. exact HX'.
-    + cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close.
-      replace (swap_atom β1 β2 β1) with β2
-        by (unfold swap_atom; destruct (β1 == β1); congruence).
-      rewrite swaps_pskl_all_syn, swaps_pskl_close, HY'.
-      f_equal. f_equal.
-      apply swaps_atom_notin. intros a0 b0 Hin.
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; [ clear - Ha0 | clear - Hb0 ]; fsetdec.
+    + eapply swaps_pskl_close_binder; eassumption.
 
   - (* SE-GhostGuarded — the subject's ⫯ is stripped, the yield passes *)
     match goal with
@@ -1404,8 +1355,7 @@ Proof.
     destruct (e_solve_eq_inv_forall_ghost D2) as (β2 & Y2 & Hβ2 & -> & Dp').
     simpl in Hsz, Hcov.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
-    { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
-      unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
+    { apply swap_atoms_fresh_add; assumption. }
     destruct (e_solve_eq_swap Dp Heqs) as [S1t [HS1t Dpt]].
     rewrite swap_aenv_app, swap_aenv_one_tvar in Dpt.
     rewrite (@swap_aenv_fresh_id β1 β2 Θ) in Dpt
@@ -1426,21 +1376,10 @@ Proof.
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
-    + intros a0 b0 [Heqp | Hin];
-        [ inversion Heqp; subst; split; assumption | ].
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; clear - Ha0 Hb0; fsetdec.
-    + cbn [swaps_atoms]. rewrite <- HS'.
-      apply swaps_atoms_cong. symmetry. exact HS1t.
+    + eapply swaps_fresh_cons; eassumption.
+    + eapply swaps_atoms_cons_transport; eassumption.
     + cbn [swaps_aenv]. exact HX'.
-    + cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close.
-      replace (swap_atom β1 β2 β1) with β2
-        by (unfold swap_atom; destruct (β1 == β1); congruence).
-      rewrite swaps_pskl_all_syn, swaps_pskl_close, HY'.
-      f_equal. f_equal.
-      apply swaps_atom_notin. intros a0 b0 Hin.
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; [ clear - Ha0 | clear - Hb0 ]; fsetdec.
+    + eapply swaps_pskl_close_binder; eassumption.
 
   - (* SE-GuardedGhost — ⚠️ a VARIABLE subject is a second route *)
     match goal with
@@ -1717,8 +1656,7 @@ Proof.
     destruct (e_solve_sub_inv_forall_l D2) as (β2 & Y2 & Hβ2 & -> & Dp').
     simpl in Hsz, Hcov.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
-    { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
-      unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
+    { apply swap_atoms_fresh_add; assumption. }
     destruct (e_solve_sub_swap Dp Heqs) as [S1t [HS1t Dpt]].
     rewrite swap_aenv_app, swap_aenv_one_tvar in Dpt.
     rewrite (@swap_aenv_fresh_id β1 β2 Θ) in Dpt
@@ -1739,21 +1677,10 @@ Proof.
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
-    + intros a0 b0 [Heqp | Hin];
-        [ inversion Heqp; subst; split; assumption | ].
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; clear - Ha0 Hb0; fsetdec.
-    + cbn [swaps_atoms]. rewrite <- HS'.
-      apply swaps_atoms_cong. symmetry. exact HS1t.
+    + eapply swaps_fresh_cons; eassumption.
+    + eapply swaps_atoms_cons_transport; eassumption.
     + cbn [swaps_aenv]. exact HX'.
-    + cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close.
-      replace (swap_atom β1 β2 β1) with β2
-        by (unfold swap_atom; destruct (β1 == β1); congruence).
-      rewrite swaps_pskl_all_syn, swaps_pskl_close, HY'.
-      f_equal. f_equal.
-      apply swaps_atom_notin. intros a0 b0 Hin.
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; [ clear - Ha0 | clear - Hb0 ]; fsetdec.
+    + eapply swaps_pskl_close_binder; eassumption.
 
   - (* SS-UnivGhostL — the subject's ⫯ is stripped and re-wrapped *)
     match type of D1 with
@@ -1804,8 +1731,7 @@ Proof.
     destruct (e_solve_sub_inv_forall_r D2 Hso) as (β2 & Hβ2 & Dp').
     simpl in Hsz, Hcov.
     assert (Heqs : add β2 S0 [=] swap_atoms β1 β2 (add β1 S0)).
-    { rewrite swap_atoms_add. rewrite (swap_atoms_notin β1 β2 S0 Hβ1 Hβ2).
-      unfold swap_atom. destruct (β1 == β1); [ | congruence ]. reflexivity. }
+    { apply swap_atoms_fresh_add; assumption. }
     destruct (e_solve_sub_swap Dp Heqs) as [S1t [HS1t Dpt]].
     rewrite swap_aenv_app, swap_aenv_one_tvar in Dpt.
     rewrite (@swap_aenv_fresh_id β1 β2 Θ) in Dpt
@@ -1826,12 +1752,8 @@ Proof.
                  _ _ _ Dp')
       as [ps' [Hav' [HS' [HX' HY']]]].
     exists ((β1, β2) :: ps'). repeat apply conj.
-    + intros a0 b0 [Heqp | Hin];
-        [ inversion Heqp; subst; split; assumption | ].
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; clear - Ha0 Hb0; fsetdec.
-    + cbn [swaps_atoms]. rewrite <- HS'.
-      apply swaps_atoms_cong. symmetry. exact HS1t.
+    + eapply swaps_fresh_cons; eassumption.
+    + eapply swaps_atoms_cons_transport; eassumption.
     + cbn [swaps_aenv]. exact HX'.
     + cbn [swaps_pskl]. exact HY'.
 

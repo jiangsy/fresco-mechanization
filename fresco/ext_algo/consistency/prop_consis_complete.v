@@ -324,12 +324,8 @@ Proof.
                  Dpt ltac:(clear - Hup Hcov; simpl in *; fsetdec))
       as [ps' [Hav' [HS' [HX' HA']]]].
     exists ((β, β') :: ps'). repeat apply conj.
-    + intros a0 b0 [Heqp | Hin];
-        [ inversion Heqp; subst; split; assumption | ].
-      destruct (Hav' a0 b0 Hin) as [Ha0 Hb0].
-      split; clear - Ha0 Hb0; fsetdec.
-    + cbn [swaps_atoms]. rewrite <- HS'.
-      apply swaps_atoms_cong. symmetry. exact HS1t.
+    + eapply swaps_fresh_cons; eassumption.
+    + eapply swaps_atoms_cons_transport; eassumption.
     + cbn [swaps_aenv]. exact HX'.
     + cbn [swaps_ptyp swap_ptyp]. rewrite swap_ptyp_close.
       replace (swap_atom β β' β) with β'
@@ -1124,14 +1120,10 @@ Proof.
   split.
   - rewrite <- HT, swaps_aenv_cons_tvar, Hfix. reflexivity.
   - split.
-    + intros a b [Heq | Hin].
-      * inversion Heq; subst; auto.
-      * destruct (Hav _ _ Hin) as [Ha Hb]. split; clear - Ha Hb; fsetdec.
+    + eapply swaps_fresh_cons; eassumption.
     + split.
-      * cbn [swaps_atoms]. rewrite <- HS.
-        apply swaps_atoms_cong. symmetry. exact HSt.
-      * cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close, swap_atom_l.
-        rewrite swaps_pskl_all_syn, swaps_pskl_close, Hfix, HQ. reflexivity.
+      * eapply swaps_atoms_cons_transport; eassumption.
+      * eapply swaps_pskl_close_binder; eassumption.
 Qed.
 
 Arguments consis_swaps_close {S Sd St Θ Q α β ps r} _ _ _ _ _ _ _.

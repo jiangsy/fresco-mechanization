@@ -182,6 +182,28 @@ them (PAPER-GAPS has the details):
 # Part 2: Progress log (most recent first)
 
 
+## 2026-10-11 — Share fresh binder swap composition
+
+Factor the repeated binder-swap algebra out of extraction determinism:
+fresh opener supplies align by a single swap; a recursive chain avoiding
+the extended supply remains fresh when prefixed with that swap; supply
+transport composes extensionally; and closing commutes with the resulting
+chain because the recursive chain fixes the new opener.
+
+Use these lemmas in all ten extraction binder cases, the guessing binder
+case, and the existing consistency closing wrapper. Keep the judgment-specific
+recursive calls and explicit cases intact.
+
+Net reduction: **40 physical Coq lines / 49 nonblank, noncomment lines**.
+All 157 existing theorem statements across the three edited Coq files are
+unchanged; inline tactic terms remain at 80, with none added.
+
+Validation: the shared swap lemmas compiled, then `make coq` passed with all
+34 headline assumption reports closed under the global context, no axioms,
+and no errors. Statement comparison and `git diff --check` passed.
+
+
+
 ## 2026-10-11 — Share abstraction output correspondence
 
 Factor the output-context split used by both abstraction lifting cores into

@@ -668,3 +668,49 @@ Proof.
   induction ps as [ | [a b] ps IH ]; intros; simpl; auto.
   rewrite swap_pskl_ptyp_to_pskl. apply IH.
 Qed.
+
+(** Align fresh opener supplies before transporting a recursive derivation. *)
+Lemma swap_atoms_fresh_add : forall α β S,
+  α `notin` S -> β `notin` S ->
+  add β S [=] swap_atoms α β (add α S).
+Proof.
+  intros * Hα Hβ. rewrite swap_atoms_add, swap_atom_l.
+  rewrite (swap_atoms_notin α β S Hα Hβ). reflexivity.
+Qed.
+
+(** A recursive chain avoids the extended supply; prefixing the opener
+    swap therefore still avoids the ambient supply. *)
+Lemma swaps_fresh_cons : forall α β ps S,
+  α `notin` S -> β `notin` S ->
+  (forall a b, In (a, b) ps -> a `notin` add β S /\ b `notin` add β S) ->
+  forall a b, In (a, b) ((α, β) :: ps) -> a `notin` S /\ b `notin` S.
+Proof.
+  intros * Hα Hβ Hav a b [Heq | Hin].
+  - inversion Heq; subst; auto.
+  - destruct (Hav _ _ Hin) as [Ha Hb]. split; clear - Ha Hb; fsetdec.
+Qed.
+
+Lemma swaps_atoms_cons_transport : forall α β ps S St S',
+  St [=] swap_atoms α β S -> swaps_atoms ps St [=] S' ->
+  swaps_atoms ((α, β) :: ps) S [=] S'.
+Proof.
+  intros * HSt HS. cbn [swaps_atoms]. rewrite <- HS.
+  apply swaps_atoms_cong. symmetry; exact HSt.
+Qed.
+
+(** The recursive chain fixes the new opener, so closing commutes with
+    prefixing its alignment swap. *)
+Lemma swaps_pskl_close_binder : forall α β ps S P Q,
+  (forall a b, In (a, b) ps -> a `notin` add β S /\ b `notin` add β S) ->
+  swaps_pskl ps (swap_pskl α β P) = Q ->
+  swaps_pskl ((α, β) :: ps) (pskl_all_syn (close_pskl_wrt_pskl α P)) =
+    pskl_all_syn (close_pskl_wrt_pskl β Q).
+Proof.
+  intros * Hav HQ.
+  assert (Hfix : swaps_atom ps β = β).
+  { apply swaps_atom_notin. intros a b Hin.
+    destruct (Hav _ _ Hin) as [Ha Hb]. split; intro Heq; subst;
+      clear - Ha Hb; fsetdec. }
+  cbn [swaps_pskl swap_pskl]. rewrite swap_pskl_close, swap_atom_l.
+  rewrite swaps_pskl_all_syn, swaps_pskl_close, Hfix, HQ. reflexivity.
+Qed.
