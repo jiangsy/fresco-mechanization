@@ -249,6 +249,67 @@ Qed.
    ⫯-headed stack LS-ForallR lifts the IH's collection with 𝒞 kept.
    docs/HANDOFF-extractable-algo-encoding.md §8c.15. *)
 
+(** The output package shared by collection-and-solving completeness and
+    its binder step.  The public theorem below retains its explicit statement. *)
+Definition looksub_solve_result
+    (Θ0 Θ Θw : aenv) (κ : metasubst) (Δ Δρ Ψi Ψa : atoms)
+    (ψa : uskl) (α : atom) (M : mode) (P P0 Pi : pskl) (L : atoms) : Prop :=
+  exists 𝒞 Ξc Ξs Pa κc κs,
+    ({{ Θ0 ⊢ P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\
+    {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\
+    all_flex_mono Ξs /\
+    uniq Ξs /\
+    keys κs = keys Ξs /\
+    (forall α0, α0 `in` dom Ξs -> α0 `notin` L) /\
+    Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
+    {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
+    {{ ⊢ (Ξc ++ Θ0) }}a /\
+    α `notin` dom Ξc /\
+    keys κc = keys Ξc /\
+    Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
+    (κs ++ κc ++ κ) ∷ (Ξs ++ Ξc ++ Θ0) ⊑ Θ /\
+    a_inc_equiv Θ0 κ κ Θ /\
+    (forall α0, α0 `in` dom κc ->
+       α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
+    {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad /\
+    (M = mode_tc ->
+       ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
+                             `union` dom κ `union` def_ftv Θ
+       \/ (alpha_stack α P /\ Ξc = nil /\ κc = nil
+           /\ exists T, 𝒞 = a_cstr_sub M T :: nil)) /\
+    (forall α0, α0 `in` dom Ξs -> α0 `notin` ftvar_in_a_cstrs 𝒞).
+
+(** The IDENTITY answer: a collection that gathers nothing solves to the
+    accumulator itself, under the unchanged κ. *)
+Lemma looksub_solve_identity :
+  forall Θ0 Θ Θw κ Δ Δρ Ψi Ψa ψa α M P P0 Pi L,
+  {{ Θ0 ⊢ P ≼[ α , M ] P0 ⤳ nil ⨾ nil }}a ->
+  {{ ⊢ Θ0 }}a -> {{ Θ0 ⨟ empty ⊢ₚₛ Pi }}a -> κ ∷ Θ0 ⊑ Θ ->
+  {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl κ Pi) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad ->
+  @looksub_solve_result Θ0 Θ Θw κ Δ Δρ Ψi Ψa ψa α M P P0 Pi L.
+Proof.
+  intros Θ0 Θ Θw κ Δ Δρ Ψi Ψa ψa α M P P0 Pi L HLK HwfΘ0 HwfPi Hκ Hprec.
+  exists nil, nil, nil, Pi, (@nil (atom * ptyp)), (@nil (atom * ptyp)).
+  repeat split.
+  - exact HLK.
+  - simpl. apply a_solve_cstr__empty.
+  - apply Forall_nil.
+  - apply uniq_nil.
+  - intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
+  - apply Forall_nil.
+  - simpl. exact HwfPi.
+  - simpl. exact HwfΘ0.
+  - simpl; clear; fsetdec.
+  - apply Forall_nil.
+  - simpl. exact Hκ.
+  - simpl. apply a_inc_equiv_refl; exact Hκ.
+  - intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
+  - simpl. exact Hprec.
+  - (* ftv 𝒞 : no constraints *) intros _; left; simpl; clear; fsetdec.
+  - (* the SOLVE's block is EMPTY *)
+    intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
+Qed.
+
 (** THE MODE RESTRICTION.  [ad_pat_sub_fuel__forall_r] forces
     [a_sub_mode_ty] + [mode_tc], and NM is invariant along a derivation, so
     under a Sub-ForallR only three rows can fire: [__check], [__forall_r] and
@@ -394,27 +455,14 @@ Proof.
       rewrite ftag_in_uskl_msubst_uskl_syn in Hftr.
       assert (HΨa0 : Ψa [=] empty)
         by (clear - HΨs2 HΨsR Hftr Hdisj Hsub HΨρ; fsetdec).
-      exists nil, nil, nil, Pi, (@nil (atom * ptyp)), (@nil (atom * ptyp)).
-      repeat split.
+      (* LS-Absent collects nothing *)
+      apply (looksub_solve_identity Θw Δρ L).
       - apply a_looksub__absent; exact Hnin.
-      - simpl. apply a_solve_cstr__empty.
-      - apply Forall_nil.
-      - apply uniq_nil.
-      - intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
-      - apply Forall_nil.
-      - simpl. exact HwfPi.
-      - simpl. exact HwfΘ0.
-      - simpl; clear; fsetdec.
-      - apply Forall_nil.
-      - simpl. exact Hκ.
-      - simpl. apply a_inc_equiv_refl; exact Hκ.
-      - intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
-      - simpl. eapply ad_partial_precise_psi_cong;
-          [ exact Hpre | clear - HΨa0; fsetdec ].
-      - (* ftv 𝒞 : LS-Absent collects nothing *)
-        intros _; left; simpl; clear; fsetdec.
-      - (* the SOLVE's block is EMPTY *)
-        intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec. }
+      - exact HwfΘ0.
+      - exact HwfPi.
+      - exact Hκ.
+      - eapply ad_partial_precise_psi_cong;
+          [ exact Hpre | clear - HΨa0; fsetdec ]. }
   - (* P = α : LS-Var, then P6-Sv at ρ = IDENTITY.  NB not [subst P]: the
        erase-tie [⌊R'⌋ˢ = P] is also an equation on P, and [subst] would
        orient it the wrong way and discard it. *)
@@ -534,36 +582,6 @@ Qed.
         and it is what Sub-ForallR needs. *)
 
 
-(** The output package shared by collection-and-solving completeness and
-    its binder step.  The public theorem below retains its explicit statement. *)
-Definition looksub_solve_result
-    (Θ0 Θ Θw : aenv) (κ : metasubst) (Δ Δρ Ψi Ψa : atoms)
-    (ψa : uskl) (α : atom) (M : mode) (P P0 Pi : pskl) (L : atoms) : Prop :=
-  exists 𝒞 Ξc Ξs Pa κc κs,
-    ({{ Θ0 ⊢ P ≼[ α , M ] P0 ⤳ Ξc ⨾ 𝒞 }}a) /\
-    {{ (Ξc ++ Θ0) ⊩ 𝒞 ⨾ Pi ⤳ Ξs ⨾ Pa }}a /\
-    all_flex_mono Ξs /\
-    uniq Ξs /\
-    keys κs = keys Ξs /\
-    (forall α0, α0 `in` dom Ξs -> α0 `notin` L) /\
-    Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs /\
-    {{ (Ξs ++ Ξc ++ Θ0) ⨟ empty ⊢ₚₛ Pa }}a /\
-    {{ ⊢ (Ξc ++ Θ0) }}a /\
-    α `notin` dom Ξc /\
-    keys κc = keys Ξc /\
-    Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc /\
-    (κs ++ κc ++ κ) ∷ (Ξs ++ Ξc ++ Θ0) ⊑ Θ /\
-    a_inc_equiv Θ0 κ κ Θ /\
-    (forall α0, α0 `in` dom κc ->
-       α0 `notin` add α (dom Θ0 `union` dom Θ `union` ftvar_in_uskl ψa)) /\
-    {{ Θ ⨟ Δ ⊢ˢ (msubst_pskl (κs ++ κc ++ κ) Pa) ⊑ᵖ[ Ψi `union` Ψa ] ψa }}ad /\
-    (M = mode_tc ->
-       ftvar_in_a_cstrs 𝒞 [<=] ftvar_in_uskl ψa `union` dom Ξc
-                             `union` dom κ `union` def_ftv Θ
-       \/ (alpha_stack α P /\ Ξc = nil /\ κc = nil
-           /\ exists T, 𝒞 = a_cstr_sub M T :: nil)) /\
-    (forall α0, α0 `in` dom Ξs -> α0 `notin` ftvar_in_a_cstrs 𝒞).
-
 (** Discharge the fresh rigid binder after either ForallL recursive call.
     This argument depends only on the erased body, not on its quantifier tag. *)
 Lemma looksub_solve_forall_l_close :
@@ -655,33 +673,20 @@ Proof.
         (rewrite HΞs in Hks; destruct κs as [ | ps κs' ];
            [ reflexivity | cbn in Hks; discriminate Hks ]).
       subst Ξc Ξs Pa κc κs.
-      exists nil, nil, nil, Pi, (@nil (atom * ptyp)), (@nil (atom * ptyp)).
-      repeat split.
+      apply (looksub_solve_identity Θw Δρ Lav).
       -- (* a_looksub : LS-Vacuous — the subject is a ∀, so the emitting row
             cannot fire and the answer is forced empty *)
          apply a_looksub__vacuous; exact HPnα.
-      -- (* solve *) simpl. apply a_solve_cstr__empty.
-      -- apply Forall_nil.
-      -- apply uniq_nil.
-      -- intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
-      -- apply Forall_nil.
-      -- simpl. exact HwfPi.
-      -- simpl. exact HwfΘ0.
-      -- simpl; clear; fsetdec.
-      -- apply Forall_nil.
-      -- simpl. exact Hκ.
-      -- simpl. apply a_inc_equiv_refl; exact Hκ.
-      -- intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
+      -- exact HwfΘ0.
+      -- exact HwfPi.
+      -- exact Hκ.
       -- (* precision — the IH's, stripped of the row's binder exactly as the
             non-ghost script does; at the identity answer the metasubstitution
             collapses to [κ] and the skeleton to [Pi] *)
-         simpl in Hprec |- *.
+         simpl in Hprec.
          eapply ad_partial_precise_delta_shrink with (Δ := Δ);
            [ eapply ad_partial_precise_strengthen_tvar; exact Hprec
-           | clear; fsetdec ].
-      -- (* ftv 𝒞 : no constraints *) intros _; left; simpl; clear; fsetdec.
-      -- (* the SOLVE's block is EMPTY *)
-         intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec. }
+           | clear; fsetdec ]. }
     (* ⭐⭐ THE ForallR-PRIORITY GUARD.  LS-ForallL is BLOCKED at a ghost-free
        ∀ counterpart in check mode — there the runner commits to LS-ForallR —
        so the row hands the whole rebuild to [a_looksub_solve_forall_l_mode],
@@ -823,15 +828,12 @@ Proof.
       (rewrite HΞs in Hks0; destruct κs as [ | ps κs' ];
          [ reflexivity | cbn in Hks0; discriminate Hks0 ]).
     subst Ξc Ξs Pa κc κs.
-    exists nil, nil, nil, Pi, (@nil (atom * ptyp)), (@nil (atom * ptyp)).
-    repeat split; try assumption;
-      try (apply a_looksub__vacuous; exact HPnα);
-      try (intros _; left; simpl; clear; fsetdec);
-      try (left; simpl; clear; fsetdec);
-      try (simpl; clear; fsetdec);
-      try (apply a_inc_equiv_refl; exact Hinc0);
-      try apply Forall_nil; try apply uniq_nil;
-      try (simpl; apply a_solve_cstr__empty). }
+    apply (looksub_solve_identity Θw Δρ Lav).
+    - apply a_looksub__vacuous; exact HPnα.
+    - exact HwfΞ0.
+    - exact HwfPa0.
+    - exact Hinc0.
+    - exact Hprec0. }
   (* ⭐ THE ForallR-PRIORITY GUARD, exactly as at the ForallL rows —
      LS-UnivGhostL is blocked at a ghost-free ∀ counterpart in check mode. *)
   assert (HPaSc : ftvar_in_pskl Pa
@@ -1390,29 +1392,14 @@ Proof.
         | pose proof (HmodSK eq_refl) as Hm ];
         inversion Hm; reflexivity. }
     subst P0.
-    exists nil, nil, nil, Pi, (@nil (atom * ptyp)), (@nil (atom * ptyp)).
-    repeat split.
+    apply (looksub_solve_identity Θw Δρ Lav).
     + (* ◇-dispatch guard: the [P = α] special case ran earlier *)
       apply a_looksub__vacuous; assumption.
-    + simpl. apply a_solve_cstr__empty.
-    + apply Forall_nil.
-    + apply uniq_nil.
-    + intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
-    + apply Forall_nil.
-    + simpl. exact HwfPi.
-    + simpl. exact HwfΘ0.
-    + simpl; clear; fsetdec.
-    + apply Forall_nil.
-    + simpl. exact Hκ.
-    + simpl. apply a_inc_equiv_refl; exact Hκ.
-    + intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
-    + simpl. eapply ad_partial_precise_psi_cong;
-        [ exact Hpre | assert (HΨae : Ψa [=] empty)
-                         by (clear - HΨs2 H; fsetdec);
-          clear - HΨae; fsetdec ].
-    + (* ftv 𝒞 : no constraints *) intros _; left; simpl; clear; fsetdec.
-    + (* the SOLVE's block is EMPTY *)
-      intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
+    + exact HwfΘ0.
+    + exact HwfPi.
+    + exact Hκ.
+    + assert (HΨae : Ψa [=] empty) by (clear - HΨs2 H; fsetdec).
+      eapply ad_partial_precise_psi_cong; [ exact Hpre | clear - HΨae; fsetdec ].
   - (* Check : delegates WHOLE to P6-Cs ([a_lookeq_solve_complete]) on the
        consistency premise, then re-wraps with LS-Check.  LS-Check's side
        conditions: P ≠ α (HPnα) and P, P0 guarded. *)
@@ -1987,29 +1974,14 @@ Proof.
     assert (HP0 : P0 = pskl_ghost)
       by (pose proof (HmodSK eq_refl) as Hm; inversion Hm; reflexivity).
     subst P0.
-    exists nil, nil, nil, Pi, (@nil (atom * ptyp)), (@nil (atom * ptyp)).
-    repeat split.
+    apply (looksub_solve_identity Θw Δρ Lav).
     + (* ◇-dispatch guard: the [P = α] special case ran earlier *)
       apply a_looksub__vacuous; assumption.
-    + simpl. apply a_solve_cstr__empty.
-    + apply Forall_nil.
-    + apply uniq_nil.
-    + intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
-    + apply Forall_nil.
-    + simpl. exact HwfPi.
-    + simpl. exact HwfΘ0.
-    + simpl; clear; fsetdec.
-    + apply Forall_nil.
-    + simpl. exact Hκ.
-    + simpl. apply a_inc_equiv_refl; exact Hκ.
-    + intros α0 Hα0; simpl in Hα0; clear - Hα0; fsetdec.
-    + simpl. eapply ad_partial_precise_psi_cong;
-        [ exact Hpre | assert (HΨae : Ψa [=] empty)
-                         by (clear - HΨs2 H; fsetdec);
-          clear - HΨae; fsetdec ].
-    + (* ftv 𝒞 : no constraints *) intros _; left; simpl; clear; fsetdec.
-    + (* the SOLVE's block is EMPTY *)
-      intros α0 Hα0; simpl in Hα0; exfalso; clear - Hα0; fsetdec.
+    + exact HwfΘ0.
+    + exact HwfPi.
+    + exact Hκ.
+    + assert (HΨae : Ψa [=] empty) by (clear - HΨs2 H; fsetdec).
+      eapply ad_partial_precise_psi_cong; [ exact Hpre | clear - HΨae; fsetdec ].
   - (* Arrow : [skmod] forces P0 = P01→P02 and the refinement splits.  The
        LEFT premise is a consistency judgment and goes to P6-Cs; the RIGHT
        one is the IH at the right component.  The two
