@@ -2179,6 +2179,26 @@ Proof.
       clear - Ha1 Hc2. fsetdec.
 Qed.
 
+(** The Θw pack at the right run's context: a flexible of
+    [Ξs1 ++ Ξc1 ++ Θ0] looks up in [κs1] — wf at Θw — or in [κc1] — inside
+    ftv ψa ⊆ dom Θw — or, outside both, in [κ], where the incoming bound
+    applies. *)
+Lemma solve_scope_arrow_prefix : forall {Θ0 Θ Θw κ ψa Ξs1 Ξc1 κs1 κc1},
+  solve_scope Θ0 Θ Θw κ -> ftvar_in_uskl ψa [<=] dom Θw ->
+  keys κc1 = keys Ξc1 ->
+  Forall (fun p => ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa) κc1 ->
+  keys κs1 = keys Ξs1 ->
+  Forall (fun p => a_wf_ptyp Θw (snd p) /\ mono_ptyp (snd p)) κs1 ->
+  solve_scope (Ξs1 ++ Ξc1 ++ Θ0) Θ Θw (κs1 ++ κc1 ++ κ).
+Proof.
+  intros Θ0 Θ Θw κ ψa Ξs1 Ξc1 κs1 κc1 Hsc Hψaw Hmap1 Himg1 Hks1 HFs1.
+  apply solve_scope_flex_prefix;
+    [ | exact Hks1 | exact (forall_wf_mono_images_dom HFs1) ].
+  apply solve_scope_flex_prefix; [ exact Hsc | exact Hmap1 | ].
+  intros p Hp. rewrite Forall_forall in Himg1.
+  pose proof (Himg1 p Hp) as Hb. clear - Hb Hψaw; fsetdec.
+Qed.
+
 (** The merged metasubstitution is the right run's, reordered: the same
     bindings on pairwise-disjoint domains, so a lookup-level identity — peel
     [κs2], swap [κc2] past [κs1], peel [κs1], swap [κc2] past [κc1]. *)
@@ -3689,23 +3709,9 @@ Proof.
         (* the SOLVE's block dodges everything its own context MENTIONS — the
            master invariant of the Ξ scoping kit (prop_solve_sub.v §K2) *)
         pose proof (a_wf_aenv_solve_block HwfΞ1 HSolve1 Hfms1 Hus1) as HwfΞs1.
-        (* the two [Forall]s in POINTWISE form (the originals are still needed
-           for the conclusion's own conjuncts, so keep them intact) *)
-        assert (Himg1F : forall p, In p κc1 ->
-                  ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa)
-          by (rewrite Forall_forall in Himg1; exact Himg1).
-        pose proof (forall_wf_mono_images_dom HFs1) as HFs1d.
-        (* ⭐ THE RIGHT IH's κ-IMAGE BOUND.  A flexible of [Ξs1 ++ Ξc1 ++ Θ0]
-           looks up in [κs1] — bounded by [HFs1], wf at Θw — or in [κc1] —
-           bounded by [Himg1] (⊆ ftv ψa) then [Hψaw] — or, being outside both
-           domains, in [κ], where the incoming [Hκw] applies. *)
-        assert (Hκc1w : forall p, In p κc1 ->
-          ftvar_in_ptyp (snd p) [<=] dom Θw)
-          by (intros p Hp; pose proof (Himg1F p Hp) as Hb;
-              clear - Hb Hψaw; fsetdec).
-        destruct (solve_scope_flex_prefix
-                    (solve_scope_flex_prefix (conj Hmon (conj Hnr Hκw)) Hmap1 Hκc1w)
-                    Hks1 HFs1d) as (_ & _ & HκwR).
+        (* ⭐ THE RIGHT IH's κ-IMAGE BOUND, at the grown context *)
+        destruct (solve_scope_arrow_prefix (conj Hmon (conj Hnr Hκw)) Hψaw
+                    Hmap1 Himg1 Hks1 HFs1) as (_ & _ & HκwR).
         (* --- transports for the RIGHT IH (κ → κs1 ++ κc1 ++ κ).  BOTH blocks
            the left branch generated have to be peeled: the collection's [κc1]
            (fresh for α, Θ0, Θ and ψa by [Hκf1]) and the SOLVE's [κs1] (fresh

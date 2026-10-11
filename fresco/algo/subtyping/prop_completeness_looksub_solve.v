@@ -1913,10 +1913,6 @@ Proof.
     assert (HΞs1L : forall x, x `in` dom Ξs1 -> x `notin` Lav)
       by (intros x Hx; pose proof (Hfrs1 x Hx) as Hf; clear - Hf; fsetdec).
     pose proof (a_wf_aenv_solve_block HwfΞ1 HSolve1 Hfms1 Hus1) as HwfΞs1.
-    assert (Himg1F : forall p, In p κc1 ->
-              ftvar_in_ptyp (snd p) [<=] ftvar_in_uskl ψa)
-      by (rewrite Forall_forall in Himg1; exact Himg1).
-    pose proof (forall_wf_mono_images_dom HFs1) as HFs1d.
     assert (Hαr : α `notin` dom (Ξs1 ++ Ξc1 ++ Θ0))
       by (repeat rewrite dom_app; clear - HαΞs1 HαΞ1 HαΘ0; fsetdec).
     assert (Hinc1' : (κs1 ++ κc1 ++ κ) ∷ (Ξs1 ++ Ξc1 ++ Θ0) ⊑ Θ) by exact Hinc1.
@@ -1926,13 +1922,8 @@ Proof.
               α `notin` ftvar_in_ptyp (snd p)).
     { intros p Hp. pose proof (a_inc_image_ftv_dom Hinc1' p Hp) as Hb.
       clear - HαΘ Hb; fsetdec. }
-    assert (Hκc1w : forall p, In p κc1 ->
-      ftvar_in_ptyp (snd p) [<=] dom Θw)
-      by (intros p Hp; pose proof (Himg1F p Hp) as Hb;
-          clear - Hb Hψaw; fsetdec).
-    destruct (solve_scope_flex_prefix
-                (solve_scope_flex_prefix (conj Hmon (conj Hnr Hκw)) Hmap1 Hκc1w)
-                Hks1 HFs1d) as (_ & _ & Hκw1).
+    destruct (solve_scope_arrow_prefix (conj Hmon (conj Hnr Hκw)) Hψaw
+                Hmap1 Himg1 Hks1 HFs1) as (_ & _ & Hκw1).
     assert (HscopeRb : ftvar_in_uskl Rb
               [<=] add α (dom (Ξs1 ++ Ξc1 ++ Θ0) `union` dom Θ))
       by (repeat rewrite dom_app; clear - HscopeR; cbn in HscopeR; fsetdec).
