@@ -181,6 +181,34 @@ them (PAPER-GAPS has the details):
 
 # Part 2: Progress log (most recent first)
 
+## 2026-10-11 — Replace long selector chains with readable cases
+
+Apply the user's clarified proof-style preference across the development:
+use standalone semantic lemmas or conventional case blocks for substantial
+shared arguments. Repeated numbered selectors are not an acceptable way to
+reduce proof LOC. Retain only the short abstraction-shape joint case.
+
+Remove the long selector chains in lookup lifting, lookup completeness,
+ordinary and decorated consistency soundness, scoped rigid-variable
+survival, consistency free-variable bounds, and typing rigidity. Keep later
+semantic improvements, including invariant transport, domain cancellation,
+scoped-to-global survival, and inferred mutual-induction motives.
+
+Add `rel_pskl_arrow_inv_l` and `look_lift_pairs_app` for the arrow cases'
+relation decomposition and sequential fresh-pair composition. The two
+arrow cases now have ordinary bullets and call these lemmas. Name restored
+freshness obligations or discharge them as ordinary subgoals.
+
+This readability correction adds **617 physical Coq lines / 519 nonblank,
+noncomment lines** across six files; it deliberately gives back savings
+that relied on the rejected style. All 281 existing statements are
+unchanged. Inline tactic terms decrease from 141 to 103, with none added.
+
+Validation: `make coq` passed with all 34 headline assumption reports closed
+under the global context, no axioms and no errors. Statement comparison,
+selector-chain audit, and `git diff --check` passed.
+
+
 ## 2026-10-11 — Share lookup lifting arrow cases
 
 Consolidate `LS-Arrow` and `LE-Arrow` in `a_looksub_lookeq_rel_e` using

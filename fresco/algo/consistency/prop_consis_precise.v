@@ -2162,24 +2162,6 @@ Lemma ad_pat_consis_ftv_bound : forall Ψ Θ R' Q,
      (α' = α \/ α' `in` ftvar_in_ptyp τ)).
 Proof.
   intros Ψ Θ R' Q H; induction H; intros α0 HX0; simpl in HX0.
-  (* Cases 4–7: tagged and untagged inherited/synthesized forall rules.
-     Open the binder once, then remove its fresh variable from the bound. *)
-  4,5,6,7: pick fresh β for
-    (L `union` singleton α0 `union` ftvar_in_bskl Q).
-  4,5,6,7: assert (HβL : β `notin` L)
-    by (clear - Fr; solve_notin_auto).
-  4,5,6,7: assert (HX0' : α0 `in`
-            ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β)))
-    by (pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
-                      (uskl_var_f β)) as Hlow; clear - HX0 Hlow; fsetdec).
-  4,5,6,7: destruct (H0 β HβL α0 HX0')
-    as [Hin | (α & τ & Hb & Hor)];
-    [ left;
-      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
-                    (bskl_var_f β)) as Hup;
-      simpl in *; clear - Hin Hup Fr; fsetdec
-    | destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
-        [ discriminate Hc | right; exists α, τ; auto ] ].
   - (* unit *) exfalso; clear - HX0; fsetdec.
   - (* var *) left; simpl; clear - HX0; fsetdec.
   - (* arrow *)
@@ -2187,6 +2169,70 @@ Proof.
       [ destruct (IHad_pat_consis1 α0 HX0) as [Hin | Hdef]
       | destruct (IHad_pat_consis2 α0 HX0) as [Hin | Hdef] ];
       solve [ left; simpl; clear - Hin; fsetdec | right; exact Hdef ].
+  - (* forall_inh_tagged *)
+    pick fresh β for
+      (L `union` singleton α0 `union` ftvar_in_bskl Q).
+    assert (HX0' : α0 `in`
+              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β)))
+      by (pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
+                        (uskl_var_f β)) as Hlow; clear - HX0 Hlow; fsetdec).
+    assert (HβL : β `notin` L) by (clear - Fr; solve_notin_auto).
+    destruct (H0 β HβL α0 HX0')
+      as [Hin | (α & τ & Hb & Hor)].
+    + left.
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
+                    (bskl_var_f β)) as Hup.
+      simpl in *. clear - Hin Hup Fr. fsetdec.
+    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+        [ discriminate Hc | right; exists α, τ; auto ].
+  - (* forall_inh_untagged *)
+    pick fresh β for
+      (L `union` singleton α0 `union` ftvar_in_bskl Q).
+    assert (HX0' : α0 `in`
+              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β)))
+      by (pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
+                        (uskl_var_f β)) as Hlow; clear - HX0 Hlow; fsetdec).
+    assert (HβL : β `notin` L) by (clear - Fr; solve_notin_auto).
+    destruct (H0 β HβL α0 HX0')
+      as [Hin | (α & τ & Hb & Hor)].
+    + left.
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
+                    (bskl_var_f β)) as Hup.
+      simpl in *. clear - Hin Hup Fr. fsetdec.
+    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+        [ discriminate Hc | right; exists α, τ; auto ].
+  - (* forall_syn_tagged *)
+    pick fresh β for
+      (L `union` singleton α0 `union` ftvar_in_bskl Q).
+    assert (HX0' : α0 `in`
+              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β)))
+      by (pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
+                        (uskl_var_f β)) as Hlow; clear - HX0 Hlow; fsetdec).
+    assert (HβL : β `notin` L) by (clear - Fr; solve_notin_auto).
+    destruct (H0 β HβL α0 HX0')
+      as [Hin | (α & τ & Hb & Hor)].
+    + left.
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
+                    (bskl_var_f β)) as Hup.
+      simpl in *. clear - Hin Hup Fr. fsetdec.
+    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+        [ discriminate Hc | right; exists α, τ; auto ].
+  - (* forall_syn *)
+    pick fresh β for
+      (L `union` singleton α0 `union` ftvar_in_bskl Q).
+    assert (HX0' : α0 `in`
+              ftvar_in_uskl (open_uskl_wrt_uskl R (uskl_var_f β)))
+      by (pose proof (ftvar_in_uskl_open_uskl_wrt_uskl_lower R
+                        (uskl_var_f β)) as Hlow; clear - HX0 Hlow; fsetdec).
+    assert (HβL : β `notin` L) by (clear - Fr; solve_notin_auto).
+    destruct (H0 β HβL α0 HX0')
+      as [Hin | (α & τ & Hb & Hor)].
+    + left.
+      pose proof (ftvar_in_bskl_open_bskl_wrt_bskl_upper Q
+                    (bskl_var_f β)) as Hup.
+      simpl in *. clear - Hin Hup Fr. fsetdec.
+    + destruct (binds_cons_1 _ _ _ _ _ _ Hb) as [[_ Hc] | Hb'];
+        [ discriminate Hc | right; exists α, τ; auto ].
   - (* ghostg *) exfalso; clear - HX0; fsetdec.
   - (* dot_univ_ghost *)
     destruct (IHad_pat_consis α0 HX0) as [Hin | Hdef];

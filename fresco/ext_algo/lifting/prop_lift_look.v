@@ -48,6 +48,38 @@ Local Ltac cstrs_perm H :=
 
 (* ---- §7 — transport 5: the look, a → e ---- *)
 
+(** Arrow relations expose the corresponding domain and codomain. *)
+Lemma rel_pskl_arrow_inv_l : forall ρ V P Q T,
+  rel_pskl ρ V (pskl_arrow P Q) T ->
+  exists P' Q', T = pskl_arrow P' Q' /\
+    rel_pskl ρ V P P' /\ rel_pskl ρ V Q Q'.
+Proof.
+  intros * Hr; inversion Hr; subst; eauto.
+Qed.
+
+(** Sequential runs compose their fresh-pair bounds, even when leaked
+    opener pairs and generated block pairs are stored separately. *)
+Lemma look_lift_pairs_app : forall ρxA ρnA ρxB ρnB F S0 S1 S2,
+  S0 [<=] S1 -> S1 [<=] S2 ->
+  (forall a b, In (a, b) (ρxA ++ ρnA) ->
+    a `notin` F /\ b `in` S1 /\ b `notin` S0) ->
+  (forall a b, In (a, b) (ρxB ++ ρnB) ->
+    a `notin` F /\ b `in` S2 /\ b `notin` S1) ->
+  forall a b, In (a, b) ((ρxA ++ ρxB) ++ (ρnA ++ ρnB)) ->
+    a `notin` F /\ b `in` S2 /\ b `notin` S0.
+Proof.
+  intros * HgrowA HgrowB HpairsA HpairsB a b Hin.
+  assert (HinA : In (a, b) (ρxA ++ ρnA) \/ In (a, b) (ρxB ++ ρnB))
+    by (revert Hin; rewrite ! in_app_iff; tauto).
+  destruct HinA as [HinA | HinB].
+  - destruct (HpairsA a b HinA) as [Ha [Hb1 Hb2]].
+    split; [ exact Ha | ].
+    split; [ clear - Hb1 HgrowB; fsetdec | exact Hb2 ].
+  - destruct (HpairsB a b HinB) as [Ha [Hb1 Hb2]].
+    split; [ exact Ha | ].
+    split; [ exact Hb1 | clear - Hb2 HgrowA; fsetdec ].
+Qed.
+
 (** ⭐ TRANSPORT 5 — the look layer, targeting the SUPPLY-THREADED
     encoding: an [a_looksub]/[a_lookeq] derivation transports to an
     [e_looksub]/[e_lookeq] derivation on rel-related inputs, over any
@@ -125,98 +157,6 @@ Lemma a_looksub_lookeq_rel_e :
        /\ rel_a_cstrs (ρx ++ ρn ++ ρ) V C1 C2).
 Proof.
   apply a_looksub_lookeq_mutind.
-  (* Cases 6 and 13: LS-Arrow and LE-Arrow. Their recursive setup and
-     result assembly coincide; only the second run and constructor differ.
-     The first joint selection groups these goals as 6 and 7. *)
-  6: intros Θ1 α m P1 P2q P1' P2q' Ξ1 Ξ2q C1 C2q Hg1 Hg2 Hle1 IH1 Hle2 IH2
-    S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
-  13: intros Θ1 α P1 P2q P1' P2q' Ξ1 Ξ2q C1 C2q Hg1 Hg2 Hle1 IH1 Hle2 IH2
-    S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
-  6,13: inversion HrelP; subst.
-  6,7: inversion HrelP'; subst.
-  6,7: let rho := constr:(ρ) in let v := constr:(V) in
-    let pa := constr:(P1) in let pb := constr:(P2q) in
-    let qa := constr:(P1') in let qb := constr:(P2q') in
-    match goal with
-    | Ha : rel_pskl rho v pa ?xa, Hb : rel_pskl rho v pb ?xb,
-      Hc : rel_pskl rho v qa ?xc, Hd : rel_pskl rho v qb ?xd |- _ =>
-        rename Ha into HrPa; rename Hb into HrPb;
-        rename Hc into HrQa; rename Hd into HrQb;
-        rename xa into P3a; rename xb into P3b;
-        rename xc into Q3a; rename xd into Q3b
-    end.
-  6,7: assert (HcovA : V ∪ cols_r ρ ∪ ftvar_in_pskl P3a ∪ ftvar_in_pskl Q3a
-                      [<=] S0)
-      by (simpl in Hcov; clear - Hcov; fsetdec).
-  6,7: destruct (IH1 S0 Θ2 P3a Q3a ρ V HrPa HrQa HαV Hαl Hαr Hag HcovA)
-      as (S1 & ρxA & ρnA & Ξ2a & C2a & D2a & E1a & E2a & HpairsA & HxbA
-          & HocA & HclA & HrelA).
-  6,7: pose proof (e_lookeq_supply_grows D2a) as HgrowA.
-  6,7: assert (HcovB : V ∪ cols_r ρ ∪ ftvar_in_pskl P3b ∪ ftvar_in_pskl Q3b
-                      [<=] S1)
-      by (simpl in Hcov; clear - Hcov HgrowA; fsetdec).
-  6,7: destruct (IH2 S1 Θ2 P3b Q3b ρ V HrPb HrQb HαV Hαl Hαr Hag HcovB)
-      as (S2 & ρxB & ρnB & Ξ2b & C2b & D2b & E1b & E2b & HpairsB & HxbB
-          & HocB & HclB & HrelB).
-  6: pose proof (e_looksub_supply_grows D2b) as HgrowB.
-  7: pose proof (e_lookeq_supply_grows D2b) as HgrowB.
-  6,7: assert (Hd2a : dom Ξ2a ∩ S0 [=] empty)
-    by (apply (proj2 e_looksub_lookeq_block) in D2a; tauto).
-  6,7: assert (Hd2ain : dom Ξ2a [<=] S1)
-    by (apply (proj2 e_looksub_lookeq_block) in D2a; tauto).
-  6: assert (Hd2b : dom Ξ2b ∩ S1 [=] empty)
-    by (apply (proj1 e_looksub_lookeq_block) in D2b; tauto).
-  7: assert (Hd2b : dom Ξ2b ∩ S1 [=] empty)
-    by (apply (proj2 e_looksub_lookeq_block) in D2b; tauto).
-  6,7: exists S2, (ρxA ++ ρxB), (ρnA ++ ρnB), (Ξ2a ++ Ξ2b), (C2a ++ C2b).
-  6: split; [ eapply e_looksub__arrow; [ exact D2a | exact D2b ] | ].
-  7: split; [ eapply e_lookeq__arrow; [ exact D2a | exact D2b ] | ].
-  6,7: split;
-    [ rewrite flex_pairs_l_app; rewrite <- E1a, <- E1b; reflexivity | ].
-  6,7: split;
-    [ rewrite flex_pairs_r_app; rewrite <- E2a, <- E2b; reflexivity | ].
-  (* Each half generates fresh pairs in its own supply interval. *)
-  6,7: split;
-    [ intros a b Hin;
-      assert (HinA : In (a, b) (ρxA ++ ρnA) \/ In (a, b) (ρxB ++ ρnB))
-        by (revert Hin; rewrite ! in_app_iff; tauto);
-      destruct HinA as [HinA | HinB];
-        [ destruct (HpairsA a b HinA) as [Ha [Hb1 Hb2]];
-          split; [ exact Ha | ];
-          split; [ clear - Hb1 HgrowB; fsetdec | exact Hb2 ]
-        | destruct (HpairsB a b HinB) as [Ha [Hb1 Hb2]];
-          split; [ exact Ha | ];
-          split; [ exact Hb1 | clear - Hb2 HgrowA; fsetdec ] ] | ].
-  6,7: assert (HxAS : cols_r ρxA [<=] S1) by
-    (intros x Hx;
-     destruct (cols_r_in_inv _ _ Hx) as [a Hin];
-     assert (HinA : In (a, x) (ρxA ++ ρnA)) by (apply in_or_app; auto);
-     destruct (HpairsA a x HinA) as [_ [Hb1 _]]; exact Hb1).
-  6,7: assert (HxBS : cols_r ρxB ∩ S1 [=] empty) by
-    (apply inter_empty_pointwise; intros x Hx;
-     destruct (cols_r_in_inv _ _ Hx) as [a Hin];
-     assert (HinB : In (a, x) (ρxB ++ ρnB)) by (apply in_or_app; auto);
-     destruct (HpairsB a x HinB) as [_ [_ Hb2]]; exact Hb2).
-  6,7: split;
-    [ rewrite cols_r_app, dom_app;
-      clear - HxbA HxbB HxAS HxBS Hd2a Hd2ain Hd2b; fsetdec | ].
-  (* The cross-half freshness guards keep leaked openers out of the block. *)
-  6,7: split;
-    [ intros a b Hin; apply in_app_or in Hin;
-      rewrite ftvar_in_a_cstrs_app;
-      destruct Hin as [Hin | Hin];
-        [ pose proof (HocA a b Hin) | pose proof (HocB a b Hin) ];
-        clear - H; fsetdec | ].
-  6,7: assert (HxAC : cols_l ρxA [<=] ftvar_in_a_cstrs C1) by
-    (intros x Hx;
-     destruct (cols_l_in_inv _ _ Hx) as [b Hin]; exact (HocA x b Hin)).
-  6,7: assert (HxBC : cols_l ρxB [<=] ftvar_in_a_cstrs C2q) by
-    (intros x Hx;
-     destruct (cols_l_in_inv _ _ Hx) as [b Hin]; exact (HocB x b Hin)).
-  6,7: split;
-    [ rewrite cols_l_app, dom_app;
-      clear - HclA HclB HxAC HxBC Hg1 Hg2; fsetdec | ].
-  6,7: apply Forall2_app; [ cstrs_perm HrelA | cstrs_perm HrelB ].
   - (* LS-Var *)
     intros Θ1 α m Pt S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
     inversion HrelP; subst.
@@ -382,6 +322,81 @@ Proof.
       assert (Hr2 : rel_a_cstrs ((β, β2) :: (ρx ++ ρn ++ ρ)) V C C2)
         by (cstrs_perm Hrel').
       eapply rel_a_cstrs_drop_head; [ exact Hr2 | exact HβC ].
+  - (* LS-Arrow *)
+    intros Θ1 α m P1 P2q P1' P2q' Ξ1 Ξ2q C1 C2q Hg1 Hg2 Hle IHe Hls IHs
+      S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
+    destruct (rel_pskl_arrow_inv_l HrelP)
+      as (P3a & P3b & -> & HrPa & HrPb).
+    destruct (rel_pskl_arrow_inv_l HrelP')
+      as (Q3a & Q3b & -> & HrQa & HrQb).
+    assert (HcovA : V ∪ cols_r ρ ∪ ftvar_in_pskl P3a ∪ ftvar_in_pskl Q3a
+                      [<=] S0)
+      by (simpl in Hcov; clear - Hcov; fsetdec).
+    destruct (IHe S0 Θ2 P3a Q3a ρ V HrPa HrQa HαV Hαl Hαr Hag HcovA)
+      as (S1 & ρxA & ρnA & Ξ2a & C2a & D2a & E1a & E2a & HpairsA & HxbA
+          & HocA & HclA & HrelA).
+    pose proof (e_lookeq_supply_grows D2a) as HgrowA.
+    assert (HcovB : V ∪ cols_r ρ ∪ ftvar_in_pskl P3b ∪ ftvar_in_pskl Q3b
+                      [<=] S1)
+      by (simpl in Hcov; clear - Hcov HgrowA; fsetdec).
+    destruct (IHs S1 Θ2 P3b Q3b ρ V HrPb HrQb HαV Hαl Hαr Hag HcovB)
+      as (S2 & ρxB & ρnB & Ξ2b & C2b & D2b & E1b & E2b & HpairsB & HxbB
+          & HocB & HclB & HrelB).
+    pose proof (e_looksub_supply_grows D2b) as HgrowB.
+    assert (Hd2a : dom Ξ2a ∩ S0 [=] empty)
+      by (apply (proj2 e_looksub_lookeq_block) in D2a; tauto).
+    assert (Hd2ain : dom Ξ2a [<=] S1)
+      by (apply (proj2 e_looksub_lookeq_block) in D2a; tauto).
+    assert (Hd2b : dom Ξ2b ∩ S1 [=] empty)
+      by (apply (proj1 e_looksub_lookeq_block) in D2b; tauto).
+    exists S2, (ρxA ++ ρxB), (ρnA ++ ρnB), (Ξ2a ++ Ξ2b), (C2a ++ C2b).
+    split; [ eapply e_looksub__arrow; [ exact D2a | exact D2b ] | ].
+    split;
+      [ rewrite flex_pairs_l_app; rewrite <- E1a, <- E1b; reflexivity | ].
+    split;
+      [ rewrite flex_pairs_r_app; rewrite <- E2a, <- E2b; reflexivity | ].
+    split.
+    { eapply look_lift_pairs_app; eauto. }
+    split.
+    { rewrite cols_r_app. rewrite dom_app.
+      (* A-rights vs the B block: A ⊆ S1, B avoids S1; and symmetrically *)
+      assert (HxAS : cols_r ρxA [<=] S1).
+      { intros x Hx.
+        destruct (cols_r_in_inv _ _ Hx) as [a Hin].
+        assert (HinA : In (a, x) (ρxA ++ ρnA))
+          by (apply in_or_app; auto).
+        destruct (HpairsA a x HinA)
+          as [_ [Hb1 _]]. exact Hb1. }
+      assert (HxBS : cols_r ρxB ∩ S1 [=] empty).
+      { apply inter_empty_pointwise. intros x Hx.
+        destruct (cols_r_in_inv _ _ Hx) as [a Hin].
+        assert (HinB : In (a, x) (ρxB ++ ρnB))
+          by (apply in_or_app; auto).
+        destruct (HpairsB a x HinB)
+          as [_ [_ Hb2]]. exact Hb2. }
+      clear - HxbA HxbB HxAS HxBS Hd2a Hd2ain Hd2b. fsetdec. }
+    (* ⭐ THE TWO NEW CONJUNCTS.  (A) is monotone.  (B) is the FOUR-CASE
+       analysis, and its two CROSS cases are exactly the collection's
+       CROSS-HALF FRESHNESS GUARD: an opener of one half occurring in that
+       half's constraints cannot be a block name of the other. *)
+    split.
+    { intros a b Hin. apply in_app_or in Hin.
+      rewrite ftvar_in_a_cstrs_app.
+      destruct Hin as [Hin | Hin];
+        [ pose proof (HocA a b Hin) | pose proof (HocB a b Hin) ];
+        clear - H; fsetdec. }
+    split.
+    { rewrite cols_l_app, dom_app.
+      assert (HxAC : cols_l ρxA [<=] ftvar_in_a_cstrs C1).
+      { intros x Hx.
+        destruct (cols_l_in_inv _ _ Hx) as [b Hin]. exact (HocA x b Hin). }
+      assert (HxBC : cols_l ρxB [<=] ftvar_in_a_cstrs C2q).
+      { intros x Hx.
+        destruct (cols_l_in_inv _ _ Hx) as [b Hin]. exact (HocB x b Hin). }
+      clear - HclA HclB HxAC HxBC Hg1 Hg2. fsetdec. }
+    apply Forall2_app.
+    + cstrs_perm HrelA.
+    + cstrs_perm HrelB.
   - (* LS-ForallL — leaks its opener *)
     intros Θ1 α m Pb Pt Ξ C β Hβ1 Hocc Hnh Hfr3 Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
@@ -586,6 +601,80 @@ Proof.
     split; [ simpl; clear; fsetdec | ].
     simpl. constructor; [ | constructor ].
     constructor. constructor. apply rel_atom__pair. left. reflexivity.
+  - (* LE-Arrow *)
+    intros Θ1 α P1 P2q P1' P2q' Ξ1 Ξ2q C1 C2q Hg1 Hg2 Hle1 IH1 Hle2 IH2
+      S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
+    destruct (rel_pskl_arrow_inv_l HrelP)
+      as (P3a & P3b & -> & HrPa & HrPb).
+    destruct (rel_pskl_arrow_inv_l HrelP')
+      as (Q3a & Q3b & -> & HrQa & HrQb).
+    assert (HcovA : V ∪ cols_r ρ ∪ ftvar_in_pskl P3a ∪ ftvar_in_pskl Q3a
+                      [<=] S0)
+      by (simpl in Hcov; clear - Hcov; fsetdec).
+    destruct (IH1 S0 Θ2 P3a Q3a ρ V HrPa HrQa HαV Hαl Hαr Hag HcovA)
+      as (S1 & ρxA & ρnA & Ξ2a & C2a & D2a & E1a & E2a & HpairsA & HxbA
+          & HocA & HclA & HrelA).
+    pose proof (e_lookeq_supply_grows D2a) as HgrowA.
+    assert (HcovB : V ∪ cols_r ρ ∪ ftvar_in_pskl P3b ∪ ftvar_in_pskl Q3b
+                      [<=] S1)
+      by (simpl in Hcov; clear - Hcov HgrowA; fsetdec).
+    destruct (IH2 S1 Θ2 P3b Q3b ρ V HrPb HrQb HαV Hαl Hαr Hag HcovB)
+      as (S2 & ρxB & ρnB & Ξ2b & C2b & D2b & E1b & E2b & HpairsB & HxbB
+          & HocB & HclB & HrelB).
+    pose proof (e_lookeq_supply_grows D2b) as HgrowB.
+    assert (Hd2a : dom Ξ2a ∩ S0 [=] empty)
+      by (apply (proj2 e_looksub_lookeq_block) in D2a; tauto).
+    assert (Hd2ain : dom Ξ2a [<=] S1)
+      by (apply (proj2 e_looksub_lookeq_block) in D2a; tauto).
+    assert (Hd2b : dom Ξ2b ∩ S1 [=] empty)
+      by (apply (proj2 e_looksub_lookeq_block) in D2b; tauto).
+    exists S2, (ρxA ++ ρxB), (ρnA ++ ρnB), (Ξ2a ++ Ξ2b), (C2a ++ C2b).
+    split; [ eapply e_lookeq__arrow; [ exact D2a | exact D2b ] | ].
+    split;
+      [ rewrite flex_pairs_l_app; rewrite <- E1a, <- E1b; reflexivity | ].
+    split;
+      [ rewrite flex_pairs_r_app; rewrite <- E2a, <- E2b; reflexivity | ].
+    split.
+    { eapply look_lift_pairs_app; eauto. }
+    split.
+    { rewrite cols_r_app. rewrite dom_app.
+      assert (HxAS : cols_r ρxA [<=] S1).
+      { intros x Hx.
+        destruct (cols_r_in_inv _ _ Hx) as [a Hin].
+        assert (HinA : In (a, x) (ρxA ++ ρnA))
+          by (apply in_or_app; auto).
+        destruct (HpairsA a x HinA)
+          as [_ [Hb1 _]]. exact Hb1. }
+      assert (HxBS : cols_r ρxB ∩ S1 [=] empty).
+      { apply inter_empty_pointwise. intros x Hx.
+        destruct (cols_r_in_inv _ _ Hx) as [a Hin].
+        assert (HinB : In (a, x) (ρxB ++ ρnB))
+          by (apply in_or_app; auto).
+        destruct (HpairsB a x HinB)
+          as [_ [_ Hb2]]. exact Hb2. }
+      clear - HxbA HxbB HxAS HxBS Hd2a Hd2ain Hd2b. fsetdec. }
+    (* ⭐ THE TWO NEW CONJUNCTS.  (A) is monotone.  (B) is the FOUR-CASE
+       analysis, and its two CROSS cases are exactly the collection's
+       CROSS-HALF FRESHNESS GUARD: an opener of one half occurring in that
+       half's constraints cannot be a block name of the other. *)
+    split.
+    { intros a b Hin. apply in_app_or in Hin.
+      rewrite ftvar_in_a_cstrs_app.
+      destruct Hin as [Hin | Hin];
+        [ pose proof (HocA a b Hin) | pose proof (HocB a b Hin) ];
+        clear - H; fsetdec. }
+    split.
+    { rewrite cols_l_app, dom_app.
+      assert (HxAC : cols_l ρxA [<=] ftvar_in_a_cstrs C1).
+      { intros x Hx.
+        destruct (cols_l_in_inv _ _ Hx) as [b Hin]. exact (HocA x b Hin). }
+      assert (HxBC : cols_l ρxB [<=] ftvar_in_a_cstrs C2q).
+      { intros x Hx.
+        destruct (cols_l_in_inv _ _ Hx) as [b Hin]. exact (HocB x b Hin). }
+      clear - HclA HclB HxAC HxBC Hg1 Hg2. fsetdec. }
+    apply Forall2_app.
+    + cstrs_perm HrelA.
+    + cstrs_perm HrelB.
   - (* LE-ForallInh — leaks; BOTH sides open at the opener *)
     intros Θ1 α Pb Pb' Ξ C β Hβ1 Hocc Hprem IH
       S0 Θ2 P2 P2' ρ V HrelP HrelP' HαV Hαl Hαr Hag Hcov.
