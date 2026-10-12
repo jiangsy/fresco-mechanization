@@ -44,10 +44,8 @@ Beyond that, the mechanization covers:
 | [Equations](https://github.com/mattam82/Coq-Equations) | 1.3.1+8.20 | `fresco/ext_algo/` (well-founded recursion) |
 | OCaml | ≥ 4.14 (`ocamlc` on `PATH`) | the frontend only |
 | Python | 3 | the frontend's regression tests only |
-
-The Ott and LNgen outputs (`fresco/def_ott.v`, `fresco/prop_ln.v`) are
-committed, so you do **not** need Ott or LNgen.  They are only needed to
-regenerate those files from `fresco/language.ott` (`make ott lngen`).
+| [Ott](https://github.com/ott-lang/ott) *(optional)* | 0.34 | regenerating `fresco/def_ott.v` |
+| [LNgen](https://github.com/plclub/lngen) *(optional)* | 0.3.2, `master` at `c034c8d` | regenerating `fresco/prop_ln.v` |
 
 One way to install everything with [opam](https://opam.ocaml.org):
 
@@ -59,6 +57,32 @@ opam pin add coq 8.20.0
 opam install coq-equations.1.3.1+8.20
 opam pin add coq-metalib https://github.com/plclub/metalib.git
 ```
+
+#### Optional: Ott and LNgen
+
+The Ott and LNgen outputs (`fresco/def_ott.v`, `fresco/prop_ln.v`) are
+committed, so `make coq` does not need either tool.  They are only needed to
+regenerate those two files from `fresco/language.ott`.
+
+```sh
+opam install ott.0.34
+
+# LNgen is built from source with Haskell Stack (https://haskellstack.org).
+git clone https://github.com/plclub/lngen.git
+cd lngen && git checkout c034c8d
+stack install                       # installs `lngen` into ~/.local/bin
+```
+
+Then regenerate both files:
+
+```sh
+make -B ott lngen                   # -B: the committed files look up to date
+make -B LNGEN=<path-to-lngen> ott lngen   # if lngen is not on PATH
+```
+
+The regenerated files are token-identical to the committed ones, apart from
+comments, which the committed copies omit.  Use the LNgen commit above: an
+older LNgen 0.3.2 build produces a different `prop_ln.v`.
 
 ### Building and checking the proofs
 
