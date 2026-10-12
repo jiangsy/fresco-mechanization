@@ -13,7 +13,6 @@ Require Import Coq.Program.Equality.
 Require Import Coq.Sorting.Permutation.
 Require Import Coq.micromega.Lia.
 Require Import Metalib.Metatheory.
-From Hammer Require Export Tactics.
 
 Require Import src.fresco.notations.
 Require Import src.fresco.ltac_utils.

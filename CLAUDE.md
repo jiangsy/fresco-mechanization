@@ -526,11 +526,12 @@ before changing any of them.
 - **lngen** for locally-nameless infrastructure. Generates
   `prop_ln.v` with free-variable lemmas, opening, substitution
   lemmas, etc.
-- **coqhammer** for proof automation in `ltac_utils.v`. Prefer
-  `hammer` / `sauto` / `qauto` for goals after manual case splits;
-  never leave hammer calls in committed proofs (resolve the term
-  they suggest, or use a tactic combination that doesn't depend on
-  the hammer being installed).
+- **coqhammer** is an optional INTERACTIVE aid only — NOT a build
+  dependency (the last `From Hammer` import, unused, was removed
+  2026-10-12, so evaluators need not install it).  Try `hammer` /
+  `sauto` / `qauto` in a scratch session, then commit the term or
+  tactic script they suggest; never commit a `From Hammer` import or a
+  hammer-family tactic.
 - The paper uses Unicode in math notation. ott files may use Unicode
   in rule formulae; the Makefile sed-rewrites a few atoms. Keep
   encodings UTF-8 throughout.

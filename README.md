@@ -42,7 +42,6 @@ Beyond that, the mechanization covers:
 | [Rocq / Coq](https://rocq-prover.org) | 8.20.0 (OCaml 4.14.2) | everything |
 | [Metalib](https://github.com/plclub/metalib) | `master` (opam `coq-metalib.dev`) | locally nameless infrastructure |
 | [Equations](https://github.com/mattam82/Coq-Equations) | 1.3.1+8.20 | `fresco/ext_algo/` (well-founded recursion) |
-| [CoqHammer tactics](https://github.com/lukaszcz/coqhammer) | 1.3.2+8.20 (`coq-hammer-tactics`; no ATPs needed) | imported by `decl/prop_general_subsumption.v` |
 | OCaml | ≥ 4.14 (`ocamlc` on `PATH`) | the frontend only |
 | Python | 3 | the frontend's regression tests only |
 
@@ -57,7 +56,7 @@ opam switch create fresco ocaml-base-compiler.4.14.2
 eval $(opam env --switch=fresco)
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam pin add coq 8.20.0
-opam install coq-equations.1.3.1+8.20 coq-hammer-tactics.1.3.2+8.20
+opam install coq-equations.1.3.1+8.20
 opam pin add coq-metalib https://github.com/plclub/metalib.git
 ```
 
