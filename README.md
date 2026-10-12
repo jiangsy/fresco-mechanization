@@ -90,15 +90,29 @@ make coq            # full kernel check; parallel, NJOBS=4 by default
 make NJOBS=8 coq    # more parallel jobs
 ```
 
-`make coq` compiles every file and finishes with `README.v`, which prints one
-`Check` and one assumption report per headline result.  To confirm the
-assumption reports from the build log:
+`make coq` builds the proofs, including `README.v`, which prints one `Check`
+and one assumption report per headline result when compiled.  An up-to-date
+build does not print these reports again.  To check them repeatably, run the
+following from the repository root to build the dependencies and explicitly
+recompile `README.v`:
 
 ```sh
-make coq 2>&1 | tee build.log
-grep -c "Closed under the global context" build.log   # expect 34
-grep -nE "Axioms:|admit" build.log                    # expect no output
+make coq &&
+coqc -R . src README.v > assumptions.log 2>&1 &&
+test "$(grep -c '^Closed under the global context$' assumptions.log)" -eq 34
 ```
+
+The command must succeed, confirming exactly 34 closed assumption reports.
+Then inspect the log for axioms or admissions:
+
+```sh
+grep -nE 'Axioms:|admit' assumptions.log
+```
+
+This final command should produce no output.  `grep` returns status 1 when
+it finds no matches; that is the expected result here.  If you replace the
+log redirection with a `tee` pipeline, first enable `set -o pipefail` in Bash
+or Zsh so that compiler failures remain visible in the pipeline's exit status.
 
 A full build took about **9 minutes** with `NJOBS=8` on an Apple M2 Max
 (12 cores, 64 GB).  The build is limited by one long chain of dependent
@@ -119,13 +133,75 @@ _build/frontend/fresco examples/E3b.fresco
 printf 'fun x -> x\n' | _build/frontend/fresco -
 ```
 
-Each `examples/*.fresco` file is named after its row in the comparison tables
-of Appendix A (Figures 8 and 9).  The examples cover a subset of
-the tables.  `examples/rejected/` holds the rows Fresco rejects (A8, E2a), and
-E3b without its freeze.  [`frontend/README.md`](frontend/README.md)
-documents the input syntax and the context headers (`type`, `val`).  The
-frontend's lexer, parser and printer are not verified.  Type inference itself
-is the extracted, verified `fresco_infer` / `e_typing_run`.
+The frontend uses only the OCaml standard library. Its executable and compiler
+products live in `_build/frontend/`; `make clean-frontend` removes them.
+The handwritten lexer, parser, context setup, and printer are not verified.
+Type inference uses the extracted, verified `fresco_infer` / `e_typing_run`.
+
+#### Input syntax and output
+
+Each file contains optional context declarations followed by one expression.
+For example, [`examples/A2.fresco`](examples/A2.fresco) contains:
+
+```text
+val choose : forall a. a -> a -> a;
+val id : forall a. a -> a;
+
+choose id
+```
+
+`val` declares a term assumption and `type` declares a rigid type variable.
+These describe the initial context, not executable bindings; they cannot
+refer to later declarations. Names must be unique within each declaration
+namespace. Local binders may shadow earlier names.
+
+```text
+program     ::= declaration* expression EOF
+declaration ::= "type" name ";" | "val" name ":" type ";"
+expression  ::= "fun" parameter+ "->" expression
+              | application [":" type]
+application ::= atom atom*
+atom        ::= name | "(" ")" | "(" expression ")"
+              | "{|" expression "|}"
+parameter   ::= name | "_" | "(" name ":" type ")"
+type        ::= "forall" name+ "." type
+              | type-atom ["->" type]
+type-atom   ::= "unit" | name | "(" type ")"
+```
+
+Application associates left; type arrows associate right. Annotation has lower
+precedence than application; parenthesize a lambda to annotate the entire lambda.
+`{| ... |}` is freeze. Identifiers start with an ASCII letter or underscore,
+followed by letters, digits, underscores, or apostrophes. `_` is a lambda
+parameter that cannot be referenced. `--` starts a line comment.
+
+`forall` binds variables only within its type, not in a
+lambda body. Unbound names are rejected before inference. The syntax is
+implemented in [`frontend/parser.ml`](frontend/parser.ml).
+
+Output is `filename: inferred-type`. Unsolved monotype variables print as
+`?m0`, `?m1`, etc.; these are inference metavariables, not implicit `forall`
+binders or accepted input syntax. Explicit universal binders print as
+`forall a0. ...`; the frontend performs no extra generalization.
+
+Exit status is 0 for success, 1 for algorithmic rejection, and 2 for lexical,
+syntax, scope, file, or command-line errors. Syntax/scope errors include the
+filename, line, and column. Multiple files are all processed, returning the
+largest exit status. `-` reads standard input; `--help` prints usage.
+
+#### Paper examples and regression checks
+
+Each [`examples/*.fresco`](examples/) file is named after its row in the
+comparison tables of Appendix A (Figures 8 and 9) and includes its required
+library assumptions. The examples cover a subset of the tables. `Int` and
+`Bool` are distinct rigid type variables; `Int × Bool` is encoded as
+`forall c. (Int -> Bool -> c) -> c`.
+
+`make examples` runs the 12 accepted examples. [`examples/rejected/`](examples/rejected/)
+holds the rejected rows A8 and E2a, and E3b without its freeze.
+`make test-frontend` runs [`frontend/test_frontend.py`](frontend/test_frontend.py),
+checking all 15 examples, exact inferred outputs, shadowing, binding indices,
+precedence, freshness across context declarations, diagnostics, and CLI behavior.
 
 ## Layout
 

@@ -85,7 +85,7 @@ EXTRACT_DIR := fresco/ext_algo/extraction/extracted
 
 # The frontend uses only the OCaml standard library. Keep compiler products
 # separate from both hand-written sources and Coq's generated extraction.
-# Syntax, paper row mappings, and invocation examples: frontend/README.md.
+# Syntax, paper examples, and invocation examples: README.md.
 OCAMLC ?= ocamlc
 FRONTEND_BUILD := _build/frontend
 FRONTEND_SOURCES := frontend/parser.ml frontend/printer.ml frontend/main.ml
