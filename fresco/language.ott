@@ -1,0 +1,121 @@
+
+metavar expvar, x, y, z ::= {{ repr-locally-nameless }}
+metavar epsvar, eps     ::= {{ coq var }}
+metavar ptypvar, Xpt ::= {{ repr-locally-nameless }}
+metavar btypvar, Xbt ::= {{ repr-locally-nameless }}
+metavar utypvar, Xut ::= {{ repr-locally-nameless }}
+metavar psklvar, Xps ::= {{ repr-locally-nameless }}
+metavar bsklvar, Xbs ::= {{ repr-locally-nameless }}
+metavar usklvar, Xus ::= {{ repr-locally-nameless }}
+
+grammar
+
+
+ptyp, A :: 'ptyp_' ::=
+  | UNIT                 ::   :: unit
+  | Xpt                  ::   :: var
+  | A1 -> A2             ::   :: arrow
+  | forall Xpt . A       ::   :: all   (+ bind Xpt in A +)
+  | ( A )                :: S :: paren {{ coq ([[A]]) }}
+  | { A2 / Xpt } A1      :: M :: subst {{ coq (open_ptyp_wrt_ptyp [[Xpt A1]] [[A2]]) }}
+
+btyp, B :: 'btyp_' ::=
+  | UNIT                 ::   :: unit
+  | Xbt                  ::   :: var
+  | B1 -> B2             ::   :: arrow
+  | forall^syn Xbt . B   ::   :: all_syn   (+ bind Xbt in B +)
+  | forall^inh Xbt . B   ::   :: all_inh   (+ bind Xbt in B +)
+  | ( B )                :: S :: paren {{ coq ([[B]]) }}
+  | { B2 / Xbt } B1      :: M :: subst {{ coq (open_btyp_wrt_btyp [[Xbt B1]] [[B2]]) }}
+
+utyp, C :: 'utyp_' ::=
+  | UNIT                 ::   :: unit
+  | Xut                  ::   :: var
+  | C1 -> C2             ::   :: arrow
+  | forall^syn Xut . C   ::   :: all_syn   (+ bind Xut in C +)
+  | forall@ eps Xut . C  ::   :: all_tag  (+ bind Xut in C +)
+  | ( C )                :: S :: paren {{ coq ([[C]]) }}
+  | { C2 / Xut } C1      :: M :: subst {{ coq (open_utyp_wrt_utyp [[Xut C1]] [[C2]]) }}
+
+pskl, P :: 'pskl_' ::=
+  | UNIT                 ::   :: unit
+  | Xps                  ::   :: var
+  | P1 -> P2             ::   :: arrow
+  | forall Xps . P1      ::   :: all_syn (+ bind Xps in P1 +)
+  | GHOST                 ::   :: ghost
+  | UNIVGHOST . P          ::   :: univ_ghost
+  | ( P )                :: S :: paren {{ coq ([[P]]) }}
+  | { P2 / Xps } P1      :: M :: subst {{ coq (open_pskl_wrt_pskl [[Xps P1]] [[P2]]) }}
+
+bskl, Q :: 'bskl_' ::=
+  | UNIT                 ::   :: unit
+  | Xbs                  ::   :: var
+  | Q1 -> Q2             ::   :: arrow
+  | forall^syn Xbs . Q   ::   :: all_syn   (+ bind Xbs in Q +)
+  | forall^inh Xbs . Q   ::   :: all_inh   (+ bind Xbs in Q +)
+  | GHOST                 ::   :: ghost
+  | UNIVGHOST . Q          ::   :: univ_ghost
+  | ( Q )                :: S :: paren {{ coq ([[Q]]) }}
+  | { Q2 / Xbs } Q1      :: M :: subst {{ coq (open_bskl_wrt_bskl [[Xbs Q1]] [[Q2]]) }}
+
+uskl, R :: 'uskl_' ::=
+  | UNIT                 ::   :: unit
+  | Xus                  ::   :: var
+  | R1 -> R2             ::   :: arrow
+  | forall^syn Xus . R   ::   :: all_syn   (+ bind Xus in R +)
+  | forall@ eps Xus . R  ::   :: all_tag  (+ bind Xus in R +)
+  | GHOST                 ::   :: ghost
+  | UNIVGHOST . R          ::   :: univ_ghost
+  | DOTGHOST                ::   :: dot_ghost
+  | DOTUNIVGHOST . R         ::   :: dot_univ_ghost
+  | ( R )                :: S :: paren {{ coq ([[R]]) }}
+  | { R2 / Xus } R1      :: M :: subst {{ coq (open_uskl_wrt_uskl [[Xus R1]] [[R2]]) }}
+
+exp, e, f :: 'exp_' ::=
+  | unit                    ::   :: unit
+  | x                       ::   :: var
+  | \ x . e                 ::   :: abs       (+ bind x in e +)
+  | \ x : A . e             ::   :: abs_anno  (+ bind x in e +)
+  | e1 e2                   ::   :: app
+  | e : A                   ::   :: anno
+  | freeze e                ::   :: freeze
+  | ( e )                   :: S :: paren {{ coq ([[e]]) }}
+  | { e2 / x } e1           :: M :: subste {{ coq (open_exp_wrt_exp [[x e1]] [[e2]]) }}
+  | { A / Xpt } e           :: M :: substt {{ coq (open_exp_wrt_ptyp [[Xpt e]] [[A]]) }}
+
+mode, m :: 'mode_' ::=
+  | TI         ::   :: ti
+  | TC         ::   :: tc
+  | FN m       ::   :: fn
+
+substitutions
+  single A Xpt  :: subst_ptyp_in
+  single B Xbt  :: subst_btyp_in
+  single C Xut  :: subst_utyp_in
+  single P Xps  :: subst_pskl_in
+  single Q Xbs  :: subst_bskl_in
+  single R Xus  :: subst_uskl_in
+  single e x    :: subst_exp_in
+
+freevars
+  A Xpt :: ftvar_in
+  B Xbt :: ftvar_in
+  C Xut :: ftvar_in
+  P Xps :: ftvar_in
+  Q Xbs :: ftvar_in
+  R Xus :: ftvar_in
+  e Xpt :: ftvar_in
+  e x   :: fvar_in
+
+embed
+{{ coq
+
+Inductive dbind : Set := 
+ | dbind_tvar : dbind
+ | dbind_typ (A:ptyp)
+ | dbind_skl (P:pskl).
+
+Definition denv : Set := list (atom*dbind).
+}}
+
+

@@ -1,0 +1,6 @@
+-- Paper row E2a: expected rejected.
+type Int;
+type Bool;
+val poly : (forall a. a -> a) -> (forall c. (Int -> Bool -> c) -> c);
+
+fun x -> poly x

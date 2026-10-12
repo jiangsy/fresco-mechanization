@@ -1,0 +1,5 @@
+-- Paper row C2: expected accepted.
+type Int;
+val r : (forall a. a -> (forall b. b -> b)) -> Int;
+
+r (fun x y -> y)

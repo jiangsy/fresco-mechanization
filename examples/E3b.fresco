@@ -1,0 +1,8 @@
+-- Paper row E3b: expected accepted.
+type Int;
+type Bool;
+val poly : (forall a. a -> a) -> (forall c. (Int -> Bool -> c) -> c);
+val app : forall a b. (a -> b) -> a -> b;
+val id : forall a. a -> a;
+
+app (fun x -> poly x) {| id |}

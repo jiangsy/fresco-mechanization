@@ -1,0 +1,199 @@
+Require Import Coq.Lists.List.
+Require Import Coq.Program.Equality.
+Require Import Metalib.Metatheory.
+
+Require Import src.fresco.notations.
+Require Import src.fresco.ltac_utils.
+Require Import src.fresco.coercions.
+Require Import src.fresco.def_shapes.
+Require Import src.fresco.prop_shapes.
+Require Import src.fresco.prop_tag.
+Require Import src.fresco.decl.def_rules.
+Require Import src.fresco.decl.prop_basic.
+Require Import src.fresco.decl.prop_wellformed.
+Require Import src.fresco.decl.prop_ctx_mono.
+
+Set Implicit Arguments.
+
+Lemma is_ityp_rename_tvar : forall B α1 β1,
+    is_ityp B -> is_ityp (subst_btyp_in_btyp (btyp_var_f β1) α1 B).
+Proof.
+  intros B α1 β1 H. exact (@is_ityp_subst_mono B (ptyp_var_f β1) α1 H (mono_ptyp__var β1)).
+Qed.
+
+Lemma is_dtyp_rename_tvar : forall C α1 β1,
+    is_dtyp C -> is_dtyp (subst_utyp_in_utyp (utyp_var_f β1) α1 C).
+Proof.
+  intros C α1 β1 H. exact (@is_dtyp_subst_mono C (ptyp_var_f β1) α1 H (mono_ptyp__var β1)).
+Qed.
+
+Lemma guarded_utyp_rename_tvar : forall C α1 β1,
+    guarded_utyp C -> guarded_utyp (subst_utyp_in_utyp (utyp_var_f β1) α1 C).
+Proof.
+  intros C α1 β1 H. exact (@guarded_utyp_subst_mono C (ptyp_var_f β1) α1 H (mono_ptyp__var β1)).
+Qed.
+
+Lemma d_consis_dtyp_refl : forall Γ C,
+    {{ Γ ⊢ᵤ C }}d ->
+    is_dtyp C ->
+    {{ empty ⨟ Γ ⊢ C ∼ (utyp_to_btyp C) }}d.
+Proof.
+  intros Γ C Hwf. induction Hwf; intros Htt; simpl.
+  - apply d_consis__unit. reflexivity.
+  - apply d_consis__var; [ assumption | reflexivity ].
+  - inversion Htt; subst.
+    eapply d_consis__arrow; [ apply IHHwf1 | apply IHHwf2 | fsetdec ]; assumption.
+  - inversion Htt.
+  - inversion Htt; subst.
+    apply d_consis__forall_syn_tagged with (L := L `union` L0).
+    intros α Hα.
+    change (btyp_var_f α) with (utyp_to_btyp (utyp_var_f α)).
+    rewrite <- utyp_to_btyp_open.
+    apply H0; [ fsetdec | ].
+    match goal with
+    | H : forall x, x `notin` _ -> is_dtyp _ |- _ => apply H; fsetdec
+    end.
+Qed.
+
+Lemma d_consis_subst_tvar : forall Ψ Γ C B,
+    {{ Ψ ⨟ Γ ⊢ C ∼ B }}d ->
+    forall Γ1 Γ2 α0 C',
+      Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
+      {{ (Γ1 ++ Γ2) ⊢ᵤ C' }}d ->
+      is_dtyp C' ->
+      {{ Ψ ⨟ (Γ1 ++ Γ2) ⊢ (subst_utyp_in_utyp C' α0 C)
+                      ∼ (subst_btyp_in_btyp (utyp_to_btyp C') α0 B) }}d.
+Proof.
+  intros Ψ Γ C B H. induction H; intros Γ1 Γ2 α0 C' Heq Hwf Htt; subst; simpl; try solve [eauto 4 using d_consis].
+  all: try solve [destruct_if;
+    [eapply d_consis_equiv; [ | apply d_consis_dtyp_refl; assumption ]; fsetdec |
+     apply d_consis__var; [analyze_binds H; auto | assumption]]].
+  all: first
+    [eapply d_consis__forall_inh_tagged with
+       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0)
+    |apply d_consis__forall_inh_untagged with
+       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0)
+    |apply d_consis__forall_syn_tagged with
+       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0)
+    |apply d_consis__forall_syn with
+       (L := L `union` dom (Γ1 ++ Γ2) `union` singleton α0)]; try eassumption.
+  all: intros α2 Hα2;
+    erewrite subst_utyp_in_utyp_open_utyp_wrt_utyp_var
+      by (solve [fsetdec | apply is_dtyp_lc; assumption]);
+    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var
+      by (solve [fsetdec | apply lc_utyp_to_btyp; apply is_dtyp_lc; assumption]);
+    rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ Γ2);
+    eapply (H0 α2);
+      [fsetdec | simpl; reflexivity |
+       rewrite_env ((α2 ~ dbind_tvar) ++ (Γ1 ++ Γ2));
+       apply d_wf_utyp_weakening_head; auto | auto].
+Qed.
+
+Lemma d_consis_rename_tvar : forall Ψ Γ C B,
+    {{ Ψ ⨟ Γ ⊢ C ∼ B }}d ->
+    forall Γ1 Γ2 α0 β,
+      Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
+      β `notin` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) ->
+      {{ Ψ ⨟ (Γ1 ++ (β ~ dbind_tvar) ++ Γ2) ⊢
+         (subst_utyp_in_utyp (utyp_var_f β) α0 C)
+         ∼ (subst_btyp_in_btyp (btyp_var_f β) α0 B) }}d.
+Proof.
+  intros Ψ Γ C B H Γ1 Γ2 α0 β Heq _; subst.
+  assert (Hw : {{ Ψ ⨟ (Γ1 ++ (α0 ~ dbind_tvar) ++ (β ~ dbind_tvar) ++ Γ2) ⊢ C ∼ B }}d)
+    by (eapply d_consis_tvar_mono; [ exact H | intros γ Hb; analyze_binds Hb ]).
+  pose proof (@d_consis_subst_tvar _ _ _ _ Hw Γ1 ((β ~ dbind_tvar) ++ Γ2) α0
+                (utyp_var_f β) eq_refl) as Hs.
+  cbn [utyp_to_btyp] in Hs. apply Hs; [ apply d_wf_utyp__var; auto | apply is_dtyp__var ].
+Qed.
+
+Lemma d_wf_utyp_rename_tvar : forall Γ C,
+    {{ Γ ⊢ᵤ C }}d ->
+    forall Γ1 Γ2 α0 β,
+      Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
+      β `notin` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) ->
+      {{ (Γ1 ++ (β ~ dbind_tvar) ++ Γ2) ⊢ᵤ (subst_utyp_in_utyp (utyp_var_f β) α0 C) }}d.
+Proof.
+  intros Γ C H Γ1 Γ2 α0 β Heq _; subst.
+  apply d_wf_utyp_of_lc_ftvar.
+  - apply subst_utyp_in_utyp_lc_utyp;
+      [ eapply d_wf_utyp_lc; eassumption | apply lc_utyp_var_f ].
+  - intros γ Hγ. apply ftvar_in_utyp_subst_utyp_in_utyp_upper in Hγ. simpl in Hγ.
+    apply union_1 in Hγ. destruct Hγ as [Hγ | Hγ].
+    + apply singleton_1 in Hγ. subst. auto.
+    + assert (Hne : γ <> α0).
+      { intro Heq. subst. eapply remove_1; [ reflexivity | eassumption ]. }
+      apply remove_3 in Hγ.
+      pose proof (d_wf_utyp_ftvar H Hγ) as Hb. analyze_binds Hb.
+Qed.
+
+Lemma is_styp_rename_tvar : forall B α1 β1,
+    is_styp B -> is_styp (subst_btyp_in_btyp (btyp_var_f β1) α1 B).
+Proof.
+  intros B α1 β1 H. exact (@is_styp_subst_mono B (ptyp_var_f β1) α1 H (mono_ptyp__var β1)).
+Qed.
+
+Lemma guarded_btyp_rename_tvar : forall B α1 β1,
+    guarded_btyp B -> guarded_btyp (subst_btyp_in_btyp (btyp_var_f β1) α1 B).
+Proof.
+  intros B α1 β1 H. exact (@guarded_btyp_subst_mono B (ptyp_var_f β1) α1 H (mono_ptyp__var β1)).
+Qed.
+
+Lemma d_sub_rename_tvar : forall m Ψ Γ C B,
+    {{ Ψ ⨟ Γ ⊢[ m ] C ⩽ B }}d ->
+    forall Γ1 Γ2 α0 β,
+      Γ = Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2 ->
+      β `notin` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) ->
+      {{ Ψ ⨟ (Γ1 ++ (β ~ dbind_tvar) ++ Γ2) ⊢[ m ]
+         (subst_utyp_in_utyp (utyp_var_f β) α0 C)
+         ⩽ (subst_btyp_in_btyp (btyp_var_f β) α0 B) }}d.
+Proof.
+  intros m Ψ Γ C B H. induction H; intros Γ1 Γ2 α0 β Heq Hfr; subst; simpl.
+  -
+    apply d_sub__infer.
+    + eapply d_consis_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+    + apply is_styp_rename_tvar. assumption.
+    + assumption.
+  -
+    apply d_sub__check.
+    + apply guarded_utyp_rename_tvar. assumption.
+    + apply guarded_btyp_rename_tvar. assumption.
+    + eapply d_consis_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+    + apply is_ityp_rename_tvar. assumption.
+  -
+    apply d_sub__forall_r with
+      (L := L `union` dom (Γ1 ++ (α0 ~ dbind_tvar) ++ Γ2) `union` singleton α0 `union` singleton β).
+    intros α2 Hα2.
+    erewrite subst_btyp_in_btyp_open_btyp_wrt_btyp_var by (solve [ fsetdec | apply lc_btyp_var_f ]).
+    rewrite_env (((α2 ~ dbind_tvar) ++ Γ1) ++ (β ~ dbind_tvar) ++ Γ2).
+    eapply (H0 α2); [ fsetdec | simpl; reflexivity | simpl; fsetdec ].
+  -
+    eapply d_sub__arrow.
+    + eapply d_consis_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+    + eapply IHd_sub; [ reflexivity | exact Hfr ].
+    + assumption.
+  -
+    eapply d_sub__forall_l_tagged with (Ψ' := Ψ').
+    + assumption.
+    + assumption.
+    +
+      change (utyp_all_tag ε (subst_utyp_in_utyp (utyp_var_f β) α0 C))
+        with (subst_utyp_in_utyp (utyp_var_f β) α0 (utyp_all_tag ε C));
+      rewrite ftag_in_utyp_subst_tagfree by reflexivity; assumption.
+    + apply d_tags_subst_tvar. eassumption.
+    + eapply d_wf_utyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+    + apply is_dtyp_rename_tvar. assumption.
+    + rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by apply lc_utyp_var_f.
+      eapply IHd_sub; [ reflexivity | exact Hfr ].
+  -
+    eapply d_sub__forall_l_untagged with (Ψ' := Ψ').
+    + assumption.
+    + assumption.
+    + change (utyp_all_syn (subst_utyp_in_utyp (utyp_var_f β) α0 C))
+        with (subst_utyp_in_utyp (utyp_var_f β) α0 (utyp_all_syn C));
+      rewrite ftag_in_utyp_subst_tagfree by reflexivity; assumption.
+    + apply d_tags_subst_tvar. eassumption.
+    + eapply d_wf_utyp_rename_tvar; [ eassumption | reflexivity | exact Hfr ].
+    + apply is_dtyp_rename_tvar. assumption.
+    + rewrite <- subst_utyp_in_utyp_open_utyp_wrt_utyp by apply lc_utyp_var_f.
+      eapply IHd_sub; [ reflexivity | exact Hfr ].
+Qed.

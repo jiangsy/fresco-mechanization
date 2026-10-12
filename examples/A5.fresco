@@ -1,0 +1,5 @@
+-- Paper row A5: expected accepted.
+val id : forall a. a -> a;
+val auto : (forall a. a -> a) -> (forall a. a -> a);
+
+id auto

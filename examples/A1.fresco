@@ -1,0 +1,3 @@
+-- Paper row A1: expected accepted.
+
+fun x y -> y
