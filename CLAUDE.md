@@ -12,6 +12,10 @@ Work here, then sync downward:
   Coq comments removed (since 2026-10-10), no `cex/`, `test/`, `docs/`.
   Include `frontend/` and `examples/`, with their documentation and regression
   tests, and retain the public Makefile's frontend/example build targets.
+  `README.md` is the artifact-evaluation README (the AE is built from
+  `public`): it is IDENTICAL on both branches and describes the `public`
+  tree — edit it on `main`, copy it verbatim, and re-check its tables
+  (paper numbers, Rocq names, files) whenever either side moves.
   `README.v` is the only commented file: a short header with the notation
   legend, and one pointer per entry giving the paper's number and name, e.g.
   `(* Lemma C.7 (Completeness and optimality of consistency) *)` — no
