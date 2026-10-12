@@ -79,11 +79,11 @@ Inductive d_wf_ptyp : list (atom * dbind) -> ptyp -> Prop :=
 | d_wf_ptyp__var : forall Γ α,
     binds α dbind_tvar Γ ->
     {{ Γ ⊢ₚ (ptyp_var_f α) }}d
-| d_wf_ptyp__arrow : forall Γ A1 A2,
+| d_wf_ptyp__arrow : forall Γ (A1 A2 : ptyp),
     {{ Γ ⊢ₚ A1 }}d ->
     {{ Γ ⊢ₚ A2 }}d ->
     {{ Γ ⊢ₚ (ptyp_arrow A1 A2) }}d
-| d_wf_ptyp__all : forall L Γ A,
+| d_wf_ptyp__all : forall L Γ (A : ptyp),
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢ₚ (open_ptyp_wrt_ptyp A (ptyp_var_f α)) }}d) ->
     {{ Γ ⊢ₚ (ptyp_all A) }}d
@@ -95,15 +95,15 @@ Inductive d_wf_btyp : list (atom * dbind) -> btyp -> Prop :=
 | d_wf_btyp__var : forall Γ α,
     binds α dbind_tvar Γ ->
     {{ Γ ⊢ᵦ (btyp_var_f α) }}d
-| d_wf_btyp__arrow : forall Γ B1 B2,
+| d_wf_btyp__arrow : forall Γ (B1 B2 : btyp),
     {{ Γ ⊢ᵦ B1 }}d ->
     {{ Γ ⊢ᵦ B2 }}d ->
     {{ Γ ⊢ᵦ (btyp_arrow B1 B2) }}d
-| d_wf_btyp__all_syn : forall L Γ B,
+| d_wf_btyp__all_syn : forall L Γ (B : btyp),
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢ᵦ (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
     {{ Γ ⊢ᵦ (btyp_all_syn B) }}d
-| d_wf_btyp__all_inh : forall L Γ B,
+| d_wf_btyp__all_inh : forall L Γ (B : btyp),
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢ᵦ (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
     {{ Γ ⊢ᵦ (btyp_all_inh B) }}d
@@ -120,15 +120,15 @@ Inductive d_wf_utyp : list (atom * dbind) -> utyp -> Prop :=
 | d_wf_utyp__var : forall Γ α,
     binds α dbind_tvar Γ ->
     {{ Γ ⊢ᵤ (utyp_var_f α) }}d
-| d_wf_utyp__arrow : forall Γ C1 C2,
+| d_wf_utyp__arrow : forall Γ (C1 C2 : utyp),
     {{ Γ ⊢ᵤ C1 }}d ->
     {{ Γ ⊢ᵤ C2 }}d ->
     {{ Γ ⊢ᵤ (utyp_arrow C1 C2) }}d
-| d_wf_utyp__all_syn : forall L Γ C,
+| d_wf_utyp__all_syn : forall L Γ (C : utyp),
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢ᵤ (open_utyp_wrt_utyp C (utyp_var_f α)) }}d) ->
     {{ Γ ⊢ᵤ (utyp_all_syn C) }}d
-| d_wf_utyp__all_tag : forall L Γ ε C,
+| d_wf_utyp__all_tag : forall L Γ ε (C : utyp),
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢ᵤ (open_utyp_wrt_utyp C (utyp_var_f α)) }}d) ->
     {{ Γ ⊢ᵤ (utyp_all_tag ε C) }}d
@@ -180,16 +180,16 @@ Inductive d_wf_pskl : list (atom * dbind) -> atoms -> pskl -> Prop :=
 | d_wf_pskl__var : forall Γ Δ α,
     binds α dbind_tvar Γ ->
     {{ Γ ⨟ Δ ⊢ₚₛ (pskl_var_f α) }}d
-| d_wf_pskl__arrow : forall Γ Δ P1 P2,
+| d_wf_pskl__arrow : forall Γ Δ (P1 P2 : pskl),
     {{ Γ ⨟ Δ ⊢ₚₛ P1 }}d ->
     {{ Γ ⨟ Δ ⊢ₚₛ P2 }}d ->
     {{ Γ ⨟ Δ ⊢ₚₛ (pskl_arrow P1 P2) }}d
-| d_wf_pskl__all : forall L Γ Δ P,
+| d_wf_pskl__all : forall L Γ Δ (P : pskl),
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (add α Δ) ⊢ₚₛ
          (open_pskl_wrt_pskl P (pskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ₚₛ (pskl_all_syn P) }}d
-| d_wf_pskl__univ_ghost : forall Γ Δ P,
+| d_wf_pskl__univ_ghost : forall Γ Δ (P : pskl),
     guarded_pskl P ->
     {{ (denv_minus Γ Δ) ⨟ empty ⊢ₚₛ P }}d ->
     {{ Γ ⨟ Δ ⊢ₚₛ (pskl_univ_ghost P) }}d
@@ -205,27 +205,27 @@ Inductive d_wf_uskl : list (atom * dbind) -> atoms -> uskl -> Prop :=
 | d_wf_uskl__var : forall Γ Δ α,
     binds α dbind_tvar Γ ->
     {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_var_f α) }}d
-| d_wf_uskl__arrow : forall Γ Δ R1 R2,
+| d_wf_uskl__arrow : forall Γ Δ (R1 R2 : uskl),
     {{ Γ ⨟ Δ ⊢ᵤₛ R1 }}d ->
     {{ Γ ⨟ Δ ⊢ᵤₛ R2 }}d ->
     {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_arrow R1 R2) }}d
-| d_wf_uskl__all_syn : forall L Γ Δ R,
+| d_wf_uskl__all_syn : forall L Γ Δ (R : uskl),
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (add α Δ) ⊢ᵤₛ
          (open_uskl_wrt_uskl R (uskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_all_syn R) }}d
-| d_wf_uskl__all_tag : forall L Γ Δ ε R,
+| d_wf_uskl__all_tag : forall L Γ Δ ε (R : uskl),
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (add α Δ) ⊢ᵤₛ
          (open_uskl_wrt_uskl R (uskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_all_tag ε R) }}d
-| d_wf_uskl__univ_ghost : forall Γ Δ R,
+| d_wf_uskl__univ_ghost : forall Γ Δ (R : uskl),
     guarded_uskl R ->
     {{ (denv_minus Γ Δ) ⨟ empty ⊢ᵤₛ R }}d ->
     {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_univ_ghost R) }}d
 | d_wf_uskl__dot_ghost : forall Γ Δ,
     {{ Γ ⨟ Δ ⊢ᵤₛ uskl_dot_ghost }}d
-| d_wf_uskl__dot_univ_ghost : forall Γ Δ R,
+| d_wf_uskl__dot_univ_ghost : forall Γ Δ (R : uskl),
     guarded_uskl R ->
     {{ (denv_minus Γ Δ) ⨟ empty ⊢ᵤₛ R }}d ->
     {{ Γ ⨟ Δ ⊢ᵤₛ (uskl_dot_univ_ghost R) }}d
@@ -292,13 +292,13 @@ Inductive d_tags : atoms -> utyp -> Prop :=
 | d_tags__var : forall Ψ α,
     Ψ [=] empty ->
     d_tags Ψ (utyp_var_f α)
-| d_tags__arrow : forall Ψ Ψ1 Ψ2 C1 C2,
+| d_tags__arrow : forall Ψ Ψ1 Ψ2 (C1 C2 : utyp),
     d_tags Ψ1 C1 ->
     d_tags Ψ2 C2 ->
     Ψ1 ∩ Ψ2 [=] empty ->         (* paper ⊎ : disjoint set union *)
     Ψ [=] Ψ1 `union` Ψ2 ->
     d_tags Ψ (utyp_arrow C1 C2)
-| d_tags__all_tag : forall L Ψ Ψ0 ε C,
+| d_tags__all_tag : forall L Ψ Ψ0 ε (C : utyp),
     (forall α, α `notin` L ->
        d_tags Ψ0 (open_utyp_wrt_utyp C (utyp_var_f α))) ->
     ε `notin` Ψ0 ->
@@ -315,13 +315,13 @@ Inductive d_tags : atoms -> utyp -> Prop :=
 Inductive d_tags_skl : atoms -> uskl -> Prop :=
 | d_tags_skl__unit : forall Ψ, Ψ [=] empty -> d_tags_skl Ψ uskl_unit
 | d_tags_skl__var : forall Ψ α, Ψ [=] empty -> d_tags_skl Ψ (uskl_var_f α)
-| d_tags_skl__arrow : forall Ψ Ψ1 Ψ2 R1 R2,
+| d_tags_skl__arrow : forall Ψ Ψ1 Ψ2 (R1 R2 : uskl),
     d_tags_skl Ψ1 R1 ->
     d_tags_skl Ψ2 R2 ->
     Ψ1 ∩ Ψ2 [=] empty ->         (* paper ⊎ : disjoint set union *)
     Ψ [=] Ψ1 `union` Ψ2 ->
     d_tags_skl Ψ (uskl_arrow R1 R2)
-| d_tags_skl__all_tag : forall L Ψ Ψ0 ε R,
+| d_tags_skl__all_tag : forall L Ψ Ψ0 ε (R : uskl),
     (forall α, α `notin` L ->
        d_tags_skl Ψ0 (open_uskl_wrt_uskl R (uskl_var_f α))) ->
     ε `notin` Ψ0 ->
@@ -330,7 +330,7 @@ Inductive d_tags_skl : atoms -> uskl -> Prop :=
 | d_tags_skl__dot_ghost : forall Ψ,
     Ψ [=] empty ->
     d_tags_skl Ψ uskl_dot_ghost
-| d_tags_skl__dot_univ_ghost : forall Ψ R,
+| d_tags_skl__dot_univ_ghost : forall Ψ (R : uskl),
     d_tags_skl Ψ R ->
     d_tags_skl Ψ (uskl_dot_univ_ghost R).
 
@@ -351,7 +351,7 @@ Inductive d_consis : atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
     binds α dbind_tvar Γ ->
     Ψ [=] empty ->
     {{ Ψ ⨟ Γ ⊢ (utyp_var_f α) ∼ (btyp_var_f α) }}d
-| d_consis__forall_inh_tagged : forall L Ψ Ψ0 Γ ε C B,
+| d_consis__forall_inh_tagged : forall L Ψ Ψ0 Γ ε (C : utyp) (B : btyp),
     (* Paper [ForallInh] with β1=ε: output is [Ψ,ε] = Ψ ∪ {ε}, the
        idempotent set union (declarative.tex:1040) — no freshness side
        condition ([add] on a set is idempotent). *)
@@ -361,25 +361,25 @@ Inductive d_consis : atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
          (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
     Ψ [=] add ε Ψ0 ->
     {{ Ψ ⨟ Γ ⊢ (utyp_all_tag ε C) ∼ (btyp_all_inh B) }}d
-| d_consis__forall_inh_untagged : forall L Ψ Γ C B,
+| d_consis__forall_inh_untagged : forall L Ψ Γ (C : utyp) (B : btyp),
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢
          (open_utyp_wrt_utyp C (utyp_var_f α)) ∼
          (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
     {{ Ψ ⨟ Γ ⊢ (utyp_all_syn C) ∼ (btyp_all_inh B) }}d
-| d_consis__forall_syn_tagged : forall L Ψ Γ ε C B,
+| d_consis__forall_syn_tagged : forall L Ψ Γ ε (C : utyp) (B : btyp),
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢
          (open_utyp_wrt_utyp C (utyp_var_f α)) ∼
          (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
     {{ Ψ ⨟ Γ ⊢ (utyp_all_tag ε C) ∼ (btyp_all_syn B) }}d
-| d_consis__forall_syn : forall L Ψ Γ C B,
+| d_consis__forall_syn : forall L Ψ Γ (C : utyp) (B : btyp),
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢
          (open_utyp_wrt_utyp C (utyp_var_f α)) ∼
          (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
     {{ Ψ ⨟ Γ ⊢ (utyp_all_syn C) ∼ (btyp_all_syn B) }}d
-| d_consis__arrow : forall Ψ Ψ1 Ψ2 Γ C1 C2 B1 B2,
+| d_consis__arrow : forall Ψ Ψ1 Ψ2 Γ (C1 C2 : utyp) (B1 B2 : btyp),
     (* Paper [Arrow]: the tag context is the SET UNION [Ψ₁,Ψ₂]
        (declarative.tex:1056, with Ψ a set), not a disjoint union — so we
        neither require nor record disjointness.  This faithfulness is what
@@ -392,30 +392,30 @@ Inductive d_consis : atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
 where "{{ Ψ ⨟ Γ ⊢ C ∼ B }}d" := (d_consis Ψ Γ C B) : fresco_d_scope.
 
 Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :=
-| d_sub__infer : forall Ψ Γ C B,
+| d_sub__infer : forall Ψ Γ (C : utyp) (B : btyp),
     {{ empty ⨟ Γ ⊢ C ∼ B }}d ->
     is_styp B ->
     Ψ [=] empty ->
     {{ Ψ ⨟ Γ ⊢[ mode_ti ] C ⩽ B }}d
-| d_sub__check : forall Ψ Γ C B,
+| d_sub__check : forall Ψ Γ (C : utyp) (B : btyp),
     guarded_utyp C ->
     guarded_btyp B ->
     {{ Ψ ⨟ Γ ⊢ C ∼ B }}d ->
     is_ityp B ->
     {{ Ψ ⨟ Γ ⊢[ mode_tc ] C ⩽ B }}d
-| d_sub__forall_r : forall L Ψ Γ C B,
+| d_sub__forall_r : forall L Ψ Γ (C : utyp) (B : btyp),
     (* Paper [ForallR].  No [is_ityp] premise: the body is a TC-mode
        subtyping, whose target is always inherited ([d_sub_tc_is_ityp]). *)
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ] C ⩽
          (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
     {{ Ψ ⨟ Γ ⊢[ mode_tc ] C ⩽ (btyp_all_inh B) }}d
-| d_sub__arrow : forall Ψ Ψ1 Ψ2 Γ m C1 C2 B1 B2,
+| d_sub__arrow : forall Ψ Ψ1 Ψ2 Γ m (C1 C2 : utyp) (B1 B2 : btyp),
     {{ Ψ1 ⨟ Γ ⊢ C1 ∼ B1 }}d ->
     {{ Ψ2 ⨟ Γ ⊢[ m ] C2 ⩽ B2 }}d ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     {{ Ψ ⨟ Γ ⊢[ mode_fn m ] (utyp_arrow C1 C2) ⩽ (btyp_arrow B1 B2) }}d
-| d_sub__forall_l_tagged : forall Ψ Ψ' Γ m ε C ph B,
+| d_sub__forall_l_tagged : forall Ψ Ψ' Γ m ε (C ph : utyp) (B : btyp),
     m <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->      (* Ψ' fresh w.r.t. the outer tags … *)
     Ψ' ∩ (ftag_in_utyp (utyp_all_tag ε C)) [=] empty ->
@@ -430,7 +430,7 @@ Inductive d_sub : mode -> atoms -> list (atom * dbind) -> utyp -> btyp -> Prop :
     is_dtyp ph ->
     {{ (Ψ `union` Ψ') ⨟ Γ ⊢[ m ] (open_utyp_wrt_utyp C ph) ⩽ B }}d ->
     {{ Ψ ⨟ Γ ⊢[ m ] (utyp_all_tag ε C) ⩽ B }}d
-| d_sub__forall_l_untagged : forall Ψ Ψ' Γ m C ph B,
+| d_sub__forall_l_untagged : forall Ψ Ψ' Γ m (C ph : utyp) (B : btyp),
     m <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
     Ψ' ∩ (ftag_in_utyp (utyp_all_syn C)) [=] empty ->  (* GLOBAL, as above *)
@@ -445,14 +445,14 @@ Reserved Notation "{{ Γ ⊢ A ≤ B }}d"
   (at level 0, A at level 74, B at level 74,
    format "'{{'  Γ  ⊢  A  ≤  B  '}}d'").
 Inductive d_shallow_sub : list (atom * dbind) -> ptyp -> ptyp -> Prop :=
-| d_shallow_sub__refl : forall Γ A,
+| d_shallow_sub__refl : forall Γ (A : ptyp),
     {{ Γ ⊢ₚ A }}d ->
     {{ Γ ⊢ A ≤ A }}d
-| d_shallow_sub__forall_r : forall L Γ A1 A2,
+| d_shallow_sub__forall_r : forall L Γ (A1 A2 : ptyp),
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢ A1 ≤ (open_ptyp_wrt_ptyp A2 (ptyp_var_f α)) }}d) ->
     {{ Γ ⊢ A1 ≤ (ptyp_all A2) }}d
-| d_shallow_sub__forall_l : forall Γ A1 A2 I,
+| d_shallow_sub__forall_l : forall Γ (A1 A2 I : ptyp),
     mono_ptyp I ->
     {{ Γ ⊢ₚ I }}d ->
     {{ Γ ⊢ (open_ptyp_wrt_ptyp A1 I) ≤ A2 }}d ->
@@ -480,32 +480,32 @@ Inductive d_refine_syn : list (atom * dbind) -> atoms -> bskl -> bskl -> Prop :=
     {{ Γ ⨟ Δ ⊢ᵣ bskl_unit ⊳ bskl_unit }}d
 | d_refine_syn__var : forall Γ Δ α,
     {{ Γ ⨟ Δ ⊢ᵣ (bskl_var_f α) ⊳ (bskl_var_f α) }}d
-| d_refine_syn__arrow : forall Γ Δ Q1 Q2 Q3 Q4,
+| d_refine_syn__arrow : forall Γ Δ (Q1 Q2 Q3 Q4 : bskl),
     is_iskl (bskl_arrow Q1 Q2) ->
     {{ Γ ⨟ Δ ⊢ᵣ Q1 ⊳ Q3 }}d ->
     {{ Γ ⨟ Δ ⊢ᵣ Q2 ⊳ Q4 }}d ->
     {{ Γ ⨟ Δ ⊢ᵣ (bskl_arrow Q1 Q2) ⊳ (bskl_arrow Q3 Q4) }}d
-| d_refine_syn__all : forall L Γ Δ Q Q',
+| d_refine_syn__all : forall L Γ Δ (Q Q' : bskl),
     is_iskl (bskl_all_inh Q) ->
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (add α Δ) ⊢ᵣ
          (open_bskl_wrt_bskl Q (bskl_var_f α)) ⊳
          (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ᵣ (bskl_all_inh Q) ⊳ (bskl_all_inh Q') }}d
-| d_refine_syn__ghost : forall Γ Δ P,
+| d_refine_syn__ghost : forall Γ Δ (P : pskl),
     Δ ∩ ftvar_in_pskl P [=] empty ->
     {{ Γ ⨟ Δ ⊢ᵣ bskl_ghost ⊳ (pskl_to_bskl_syn P) }}d
-| d_refine_syn__univ_ghost_remove : forall Γ Δ Q Q',
+| d_refine_syn__univ_ghost_remove : forall Γ Δ (Q Q' : bskl),
     is_iskl (bskl_univ_ghost Q) ->
     {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d ->
     {{ Γ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Q) ⊳ Q' }}d
-| d_refine_syn__univ_ghost_fill : forall L Γ Δ Q Q',
+| d_refine_syn__univ_ghost_fill : forall L Γ Δ (Q Q' : bskl),
     is_iskl (bskl_univ_ghost Q) ->
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⨟ Δ ⊢ᵣ
          (bskl_univ_ghost Q) ⊳ (open_bskl_wrt_bskl Q' (bskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Q) ⊳ (bskl_all_syn Q') }}d
-| d_refine_syn__univ_ghost_keep : forall Γ Δ Q Q',
+| d_refine_syn__univ_ghost_keep : forall Γ Δ (Q Q' : bskl),
     is_iskl (bskl_univ_ghost Q) ->
     {{ Γ ⨟ Δ ⊢ᵣ Q ⊳ Q' }}d ->
     {{ Γ ⨟ Δ ⊢ᵣ (bskl_univ_ghost Q) ⊳ (bskl_univ_ghost Q') }}d
@@ -541,28 +541,28 @@ Inductive d_refine_pskl :
     {{ Γ ⨟ Δ ⊢ᵣₚ pskl_unit ⊳ pskl_unit }}d
 | d_refine_pskl__var : forall Γ Δ α,
     {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_var_f α) ⊳ (pskl_var_f α) }}d
-| d_refine_pskl__arrow : forall Γ Δ P1 P2 P3 P4,
+| d_refine_pskl__arrow : forall Γ Δ (P1 P2 P3 P4 : pskl),
     {{ Γ ⨟ Δ ⊢ᵣₚ P1 ⊳ P3 }}d ->
     {{ Γ ⨟ Δ ⊢ᵣₚ P2 ⊳ P4 }}d ->
     {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_arrow P1 P2) ⊳ (pskl_arrow P3 P4) }}d
-| d_refine_pskl__all : forall L Γ Δ P P',
+| d_refine_pskl__all : forall L Γ Δ (P P' : pskl),
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⨟ (add α Δ) ⊢ᵣₚ
          (open_pskl_wrt_pskl P (pskl_var_f α)) ⊳
          (open_pskl_wrt_pskl P' (pskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_all_syn P) ⊳ (pskl_all_syn P') }}d
-| d_refine_pskl__ghost : forall Γ Δ P',
+| d_refine_pskl__ghost : forall Γ Δ (P' : pskl),
     Δ ∩ ftvar_in_pskl P' [=] empty ->
     {{ Γ ⨟ Δ ⊢ᵣₚ pskl_ghost ⊳ P' }}d
-| d_refine_pskl__univ_ghost_remove : forall Γ Δ P P',
+| d_refine_pskl__univ_ghost_remove : forall Γ Δ (P P' : pskl),
     {{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}d ->
     {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_univ_ghost P) ⊳ P' }}d
-| d_refine_pskl__univ_ghost_fill : forall L Γ Δ P P',
+| d_refine_pskl__univ_ghost_fill : forall L Γ Δ (P P' : pskl),
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⨟ Δ ⊢ᵣₚ
          (pskl_univ_ghost P) ⊳ (open_pskl_wrt_pskl P' (pskl_var_f α)) }}d) ->
     {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_univ_ghost P) ⊳ (pskl_all_syn P') }}d
-| d_refine_pskl__univ_ghost_keep : forall Γ Δ P P',
+| d_refine_pskl__univ_ghost_keep : forall Γ Δ (P P' : pskl),
     {{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}d ->
     {{ Γ ⨟ Δ ⊢ᵣₚ (pskl_univ_ghost P) ⊳ (pskl_univ_ghost P') }}d
 where "{{ Γ ⨟ Δ ⊢ᵣₚ P ⊳ P' }}d" := (d_refine_pskl Γ Δ P P') : fresco_d_scope.
@@ -575,37 +575,37 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
     Ψ [=] empty ->
     binds α dbind_tvar Γ ->
     {{ Ψ ⨟ Γ ⊢ˢ (uskl_var_f α) ∼ (bskl_var_f α) }}d
-| d_pat_consis__forall_inh_tagged : forall L Ψ Ψ0 Γ ε R Q,
+| d_pat_consis__forall_inh_tagged : forall L Ψ Ψ0 Γ ε (R : uskl) (Q : bskl),
     (forall α, α `notin` L ->
        {{ Ψ0 ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢ˢ
          (open_uskl_wrt_uskl R (uskl_var_f α)) ∼
          (open_bskl_wrt_bskl Q (bskl_var_f α)) }}d) ->
     Ψ [=] add ε Ψ0 ->
     {{ Ψ ⨟ Γ ⊢ˢ (uskl_all_tag ε R) ∼ (bskl_all_inh Q) }}d
-| d_pat_consis__forall_inh_untagged : forall L Ψ Γ R Q,
+| d_pat_consis__forall_inh_untagged : forall L Ψ Γ (R : uskl) (Q : bskl),
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢ˢ
          (open_uskl_wrt_uskl R (uskl_var_f α)) ∼
          (open_bskl_wrt_bskl Q (bskl_var_f α)) }}d) ->
     {{ Ψ ⨟ Γ ⊢ˢ (uskl_all_syn R) ∼ (bskl_all_inh Q) }}d
-| d_pat_consis__forall_syn_tagged : forall L Ψ Γ ε R Q,
+| d_pat_consis__forall_syn_tagged : forall L Ψ Γ ε (R : uskl) (Q : bskl),
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢ˢ
          (open_uskl_wrt_uskl R (uskl_var_f α)) ∼
          (open_bskl_wrt_bskl Q (bskl_var_f α)) }}d) ->
     {{ Ψ ⨟ Γ ⊢ˢ (uskl_all_tag ε R) ∼ (bskl_all_syn Q) }}d
-| d_pat_consis__forall_syn : forall L Ψ Γ R Q,
+| d_pat_consis__forall_syn : forall L Ψ Γ (R : uskl) (Q : bskl),
     (forall α, α `notin` L ->
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢ˢ
          (open_uskl_wrt_uskl R (uskl_var_f α)) ∼
          (open_bskl_wrt_bskl Q (bskl_var_f α)) }}d) ->
     {{ Ψ ⨟ Γ ⊢ˢ (uskl_all_syn R) ∼ (bskl_all_syn Q) }}d
-| d_pat_consis__arrow : forall Ψ Ψ1 Ψ2 Γ R1 R2 Q1 Q2,
+| d_pat_consis__arrow : forall Ψ Ψ1 Ψ2 Γ (R1 R2 : uskl) (Q1 Q2 : bskl),
     {{ Ψ1 ⨟ Γ ⊢ˢ R1 ∼ Q1 }}d ->
     {{ Ψ2 ⨟ Γ ⊢ˢ R2 ∼ Q2 }}d ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     {{ Ψ ⨟ Γ ⊢ˢ (uskl_arrow R1 R2) ∼ (bskl_arrow Q1 Q2) }}d
-| d_pat_consis__ghost : forall Ψ Γ P,
+| d_pat_consis__ghost : forall Ψ Γ (P : pskl),
     (* Paper [Ghost]: no premise on the fill.  Its well-formedness is the
        judgement's presupposition (wf of the counterpart, declarative.tex:2074),
        carried by the statements that need it — the same move refinement's
@@ -617,17 +617,17 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
     (* Paper [GhostG] (declarative.tex eqlab): a dotted ghost [HoleG] is
        consistent with a plain [Hole]. *)
     {{ Ψ ⨟ Γ ⊢ˢ uskl_dot_ghost ∼ bskl_ghost }}d
-| d_pat_consis__dot_univ_ghost : forall Ψ Γ R Q,
+| d_pat_consis__dot_univ_ghost : forall Ψ Γ (R : uskl) (Q : bskl),
     (* Paper [UnivGhostG] (dotted): [TopHoleG.R ~ TopHole.P] from [R ~ P],
        tags UNCHANGED — [typconsis[Ψ]] from [typconsis[Ψ]] (no added tag,
        unlike the old tagged version). *)
     {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ (uskl_dot_univ_ghost R) ∼ (bskl_univ_ghost Q) }}d
-| d_pat_consis__univ_ghost : forall Ψ Γ R Q,
+| d_pat_consis__univ_ghost : forall Ψ Γ (R : uskl) (Q : bskl),
     (* Paper [UnivGhost]: TopHole ∼ TopHole. *)
     {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ (uskl_univ_ghost R) ∼ (bskl_univ_ghost Q) }}d
-| d_pat_consis__univ_ghost_inh : forall L Ψ Γ R Q,
+| d_pat_consis__univ_ghost_inh : forall L Ψ Γ (R : uskl) (Q : bskl),
     (* Paper [UnivGhost1] (was missing, WT): the RHS TopHole can produce
        an inherited quantifier.  LHS [TopHole.R] is unchanged; the RHS
        body [Q] is checked under a fresh [α]. *)
@@ -635,7 +635,7 @@ Inductive d_pat_consis : atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
        {{ Ψ ⨟ ((α ~ dbind_tvar) ++ Γ) ⊢ˢ
          (uskl_univ_ghost R) ∼ (open_bskl_wrt_bskl Q (bskl_var_f α)) }}d) ->
     {{ Ψ ⨟ Γ ⊢ˢ (uskl_univ_ghost R) ∼ (bskl_all_inh Q) }}d
-| d_pat_consis__univ_ghost_drop : forall Ψ Γ R Q,
+| d_pat_consis__univ_ghost_drop : forall Ψ Γ (R : uskl) (Q : bskl),
     (* Paper [UnivGhost2] (was missing, WT): the LHS TopHole can be
        dropped against a plain inherited RHS. *)
     {{ Ψ ⨟ Γ ⊢ˢ R ∼ Q }}d ->
@@ -685,13 +685,13 @@ Proof. intros; split; assumption. Qed.
 #[export] Hint Unfold d_consis_join : fresco.
 
 Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Prop :=
-| d_pat_sub__infer : forall Ψ Γ R Q,
+| d_pat_sub__infer : forall Ψ Γ (R : uskl) (Q : bskl),
     (* Paper [Infer]: synthesise by consistency, dropping tags. *)
     Ψ [=] empty ->
     {{ empty ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
     is_sskl Q ->
     {{ Ψ ⨟ Γ ⊢ˢ[ mode_ti ] R ⩽ Q }}d
-| d_pat_sub__univ_ghost_r : forall Ψ Γ R Q,
+| d_pat_sub__univ_ghost_r : forall Ψ Γ (R : uskl) (Q : bskl),
     (* Paper [UnivGhostR] (replaces the out-of-sync [check]; WT review):
        the checking rule produces a [TopHole] on the RHS, requires BOTH
        [R] and the synthesised body [Q] guarded, and [Q] synthesised
@@ -704,7 +704,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
        the conclusion's, not the consistency premise's *)
     {{ empty ⨟ Γ ⊢ˢ R ∼ᵣ Q }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ[ mode_tc ] R ⩽ (bskl_univ_ghost Q) }}d
-| d_pat_sub__ghost : forall m Ψ Γ P,
+| d_pat_sub__ghost : forall m Ψ Γ (P : pskl),
     (* Paper [Ghost]: a [Hole] is below any inherited skeleton [inh{P}].
        [mod_comp_sk … m] is the judgment-wide [skmod{SK}] wf-condition
        (declarative.tex:2049, defined at :1596): it excludes an ill-moded fill (a poly [inh{P}] at
@@ -721,14 +721,14 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     Ψ [=] empty ->
     mod_comp_sk bskl_ghost m ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] uskl_dot_ghost ⩽ bskl_ghost }}d
-| d_pat_sub__arrow : forall Ψ Ψ1 Ψ2 Γ m R1 R2 Q1 Q2,
+| d_pat_sub__arrow : forall Ψ Ψ1 Ψ2 Γ m (R1 R2 : uskl) (Q1 Q2 : bskl),
     (* Paper [Arrow]: set-union tag context.  The DOMAIN premise is a
        consistency judgement, hence a join. *)
     {{ Ψ1 ⨟ Γ ⊢ˢ R1 ∼ᵣ Q1 }}d ->
     {{ Ψ2 ⨟ Γ ⊢ˢ[ m ] R2 ⩽ Q2 }}d ->
     Ψ [=] Ψ1 `union` Ψ2 ->
     {{ Ψ ⨟ Γ ⊢ˢ[ mode_fn m ] (uskl_arrow R1 R2) ⩽ (bskl_arrow Q1 Q2) }}d
-| d_pat_sub__forall_l_tagged : forall Ψ Ψ' Γ m ε R psi Q,
+| d_pat_sub__forall_l_tagged : forall Ψ Ψ' Γ m ε (R psi : uskl) (Q : bskl),
     (* Paper [ForallL] (tagged head).  [Ψ' fresh] = the two [∩ … [=] empty];
        well-scopedness is [{{ Γ ⨟ empty ⊢ᵤₛ ψ }}d] (R1: scope, not tags). *)
     m <> mode_ti ->
@@ -739,7 +739,7 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     is_dskl psi ->
     {{ (Ψ `union` Ψ') ⨟ Γ ⊢ˢ[ m ] (open_uskl_wrt_uskl R psi) ⩽ Q }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] (uskl_all_tag ε R) ⩽ Q }}d
-| d_pat_sub__forall_l_untagged : forall Ψ Ψ' Γ m R psi Q,
+| d_pat_sub__forall_l_untagged : forall Ψ Ψ' Γ m (R psi : uskl) (Q : bskl),
     m <> mode_ti ->
     Ψ' ∩ Ψ [=] empty ->
     Ψ' ∩ (ftag_in_uskl (uskl_all_syn R)) [=] empty ->     (* GLOBAL freshness *)
@@ -748,12 +748,12 @@ Inductive d_pat_sub : mode -> atoms -> list (atom * dbind) -> uskl -> bskl -> Pr
     is_dskl psi ->
     {{ (Ψ `union` Ψ') ⨟ Γ ⊢ˢ[ m ] (open_uskl_wrt_uskl R psi) ⩽ Q }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] (uskl_all_syn R) ⩽ Q }}d
-| d_pat_sub__univ_ghost_l : forall m Ψ Γ R Q,
+| d_pat_sub__univ_ghost_l : forall m Ψ Γ (R : uskl) (Q : bskl),
     (* Paper [UnivGhostL]: drop a [TopHole] on the LHS (any [M ≠ TI]). *)
     m <> mode_ti ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] R ⩽ Q }}d ->
     {{ Ψ ⨟ Γ ⊢ˢ[ m ] (uskl_univ_ghost R) ⩽ Q }}d
-| d_pat_sub__univ_ghost_lg : forall m Ψ Γ R Q,
+| d_pat_sub__univ_ghost_lg : forall m Ψ Γ (R : uskl) (Q : bskl),
     (* Paper [UnivGhostLG] (dotted): drop a dotted ghost [TopHoleG] on the
        LHS (any [M ≠ TI]).  [Ψ] unchanged — [patsub[M][Ψ]] from
        [patsub[M][Ψ]] (declarative.tex UnivGhostLG). *)
@@ -783,7 +783,7 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
 (* Paper P-Unit/P-Var/P-Anno (declarative.tex:1634-1653): the skeleton
    subtyping judgement is EMBEDDED in the three base rules at every mode —
    there is no standalone P-Sub rule and no base-term restriction. *)
-| d_pat__unit : forall Γ m Q,
+| d_pat__unit : forall Γ m (Q : bskl),
     (* ⭐ [paper-gap] THE COUNTERPART'S WF, the paper's OTHER presupposition
        for skeleton inference: declarative.tex:1595 — *"we require
        well-formedness of M and bid{P} under Γ … as well as the compatibility
@@ -798,13 +798,13 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
     {{ Γ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}d ->
     {{ empty ⨟ Γ ⊢ˢ[ m ] uskl_unit ⩽ Q }}d ->
     {{ Γ ⊢ˢ[ m ] exp_unit ⦂ Q }}d
-| d_pat__var : forall Γ m x (P : pskl) d Q,
+| d_pat__var : forall Γ m x (P : pskl) d (Q : bskl),
     binds x d Γ ->
     dbind_to_pskl d = Some P ->
     {{ Γ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}d ->
     {{ empty ⨟ Γ ⊢ˢ[ m ] (bskl_to_uskl (pskl_to_bskl_syn P)) ⩽ Q }}d ->
     {{ Γ ⊢ˢ[ m ] (exp_var_f x) ⦂ Q }}d
-| d_pat__anno : forall Γ m e (A : ptyp) Q,
+| d_pat__anno : forall Γ m e (A : ptyp) (Q : bskl),
     (* Paper P-Anno: no wf premise on the annotation, as in [d_typing__anno] /
        [d_sd_typing__anno].  (The sd-Anno prose-completion lives only on
        [ad_sd_typing__anno], where it buys [ad_sd_typing_wf_exp]; skeleton
@@ -813,10 +813,10 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
     {{ Γ ⨟ empty ⊢ₚₛ (bskl_to_pskl Q) }}d ->
     {{ empty ⨟ Γ ⊢ˢ[ m ] (bskl_to_uskl (pskl_to_bskl_syn (ptyp_to_pskl A))) ⩽ Q }}d ->
     {{ Γ ⊢ˢ[ m ] (exp_anno e A) ⦂ Q }}d
-| d_pat__freeze : forall Γ e P,
+| d_pat__freeze : forall Γ e (P : pskl),
     {{ Γ ⊢ˢ[ mode_ti ] e ⦂ (pskl_to_bskl_syn P) }}d ->
     {{ Γ ⊢ˢ[ mode_tc ] (exp_freeze e) ⦂ (pskl_to_bskl_syn P) }}d
-| d_pat__abs : forall L Γ m e P Q,
+| d_pat__abs : forall L Γ m e (P : pskl) (Q : bskl),
     (* [mod_comp_sk … m] is the paper's [skmod{SK}] colour/mode discipline on the
        inferred arrow, mirroring [d_typing__abs]'s [mod_comp_ty]: at [ti] it forces
        [is_sskl], excluding a POLY inherited domain (ill-moded); at [FN m'] it
@@ -829,7 +829,7 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
        {{ ((x ~ dbind_skl P) ++ Γ) ⊢ˢ[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q }}d) ->
     {{ Γ ⊢ˢ[ m ] (exp_abs e) ⦂ (bskl_arrow (pskl_to_bskl_inh P) Q) }}d
-| d_pat__abs_anno : forall L Γ m e (A : ptyp) (B : btyp) Q,
+| d_pat__abs_anno : forall L Γ m e (A : ptyp) (B : btyp) (Q : bskl),
     (* The arrow-arg skeleton [Sarg] is bidirectional, [bskl_to_pskl Sarg]
        the annotation's pattern.  [mod_comp_sk … m] as in [abs]. *)
     m <> mode_tc ->
@@ -840,18 +840,18 @@ Inductive d_pat : mode -> list (atom * dbind) -> exp -> bskl -> Prop :=
        {{ ((x ~ dbind_typ A) ++ Γ) ⊢ˢ[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ Q }}d) ->
     {{ Γ ⊢ˢ[ m ] (exp_abs_anno A e) ⦂ (bskl_arrow (btyp_to_bskl B) Q) }}d
-| d_pat__abs_check : forall L Γ e P,
+| d_pat__abs_check : forall L Γ e (P : pskl),
     (forall x, x `notin` L ->
        {{ ((x ~ dbind_skl pskl_ghost) ++ Γ) ⊢ˢ[ mode_tc ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ (pskl_to_bskl_syn P) }}d) ->
     {{ Γ ⊢ˢ[ mode_tc ] (exp_abs e) ⦂ (bskl_univ_ghost (bskl_arrow bskl_ghost (pskl_to_bskl_syn P))) }}d
-| d_pat__abs_anno_check : forall L Γ e A P,
+| d_pat__abs_anno_check : forall L Γ e (A : ptyp) (P : pskl),
     {{ Γ ⊢ₚ A }}d ->
     (forall x, x `notin` L ->
        {{ ((x ~ dbind_typ A) ++ Γ) ⊢ˢ[ mode_tc ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ (pskl_to_bskl_syn P) }}d) ->
     {{ Γ ⊢ˢ[ mode_tc ] (exp_abs_anno A e) ⦂ (bskl_univ_ghost (bskl_arrow (btyp_to_bskl (ptyp_to_btyp_syn A)) (pskl_to_bskl_syn P))) }}d
-| d_pat__app : forall Γ m e1 e2 P (Q1 Q2 : bskl),
+| d_pat__app : forall Γ m e1 e2 (P : pskl) (Q1 Q2 : bskl),
     (* Paper P-App (declarative.tex:1707): the function [e1] is SKELETON-
        INFERRED ([⦂]) in [FN] mode, not typed — d_pat is self-contained
        skeleton inference.  [Q1] is the fill output (the arg skeleton). *)
@@ -866,13 +866,13 @@ where "{{ Γ ⊢ˢ[ M ] e ⦂ P }}d" := (d_pat M Γ e P) : fresco_d_scope.
 Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
 | d_typing__unit : forall Γ,
     {{ Γ ⊢[ mode_ti ] exp_unit ⦂ btyp_unit }}d
-| d_typing__var : forall Γ x A,
+| d_typing__var : forall Γ x (A : ptyp),
     binds x (dbind_typ A) Γ ->
     {{ Γ ⊢[ mode_ti ] (exp_var_f x) ⦂ (ptyp_to_btyp_syn A) }}d
-| d_typing__anno : forall Γ e A,
+| d_typing__anno : forall Γ e (A : ptyp),
     {{ Γ ⊢[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) }}d ->
     {{ Γ ⊢[ mode_ti ] (exp_anno e A) ⦂ (ptyp_to_btyp_syn A) }}d
-| d_typing__sub : forall Γ m e A B,
+| d_typing__sub : forall Γ m e (A : ptyp) (B : btyp),
     (* Paper [Sub] (declarative.tex): applies to ANY term [M] — the base-term
        restriction was removed (commit "Removed base terms"); general
        subsumption is admissible, so the unrestricted rule is equivalent. *)
@@ -880,19 +880,19 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
     {{ Γ ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A) }}d ->
     {{ empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⩽ B }}d ->
     {{ Γ ⊢[ m ] e ⦂ B }}d
-| d_typing__freeze : forall Γ e A,
+| d_typing__freeze : forall Γ e (A : ptyp),
     (* Paper [Freeze]: TI [syn{A}] ⇒ TC [inh{A}].  The premise IS a synthesised
        colouring [syn A] and the result is repainted to [inh A]; keeping an
        arbitrary [B] would (i) accept a non-synthesised premise and (ii) let a
        synthesised colour be used directly in check mode. *)
     {{ Γ ⊢[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A) }}d ->
     {{ Γ ⊢[ mode_tc ] (exp_freeze e) ⦂ (ptyp_to_btyp_inh A) }}d
-| d_typing__forall : forall L Γ e A,
+| d_typing__forall : forall L Γ e (A : ptyp),
     is_value e ->
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢[ mode_tc ] e ⦂ (open_btyp_wrt_btyp (ptyp_to_btyp_inh A) (btyp_var_f α)) }}d) ->
     {{ Γ ⊢[ mode_tc ] e ⦂ (btyp_all_inh (ptyp_to_btyp_inh A)) }}d
-| d_typing__abs : forall L Γ m e A B,
+| d_typing__abs : forall L Γ m e (A : ptyp) (B : btyp),
     (* Paper [Abs].  [mod_comp_ty … m] is the paper's implicit [skmod{TY}]
        colour/mode well-formedness on the conclusion: it excludes the ill-moded
        [ti] reading (whose result would have to be synthesised yet has an
@@ -903,7 +903,7 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        {{ ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B }}d) ->
     {{ Γ ⊢[ m ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B) }}d
-| d_typing__abs_anno : forall L Γ m e A B1 B2,
+| d_typing__abs_anno : forall L Γ m e (A : ptyp) (B1 B2 : btyp),
     (* The arrow-arg is an arbitrary bidirectional [Barg] whose erasure
        [btyp_to_ptyp] is the annotation [A].  Paper [AbsAnno].  [mod_comp_ty … m]
        (paper's [skmod{TY}]) colours the domain by the mode: at [TC] it forces
@@ -915,7 +915,7 @@ Inductive d_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        {{ ((x ~ dbind_typ A) ++ Γ) ⊢[ decr_mode m ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B2 }}d) ->
     {{ Γ ⊢[ m ] (exp_abs_anno A e) ⦂ (btyp_arrow B1 B2) }}d
-| d_typing__app : forall Γ m e1 e2 P B1 B2,
+| d_typing__app : forall Γ m e1 e2 (P : pskl) (B1 B2 : btyp),
     (* Paper [App]: ONE domain [inh A] (the refinement output) is used by both
        the refinement and the function premise; the argument is checked at the
        same [inh A].  (Previously the function domain was an arbitrary [Barg]
@@ -936,14 +936,14 @@ Inductive d_sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
    [dtylab{Sub}] was removed and its subtyping premise is EMBEDDED into the
    three base rules (declarative.tex, "we incorporate Sub into the three base
    rules"), so the system is syntax-directed with no [is_base_term] predicate. *)
-| d_sd_typing__unit : forall Γ m B,
+| d_sd_typing__unit : forall Γ m (B : btyp),
     {{ empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn ptyp_unit) ⩽ B }}d ->
     {{ Γ ⊢ˢᵈ[ m ] exp_unit ⦂ B }}d
-| d_sd_typing__var : forall Γ m x A B,
+| d_sd_typing__var : forall Γ m x (A : ptyp) (B : btyp),
     binds x (dbind_typ A) Γ ->
     {{ empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⩽ B }}d ->
     {{ Γ ⊢ˢᵈ[ m ] (exp_var_f x) ⦂ B }}d
-| d_sd_typing__abs : forall L Γ m e A B,
+| d_sd_typing__abs : forall L Γ m e (A : ptyp) (B : btyp),
     (* Paper [sdtylab{Abs}]: [M ≠ TC].  Same [mod_comp_ty] colour/mode discipline
        as [d_typing__abs] (so the equivalence transfers the premise directly). *)
     m <> mode_tc ->
@@ -958,25 +958,25 @@ Inductive d_sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
    the SAME lambda (this is [Forall] restricted to [λ]-values, self-recursive
    in [d_sd_typing] — no mutual block), and [__abs_check_base] is the [ᾱ = ·]
    arrow whose body checks.  Together they type [λx.M] at [∀ᾱ.(inh A → B)]. *)
-| d_sd_typing__abs_check_step : forall L Γ e B,
+| d_sd_typing__abs_check_step : forall L Γ e (B : btyp),
     (* no [is_ityp] premise: the body is TC-mode, whose type is always
        inherited ([d_sd_typing_tc_abs_is_ityp] / [_abs_anno_is_ityp]) *)
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢ˢᵈ[ mode_tc ] (exp_abs e)
          ⦂ (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
     {{ Γ ⊢ˢᵈ[ mode_tc ] (exp_abs e) ⦂ (btyp_all_inh B) }}d
-| d_sd_typing__abs_check_base : forall L Γ e A B,
+| d_sd_typing__abs_check_base : forall L Γ e (A : ptyp) (B : btyp),
     {{ Γ ⊢ₚ A }}d ->
     is_ityp B ->
     (forall x, x `notin` L ->
        {{ ((x ~ dbind_typ A) ++ Γ) ⊢ˢᵈ[ mode_tc ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B }}d) ->
     {{ Γ ⊢ˢᵈ[ mode_tc ] (exp_abs e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B) }}d
-| d_sd_typing__anno : forall Γ m e A B,
+| d_sd_typing__anno : forall Γ m e (A : ptyp) (B : btyp),
     {{ Γ ⊢ˢᵈ[ mode_tc ] e ⦂ (ptyp_to_btyp_inh A) }}d ->
     {{ empty ⨟ Γ ⊢[ m ] (ptyp_to_utyp_syn A) ⩽ B }}d ->
     {{ Γ ⊢ˢᵈ[ m ] (exp_anno e A) ⦂ B }}d
-| d_sd_typing__abs_anno : forall L Γ m e A B1 B2,
+| d_sd_typing__abs_anno : forall L Γ m e (A : ptyp) (B1 B2 : btyp),
     (* Paper [sdtylab{AbsAnno}]: [M ≠ TC]. *)
     m <> mode_tc ->
     {{ Γ ⊢ₚ A }}d ->
@@ -987,14 +987,14 @@ Inductive d_sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B2 }}d) ->
     {{ Γ ⊢ˢᵈ[ m ] (exp_abs_anno A e) ⦂ (btyp_arrow B1 B2) }}d
 (* Paper [sdtylab{AbsAnnoCheck}]: same fold for the annotated checked lambda. *)
-| d_sd_typing__abs_anno_check_step : forall L Γ A e B,
+| d_sd_typing__abs_anno_check_step : forall L Γ (A : ptyp) e (B : btyp),
     (* no [is_ityp] premise: the body is TC-mode, whose type is always
        inherited ([d_sd_typing_tc_abs_is_ityp] / [_abs_anno_is_ityp]) *)
     (forall α, α `notin` L ->
        {{ ((α ~ dbind_tvar) ++ Γ) ⊢ˢᵈ[ mode_tc ] (exp_abs_anno A e)
          ⦂ (open_btyp_wrt_btyp B (btyp_var_f α)) }}d) ->
     {{ Γ ⊢ˢᵈ[ mode_tc ] (exp_abs_anno A e) ⦂ (btyp_all_inh B) }}d
-| d_sd_typing__abs_anno_check_base : forall L Γ e A B,
+| d_sd_typing__abs_anno_check_base : forall L Γ e (A : ptyp) (B : btyp),
     (* Paper [AbsAnnoCheck]: inherited annotation domain [inh A] in check mode. *)
     {{ Γ ⊢ₚ A }}d ->
     is_ityp B ->
@@ -1002,11 +1002,11 @@ Inductive d_sd_typing : mode -> list (atom * dbind) -> exp -> btyp -> Prop :=
        {{ ((x ~ dbind_typ A) ++ Γ) ⊢ˢᵈ[ mode_tc ]
          (open_exp_wrt_exp e (exp_var_f x)) ⦂ B }}d) ->
     {{ Γ ⊢ˢᵈ[ mode_tc ] (exp_abs_anno A e) ⦂ (btyp_arrow (ptyp_to_btyp_inh A) B) }}d
-| d_sd_typing__freeze : forall Γ e A,
+| d_sd_typing__freeze : forall Γ e (A : ptyp),
     (* Paper [Freeze]: TI [syn{A}] ⇒ TC [inh{A}]. *)
     {{ Γ ⊢ˢᵈ[ mode_ti ] e ⦂ (ptyp_to_btyp_syn A) }}d ->
     {{ Γ ⊢ˢᵈ[ mode_tc ] (exp_freeze e) ⦂ (ptyp_to_btyp_inh A) }}d
-| d_sd_typing__app : forall Γ m e1 e2 P B1 B2,
+| d_sd_typing__app : forall Γ m e1 e2 (P : pskl) (B1 B2 : btyp),
     (* Paper [App]: ONE domain [B1] used by both the refinement (its skeleton
        [btyp_to_bskl B1]) and the function premise; the argument is checked at
        the inherited colouring of the same domain. *)
