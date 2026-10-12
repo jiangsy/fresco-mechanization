@@ -45,7 +45,7 @@ Beyond that, the mechanization covers:
 | OCaml | ≥ 4.14 (`ocamlc` on `PATH`) | the frontend only |
 | Python | 3 | the frontend's regression tests only |
 | [Ott](https://github.com/ott-lang/ott) *(optional)* | 0.34 | regenerating `fresco/def_ott.v` |
-| [LNgen](https://github.com/plclub/lngen) *(optional)* | 0.3.2, `master` at `c034c8d` | regenerating `fresco/prop_ln.v` |
+| [LNgen](https://github.com/plclub/lngen) *(optional)* | 0.3.2 (`master`, tested at `c034c8d`) | regenerating `fresco/prop_ln.v` |
 
 One way to install everything with [opam](https://opam.ocaml.org):
 
@@ -69,8 +69,7 @@ opam install ott.0.34
 
 # LNgen is built from source with Haskell Stack (https://haskellstack.org).
 git clone https://github.com/plclub/lngen.git
-cd lngen && git checkout c034c8d
-stack install                       # installs `lngen` into ~/.local/bin
+cd lngen && stack install           # installs `lngen` into ~/.local/bin
 ```
 
 Then regenerate both files:
@@ -81,7 +80,7 @@ make -B LNGEN=<path-to-lngen> ott lngen   # if lngen is not on PATH
 ```
 
 The regenerated files are token-identical to the committed ones, apart from
-comments, which the committed copies omit.  Use the LNgen commit above: an
+comments, which the committed copies omit.  Build LNgen from `master`: an
 older LNgen 0.3.2 build produces a different `prop_ln.v`.
 
 ### Building and checking the proofs
